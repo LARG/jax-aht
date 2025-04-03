@@ -1,8 +1,0 @@
-# num_siamese: 1
-siamese:
-  - name: 'Misty'
-    age: 3
-    color: 'gray'
-  - name: 'Luna'
-    age: 2
-    color: 'black'

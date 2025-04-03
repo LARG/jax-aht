@@ -20,6 +20,8 @@ More details about some folders are provided below.
 ### Agents
 
 The `agents` directory contains heuristic for each supported environment. 
+Currently, only agents for Overcooked have been implemented.
+You can run the Overcooked heuristic agent by running, `python tests/test_overcooked_agents.py`.
 Later, we would want to add pretrained agents to this directory as well. 
 
 ### Envs

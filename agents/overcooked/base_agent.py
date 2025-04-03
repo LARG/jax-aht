@@ -252,19 +252,11 @@ class BaseAgent:
         else:
             raise ValueError(f"Invalid object type: {obj_type}")
         
-        print(f"\t[_go_to_obj] Agent position: {agent_y}, {agent_x}")
-        print(f"\t[_go_to_obj] Target position: {target_y}, {target_x}")
         # Move towards target
         nearest_free_y, nearest_free_x = self._get_nearest_free_space(target_y, target_x, obs)
     
-        print(f"\t[_go_to_obj] Nearest free space: {nearest_free_y}, {nearest_free_x}")
-        
-        # if obj_type == "counter":
-        #     breakpoint()
-
         action, rng_key = self._move_towards(agent_y, agent_x, 
                 nearest_free_y, nearest_free_x, obs, rng_key)
-        print(f"\t[_go_to_obj] Action: {action}")
         return action, rng_key
 
     def _get_nearest_pot_pos(self, obs: jnp.ndarray, agent_y: int, agent_x: int) -> Tuple[int, int]:
@@ -441,7 +433,6 @@ class BaseAgent:
         )
 
         scores = jnp.array([up_score, down_score, right_score, left_score, stay_score])
-        print(f"\t\t[_move_towards] Mmt scores: {scores}")
 
         # Set scores to large negative number for invalid moves
         scores = jnp.where(
@@ -470,7 +461,6 @@ class BaseAgent:
                 lambda: Actions.stay
             ]
         )
-        # print(f"\t\t[_move_towards] Mmt action: {action}")
         return action, key
 
     def _go_to_obj_and_interact(self, obs: jnp.ndarray, obj_type: str, rng_key: jax.random.PRNGKey) -> Tuple[int, jax.random.PRNGKey]:
@@ -493,9 +483,6 @@ class BaseAgent:
         else:
             raise ValueError(f"Invalid object type: {obj_type}")
         
-        print(f"Agent position: {agent_y}, {agent_x}")
-        print(f"Target {obj_type} position: {target_y}, {target_x}")
-
         # Check if agent is adjacent to target
         is_adjacent = jnp.logical_or(
             jnp.logical_and(jnp.abs(agent_y - target_y) == 1, agent_x == target_x),
@@ -533,10 +520,6 @@ class BaseAgent:
 
         target_orientation_action = _get_target_orientation_action(agent_y, agent_x, target_y, target_x)
         
-        print(f"\t[_go_to_obj_and_interact] Target orientation action: {target_orientation_action}")
-        print(f"\t[_go_to_obj_and_interact] Agent direction index: {agent_dir_idx}")
-        print(f"\t[_go_to_obj_and_interact] Is adjacent: {is_adjacent}")
-
         # If adjacent but not facing the right direction, turn to face it
         # if adjacent and facing the right direction, interact
         # If not adjacent, move towards the object
@@ -551,5 +534,4 @@ class BaseAgent:
             lambda _: self._go_to_obj(obs, obj_type, rng_key),
             None
         )
-        print(f"\t[_go_to_obj_and_interact] Action: {action}")
         return action, rng_key
