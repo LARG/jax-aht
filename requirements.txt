@@ -1,0 +1,23 @@
+# from jax ai stack v2025.2.5
+jax[cuda-12]==0.5.3
+chex==0.1.88
+flax==0.10.2
+ml_dtypes==0.4.0
+optax==0.2.4
+orbax-checkpoint==0.11.1
+orbax-export==0.0.6
+
+# others
+gymnax
+distrax
+safetensors
+
+matplotlib
+wandb
+omegaconf
+hydra-core
+plotly
+
+jumanji==1.1.0
+jaxmarl==0.0.7
+

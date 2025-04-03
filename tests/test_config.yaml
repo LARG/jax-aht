@@ -1,0 +1,22 @@
+defaults:
+  - default_cfg@train
+  - default_cfg@split
+  - _self_       
+
+split:
+  root_path: /path/to/data
+  train_split: 0.8
+
+train: 
+  root_path: ${split.root_path}  # Resolves and deeply copies `default_cfg`
+
+test:
+  arg_misc: 0.5
+  ${split}  # Resolves and deeply copies `train`
+  
+# Hydra params
+hydra:
+  job:
+    name: test_cfg
+  run:
+    dir: results/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}

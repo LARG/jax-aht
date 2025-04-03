@@ -1,0 +1,18 @@
+training_state
+figures/
+figures/*
+notebooks/
+notebooks/*
+
+# output files from jaxmarl
+outputs/ 
+outputs/*
+results/
+results/*
+
+.vscode/
+.vscode/*
+
+# pycache
+**/__pycache__/
+**/*.pyc

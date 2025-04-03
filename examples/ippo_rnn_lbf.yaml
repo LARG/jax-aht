@@ -1,0 +1,29 @@
+"LR": 0.0001
+"NUM_ENVS": 128
+"NUM_STEPS": 128 # What is the meaning?
+"GRU_HIDDEN_DIM": 128
+"FC_DIM_SIZE": 128
+"TOTAL_TIMESTEPS": 1e6
+"UPDATE_EPOCHS": 4
+"NUM_MINIBATCHES": 4
+"GAMMA": 0.99
+"GAE_LAMBDA": 0.95
+"CLIP_EPS": 0.05
+"SCALE_CLIP_EPS": False
+"ENT_COEF": 0.01
+"VF_COEF": 0.5
+"MAX_GRAD_NORM": 0.25
+"ACTIVATION": "relu"
+"ENV_NAME": "LevelBasedForaging-v0"
+"SEED": 0
+"NUM_SEEDS": 3
+# "ENV_KWARGS": 
+#   "see_enemy_actions": True
+#   "walls_cause_death": True
+#   "attack_mode": "closest"
+"ANNEAL_LR": True
+
+# WandB Params
+"ENTITY": ""
+"PROJECT": "continual-aht"
+"WANDB_MODE" : "disabled"

@@ -1,0 +1,28 @@
+defaults:
+  - ippo_defaults
+  - _self_         # Ensures that values in this file override imported ones if needed
+
+ENV_NAME: lbf
+NUM_STEPS: 128 # rollout length must be greater than episode length
+ENV_KWARGS: {}
+
+TOTAL_TIMESTEPS: 1e6
+SEED: 12345
+
+# WandB Params
+logger: 
+  project: open-ended-aht
+  entity: aht-project
+  mode: online # options: online, offline, disabled
+  verbose: true
+
+local_logger:
+  save_figures: true
+  save_results: true
+
+hydra:
+  job:
+    name: ippo
+    chdir: true
+  run:
+    dir: results/${ENV_NAME}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
