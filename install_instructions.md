@@ -42,6 +42,3 @@ echo $PYTHONPATH
 
 6. Check if you can run our IPPO implementation: 
 ```python ppo/ippo.py```
-
-### Troubleshooting Tips: 
-- If jax has auto-installed a CPU version, try `pip install -U jax[cuda-12]`
