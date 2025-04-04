@@ -35,9 +35,11 @@ FCP_EVAL_ARGS:
   SEED: 12345
 
 # WandB Params
-ENTITY: 
-PROJECT: aht-project
-WANDB_MODE : disabled
+logger: 
+  project: aht-benchmark
+  entity: aht-project
+  mode: disabled # options: online, offline, disabled
+  verbose: true
 
 # Hydra params
 hydra:

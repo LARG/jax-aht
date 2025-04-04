@@ -11,7 +11,7 @@ SEED: 12345
 
 # WandB Params
 logger: 
-  project: open-ended-aht
+  project: aht-benchmark
   entity: aht-project
   mode: online # options: online, offline, disabled
   verbose: true
