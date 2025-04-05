@@ -4,7 +4,7 @@ Instructions were tested on debruyne by Caroline on 4/3/25 on a fresh install w/
 1. Create a conda env: 
 
 Command to install in scratch space with prefix:
- ```conda create --prefix /scratch/cluster/clw4542/conda_envs/your_env_name python=3.11```
+ ```conda create --prefix /scratch/cluster/<your_username>/conda_envs/<your_env_name> python=3.11```
 
 Command to install in default conda env location: 
 ```conda create --name your_env_name python=3.11```
