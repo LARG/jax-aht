@@ -41,7 +41,7 @@ class OnionAgent(BaseAgent):
         def put_onion_in_pot(carry):
             '''Go to the nearest pot and put the onion in it. '''
             obs_3d, rng_key = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "pot", rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "nonfull_pot", rng_key)
             return (action, new_rng_key)
             
         def put_onion_on_counter(carry):
@@ -93,7 +93,7 @@ class OnionAgent(BaseAgent):
         updated_agent_state = AgentState(
             holding=agent_state.holding,
             goal=new_goal,
-            onions_in_pot=agent_state.onions_in_pot,
+            nonfull_pots=agent_state.nonfull_pots,
             soup_ready=agent_state.soup_ready,
             rng_key=rng_key
         )

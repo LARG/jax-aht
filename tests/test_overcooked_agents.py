@@ -5,7 +5,7 @@ import jax
 from envs.overcooked.overcooked_wrapper import OvercookedWrapper
 from envs.overcooked.overcooked_visualizer_v2 import OvercookedVisualizerV2
 from envs.overcooked.augmented_layouts import augmented_layouts
-from agents.overcooked import OnionAgent, StaticAgent, RandomAgent
+from agents.overcooked import OnionAgent, PlateAgent, IndependentAgent, StaticAgent
 import time
 
 def run_episode(env, agent0, agent1, key) -> Tuple[Dict[str, float], int]:
@@ -58,9 +58,9 @@ def run_episode(env, agent0, agent1, key) -> Tuple[Dict[str, float], int]:
         # Print progress every 10 steps
         if num_steps % 10 == 0:
             agent0_name = agent0.get_name()
-            # agent1_name = agent1.get_name()
-            print(f"Agent 0 {(agent0_name)} state: {agent0_state}")
-            # print(f"Agent 1 {(agent1_name)} state: {agent1_state}")
+            agent1_name = agent1.get_name()
+            # print(f"Agent 0 {(agent0_name)} state: {agent0_state}")
+            print(f"Agent 1 {(agent1_name)} state: {agent1_state}")
             print("Actions:", actions)
     
     print(f"Episode finished. Total states collected: {len(state_seq)}")
@@ -87,7 +87,7 @@ def main(num_episodes,
     # Initialize agents
     print("Initializing agents...")
     agent0 = OnionAgent("agent_0", layout=layout) # red
-    agent1 = StaticAgent("agent_1", layout=layout) # blue
+    agent1 = IndependentAgent("agent_1", layout=layout) # blue
     print("Agents initialized")
     
     print("Agent 0:", agent0.get_name())
@@ -143,21 +143,23 @@ if __name__ == "__main__":
     DEBUG = False
     VISUALIZE = False
     SAVE_GIF = not VISUALIZE    
-    NUM_EPISODES = 2
+    NUM_EPISODES = 1
 
     layout_names = [
-        # "asymm_advantages", "coord_ring", 
-        # "counter_circuit", "cramped_room", 
-        "forced_coord"
+        "asymm_advantages", 
+        # "coord_ring", 
+        # "counter_circuit", 
+        # "cramped_room", 
+        # "forced_coord"
                     ]
 
-    # TODO: remove debug print statements
+
     for layout_name in layout_names:
         with jax.disable_jit(DEBUG):
             main(num_episodes=NUM_EPISODES, 
                 layout_name=layout_name,
                 random_reset=True,
                 random_obj_state=False,
-                max_steps=30,
+                max_steps=200,
                 visualize=VISUALIZE, 
                 save_gif=SAVE_GIF) 
