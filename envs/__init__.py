@@ -10,19 +10,19 @@ from envs.overcooked.augmented_layouts import augmented_layouts
 
 def make_env(env_name: str, env_kwargs: dict = {}):
     if env_name == 'lbf':
-        generator_args = {"grid_size": 8, "fov": 8, 
+        generator_args = {"grid_size": 7, "fov": 7, 
                           "num_agents": 2, "num_food": 3, 
-                          "max_agent_level": 2, "force_coop": False}
+                          "max_agent_level": 2, "force_coop": True}
         # if env_args and default_generator_args have any key overlap, replace 
         # args in default_generator_args with those in env_args, deleting those in env_args
-        env_kwargs_copy = copy.deepcopy(env_kwargs)
-        for key in env_kwargs_copy:
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        for key in env_kwargs:
             if key in generator_args:
                 generator_args[key] = env_kwargs[key]
-                del env_kwargs[key]
+                del env_kwargs_copy[key]
         env = jumanji.make('LevelBasedForaging-v0', 
                             generator=RandomGenerator(**generator_args),
-                            **env_kwargs)
+                            **env_kwargs_copy)
         env = JumanjiToJaxMARL(env)
         
     elif env_name == 'overcooked-v2':
