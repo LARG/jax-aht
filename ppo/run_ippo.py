@@ -33,7 +33,7 @@ def main(config):
     elif config["ENV_NAME"] == "overcooked-v2":
         metric_names = ("shaped_reward", "returned_episode_returns")
     else: 
-        metric_names = ("returned_episode_returns")
+        metric_names = ("returned_episode_returns", "returned_episode_lengths")
     
     # Generate plots
     all_stats = get_stats(out["metrics"], metric_names, num_controlled_agents=1)

@@ -18,7 +18,7 @@ class WrappedEnvState:
     
 class JumanjiToJaxMARL(object):
     """Use a Jumanji Environment within JaxMARL.
-    Warning: this wrapper has only been tested with LBF.
+    Warning: this wrapper has only been tested with LBF and currently only supports homogeneous agent envs.
     """
     def __init__(self, env: JumanjiEnv):
         self.env = env
@@ -106,8 +106,12 @@ class JumanjiToJaxMARL(object):
         return actions_array
 
     def _extract_rewards(self, reward):
-        '''Extract per-agent rewards'''
-        rewards = {agent: reward[i] for i, agent in enumerate(self.agents)}
+        '''Extract per-agent rewards. Reward is either a scalar for all agents 
+        or an array of shape (num_agents,).'''
+        reward_exp = jnp.expand_dims(reward, axis=-1)
+        # in case of scalar reward, use fact that indexing with any scalar i 
+        # returns the scalar itself
+        rewards = {agent: reward_exp[i].squeeze() for i, agent in enumerate(self.agents)}
         return rewards
 
     def _extract_dones(self, timestep):
