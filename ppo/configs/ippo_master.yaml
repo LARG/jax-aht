@@ -2,18 +2,22 @@ defaults:
   - ippo_defaults
   - _self_         # Ensures that values in this file override imported ones if needed
 
-ENV_NAME: lbf
-NUM_STEPS: 128 # rollout length must be greater than episode length
-ENV_KWARGS: {}
+ENV_NAME: overcooked-v2
+NUM_STEPS: 400 # rollout length must be greater than episode length
+ENV_KWARGS: {
+  "layout": "cramped_room",
+  "random_reset": False,
+  "max_steps": 400
+}
 
-TOTAL_TIMESTEPS: 1e6
+TOTAL_TIMESTEPS: 5e6
 SEED: 12345
 
 # WandB Params
 logger: 
   project: aht-benchmark
   entity: aht-project
-  mode: online # options: online, offline, disabled
+  mode: offline # options: online, offline, disabled
   verbose: true
 
 local_logger:
