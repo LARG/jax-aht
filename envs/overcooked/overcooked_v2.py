@@ -20,9 +20,9 @@ BASE_REW_SHAPING_PARAMS = {
     "PLACEMENT_IN_POT_REW": 3, # reward for putting ingredients 
     "PLATE_PICKUP_REWARD": 3, # reward for picking up a plate
     "SOUP_PICKUP_REWARD": 5, # reward for picking up a ready soup
-    "ONION_PICKUP_REWARD": 1,
+    "ONION_PICKUP_REWARD": 0,
     "COUNTER_PICKUP_REWARD": 0,
-    "COUNTER_DROP_REWARD": -2,
+    "COUNTER_DROP_REWARD": 0,
     "DISH_DISP_DISTANCE_REW": 0,
     "POT_DISTANCE_REW": 0,
     "SOUP_DISTANCE_REW": 0,
@@ -58,10 +58,15 @@ class OvercookedV2(Overcooked):
             random_reset: bool = False,
             random_obj_state: bool = False, 
             max_steps: int = 400,
+            reward_shaping_params = FrozenDict({}),
     ):
         super().__init__(layout=layout, 
                          random_reset=random_reset, 
                          max_steps=max_steps)
+        def merge_params(base_dict, override_dict):
+            merged = {k: override_dict.get(k, v) for k, v in base_dict.items()}
+            return FrozenDict(merged)
+        self.reward_shaping_params = merge_params(BASE_REW_SHAPING_PARAMS, reward_shaping_params)
         self.random_obj_state = random_obj_state # controls whether pot state and inventory are randomized
     
     def _initialize_agent_positions(self, key: chex.PRNGKey, all_pos: jnp.ndarray, num_agents: int) -> Tuple[chex.PRNGKey, jnp.ndarray]:
@@ -169,8 +174,8 @@ class OvercookedV2(Overcooked):
         else_case = ~case_1 * ~case_2 * ~case_3
 
         # give reward for placing onion in pot, and for picking up soup
-        shaped_reward += case_1 * BASE_REW_SHAPING_PARAMS["PLACEMENT_IN_POT_REW"]
-        shaped_reward += case_2 * BASE_REW_SHAPING_PARAMS["SOUP_PICKUP_REWARD"]
+        shaped_reward += case_1 * self.reward_shaping_params["PLACEMENT_IN_POT_REW"]
+        shaped_reward += case_2 * self.reward_shaping_params["SOUP_PICKUP_REWARD"]
 
         # Update pot status and object in inventory
         new_pot_status = \
@@ -192,9 +197,9 @@ class OvercookedV2(Overcooked):
         no_effect = jnp.logical_and(jnp.logical_and(~successful_pickup, ~successful_drop), ~successful_delivery)
 
         # give reward for picking up onion, placing on a counter, and removing from a counter
-        shaped_reward += jnp.logical_and(successful_pickup, object_is_pile) * BASE_REW_SHAPING_PARAMS["ONION_PICKUP_REWARD"]
-        shaped_reward += jnp.logical_and(successful_pickup, object_is_pickable) * BASE_REW_SHAPING_PARAMS["COUNTER_PICKUP_REWARD"]
-        shaped_reward += successful_drop * BASE_REW_SHAPING_PARAMS["COUNTER_DROP_REWARD"]
+        shaped_reward += jnp.logical_and(successful_pickup, object_is_pile) * self.reward_shaping_params["ONION_PICKUP_REWARD"]
+        shaped_reward += jnp.logical_and(successful_pickup, object_is_pickable) * self.reward_shaping_params["COUNTER_PICKUP_REWARD"]
+        shaped_reward += successful_drop * self.reward_shaping_params["COUNTER_DROP_REWARD"]
 
         # Update object on table
         new_object_on_table = \
@@ -226,7 +231,7 @@ class OvercookedV2(Overcooked):
         plate_loc_layer = jnp.array(maze_map == OBJECT_TO_INDEX["plate"], dtype=jnp.uint8)
         no_plates_on_counters = jnp.sum(plate_loc_layer) == 0
         
-        shaped_reward += no_plates_on_counters*has_picked_up_plate*is_dish_picku_useful*BASE_REW_SHAPING_PARAMS["PLATE_PICKUP_REWARD"]
+        shaped_reward += no_plates_on_counters*has_picked_up_plate*is_dish_picku_useful*self.reward_shaping_params["PLATE_PICKUP_REWARD"]
 
         inventory = new_object_in_inv
         
