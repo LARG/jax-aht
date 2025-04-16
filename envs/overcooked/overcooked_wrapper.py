@@ -6,10 +6,10 @@ import jax.numpy as jnp
 from jaxmarl.environments.overcooked.overcooked import State as OvercookedState
 from jaxmarl.environments import spaces
 
-from envs.overcooked.overcooked_v2 import OvercookedV2  
+from envs.overcooked.overcooked_v1 import OvercookedV1
 
 
-class OvercookedWrapper(OvercookedV2):
+class OvercookedWrapper(OvercookedV1):
     '''Wrapper for the Overcooked environment to ensure that it follows a common interface 
     with other environments provided in this library.'''
     def __init__(self, *args, **kwargs):

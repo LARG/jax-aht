@@ -514,7 +514,7 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
             stat_mean = stat_data[step, 0]
             logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
 
-        logger.log_item("Eval/EgoReturn", average_ego_rets_per_iter[step], checkpoint=step, commit=True)
+        logger.log_item("Eval/EgoReturn", average_ego_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item("Train/EgoValueLoss", average_ego_value_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoActorLoss", average_ego_actor_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
@@ -544,7 +544,7 @@ def run_ego_training(config, partner_params, pop_size: int):
         pop_size: int, number of partner agents in the population
     '''
     algorithm_config = dict(config["algorithm"])
-    logger = Logger(config)
+    wandb_logger = Logger(config)
 
     # Create only one environment instance
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
@@ -594,6 +594,6 @@ def run_ego_training(config, partner_params, pop_size: int):
     
     # process and log metrics
     metric_names = get_metric_names(config["ENV_NAME"])
-    log_metrics(config, out, logger, metric_names)
+    log_metrics(config, out, wandb_logger, metric_names)
     
     return out

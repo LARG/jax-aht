@@ -790,7 +790,7 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
 
 def run_regret_evaluation(config, ego_params):
     algorithm_config = dict(config["algorithm"])
-    logger = Logger(config)
+    wandb_logger = Logger(config)
 
     # Create only one environment instance
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
@@ -817,12 +817,12 @@ def run_regret_evaluation(config, ego_params):
     log.info(f"Regret-maximizing evaluation completed in {end_time - start_time} seconds.")
     
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
-    log_metrics(config, env, logger, train_out, metric_names)
+    log_metrics(config, env, wandb_logger, train_out, metric_names)
     
     if config["logger"]["log_video"] or config["local_logger"]["save_video"]:
-        log_video(config, logger, train_out, ego_params, ego_policy)
+        log_video(config, wandb_logger, train_out, ego_params, ego_policy)
     
-    logger.close()
+    wandb_logger.close()
 
 
 def log_video(config, logger, train_out, ego_params, ego_policy):
@@ -905,8 +905,8 @@ def log_metrics(config, env, logger, train_out, metric_names: tuple):
                 logger.log_item(f"Train/Conf-Against-Ego_{stat_name}", stat_mean, train_step=step)
 
         # Eval metrics
-        logger.log_item("Eval/ConfReturn-Against-Ego", avg_teammate_xp_returns[step], checkpoint=step)
-        logger.log_item("Eval/ConfReturn-Against-BR", avg_teammate_sp_returns[step], checkpoint=step)
+        logger.log_item("Eval/ConfReturn-Against-Ego", avg_teammate_xp_returns[step], train_step=step)
+        logger.log_item("Eval/ConfReturn-Against-BR", avg_teammate_sp_returns[step], train_step=step)
         
         # Confederate losses
         logger.log_item("Losses/ConfValLoss-Against-Ego", avg_value_losses_teammate_against_ego[step], train_step=step)

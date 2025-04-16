@@ -37,7 +37,7 @@ MAX_ONIONS_IN_POT = 3 # A pot has at most 3 onions. A soup contains exactly 3 on
 URGENCY_CUTOFF = 40 # When this many time steps remain, the urgency layer is flipped on
 DELIVERY_REWARD = 20
 
-class OvercookedV2(Overcooked):
+class OvercookedV1(Overcooked):
     '''This environment is a modified version of the JaxMARL Overcooked environment 
     that ensures environments are solvable. In addition, this environment adds additional
     reward shaping parameters.

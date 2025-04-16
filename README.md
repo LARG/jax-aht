@@ -41,10 +41,7 @@ We made some modifications to the JaxMARL Overcooked environment to improve the 
 The `fcp/` directory stores our Fictitious Co-Play implementation. This implementation was based on JaxMARL's IPPO implementation. 
 Our full implementation can be run via `python fcp/run_fcp_pipeline.py`. Results are logged via wandb, but can also be viewed locally in the `results` directory.
 
-The FCP implementation includes several training variants:
-- `fcp_train_s5.py`: Training with S5 actor-critic architecture for the ego agent
-- `fcp_train_mlp.py`: Training with MLP actor-critic architecture for the ego agent
-- `fcp_train_rnn.py`: Training with RNN actor-critic architecture for the ego agent
+- `fcp_train.py`: Training with S5 actor-critic architecture for the ego agent
 - `fcp_eval.py`: Evaluation script for FCP agents
 - `train_partners.py`: Script for training partner agents using IPPO.
 
@@ -57,4 +54,4 @@ The `ppo/ippo.py` script can also be ran on its own for debugging purposes.
 
 ### Coding Style Notes
 JaxMARL follows a single-script training paradigm, which enables jit-compiling the entire RL training loop and makes it simple for researchers to modify algorithms. 
-We follow a similar paradigm, but importing a couple common utility functions to avoid code duplication. 
+We follow a similar paradigm, but importing a couple common utility functions and training scripts to avoid code duplication. 

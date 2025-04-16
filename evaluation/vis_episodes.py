@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 import os
-from envs.overcooked.overcooked_visualizer_v2 import OvercookedVisualizerV2
+from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
 
 
 def save_video(env, env_name, 
@@ -14,7 +14,7 @@ def save_video(env, env_name,
     
     Args:
         env: The environment instance
-        env_name: Name of the environment ('lbf' or 'overcooked-v2')
+        env_name: Name of the environment ('lbf' or 'overcooked-v1')
         agent_0_param: Parameters for agent 0
         agent_0_policy: Policy for agent 0
         agent_1_param: Parameters for agent 1
@@ -25,7 +25,7 @@ def save_video(env, env_name,
         save_dir: Directory to save the video
         save_name: Name to use for the saved video
     '''
-    assert env_name in ['lbf', 'overcooked-v2'], "Supported environments are lbf or overcooked-v2"
+    assert env_name in ['lbf', 'overcooked-v1'], "Supported environments are lbf or overcooked-v1"
     
     # Step 1: run the episode and generate a list of env states 
     states = []
@@ -54,10 +54,11 @@ def save_video(env, env_name,
         anim.save(savepath, writer="ffmpeg")
         print(f"Video saved successfully at {savepath}")
 
-    elif env_name == 'overcooked-v2':
-        viz = OvercookedVisualizerV2()
+    elif env_name == 'overcooked-v1':
+        viz = AdHocOvercookedVisualizer()
         # Get layout from env kwargs if available, otherwise use default
         viz.animate_mp4(states, env.agent_view_size, 
+            highlight_agent_idx=0,
             filename=savepath, 
             pixels_per_tile=32, fps=25)
         print(f"MP4 saved successfully at {savepath}")

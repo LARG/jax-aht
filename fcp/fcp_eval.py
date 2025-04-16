@@ -7,7 +7,7 @@ from envs import make_env
 from envs.log_wrapper import LogWrapper
 from common.agent_interface import MLPActorCriticPolicy
 from common.save_load_utils import load_checkpoints, save_train_run
-from common.plot_utils import plot_eval_metrics
+from common.plot_utils import plot_xp_from_eval_metrics
 from common.run_episodes import run_episodes
 from common.initialize_agents import initialize_s5_agent, initialize_mlp_agent, initialize_rnn_agent
 
@@ -138,7 +138,10 @@ def main(config, ego_config, partner_config,
         # each submetric shape is (num_ego_seeds, num_ego_ckpts, num_partner_ckpts, episodes, num_agents)
         # the ego agent is always agent 0, the partner is agent 1
         for metric_name in metric_names:
-            plot_eval_metrics(eval_metrics, metric_name=metric_name, agent_idx=0)
+            plot_xp_from_eval_metrics(eval_metrics, 
+                metric_name=metric_name, agent_idx=0,
+                savedir=eval_savedir, savename=f"{k}_xp_matrix",
+                show_plots=False)
 
         # print metrics
         num_ego_ckpts = eval_metrics["returned_episode_returns"].shape[1]

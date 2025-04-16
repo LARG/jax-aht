@@ -344,7 +344,7 @@ if __name__ == "__main__":
         "ENT_COEF": 0.01,
         "VF_COEF": 1.0,
         "MAX_GRAD_NORM": 1.0,
-        "ENV_NAME": "overcooked-v2", # "lbf",
+        "ENV_NAME": "overcooked-v1", # "lbf",
         "ENV_KWARGS": {
             "layout": "cramped_room",
             "random_reset": False,

@@ -1,0 +1,7 @@
+job:
+  chdir: true
+run:
+  dir: results/${ENV_NAME}/${name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+sweep:
+  dir: results_sweep/${ENV_NAME}/${name}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  subdir: ${run.seed}

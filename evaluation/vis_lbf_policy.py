@@ -8,19 +8,22 @@ import jax.numpy as jnp
 def rollout(ego_run_path, partner_run_path, 
             ego_seed_idx, partner_seed_idx,
             ego_checkpoint_idx, partner_checkpoint_idx,
-            num_episodes, render, 
+            num_episodes, render, highlight_agent_idx,
             savevideo, save_name
             ):
-    env = make_env('lbf')
+    env = make_env('lbf', env_kwargs={"highlight_agent_idx": highlight_agent_idx})
+    action_dim = env.action_spaces['agent_0'].n
+    obs_dim = env.observation_spaces['agent_0'].shape[0]
 
     policies = {}
-    policies[0] = S5ActorCriticLoader(ego_run_path, env.action_spaces['agent_0'].n, 
+    policies[0] = S5ActorCriticLoader(ego_run_path, action_dim, obs_dim, 
                                       n=ego_seed_idx, m=ego_checkpoint_idx)
-    policies[1] = MLPActorCriticLoader(partner_run_path, env.action_spaces['agent_1'].n, 
+    policies[1] = MLPActorCriticLoader(partner_run_path, action_dim, obs_dim, 
                                       n=partner_seed_idx, m=partner_checkpoint_idx) 
 
     # Rollout
     states = []
+    hstates = {k: v.init_hstate(1) for k, v in policies.items()}
     key = jax.random.PRNGKey(112358)
 
     for episode in range(num_episodes):
@@ -38,15 +41,17 @@ def rollout(ego_run_path, partner_run_path,
             # Sample actions for each agent
             actions = {}
             for i, agent in enumerate(env.agents):
-                # Construct observation dict with available actions
-                obs_dict = {
-                    'obs': obs[agent],
-                    'dones': jnp.array([done[agent]]),
-                    'avail_actions': avail_actions[agent]
-                }
                 # Policies tend to perform better on LBF in train mode
-                action, key = policies[i].act(obs_dict, key, test_mode=False)
-                actions[agent] = action
+                action, new_hstate_i, key = policies[i].act(
+                    obs=obs[agent].reshape(1, 1, -1), 
+                    done=jnp.array([done[agent]]).reshape(1, 1), 
+                    avail_actions=avail_actions[agent], 
+                    hstate=hstates[i], 
+                    rng=key, 
+                    test_mode=False)
+
+                actions[agent] = action.squeeze()
+                hstates[i] = new_hstate_i
             
             key, subkey = jax.random.split(key)
             obs, state, rewards, done, info = env.step(subkey, state, actions)
@@ -78,7 +83,7 @@ if __name__ == "__main__":
     RENDER = False
     SAVEVIDEO = True
 
-    ego_run_path = "results/lbf/fcp_s5/2025-04-13_18-42-46/saved_train_run" # FCP S5 agent, trained for 3e5 steps
+    ego_run_path = "results/lbf/ppo_ego_s5/2025-04-13_11-43-33/saved_train_run" # PPO ego s5 agent
     partner_run_path = "results/lbf/ppo_ego_mlp/2025-04-13_23-19-15/saved_train_run" # MLP ego agent
     save_name = "video-test"
     
@@ -90,6 +95,7 @@ if __name__ == "__main__":
             partner_checkpoint_idx=-1, # use last checkpoint
             num_episodes=NUM_EPISODES, 
             render=RENDER, 
+            highlight_agent_idx=0, # highlight the ego agent
             savevideo=SAVEVIDEO,
             save_name=save_name
             )

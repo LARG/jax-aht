@@ -11,7 +11,8 @@ results/
 results/*
 results_sweep/
 results_sweep/*
-
+eval_teammates/
+eval_teammates/*
 .vscode/
 .vscode/*
 
