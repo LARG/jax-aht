@@ -12,6 +12,7 @@ gymnax
 distrax
 safetensors
 moviepy
+ffmpeg
 
 matplotlib
 wandb

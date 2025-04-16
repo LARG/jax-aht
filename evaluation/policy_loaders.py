@@ -54,15 +54,10 @@ class S5ActorCriticLoader():
         # S5 default config
         # TODO: avoid hard-coding SSM configs in future
         self.config = {
-            "S5_ACTOR_CRITIC_HIDDEN_DIM": 64,
             "S5_D_MODEL": 16,
             "S5_SSM_SIZE": 16,
             "S5_N_LAYERS": 2,
             "S5_BLOCKS": 1,
-            "S5_ACTIVATION": "full_glu",
-            "S5_DO_NORM": True,
-            "S5_PRENORM": True,
-            "S5_DO_GTRXL_NORM": True,
         }
         
         # Initialize S5 specific parameters
@@ -88,10 +83,7 @@ class S5ActorCriticLoader():
         
         self.model = S5ActorCritic(
             action_dim=action_dim,
-            config=self.config,
-            ssm_init_fn=ssm_init_fn,
-            fc_hidden_dim=self.config["S5_ACTOR_CRITIC_HIDDEN_DIM"],
-            ssm_hidden_dim=self.config["S5_SSM_SIZE"]
+            ssm_init_fn=ssm_init_fn
         )
         
         # Hidden state is maintained by in a class attribute, making this 

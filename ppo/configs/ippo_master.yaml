@@ -19,10 +19,12 @@ logger:
   entity: aht-project
   mode: offline # options: online, offline, disabled
   verbose: true
+  log_train_out: # whether to log the out dictionary
+
 
 local_logger:
   save_figures: true
-  save_results: true
+  save_train_out: true
 
 hydra:
   job:

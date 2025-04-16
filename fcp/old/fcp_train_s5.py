@@ -13,7 +13,7 @@ import optax
 from flax.training.train_state import TrainState
 
 from common.mlp_actor_critic import ActorCritic
-from common.rnn_actor_critic import RNNActorCritic, ScannedRNN
+from common.s5_actor_critic import S5ActorCritic, StackedEncoderModel, init_S5SSM, make_DPLR_HiPPO
 from common.save_load_utils import load_checkpoints, save_train_run
 from common.plot_utils import get_stats, plot_train_metrics
 from envs import make_env
@@ -89,8 +89,29 @@ def train_fcp_agent(config, checkpoints):
         config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
         config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["NUM_STEPS"] // config["NUM_ENVS"]
+        config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
         config["NUM_ACTIONS"] = env.action_space(env.agents[0]).n
+        
+        # S5 specific parameters
+        d_model = config["S5_D_MODEL"]
+        ssm_size = config["S5_SSM_SIZE"]
+        n_layers = config["S5_N_LAYERS"]
+        blocks = config["S5_BLOCKS"]
+        block_size = int(ssm_size / blocks)
+
+        Lambda, _, _, V,  _ = make_DPLR_HiPPO(ssm_size)
+        block_size = block_size // 2
+        ssm_size = ssm_size // 2
+        Lambda = Lambda[:block_size]
+        V = V[:, :block_size]
+        Vinv = V.conj().T
+
+        ssm_init_fn = init_S5SSM(H=d_model,
+                                 P=ssm_size,
+                                 Lambda_re_init=Lambda.real,
+                                 Lambda_im_init=Lambda.imag,
+                                 V=V,
+                                 Vinv=Vinv)
 
         def linear_schedule(count):
             frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
@@ -100,10 +121,17 @@ def train_fcp_agent(config, checkpoints):
             # --------------------------
             # 3a) Init agent_0 network
             # --------------------------
-            agent0_net = RNNActorCritic(action_dim=env.action_space(env.agents[0]).n,
-                                        fc_hidden_dim=config["FC_HIDDEN_DIM"],
-                                        gru_hidden_dim=config["GRU_HIDDEN_DIM"]
-                                        )
+            agent0_net = S5ActorCritic(env.action_space(env.agents[0]).n, 
+                                       ssm_init_fn=ssm_init_fn,
+                                       fc_hidden_dim=config["S5_ACTOR_CRITIC_HIDDEN_DIM"],
+                                       ssm_hidden_dim=config["S5_SSM_SIZE"],
+                                       s5_d_model=config["S5_D_MODEL"],
+                                       s5_n_layers=config["S5_N_LAYERS"],
+                                       s5_activation=config["S5_ACTIVATION"],
+                                       s5_do_norm=config["S5_DO_NORM"],
+                                       s5_prenorm=config["S5_PRENORM"],
+                                       s5_do_gtrxl_norm=config["S5_DO_GTRXL_NORM"],
+                                       )
 
             rng, init_rng = jax.random.split(rng)
             init_x = (
@@ -112,7 +140,8 @@ def train_fcp_agent(config, checkpoints):
                 jnp.zeros((1, config["NUM_CONTROLLED_ACTORS"])),
                 jnp.ones((1, config["NUM_CONTROLLED_ACTORS"], env.action_space(env.agents[0]).n)),
             )
-            init_hstate_0 = ScannedRNN.initialize_carry(config["NUM_CONTROLLED_ACTORS"], config["GRU_HIDDEN_DIM"])
+            init_hstate_0 = StackedEncoderModel.initialize_carry(config["NUM_CONTROLLED_ACTORS"], ssm_size, n_layers)
+
             init_params = agent0_net.init(init_rng, init_hstate_0, init_x)
 
             if config["ANNEAL_LR"]:
@@ -139,7 +168,7 @@ def train_fcp_agent(config, checkpoints):
             obsv, env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
 
             # Initialize hidden state for RNN
-            init_hstate_0 = ScannedRNN.initialize_carry(config["NUM_CONTROLLED_ACTORS"], config["GRU_HIDDEN_DIM"])
+            init_hstate_0 = StackedEncoderModel.initialize_carry(config["NUM_CONTROLLED_ACTORS"], ssm_size, n_layers)
 
             # Each environment picks a partner index in [0, n_seeds*m_ckpts)
             rng, partner_rng = jax.random.split(rng)
@@ -238,6 +267,7 @@ def train_fcp_agent(config, checkpoints):
                         transition.value,
                         transition.reward,
                     )
+
                     delta = reward + config["GAMMA"] * next_value * (1 - done) - value
                     gae = (
                         delta
@@ -265,7 +295,7 @@ def train_fcp_agent(config, checkpoints):
                         )
                         _, pi, value = agent0_net.apply(
                             params, 
-                            init_hstate_0.squeeze(), 
+                            init_hstate_0,
                             rnn_input_0
                         )
                         log_prob = pi.log_prob(traj_batch.action)
@@ -312,12 +342,8 @@ def train_fcp_agent(config, checkpoints):
                     rng
                  ) = update_state
                 rng, perm_rng = jax.random.split(rng)
-
+                
                 # batch_size is now config["NUM_ENVS"]
-                init_hstate_0 = jnp.reshape(
-                    init_hstate_0, (1, config["NUM_CONTROLLED_ACTORS"], -1)
-                )
-
                 permutation = jax.random.permutation(perm_rng, config["NUM_CONTROLLED_ACTORS"])
 
                 batch = (
@@ -348,7 +374,7 @@ def train_fcp_agent(config, checkpoints):
                 )
                 update_state = (
                     train_state, 
-                    init_hstate_0.squeeze(),
+                    init_hstate_0,
                     traj_batch, 
                     advantages, 
                     targets, 
@@ -374,19 +400,19 @@ def train_fcp_agent(config, checkpoints):
                     rng
                 )
                 runner_state, traj_batch = jax.lax.scan(
-                    _env_step, runner_state, None, config["NUM_STEPS"])
+                    _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
                 (train_state, env_state, last_obs, last_done, last_hstate_0, partner_indices, rng) = runner_state
 
                 # 2) advantage
                 last_obs_batch_0 = last_obs["agent_0"]
                 # Get available actions for agent 0 from environment state
                 avail_actions_0 = jax.vmap(env.get_avail_actions)(env_state.env_state)["agent_0"].astype(jnp.float32)
-                rnn_input_0 = (
+                input_0 = (
                     last_obs_batch_0.reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
                     last_done.reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     jax.lax.stop_gradient(avail_actions_0)
                 )
-                _, _, last_val = agent0_net.apply(train_state.params, last_hstate_0, rnn_input_0)
+                _, _, last_val = agent0_net.apply(train_state.params, last_hstate_0, input_0)
                 last_val = last_val.squeeze()
                 advantages, targets = _calculate_gae(traj_batch, last_val)
             
@@ -516,24 +542,20 @@ def train_fcp_agent(config, checkpoints):
         if debug_mode:
             out = make_fcp_train(config, partner_params)(rngs)
         else:
-            compile_start = time.time()
             fcp_train_fn = jax.jit(jax.vmap(make_fcp_train(config, partner_params)))
-            print("Time to compile: ", time.time() - compile_start)
             out = fcp_train_fn(rngs)
     
     end_time = time.time()
-    # log.info(f"Training FCP agent took {end_time - start_time:.2f} seconds.")
-    print(f"Training FCP agent took {end_time - start_time:.2f} seconds.")
-
+    log.info(f"Training FCP agent took {end_time - start_time:.2f} seconds.")
     return out
 
 if __name__ == "__main__":
     # set hyperparameters:
     config = {
-        "TOTAL_TIMESTEPS": 3e5, #  3e6
+        "TOTAL_TIMESTEPS": 1e6,
         "LR": 1.e-4,
         "NUM_ENVS": 16,
-        "NUM_STEPS": 128, 
+        "ROLLOUT_LENGTH": 128,
         "UPDATE_EPOCHS": 15,
         "NUM_MINIBATCHES": 8,
         "NUM_CHECKPOINTS": 5,
@@ -543,22 +565,30 @@ if __name__ == "__main__":
         "ENT_COEF": 0.01,
         "VF_COEF": 1.0,
         "MAX_GRAD_NORM": 1.0,
-        "FC_HIDDEN_DIM": 64,
-        "GRU_HIDDEN_DIM": 64,
         "ANNEAL_LR": True,
+
+        "S5_ACTOR_CRITIC_HIDDEN_DIM": 64,
+        "S5_D_MODEL": 16,
+        "S5_SSM_SIZE": 16,
+        "S5_N_LAYERS": 2,
+        "S5_BLOCKS": 1,
+        "S5_ACTIVATION": "full_glu",
+        "S5_DO_NORM": True,
+        "S5_PRENORM": True,
+        "S5_DO_GTRXL_NORM": True,
+
         "ENV_NAME": "lbf",
-        "ENV_KWARGS": {
-        },
+        "ENV_KWARGS": {},
         "SEED": 38410, 
         "PARTNER_SEED": 112358,
         "NUM_SEEDS": 3,
-        "RESULTS_PATH": "results/lbf/debug/"
+        "RESULTS_PATH": "results/lbf/fcp_s5/"
     }
     
     curr_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     savedir = os.path.join(config["RESULTS_PATH"], curr_datetime) 
 
-    train_partner_path = "results/lbf/2025-03-11_17-05-21/train_partners.pkl"
+    train_partner_path = "results/lbf/ippo/2025-04-10_20-21-47/ippo_train_run"
     if train_partner_path != "":
         train_partner_ckpts = load_checkpoints(train_partner_path)
     else:
@@ -575,5 +605,14 @@ if __name__ == "__main__":
     # visualize results!
     # metrics values shape is (num_seeds, num_updates, num_rollout_steps, num_envs, num_agents)
     metrics = fcp_out["metrics"]
-    all_stats = get_stats(metrics, ("percent_eaten", "returned_episode_returns"), config["NUM_CONTROLLED_ACTORS"])
-    plot_train_metrics(all_stats, config["NUM_STEPS"], config["NUM_ENVS"])
+    if config["ENV_NAME"] == "lbf":
+        all_stats = get_stats(metrics, ("percent_eaten", "returned_episode_returns"))
+    elif config["ENV_NAME"] == "overcooked-v2":
+        all_stats = get_stats(metrics, ("shaped_reward", "returned_episode_returns"))
+    else: 
+        all_stats = get_stats(metrics, ("returned_episode_returns", "returned_episode_lengths"))
+    plot_train_metrics(all_stats, 
+                       config["TOTAL_TIMESTEPS"], 
+                       config["NUM_CONTROLLED_ACTORS"],
+                       savedir=config["RESULTS_PATH"] + f"/{curr_datetime}",
+                       savename="fcp_s5_train")

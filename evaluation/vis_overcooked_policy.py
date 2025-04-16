@@ -68,16 +68,16 @@ def rollout(ego_run_path, partner_run_path,
                     print("info", info, "type", type(info))
                     print("avail actions are ", avail_actions[agent])
             num_steps += 1        
+            states.append(state)
             if render:         
-                # env.render(state)
-                states.append(state)
+                env.render(state)
         print(f"Episode {episode} finished. Total rewards: {total_rewards}. Num steps: {num_steps}")
         
-    if render and savevideo:
+    if savevideo:
         print(f"\nSaving mp4 with {len(states)} frames...")
         viz = OvercookedVisualizerV2()
         viz.animate_mp4(states, env.agent_view_size, 
-            filename=f'results/overcooked/mp4/{kwargs["layout"]}_{save_name}.mp4', 
+            filename=f'results/overcooked/videos/{kwargs["layout"]}_{save_name}.mp4', 
             pixels_per_tile=32, fps=25)
         print("MP4 saved successfully!")
 

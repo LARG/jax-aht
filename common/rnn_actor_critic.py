@@ -80,3 +80,4 @@ class RNNActorCritic(nn.Module):
         )
 
         return hidden, pi, jnp.squeeze(critic, axis=-1)
+        

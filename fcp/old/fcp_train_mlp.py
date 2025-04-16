@@ -88,8 +88,8 @@ def train_fcp_agent(config, checkpoints):
         config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
         config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["NUM_STEPS"] // config["NUM_ENVS"]
-        config["MINIBATCH_SIZE"] = (config["NUM_ACTORS"] * config["NUM_STEPS"]) // config["NUM_MINIBATCHES"]
+        config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
+        config["MINIBATCH_SIZE"] = (config["NUM_ACTORS"] * config["ROLLOUT_LENGTH"]) // config["NUM_MINIBATCHES"]
 
         def linear_schedule(count):
             frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
@@ -281,7 +281,7 @@ def train_fcp_agent(config, checkpoints):
                 # Divide batch size by TWO because we are only training on data of agent_0
                 batch_size = config["MINIBATCH_SIZE"] * config["NUM_MINIBATCHES"] // 2 
                 assert (
-                    batch_size == config["NUM_STEPS"] * config["NUM_ACTORS"] // 2
+                    batch_size == config["ROLLOUT_LENGTH"] * config["NUM_ACTORS"] // 2
                 ), "batch size must be equal to number of steps * number of actors"
                 permutation = jax.random.permutation(perm_rng, batch_size)
 
@@ -315,7 +315,7 @@ def train_fcp_agent(config, checkpoints):
                 # 1) rollout
                 runner_state = (train_state, env_state, last_obs, partner_indices, rng)
                 runner_state, traj_batch = jax.lax.scan(
-                    _env_step, runner_state, None, config["NUM_STEPS"])
+                    _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
                 (train_state, env_state, last_obs, partner_indices, rng) = runner_state
 
                 # 2) advantage
@@ -437,7 +437,7 @@ if __name__ == "__main__":
         "TOTAL_TIMESTEPS": 3e5, 
         "LR": 1.e-4,
         "NUM_ENVS": 16,
-        "NUM_STEPS": 100,
+        "ROLLOUT_LENGTH": 100,
         "UPDATE_EPOCHS": 15,
         "NUM_MINIBATCHES": 8,
         "NUM_CHECKPOINTS": 5,
@@ -460,7 +460,7 @@ if __name__ == "__main__":
     curr_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     savedir = os.path.join(config["RESULTS_PATH"], curr_datetime) 
 
-    train_partner_path = "" # "results/lbf/debug/2025-03-17_23-12-43/train_partners.pkl"
+    train_partner_path = "results/lbf/fcp_mlp/2025-04-02_15-11-48/fcp_train"  # "results/lbf/debug/2025-03-17_23-12-43/train_partners.pkl"
     if train_partner_path != "":
         train_partner_ckpts = load_checkpoints(train_partner_path)
     else:
@@ -478,5 +478,5 @@ if __name__ == "__main__":
     # visualize results!
     # metrics values shape is (num_seeds, num_updates, num_rollout_steps, num_envs, num_agents)
     metrics = fcp_out["metrics"]
-    all_stats = get_stats(metrics, ("percent_eaten", "returned_episode_returns"), config["NUM_CONTROLLED_ACTORS"])
-    plot_train_metrics(all_stats, config["NUM_STEPS"], config["NUM_CONTROLLED_ACTORS"])
+    all_stats = get_stats(metrics, ("percent_eaten", "returned_episode_returns"))
+    plot_train_metrics(all_stats, config["ROLLOUT_LENGTH"], config["NUM_CONTROLLED_ACTORS"])

@@ -5,27 +5,36 @@ import jax.numpy as jnp
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-@partial(jax.jit, static_argnames=['stats', 'num_controlled_agents'])
-def get_stats(metrics, stats: tuple, num_controlled_agents: int):
+def get_metric_names(env_name):
+    if env_name == "lbf":
+        return ("percent_eaten", "returned_episode_returns")
+    elif env_name == "overcooked-v2":
+        return ("shaped_reward", "returned_episode_returns")
+    else:
+        return ("returned_episode_returns", "returned_episode_lengths")
+
+@partial(jax.jit, static_argnames=['stats'])
+def get_stats(metrics, stats: tuple):
     '''
     Computes mean and std of metrics of interest for each seed and update, 
     using only the final steps of episodes. Note that each rollout contains multiple episodes.
 
     metrics is a pytree where each leaf has shape 
-        (num_seeds, num_updates, rollout_length, num_envs*num_agents)
+        (num_seeds, num_updates, rollout_length, num_envs)
     stats is a tuple of strings, each corresponding to a metric of interest in metrics
     '''
     num_seeds, num_updates, rollout_len, _ = metrics["returned_episode_lengths"].shape
 
-    # Create mask for final steps of episodes
-    mask = metrics["returned_episode_lengths"][..., :num_controlled_agents] > 0
+    # Get mask for final steps of episodes
+    # mask = metrics["returned_episode_lengths"] > 0
+    mask = metrics["returned_episode"]
     
     # Initialize output dictionary
     all_stats = {}
     stats = list(stats) # convert to list to correctly iterate if the tuple only has a single element
     for stat_name in stats:
         # Get the metric array
-        metric_data = metrics[stat_name][..., :num_controlled_agents]  # Shape: (num_seeds, num_updates, rollout_length, num_envs)
+        metric_data = metrics[stat_name]  # Shape: (num_seeds, num_updates, rollout_length, num_envs)
 
         # Compute means and stds for each seed and update
         # Use masked operations to only consider final episode steps

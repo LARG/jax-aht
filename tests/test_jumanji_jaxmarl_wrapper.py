@@ -60,7 +60,7 @@ for episode in range(NUM_EPISODES):
             print("avail actions are ", wrapper.get_avail_actions(state.env_state)[agent])
 
         print("info", info, "type", type(info))
-
+        env.render(state.env_state.env_state)
         num_steps += 1
 
     print(f"Episode {episode} finished. Total rewards: {total_rewards}. Num steps: {num_steps}")

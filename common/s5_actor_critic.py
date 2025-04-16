@@ -77,6 +77,8 @@ class SequenceLayer(nn.Module):
             x = x * jax.nn.sigmoid(self.out2(x1))
         elif self.activation in ["gelu"]:
             x = nn.gelu(x)
+        elif self.activation in ["relu"]:
+            x = nn.relu(x)
         else:
             raise NotImplementedError(
                    "Activation: {} not implemented".format(self.activation))
@@ -615,10 +617,16 @@ class StackedEncoderModel(nn.Module):
 
 class S5ActorCritic(nn.Module):
     action_dim: Sequence[int]
-    config: Dict
     ssm_init_fn: Any
-    fc_hidden_dim: int = 128
-    ssm_hidden_dim: int = 256
+    fc_hidden_dim: int = 64
+    ssm_hidden_dim: int = 16 # ssm_size
+    s5_d_model: int = 16
+    s5_n_layers: int = 2
+    s5_activation: str = "full_glu"
+    s5_do_norm: bool = True
+    s5_prenorm: bool = True
+    s5_do_gtrxl_norm: bool = True
+    s5_no_reset: bool = False
 
     def setup(self):
         self.encoder_0 = nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
@@ -634,18 +642,18 @@ class S5ActorCritic(nn.Module):
 
         self.s5 = StackedEncoderModel(
             ssm=self.ssm_init_fn,
-            d_model=self.config["S5_D_MODEL"],
-            n_layers=self.config["S5_N_LAYERS"],
-            activation=self.config["S5_ACTIVATION"],
-            do_norm=self.config["S5_DO_NORM"],
-            prenorm=self.config["S5_PRENORM"],
-            do_gtrxl_norm=self.config["S5_DO_GTRXL_NORM"],
+            d_model=self.s5_d_model,
+            n_layers=self.s5_n_layers,
+            activation=self.s5_activation,
+            do_norm=self.s5_do_norm,
+            prenorm=self.s5_prenorm,
+            do_gtrxl_norm=self.s5_do_gtrxl_norm,
         )
 
     def __call__(self, hidden, x):
         obs, dones, avail_actions = x
 
-        if self.config.get("NO_RESET"):
+        if self.s5_no_reset:
             dones = jnp.zeros_like(dones)
         embedding = self.encoder_0(obs)
         embedding = nn.leaky_relu(embedding)

@@ -9,6 +9,8 @@ outputs/
 outputs/*
 results/
 results/*
+results_sweep/
+results_sweep/*
 
 .vscode/
 .vscode/*

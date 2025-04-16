@@ -54,31 +54,33 @@ def rollout(ego_run_path, partner_run_path,
             # Process observations, rewards, dones, and info as needed
             for agent in env.agents:
                 total_rewards[agent] += rewards[agent]
-                print("action is ", actions[agent])
-                print("obs", obs[agent], "type", type(obs[agent]))
-                print("rewards", rewards[agent], "type", type(rewards[agent]))
-                print("dones", done[agent], "type", type(done[agent]))
-                print("info", info, "type", type(info))
-                print("avail actions are ", avail_actions[agent])
+                # print("action is ", actions[agent])
+                # print("obs", obs[agent], "type", type(obs[agent]))
+                # print("rewards", rewards[agent], "type", type(rewards[agent]))
+                # print("dones", done[agent], "type", type(done[agent]))
+                # print("info", info, "type", type(info))
+                # print("avail actions are ", avail_actions[agent])
             num_steps += 1        
+            states.append(state)
+
             if render:         
                 env.render(state)
-                states.append(state)
+
         print(f"Episode {episode} finished. Total rewards: {total_rewards}. Num steps: {num_steps}")
         
-    if render and savevideo:
+    if savevideo:
         anim = env.animate(states, interval=150)
-        anim.save(f"results/lbf/gifs/{save_name}.gif", 
-                  writer="imagemagick")
+        anim.save(f"results/lbf/videos/{save_name}.mp4", 
+                  writer="ffmpeg")
 
 if __name__ == "__main__":
-    NUM_EPISODES = 4
-    RENDER = True
-    SAVEVIDEO = False
-    
-    ego_run_path = "results/lbf/fcp_s5/2025-03-31_16-48-39/fcp_train.pkl" # FCP agent, trained for 3e6 steps
-    partner_run_path = "results/lbf/fcp_s5/2025-03-31_16-29-57/train_partners.pkl" # FCP training partner, trained for 3e6 steps
-    save_name = "fcp=2025-03-31_16-48-39_partner=2025-03-31_16-29-57"
+    NUM_EPISODES = 2
+    RENDER = False
+    SAVEVIDEO = True
+
+    ego_run_path = "results/lbf/fcp_s5/2025-04-13_18-42-46/saved_train_run" # FCP S5 agent, trained for 3e5 steps
+    partner_run_path = "results/lbf/ppo_ego_mlp/2025-04-13_23-19-15/saved_train_run" # MLP ego agent
+    save_name = "video-test"
     
     rollout(ego_run_path=ego_run_path, 
             partner_run_path=partner_run_path,
