@@ -26,7 +26,7 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
         "DISTANCE_TO_NEAREST_FOOD_REW": 1.0, # Reward for moving closer to food (H1)
         "DISTANCE_TO_FURTHEST_FOOD_REW": 1.0, # Reward for moving further from food (H2)
         "SEQUENCE_REW": 1.0, # Reward for completing a sequence of actions (H3-H8)
-        "FOLLOWING_TEAMMATE_REW": 1.0, # Reward for following another agent (H9)
+        # "FOLLOWING_TEAMMATE_REW": 1.0, # Reward for following another agent (H9)
         "CENTERED_FOOD_DISTANCE_REW": 1.0, # Reward for moving towards towards the food that is closest to the midpoint of the two agents
         "PROXIMITY_TO_TEAMMATE_REW": 1.0, # Reward for Proimity to teammate
         "COLLECT_FOOD_REW": 1.0,
