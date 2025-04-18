@@ -71,6 +71,8 @@ def main(num_episodes,
          layout_name,
          random_reset=True,
          random_obj_state=True,
+         do_reward_shaping=False,
+         reward_shaping_params={},
          max_steps=100,
          visualize=False, 
          save_video=False):
@@ -83,6 +85,8 @@ def main(num_episodes,
         random_reset=random_reset,
         random_obj_state=random_obj_state,
         max_steps=max_steps,
+        do_reward_shaping=do_reward_shaping,
+        reward_shaping_params=reward_shaping_params
     )
     # use the make_env function to initialize the env
     # env = make_env(env_name="overcooked-v1", env_kwargs={"layout": layout_name})
@@ -166,6 +170,8 @@ if __name__ == "__main__":
                 layout_name=layout_name,
                 random_reset=True,
                 random_obj_state=False,
+                do_reward_shaping=True,
+                reward_shaping_params={},
                 max_steps=100,
                 visualize=VISUALIZE, 
                 save_video=SAVE_VIDEO) 

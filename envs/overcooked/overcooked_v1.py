@@ -58,11 +58,13 @@ class OvercookedV1(Overcooked):
             random_reset: bool = False,
             random_obj_state: bool = False, 
             max_steps: int = 400,
+            do_reward_shaping: bool = False,
             reward_shaping_params = FrozenDict({}),
     ):
         super().__init__(layout=layout, 
                          random_reset=random_reset, 
                          max_steps=max_steps)
+        self.do_reward_shaping = do_reward_shaping
         def merge_params(base_dict, override_dict):
             merged = {k: override_dict.get(k, v) for k, v in base_dict.items()}
             return FrozenDict(merged)
