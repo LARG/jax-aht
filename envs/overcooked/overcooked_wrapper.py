@@ -51,6 +51,7 @@ class OvercookedWrapper(OvercookedV1):
 
         # Reshape shaped_reward into a jnp array
         shaped_rewards = jnp.array([info['shaped_reward'][agent] for agent in self.agents])
-        info = {'shaped_reward': shaped_rewards}
+        original_reward = jnp.array([rewards[agent] for agent in self.agents])
+        info = {'shaped_reward': shaped_rewards, 'original_reward': original_reward}
         
         return obs, state, rewards_shaped, dones, info
