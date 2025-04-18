@@ -2,7 +2,7 @@ defaults:
   - ippo_defaults
   - _self_         # Ensures that values in this file override imported ones if needed
 
-ENV_NAME: overcooked-v2
+ENV_NAME: overcooked-v1
 NUM_STEPS: 400 # rollout length must be greater than episode length
 ENV_KWARGS: {
   "layout": "cramped_room",
