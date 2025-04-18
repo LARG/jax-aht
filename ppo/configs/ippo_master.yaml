@@ -2,13 +2,9 @@ defaults:
   - ippo_defaults
   - _self_         # Ensures that values in this file override imported ones if needed
 
-ENV_NAME: overcooked-v2
-NUM_STEPS: 400 # rollout length must be greater than episode length
-ENV_KWARGS: {
-  "layout": "cramped_room",
-  "random_reset": False,
-  "max_steps": 400
-}
+ENV_NAME: lbf-reward-shaping
+NUM_STEPS: 128 # rollout length must be greater than episode length
+ENV_KWARGS: {}
 
 TOTAL_TIMESTEPS: 5e6
 SEED: 12345

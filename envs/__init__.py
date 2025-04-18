@@ -6,8 +6,10 @@ from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGen
 
 from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
+from envs.reward_shaping_jumanji_jaxmarl_wrapper import RewardShapingJumanjiToJaxMARL
 from envs.overcooked.overcooked_wrapper import OvercookedWrapper
 from envs.overcooked.augmented_layouts import augmented_layouts
+
 
 def process_default_args(env_kwargs: dict, default_args: dict):
     '''Helper function to process generator and viewer args for Jumanji environments. 
@@ -23,7 +25,7 @@ def process_default_args(env_kwargs: dict, default_args: dict):
     return default_args_copy, env_kwargs_copy
 
 def make_env(env_name: str, env_kwargs: dict = {}):
-    if env_name == "lbf":
+    if env_name in ['lbf', 'lbf-reward-shaping']:
         default_generator_args = {"grid_size": 7, "fov": 7, 
                           "num_agents": 2, "num_food": 3, 
                           "max_agent_level": 2, "force_coop": True}
@@ -36,7 +38,11 @@ def make_env(env_name: str, env_kwargs: dict = {}):
                             **env_kwargs_copy,
                             viewer=AdHocLBFViewer(grid_size=generator_args["grid_size"],
                                                   **viewer_args))
-        env = JumanjiToJaxMARL(env)
+
+        if env_name == 'lbf-reward-shaping':
+            env = RewardShapingJumanjiToJaxMARL(env)
+        else:
+            env = JumanjiToJaxMARL(env)
         
     elif env_name == 'overcooked-v1':
         default_env_kwargs = {"random_reset": True, "random_obj_state": False, "max_steps": 400}
