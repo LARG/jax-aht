@@ -46,10 +46,11 @@ class OvercookedWrapper(OvercookedV1):
         """Override step_env to reshape the info dictionary."""
         obs, state, rewards, dones, info = super().step_env(key, state, actions)
         
+        rewards_shaped = {"agent_0": rewards["agent_0"] + self.do_reward_shaping * info['shaped_reward']["agent_0"], 
+                         "agent_1": rewards["agent_1"] + self.do_reward_shaping * info['shaped_reward']["agent_1"]}
+
         # Reshape shaped_reward into a jnp array
         shaped_rewards = jnp.array([info['shaped_reward'][agent] for agent in self.agents])
         info = {'shaped_reward': shaped_rewards}
-
-        rewards_shaped = {agent : (rewards[agent] + (self.do_reward_shaping) * info['shaped_reward'][agent]) for agent in self.agents}
         
         return obs, state, rewards_shaped, dones, info
