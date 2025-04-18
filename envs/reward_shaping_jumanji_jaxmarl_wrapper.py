@@ -24,50 +24,41 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
 
     REWARD_SHAPING_PARAMS = {
         "DISTANCE_TO_NEAREST_FOOD_REW": 1.0, # Reward for moving closer to food (H1)
-        "DISTANCE_TO_FURTHEST_FOOD_REW": 1.0, # Reward for moving further from food (H2)
+        "DISTANCE_TO_FARTHEST_FOOD_REW": 1.0, # Reward for moving further from food (H2)
         "SEQUENCE_REW": 1.0, # Reward for completing a sequence of actions (H3-H8)
-        # "FOLLOWING_TEAMMATE_REW": 1.0, # Reward for following another agent (H9)
+        "FOLLOWING_TEAMMATE_REW": 1.0, # Reward for following another agent
         "CENTERED_FOOD_DISTANCE_REW": 1.0, # Reward for moving towards towards the food that is closest to the midpoint of the two agents
         "PROXIMITY_TO_TEAMMATE_REW": 1.0, # Reward for Proimity to teammate
         "COLLECT_FOOD_REW": 1.0,
     }    
 
-    def __init__(self, env, agent_heuristics=None, reward_shaping_params=None, reward_shaping=False):
+    def __init__(self, env, reward_shaping_params=None, agent_heuristics=None):
         super().__init__(env)
 
-        self.reward_shaping = reward_shaping
+        self.reward_shaping_params = (
+            {
+                agent_id: dict(self.REWARD_SHAPING_PARAMS)
+                for agent_id in self.agents
+            }
+            if reward_shaping_params is None
+            else reward_shaping_params
+        )
 
-        if self.reward_shaping:
-            self.reward_shaping_params = (
-                {
-                    agent_id: dict(self.REWARD_SHAPING_PARAMS)
-                    for agent_id in self.agents
-                }
-                if reward_shaping_params is None
-                else reward_shaping_params
-            )
-
-            self.agent_heuristics = (
-                agent_heuristics if agent_heuristics is not None
-                else {agent_id: None for agent_id in self.agents}
-            )
-        else:
-            self.reward_shaping_params = {}
-            self.agent_heuristics = {}
+        self.agent_heuristics = (
+            agent_heuristics if agent_heuristics is not None
+            else {agent_id: None for agent_id in self.agents}
+        )
 
     @partial(jax.jit, static_argnums=(0,))
     def step(self, key, state: WrappedEnvState, actions, params=None):
-        obs, next_state, dense_reward, done, info = super().step(key, state, actions, params)
+        obs, next_state, dense_reward_dict, dones, info = super().step(key, state, actions, params)
 
-        if self.reward_shaping:
-            shaped_rewards = self._extract_shaped_rewards(obs, next_state.env_state)
-            total_reward = {
-                agent: dense_reward[agent] + shaped_rewards[agent]
-                for agent in self.agents
-            }
-            return obs, next_state, total_reward, done, info
-
-        return obs, next_state, dense_reward, done, info
+        shaped_rewards_dict = self._extract_shaped_rewards(obs, state, next_state, actions)
+        total_reward_dict = {
+            agent: dense_reward_dict[agent] + shaped_rewards_dict[agent]
+            for agent in self.agents
+        }
+        return obs, next_state, total_reward_dict, dones, info
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key, params=None):
@@ -127,70 +118,86 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
     #         else:
     #             shaped_reward[agent_id] = 0.0
 
-    #         # Collect Food Reward
     #         collect_food_rew = self._calculate_collect_food_reward(obs[agent_id], state.env_state, agent_id, i)
     #         shaped_reward[agent_id] += collect_food_rew
 
     #     return shaped_reward
 
-    def _extract_shaped_rewards(self, obs, env_state):
+    def _extract_shaped_rewards(self, obs, state: WrappedEnvState, new_state: WrappedEnvState, actions):
         shaped_rewards = {}
 
         for agent_index, agent_id in enumerate(self.agents):
             agent_reward = 0.0
 
             agent_reward += self._calculate_distance_to_nearest_food_reward(
-                obs[agent_id], env_state, agent_id, agent_index
+                state, new_state, agent_id, agent_index
             )
 
-            agent_reward += self._calculate_distance_to_furthest_food_reward(
-                obs[agent_id], env_state, agent_id, agent_index
+            agent_reward += self._calculate_distance_to_farthest_food_reward(
+                state, new_state, agent_id, agent_index
             )
 
             agent_reward += self._calculate_following_teammate_reward(
-                obs[agent_id], env_state, agent_id, agent_index
+                state, new_state, agent_id, agent_index
             )
 
             agent_reward += self._calculate_centered_food_reward(
-                obs[agent_id], env_state, agent_id, agent_index
+                state, new_state, agent_id, agent_index
             )
 
             agent_reward += self._calculate_proximity_to_teammate_reward(
-                obs[agent_id], env_state, agent_id, agent_index
+                state, new_state, agent_id, agent_index
             )
 
-            agent_reward += self._calculate_collect_food_reward(env_state, agent_id, agent_index)
+            agent_reward += self._calculate_collect_food_reward(state, agent_id, agent_index, actions)
 
             shaped_rewards[agent_id] = agent_reward
 
         return shaped_rewards
 
-    def _calculate_distance_to_nearest_food_reward(self, agent_obs, env_state, agent_id: str, i: int):
-        agent_pos = env_state.agents.position[i]
-        food_positions = env_state.food_items.position
-        food_eaten = env_state.food_items.eaten
+    def _calculate_distance_to_nearest_food_reward(self, prev_state, new_state, agent_id: str, i: int):
+        old_pos = prev_state.env_state.agents.position[i]
+        new_pos = new_state.env_state.agents.position[i]
 
-        uneaten_food_positions = jnp.where(~food_eaten[:, None], food_positions, jnp.array([jnp.inf, jnp.inf]))
-        distances = jnp.sum(jnp.abs(uneaten_food_positions - agent_pos), axis=1)
-        min_dist = jnp.min(distances)
+        food_pos = prev_state.env_state.food_items.position
+        food_eaten = prev_state.env_state.food_items.eaten
+        uneaten_mask = ~food_eaten
 
-        reward_weight = self.reward_shaping_params[agent_id]["DISTANCE_TO_NEAREST_FOOD_REW"]
-        reward = reward_weight / (min_dist + 1.0)
-        return reward
+        masked_food_pos = jnp.where(uneaten_mask[:, None], food_pos, jnp.array([jnp.inf, jnp.inf]))
 
-    def _calculate_distance_to_furthest_food_reward(self, agent_obs, env_state, agent_id: str, i: int):
-        agent_pos = env_state.agents.position[i]
-        food_positions = env_state.food_items.position
-        food_eaten = env_state.food_items.eaten
+        old_dists = jnp.sum(jnp.abs(masked_food_pos - old_pos), axis=1)
+        new_dists = jnp.sum(jnp.abs(masked_food_pos - new_pos), axis=1)
 
-        uneaten_food_positions = jnp.where(~food_eaten[:, None], food_positions, jnp.array([-jnp.inf, -jnp.inf]))
-        distances = jnp.sum(jnp.abs(uneaten_food_positions - agent_pos), axis=1)
-        max_dist = jnp.max(distances)
+        target_idx = jnp.argmin(old_dists)
+        old_dist = old_dists[target_idx]
+        new_dist = new_dists[target_idx]
 
-        reward_weight = self.reward_shaping_params[agent_id]["DISTANCE_TO_FURTHEST_FOOD_REW"]
-        reward = reward_weight / (max_dist + 1.0)
+        reward_val = self.reward_shaping_params[agent_id]["DISTANCE_TO_NEAREST_FOOD_REW"]
+        reward = reward_val * jnp.maximum((old_dist - new_dist), 0.0) / (old_dist + 1.0)
 
-        return reward
+        return jnp.where(jnp.isfinite(old_dist), reward, 0.0)
+
+    def _calculate_distance_to_farthest_food_reward(self, prev_state, new_state, agent_id: str, i: int):
+        old_pos = prev_state.env_state.agents.position[i]
+        new_pos = new_state.env_state.agents.position[i]
+
+        food_pos = prev_state.env_state.food_items.position
+        food_eaten = prev_state.env_state.food_items.eaten
+        uneaten_mask = ~food_eaten
+
+        masked_food_pos = jnp.where(uneaten_mask[:, None], food_pos, jnp.array([-jnp.inf, -jnp.inf]))
+
+        old_dists = jnp.sum(jnp.abs(masked_food_pos - old_pos), axis=1)
+        new_dists = jnp.sum(jnp.abs(masked_food_pos - new_pos), axis=1)
+
+        target_idx = jnp.argmax(old_dists)
+        old_dist = old_dists[target_idx]
+        new_dist = new_dists[target_idx]
+
+        reward_val = self.reward_shaping_params[agent_id]["DISTANCE_TO_FARTHEST_FOOD_REW"]
+        reward = reward_val * jnp.maximum((old_dist - new_dist), 0.0) / (old_dist + 1.0)
+
+        return jnp.where(jnp.isfinite(old_dist), reward, 0.0)
     
     # def _calculate_sequence_reward(self, agent_id: str, env_state, sequence: List[int], sequence_progress: Dict[str, int]):
     #     food_eaten = env_state.food_items.eaten
@@ -209,56 +216,71 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
     #     sequence_progress[agent_id] = new_progress
 
     #     return reward, sequence_progress
-
     
-    def _calculate_following_teammate_reward(self, agent_obs, env_state, agent_id: str, i: int):
-        agent_pos = env_state.agents.position[i]
-        teammate_pos = env_state.agents.position[1 - i]
-        dist = jnp.sum(jnp.abs(agent_pos - teammate_pos))
-        reward_weight = self.reward_shaping_params[agent_id]["FOLLOWING_TEAMMATE_REW"]
-        reward = reward_weight / (dist + 1.0)
+    def _calculate_following_teammate_reward(self, prev_state, new_state, agent_id: str, i: int):
+        old_pos = prev_state.env_state.agents.position[i]
+        new_pos = new_state.env_state.agents.position[i]
+
+        old_teammate_pos = prev_state.env_state.agents.position[1 - i]
+        new_teammate_pos = new_state.env_state.agents.position[1 - i]
+
+        old_dist = jnp.sum(jnp.abs(old_pos - old_teammate_pos))
+        new_dist = jnp.sum(jnp.abs(new_pos - new_teammate_pos))
+
+        reward_val = self.reward_shaping_params[agent_id]["FOLLOWING_TEAMMATE_REW"]
+        reward = reward_val * (jnp.maximum(old_dist - new_dist, 0.0) / (old_dist + 1.0) + 1.0 / (new_dist + 1.0))
+        return jnp.where(jnp.isfinite(old_dist), reward, 0.0)
+    
+    def _calculate_centered_food_reward(self, prev_state, new_state, agent_id: str, i: int):
+        old_pos = prev_state.env_state.agents.position[i]
+        new_pos = new_state.env_state.agents.position[i]
+
+        teammate_pos = prev_state.env_state.agents.position[1 - i]
+        midpoint = (old_pos + teammate_pos) / 2.0
+
+        food_pos = prev_state.env_state.food_items.position
+        food_eaten = prev_state.env_state.food_items.eaten
+        uneaten_mask = ~food_eaten
+        masked_food_pos = jnp.where(uneaten_mask[:, None], food_pos, jnp.array([jnp.inf, jnp.inf]))
+
+        midpoint_dists = jnp.sum(jnp.abs(masked_food_pos - midpoint), axis=1)
+        target_idx = jnp.argmin(midpoint_dists)
+        target_food_pos = masked_food_pos[target_idx]
+
+        old_dist = jnp.sum(jnp.abs(old_pos - target_food_pos))
+        new_dist = jnp.sum(jnp.abs(new_pos - target_food_pos))
+
+        reward_val = self.reward_shaping_params[agent_id]["CENTERED_FOOD_DISTANCE_REW"]
+        reward = reward_val * jnp.maximum((old_dist - new_dist), 0.0) / (old_dist + 1.0)
+        return jnp.where(jnp.isfinite(old_dist), reward, 0.0)
+
+    def _calculate_proximity_to_teammate_reward(self, prev_state, new_state, agent_id: str, i: int):
+        new_pos = new_state.env_state.agents.position[i]
+        new_teammate_pos = new_state.env_state.agents.position[1 - i]
+        new_dist = jnp.sum(jnp.abs(new_pos - new_teammate_pos))
+        reward_val = self.reward_shaping_params[agent_id]["PROXIMITY_TO_TEAMMATE_REW"]
+        reward = reward_val * (1.0 / (new_dist + 1.0))
         return reward
 
-    def _calculate_centered_food_reward(self, agent_obs, env_state, agent_id: str, i: int):
-        agent_pos = env_state.agents.position[i]
-        teammate_pos = env_state.agents.position[1 - i]
-        midpoint = (agent_pos + teammate_pos) / 2.0
+    def _calculate_collect_food_reward(self, state, agent_id: str, i: int, actions: Dict[str, int]) -> float:
+        agent_pos = state.env_state.agents.position[i]
+        teammate_idx = 1 - i
+        teammate_id = f'agent_{teammate_idx}'
+        teammate_pos = state.env_state.agents.position[teammate_idx]
 
-        food_positions = env_state.food_items.position
-        food_eaten = env_state.food_items.eaten
+        food_pos = state.env_state.food_items.position
+        food_eaten = state.env_state.food_items.eaten
+        uneaten_mask = ~food_eaten
+        masked_food_pos = jnp.where(uneaten_mask[:, None], food_pos, jnp.array([jnp.inf, jnp.inf]))
 
-        uneaten_food_positions = jnp.where(~food_eaten[:, None], food_positions, jnp.array([jnp.inf, jnp.inf]))
-        dists_to_midpoint = jnp.sum(jnp.abs(uneaten_food_positions - midpoint), axis=1)
-        min_idx = jnp.argmin(dists_to_midpoint)
-        target_food_pos = uneaten_food_positions[min_idx]
-        dist_to_target = jnp.sum(jnp.abs(agent_pos - target_food_pos))
+        agent_dists = jnp.sum(jnp.abs(masked_food_pos - agent_pos), axis=1)
+        teammate_dists = jnp.sum(jnp.abs(masked_food_pos - teammate_pos), axis=1)
+        both_adjacent = jnp.logical_and(agent_dists == 1, teammate_dists == 1)
+        agent_loading = actions[agent_id] == LOAD
+        teammate_loading = actions[teammate_id] == LOAD
+        both_loading = jnp.logical_and(agent_loading, teammate_loading)
+        collecting = jnp.logical_and(both_adjacent, both_loading)
+        successful = jnp.any(collecting)
 
-        reward_weight = self.reward_shaping_params[agent_id]["CENTERED_FOOD_DISTANCE_REW"]
-        reward = reward_weight / (dist_to_target + 1.0)
-        return reward
-
-    def _calculate_proximity_to_teammate_reward(self, agent_obs, env_state, agent_id: str, i: int):
-        agent_pos = env_state.agents.position[i]
-        teammate_pos = env_state.agents.position[1 - i]
-        dist = jnp.sum(jnp.abs(agent_pos - teammate_pos))
-        reward_weight = self.reward_shaping_params[agent_id]["PROXIMITY_TO_TEAMMATE_REW"]
-        reward = reward_weight / (dist + 1)
-        return reward
-
-    def _calculate_collect_food_reward(self, env_state, agent_id: str, i: int) -> float:
-        agent_pos = env_state.agents.position[i]
-        food_pos = env_state.food_items.position
-        food_eaten = env_state.food_items.eaten
-
-        uneaten_food = ~food_eaten
-        masked_food_pos = jnp.where(uneaten_food[:, None], food_pos, jnp.array([jnp.inf, jnp.inf]))
-
-        dists = jnp.sum(jnp.abs(masked_food_pos - agent_pos), axis=1)
-
-        adjacent = jnp.any(dists == 1)
-
-        is_loading = env_state.agents.loading[i]
-        collected = jnp.logical_and(is_loading, adjacent)
-
-        reward = self.reward_shaping_params[agent_id]["COLLECT_FOOD_REW"]
-        return jax.lax.select(collected, reward, 0.0)
+        reward_val = self.reward_shaping_params[agent_id]["COLLECT_FOOD_REW"]
+        return jnp.where(successful, reward_val, 0.0)
