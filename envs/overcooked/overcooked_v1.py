@@ -58,7 +58,7 @@ class OvercookedV1(Overcooked):
             random_reset: bool = False,
             random_obj_state: bool = False, 
             max_steps: int = 400,
-            do_reward_shaping: bool = True,
+            do_reward_shaping: bool = False,
             reward_shaping_params = FrozenDict({}),
     ):
         super().__init__(layout=layout, 
