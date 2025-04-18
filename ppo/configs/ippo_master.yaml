@@ -2,7 +2,7 @@ defaults:
   - ippo_defaults
   - _self_         # Ensures that values in this file override imported ones if needed
 
-ENV_NAME: lbf
+ENV_NAME: lbf-reward-shaping
 NUM_STEPS: 128 # rollout length must be greater than episode length
 ENV_KWARGS: {}
 
@@ -13,7 +13,7 @@ SEED: 12345
 logger: 
   project: aht-benchmark
   entity: aht-project
-  mode: online # options: online, offline, disabled
+  mode: offline # options: online, offline, disabled
   verbose: true
 
 local_logger:
