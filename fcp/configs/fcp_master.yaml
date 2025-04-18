@@ -7,31 +7,44 @@ defaults:
 # ENV_KWARGS: {"layout": "cramped_room"}
 
 ENV_NAME: lbf
-EPISODE_LENGTH: 128
+ROLLOUT_LENGTH: 128
 ENV_KWARGS: {}
+PARTNER_POP_SIZE: 3 # true pop size is PARTNER_POP_SIZE * NUM_CHECKPOINTS
+NUM_EGO_TRAIN_SEEDS: 3
+NUM_CHECKPOINTS: 5
+EGO_ACTOR_TYPE: s5
+NUM_EVAL_EPISODES: 20
 
 PARTNER_TRAIN_ARGS: 
   TOTAL_TIMESTEPS: 1e6 # specify arg to override default value
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
-  NUM_STEPS: ${EPISODE_LENGTH}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+  NUM_SEEDS: ${PARTNER_POP_SIZE}
   # set to null to train from scratch
-  TRAIN_PATH: null
+  TRAIN_PATH: results/lbf/ippo/2025-04-10_20-21-47/ippo_train_run # null
   TRAIN_SEED: 1285842
   # set to null to train from scratch
-  EVAL_PATH: null
+  EVAL_PATH: results/lbf/ippo/2025-04-10_20-21-47/ippo_train_run # null
   EVAL_SEED: 112358
 
 FCP_TRAIN_ARGS: 
+  TOTAL_TIMESTEPS: 1e5 # specify arg to override default value
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
-  NUM_STEPS: ${EPISODE_LENGTH}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+  NUM_EGO_TRAIN_SEEDS: ${NUM_EGO_TRAIN_SEEDS}
+  PARTNER_POP_SIZE: ${PARTNER_POP_SIZE}
   SEED: 38410
+  EGO_ACTOR_TYPE: ${EGO_ACTOR_TYPE}
+  NUM_EVAL_EPISODES: ${NUM_EVAL_EPISODES}
+  logger: ${logger} # TODO: fix this hack
+  local_logger: ${local_logger}
 
 FCP_EVAL_ARGS: 
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
-  NUM_STEPS: ${EPISODE_LENGTH}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
   SEED: 12345
 
 # WandB Params
@@ -40,11 +53,18 @@ logger:
   entity: aht-project
   mode: disabled # options: online, offline, disabled
   verbose: true
+  verbose: false
+  log_train_out: false # whether to log the out dictionary
 
+# Local logger
+local_logger:
+  save_figures: true # currently unused
+  save_train_out: true
+  
 # Hydra params
 hydra:
   job:
-    name: fcp_s5
+    name: fcp_${EGO_ACTOR_TYPE}
     chdir: true
   run:
     dir: results/${ENV_NAME}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}

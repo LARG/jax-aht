@@ -6,10 +6,10 @@ import jax.numpy as jnp
 from jaxmarl.environments.overcooked.overcooked import State as OvercookedState
 from jaxmarl.environments import spaces
 
-from envs.overcooked.overcooked_v2 import OvercookedV2  
+from envs.overcooked.overcooked_v1 import OvercookedV1
 
 
-class OvercookedWrapper(OvercookedV2):
+class OvercookedWrapper(OvercookedV1):
     '''Wrapper for the Overcooked environment to ensure that it follows a common interface 
     with other environments provided in this library.'''
     def __init__(self, *args, **kwargs):
@@ -46,8 +46,11 @@ class OvercookedWrapper(OvercookedV2):
         """Override step_env to reshape the info dictionary."""
         obs, state, rewards, dones, info = super().step_env(key, state, actions)
         
+        rewards_shaped = {"agent_0": rewards["agent_0"] + self.do_reward_shaping * info['shaped_reward']["agent_0"], 
+                         "agent_1": rewards["agent_1"] + self.do_reward_shaping * info['shaped_reward']["agent_1"]}
+
         # Reshape shaped_reward into a jnp array
         shaped_rewards = jnp.array([info['shaped_reward'][agent] for agent in self.agents])
         info = {'shaped_reward': shaped_rewards}
         
-        return obs, state, rewards, dones, info
+        return obs, state, rewards_shaped, dones, info

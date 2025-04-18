@@ -24,7 +24,7 @@ class Logger:
     def log(self, data, step=None, commit=False):
         wandb.log(data, step=step, commit=commit)
 
-    def log_item(self, tag, val, step=None, commit=False, **kwargs):
+    def log_item(self, tag, val, step=None, commit=True, **kwargs):
         self.log({tag: val, **kwargs}, step=step, commit=commit)
         if self.verbose:
             print(f"{tag}: {val}")
@@ -32,7 +32,7 @@ class Logger:
     def commit(self):
         self.log({}, commit=True)
 
-    def log_xp_matrix(self, tag, mat, step=None, columns=None, rows=None, commit=False, **kwargs):
+    def log_xp_matrix(self, tag, mat, step=None, columns=None, rows=None, commit=True, **kwargs):
         if rows is None:
             rows = [str(i) for i in range(mat.shape[0])]
         if columns is None:
@@ -48,7 +48,9 @@ class Logger:
         wandb.define_metric("train_step")
         wandb.define_metric("checkpoint")
         wandb.define_metric("Train/*", step_metric="train_step")
-        wandb.define_metric("Returns/*", step_metric="checkpoint")
+        wandb.define_metric("Losses/*", step_metric="train_step")
+        wandb.define_metric("Eval/*", step_metric="train_step")
+        wandb.define_metric("Returns/*", step_metric="train_step")
     
     def log_artifact(self, name, path, type_name):
         artifact = wandb.Artifact(name, type=type_name)
@@ -58,6 +60,9 @@ class Logger:
         else:
             artifact.add_file(path)
         self.run.log_artifact(artifact)
+    
+    def log_video(self, tag, path, commit=True):
+        wandb.log({tag: wandb.Video(path)}, commit=commit)
     
     def close(self):
         wandb.finish()

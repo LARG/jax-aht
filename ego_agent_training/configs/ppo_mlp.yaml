@@ -1,0 +1,49 @@
+defaults:
+  - hydra: hydra_simple
+  - _self_         # Ensures that values in this file override imported ones if needed
+
+ENV_NAME: lbf
+ROLLOUT_LENGTH: 128 # rollout length must be greater than episode length
+ENV_KWARGS: {}
+
+algorithm:
+  ALG: ppo_mlp
+  TOTAL_TIMESTEPS: 3e5
+  TRAIN_SEED: 12345
+  NUM_EGO_TRAIN_SEEDS: 1
+  NUM_EVAL_EPISODES: 20
+  NUM_CHECKPOINTS: 5
+  NUM_ENVS: 16
+  ENV_NAME: ${ENV_NAME}
+  ENV_KWARGS: ${ENV_KWARGS}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+  LR: 1.e-4 
+  UPDATE_EPOCHS: 15
+  NUM_MINIBATCHES: 4
+  GAMMA: 0.99
+  GAE_LAMBDA: 0.95
+  CLIP_EPS: 0.05
+  ENT_COEF: 0.01
+  VF_COEF: 1.0
+  MAX_GRAD_NORM: 1.0
+  ANNEAL_LR: true
+
+# WandB Params
+logger: 
+  project: open-ended-aht
+  entity: aht-project
+  mode: offline # options: online, offline, disabled
+  verbose: true
+  log_train_out: false # whether to log the out dictionary
+
+# Local logger
+local_logger:
+  save_figures: true # currently unused
+  save_train_out: true
+
+hydra:
+  job:
+    name: ppo_ego_mlp
+    chdir: true
+  run:
+    dir: results/${ENV_NAME}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}

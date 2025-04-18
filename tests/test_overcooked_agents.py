@@ -2,9 +2,10 @@ import numpy as np
 from typing import Dict, Tuple
 
 import jax
+from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
 from envs.overcooked.overcooked_wrapper import OvercookedWrapper
-from envs.overcooked.overcooked_visualizer_v2 import OvercookedVisualizerV2
 from envs.overcooked.augmented_layouts import augmented_layouts
+from envs import make_env
 from agents.overcooked import OnionAgent, PlateAgent, IndependentAgent, StaticAgent
 import time
 
@@ -70,18 +71,25 @@ def main(num_episodes,
          layout_name,
          random_reset=True,
          random_obj_state=True,
+         do_reward_shaping=False,
+         reward_shaping_params={},
          max_steps=100,
          visualize=False, 
-         save_gif=False):
+         save_video=False):
     # Initialize environment
     print("Initializing environment...")
     layout = augmented_layouts[layout_name]
+    # directly initialize the env
     env = OvercookedWrapper(
         layout=layout,
         random_reset=random_reset,
         random_obj_state=random_obj_state,
         max_steps=max_steps,
+        do_reward_shaping=do_reward_shaping,
+        reward_shaping_params=reward_shaping_params
     )
+    # use the make_env function to initialize the env
+    # env = make_env(env_name="overcooked-v1", env_kwargs={"layout": layout_name})
     print("Environment initialized")
     
     # Initialize agents
@@ -127,22 +135,24 @@ def main(num_episodes,
     # Visualize state sequences
     if visualize:
         print("Visualizing state sequences...")
-        viz = OvercookedVisualizerV2()
+        viz = AdHocOvercookedVisualizer()
         for state in state_seq_all:
-            viz.render(env.agent_view_size, state, highlight=False)
+            # viz.render(env.agent_view_size, state, highlight=True)
+            viz.render(env.agent_view_size, state, highlight_agent_idx=0)
             time.sleep(.1)
-    if save_gif:
+    if save_video:
         print(f"\nSaving mp4 with {len(state_seq_all)} frames...")
-        viz = OvercookedVisualizerV2()
+        viz = AdHocOvercookedVisualizer()
         viz.animate_mp4(state_seq_all, env.agent_view_size, 
-            filename=f'results/overcooked/mp4/{layout_name}_{agent0.get_name()}_vs_{agent1.get_name()}.mp4', 
+            highlight_agent_idx=0,
+            filename=f'results/overcooked/videos/{layout_name}_{agent0.get_name()}_vs_{agent1.get_name()}.mp4', 
             pixels_per_tile=32, fps=25)
         print("MP4 saved successfully!")
 
 if __name__ == "__main__":
     DEBUG = False
     VISUALIZE = False
-    SAVE_GIF = not VISUALIZE    
+    SAVE_VIDEO = not VISUALIZE    
     NUM_EPISODES = 1
 
     layout_names = [
@@ -160,6 +170,8 @@ if __name__ == "__main__":
                 layout_name=layout_name,
                 random_reset=True,
                 random_obj_state=False,
-                max_steps=200,
+                do_reward_shaping=True,
+                reward_shaping_params={},
+                max_steps=100,
                 visualize=VISUALIZE, 
-                save_gif=SAVE_GIF) 
+                save_video=SAVE_VIDEO) 

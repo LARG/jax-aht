@@ -34,6 +34,12 @@ def save_train_run(out, savedir, savename):
 def load_checkpoints(path):
     '''Load checkpoints from orbax checkpoint. 
     Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
+    restored = load_train_run(path)
+    return restored['checkpoints']
+
+def load_train_run(path):
+    '''Load checkpoints from orbax checkpoint. 
+    Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
     # determine whether path is relative or absolute
     if not os.path.isabs(path):
         path = os.path.join(REPO_PATH, path)
@@ -45,7 +51,7 @@ def load_checkpoints(path):
         lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,
         restored
     )
-    return restored['checkpoints']
+    return restored
 
 def save_train_run_as_pickle(out, savedir, savename):
     if not os.path.exists(savedir):
@@ -57,7 +63,11 @@ def save_train_run_as_pickle(out, savedir, savename):
     return savepath
 
 def load_checkpoints_from_pickle(path):
+    out = load_train_run_from_pickle(path)
+    checkpoints = out["checkpoints"]
+    return checkpoints
+
+def load_train_run_from_pickle(path):
     with open(path, "rb") as f:
         out = pickle.load(f)
-        checkpoints = out["checkpoints"]
-    return checkpoints
+    return out

@@ -6,7 +6,7 @@ ENV_NAME: lbf-reward-shaping
 NUM_STEPS: 128 # rollout length must be greater than episode length
 ENV_KWARGS: {}
 
-TOTAL_TIMESTEPS: 1e6
+TOTAL_TIMESTEPS: 5e6
 SEED: 12345
 
 # WandB Params
@@ -15,10 +15,12 @@ logger:
   entity: aht-project
   mode: offline # options: online, offline, disabled
   verbose: true
+  log_train_out: # whether to log the out dictionary
+
 
 local_logger:
   save_figures: true
-  save_results: true
+  save_train_out: true
 
 hydra:
   job:

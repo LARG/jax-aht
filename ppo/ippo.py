@@ -1,6 +1,6 @@
 '''
 Based on the IPPO implementation from jaxmarl. Trains a parameter-shared IPPO agent on a
-fully cooperativemulti-agent environment.
+fully cooperative multi-agent environment.
 '''
 from typing import NamedTuple
 
@@ -11,7 +11,7 @@ from flax.training.train_state import TrainState
 from envs.log_wrapper import LogWrapper
 
 from common.mlp_actor_critic import ActorCritic
-from common.plot_utils import get_stats, plot_train_metrics
+from common.plot_utils import get_stats, plot_train_metrics, get_metric_names
 from envs import make_env
 
 
@@ -40,15 +40,15 @@ def unbatchify(x: jnp.ndarray, agent_list, num_envs, num_agents):
 
 def make_train(config):
     env = make_env(config["ENV_NAME"], config["ENV_KWARGS"])
+    env = LogWrapper(env)
+
     config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
     config["NUM_UPDATES"] = (
-        config["TOTAL_TIMESTEPS"] // config["NUM_STEPS"] // config["NUM_ENVS"]
+        config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
     )
     config["MINIBATCH_SIZE"] = (
-        config["NUM_ACTORS"] * config["NUM_STEPS"] // config["NUM_MINIBATCHES"]
+        config["NUM_ACTORS"] * config["ROLLOUT_LENGTH"] // config["NUM_MINIBATCHES"]
     )
-
-    env = LogWrapper(env)
 
     def linear_schedule(count):
         frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
@@ -112,6 +112,7 @@ def make_train(config):
                 obsv, env_state, reward, done, info = jax.vmap(env.step, in_axes=(0,0,0))(
                     rng_step, env_state, env_act
                 )
+                
                 # note that num_actors = num_envs * num_agents
                 info = jax.tree.map(lambda x: x.reshape((config["NUM_ACTORS"])), info)
 
@@ -129,7 +130,7 @@ def make_train(config):
                 return runner_state, transition
             
             runner_state, traj_batch = jax.lax.scan(
-                _env_step, runner_state, None, config["NUM_STEPS"]
+                _env_step, runner_state, None, config["ROLLOUT_LENGTH"]
             )
 
             # CALCULATE ADVANTAGE
@@ -219,7 +220,7 @@ def make_train(config):
                 rng, _rng = jax.random.split(rng)
                 batch_size = config["MINIBATCH_SIZE"] * config["NUM_MINIBATCHES"]
                 assert (
-                    batch_size == config["NUM_STEPS"] * config["NUM_ACTORS"]
+                    batch_size == config["ROLLOUT_LENGTH"] * config["NUM_ACTORS"]
                 ), "batch size must be equal to number of steps * number of actors"
                 permutation = jax.random.permutation(_rng, batch_size)
                 batch = (traj_batch, advantages, targets)
@@ -333,7 +334,7 @@ if __name__ == "__main__":
         "TOTAL_TIMESTEPS": 1e5,
         "LR": 1.e-4,
         "NUM_ENVS": 16,
-        "NUM_STEPS": 400, 
+        "ROLLOUT_LENGTH": 400, 
         "UPDATE_EPOCHS": 15,
         "NUM_MINIBATCHES": 16, # 4,
         "NUM_CHECKPOINTS": 5,
@@ -343,7 +344,7 @@ if __name__ == "__main__":
         "ENT_COEF": 0.01,
         "VF_COEF": 1.0,
         "MAX_GRAD_NORM": 1.0,
-        "ENV_NAME": "overcooked-v2", # "lbf",
+        "ENV_NAME": "overcooked-v1", # "lbf",
         "ENV_KWARGS": {
             "layout": "cramped_room",
             "random_reset": False,
@@ -363,10 +364,6 @@ if __name__ == "__main__":
     # out['checkpoints']['params']['Dense_0']['kernel'] has shape (num_seeds, num_ckpts, *param_shape)
     # metrics values shape is (num_seeds, num_updates, num_rollout_steps, num_envs*num_agents)
     metrics = out['metrics']
-    if config["ENV_NAME"] == "lbf":
-        all_stats = get_stats(metrics, ("percent_eaten", "returned_episode_returns"), config["NUM_ENVS"])
-    elif config["ENV_NAME"] == "overcooked-v2": 
-        all_stats = get_stats(metrics, ("shaped_reward", "returned_episode_returns"), config["NUM_ENVS"])
-    else: 
-        all_stats = get_stats(metrics, ("returned_episode_returns"), config["NUM_ENVS"])
-    plot_train_metrics(all_stats, config["NUM_STEPS"], config["NUM_ENVS"])
+    metric_names = get_metric_names(config["ENV_NAME"])
+    all_stats = get_stats(metrics, metric_names)
+    plot_train_metrics(all_stats, config["ROLLOUT_LENGTH"], config["NUM_ENVS"])

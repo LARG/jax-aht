@@ -10,14 +10,37 @@ from jaxmarl.environments.overcooked.overcooked import Overcooked, State
 from jaxmarl.environments.overcooked.common import (
     OBJECT_TO_INDEX,
     DIR_TO_VEC,
+    COLOR_TO_INDEX,
+    OBJECT_INDEX_TO_VEC,
     make_overcooked_map)
 
 from envs.overcooked.augmented_layouts import augmented_layouts as layouts
 
+BASE_REW_SHAPING_PARAMS = {
+    "PLACEMENT_IN_POT_REW": 3, # reward for putting ingredients 
+    "PLATE_PICKUP_REWARD": 3, # reward for picking up a plate
+    "SOUP_PICKUP_REWARD": 5, # reward for picking up a ready soup
+    "ONION_PICKUP_REWARD": 0,
+    "COUNTER_PICKUP_REWARD": 0,
+    "COUNTER_DROP_REWARD": 0,
+    "DISH_DISP_DISTANCE_REW": 0,
+    "POT_DISTANCE_REW": 0,
+    "SOUP_DISTANCE_REW": 0,
+}
 
-class OvercookedV2(Overcooked):
+# Pot status indicated by an integer, which ranges from 23 to 0
+POT_EMPTY_STATUS = 23 # 22 = 1 onion in pot; 21 = 2 onions in pot; 20 = 3 onions in pot
+POT_FULL_STATUS = 20 # 3 onions. Below this status, pot is cooking, and status acts like a countdown timer.
+POT_READY_STATUS = 0
+MAX_ONIONS_IN_POT = 3 # A pot has at most 3 onions. A soup contains exactly 3 onions.
+
+URGENCY_CUTOFF = 40 # When this many time steps remain, the urgency layer is flipped on
+DELIVERY_REWARD = 20
+
+class OvercookedV1(Overcooked):
     '''This environment is a modified version of the JaxMARL Overcooked environment 
-    that ensures environments are solvable. 
+    that ensures environments are solvable. In addition, this environment adds additional
+    reward shaping parameters.
     
     The main modifications are: 
     - Random resets: Previously, setting `random_reset` would lead to 
@@ -27,16 +50,25 @@ class OvercookedV2(Overcooked):
         the map, which could lead to the two agents being on the same side of a disconnected map. 
         Now, we ensure that the two agents are always initialized in separate components of the map
         (if there are at least two components). 
+    - More reward shaping: Previously, reward could only be shaped with plate pickup, pot placement, and soup pickup.
+        Now, we add dense rewards for onion pickups from piles, picking up from counter, and dropping at a counter.
     '''
     def __init__(self, 
             layout = FrozenDict(layouts["cramped_room"]),
             random_reset: bool = False,
             random_obj_state: bool = False, 
             max_steps: int = 400,
+            do_reward_shaping: bool = False,
+            reward_shaping_params = FrozenDict({}),
     ):
         super().__init__(layout=layout, 
                          random_reset=random_reset, 
                          max_steps=max_steps)
+        self.do_reward_shaping = do_reward_shaping
+        def merge_params(base_dict, override_dict):
+            merged = {k: override_dict.get(k, v) for k, v in base_dict.items()}
+            return FrozenDict(merged)
+        self.reward_shaping_params = merge_params(BASE_REW_SHAPING_PARAMS, reward_shaping_params)
         self.random_obj_state = random_obj_state # controls whether pot state and inventory are randomized
     
     def _initialize_agent_positions(self, key: chex.PRNGKey, all_pos: jnp.ndarray, num_agents: int) -> Tuple[chex.PRNGKey, jnp.ndarray]:
@@ -91,6 +123,131 @@ class OvercookedV2(Overcooked):
             agent_idx = self.random_reset*agent_idx + (1-self.random_reset)*self.layout.get("agent_idx", agent_idx)
             
         return key, agent_idx
+
+    def process_interact(
+            self,
+            maze_map: chex.Array,
+            wall_map: chex.Array,
+            fwd_pos_all: chex.Array,
+            inventory_all: chex.Array,
+            player_idx: int):
+        """Assume agent took interact actions. Result depends on what agent is facing and what it is holding."""
+        
+        fwd_pos = fwd_pos_all[player_idx]
+        inventory = inventory_all[player_idx]
+
+        shaped_reward = 0.
+
+        height = self.obs_shape[1]
+        padding = (maze_map.shape[0] - height) // 2
+
+        # Get object in front of agent (on the "table")
+        maze_object_on_table = maze_map.at[padding + fwd_pos[1], padding + fwd_pos[0]].get()
+        object_on_table = maze_object_on_table[0]  # Simple index
+
+        # Booleans depending on what the object is
+        object_is_pile = jnp.logical_or(object_on_table == OBJECT_TO_INDEX["plate_pile"], object_on_table == OBJECT_TO_INDEX["onion_pile"])
+        object_is_pot = jnp.array(object_on_table == OBJECT_TO_INDEX["pot"])
+        object_is_goal = jnp.array(object_on_table == OBJECT_TO_INDEX["goal"])
+        object_is_agent = jnp.array(object_on_table == OBJECT_TO_INDEX["agent"])
+        object_is_pickable = jnp.logical_or(
+            jnp.logical_or(object_on_table == OBJECT_TO_INDEX["plate"], object_on_table == OBJECT_TO_INDEX["onion"]),
+            object_on_table == OBJECT_TO_INDEX["dish"]
+        )
+        # Whether the object in front is counter space that the agent can drop on.
+        is_table = jnp.logical_and(wall_map.at[fwd_pos[1], fwd_pos[0]].get(), ~object_is_pot)
+
+        table_is_empty = jnp.logical_or(object_on_table == OBJECT_TO_INDEX["wall"], object_on_table == OBJECT_TO_INDEX["empty"])
+
+        # Pot status (used if the object is a pot)
+        pot_status = maze_object_on_table[-1]
+
+        # Get inventory object, and related booleans
+        inv_is_empty = jnp.array(inventory == OBJECT_TO_INDEX["empty"])
+        object_in_inv = inventory
+        holding_onion = jnp.array(object_in_inv == OBJECT_TO_INDEX["onion"])
+        holding_plate = jnp.array(object_in_inv == OBJECT_TO_INDEX["plate"])
+        holding_dish = jnp.array(object_in_inv == OBJECT_TO_INDEX["dish"])
+
+        # Interactions with pot. 3 cases: add onion if missing, collect soup if ready, do nothing otherwise
+        case_1 = (pot_status > POT_FULL_STATUS) * holding_onion * object_is_pot
+        case_2 = (pot_status == POT_READY_STATUS) * holding_plate * object_is_pot
+        case_3 = (pot_status > POT_READY_STATUS) * (pot_status <= POT_FULL_STATUS) * object_is_pot
+        else_case = ~case_1 * ~case_2 * ~case_3
+
+        # give reward for placing onion in pot, and for picking up soup
+        shaped_reward += case_1 * self.reward_shaping_params["PLACEMENT_IN_POT_REW"]
+        shaped_reward += case_2 * self.reward_shaping_params["SOUP_PICKUP_REWARD"]
+
+        # Update pot status and object in inventory
+        new_pot_status = \
+            case_1 * (pot_status - 1) \
+            + case_2 * POT_EMPTY_STATUS \
+            + case_3 * pot_status \
+            + else_case * pot_status
+        new_object_in_inv = \
+            case_1 * OBJECT_TO_INDEX["empty"] \
+            + case_2 * OBJECT_TO_INDEX["dish"] \
+            + case_3 * object_in_inv \
+            + else_case * object_in_inv
+
+        # Interactions with onion/plate piles and objects on counter
+        # Pickup if: table, not empty, room in inv & object is not something unpickable (e.g. pot or goal)
+        successful_pickup = is_table * ~table_is_empty * inv_is_empty * jnp.logical_or(object_is_pile, object_is_pickable)
+        successful_drop = is_table * table_is_empty * ~inv_is_empty
+        successful_delivery = is_table * object_is_goal * holding_dish
+        no_effect = jnp.logical_and(jnp.logical_and(~successful_pickup, ~successful_drop), ~successful_delivery)
+
+        # give reward for picking up onion, placing on a counter, and removing from a counter
+        shaped_reward += jnp.logical_and(successful_pickup, object_is_pile) * self.reward_shaping_params["ONION_PICKUP_REWARD"]
+        shaped_reward += jnp.logical_and(successful_pickup, object_is_pickable) * self.reward_shaping_params["COUNTER_PICKUP_REWARD"]
+        shaped_reward += successful_drop * self.reward_shaping_params["COUNTER_DROP_REWARD"]
+
+        # Update object on table
+        new_object_on_table = \
+            no_effect * object_on_table \
+            + successful_delivery * object_on_table \
+            + successful_pickup * object_is_pile * object_on_table \
+            + successful_pickup * object_is_pickable * OBJECT_TO_INDEX["wall"] \
+            + successful_drop * object_in_inv
+
+        # Update object in inventory
+        new_object_in_inv = \
+            no_effect * new_object_in_inv \
+            + successful_delivery * OBJECT_TO_INDEX["empty"] \
+            + successful_pickup * object_is_pickable * object_on_table \
+            + successful_pickup * (object_on_table == OBJECT_TO_INDEX["plate_pile"]) * OBJECT_TO_INDEX["plate"] \
+            + successful_pickup * (object_on_table == OBJECT_TO_INDEX["onion_pile"]) * OBJECT_TO_INDEX["onion"] \
+            + successful_drop * OBJECT_TO_INDEX["empty"]
+
+        # Apply inventory update
+        has_picked_up_plate = successful_pickup*(new_object_in_inv == OBJECT_TO_INDEX["plate"])
+        
+        # number of plates in player hands < number ready/cooking/partially full pot
+        num_plates_in_inv = jnp.sum(inventory == OBJECT_TO_INDEX["plate"])
+        pot_loc_layer = jnp.array(maze_map[padding:-padding, padding:-padding, 0] == OBJECT_TO_INDEX["pot"], dtype=jnp.uint8)
+        padded_map = maze_map[padding:-padding, padding:-padding, 2] 
+        num_notempty_pots = jnp.sum((padded_map!=POT_EMPTY_STATUS)* pot_loc_layer)
+        is_dish_picku_useful = num_plates_in_inv < num_notempty_pots
+
+        plate_loc_layer = jnp.array(maze_map == OBJECT_TO_INDEX["plate"], dtype=jnp.uint8)
+        no_plates_on_counters = jnp.sum(plate_loc_layer) == 0
+        
+        shaped_reward += no_plates_on_counters*has_picked_up_plate*is_dish_picku_useful*self.reward_shaping_params["PLATE_PICKUP_REWARD"]
+
+        inventory = new_object_in_inv
+        
+        # Apply changes to maze
+        new_maze_object_on_table = \
+            object_is_pot * OBJECT_INDEX_TO_VEC[new_object_on_table].at[-1].set(new_pot_status) \
+            + ~object_is_pot * ~object_is_agent * OBJECT_INDEX_TO_VEC[new_object_on_table] \
+            + object_is_agent * maze_object_on_table
+
+        maze_map = maze_map.at[padding + fwd_pos[1], padding + fwd_pos[0], :].set(new_maze_object_on_table)
+
+        # Reward of 20 for a soup delivery
+        reward = jnp.array(successful_delivery, dtype=float)*DELIVERY_REWARD
+        return maze_map, inventory, reward, shaped_reward
 
     def reset(
             self,

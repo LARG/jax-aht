@@ -1,8 +1,8 @@
 import jax
 import jax.numpy as jnp
-from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL, WrappedEnvState
+from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
 from jumanji.environments.routing.lbf.constants import LOAD
-from typing import Dict, Any, List
+from typing import Dict, Any
 from flax.struct import dataclass
 from functools import partial
 

@@ -30,21 +30,18 @@ Currently, the only environment supported from the Jumanji suite is Level-Based 
 
 The wrapper for the Jumanji LBF environment is stored in the `envs/` directory, at `envs/jumanji_jaxmarl_wrapper.py`. A corresponding test script is stored at `tests/test_jumanji_jaxmarl_wrapper.py`.
 `
-#### Overcooked-v2
+#### Overcooked-v1
 We made some modifications to the JaxMARL Overcooked environment to improve the functionality and ensure environments are solvable.
 
 - Initialization randomization: Previously, setting `random_reset` would lead to random initial agent positions, and randomized initial object states (e.g. pot might be initialized with onions already in it, agents might be initialized holding plates, etc.). We separate the functionality of the argument `random_reset` into two arguments: `random_reset` and `random_obj_state`, where `random_reset` only controls the initial positions of the two agents. 
-- Agent initial positions: previously, in a map with disconnected components, it was possible for two agents to be spawned in the same component, making it impossible to solve the task. The Overcooked-v2 environment initializes agents such that one is always spawned on each side of the map.
+- Agent initial positions: previously, in a map with disconnected components, it was possible for two agents to be spawned in the same component, making it impossible to solve the task. The Overcooked-v1 environment initializes agents such that one is always spawned on each side of the map.
 
 
 ### Fictitious Co-Play (FCP)
 The `fcp/` directory stores our Fictitious Co-Play implementation. This implementation was based on JaxMARL's IPPO implementation. 
 Our full implementation can be run via `python fcp/run_fcp_pipeline.py`. Results are logged via wandb, but can also be viewed locally in the `results` directory.
 
-The FCP implementation includes several training variants:
-- `fcp_train_s5.py`: Training with S5 actor-critic architecture for the ego agent
-- `fcp_train_mlp.py`: Training with MLP actor-critic architecture for the ego agent
-- `fcp_train_rnn.py`: Training with RNN actor-critic architecture for the ego agent
+- `fcp_train.py`: Training with S5 actor-critic architecture for the ego agent
 - `fcp_eval.py`: Evaluation script for FCP agents
 - `train_partners.py`: Script for training partner agents using IPPO.
 
@@ -57,4 +54,4 @@ The `ppo/ippo.py` script can also be ran on its own for debugging purposes.
 
 ### Coding Style Notes
 JaxMARL follows a single-script training paradigm, which enables jit-compiling the entire RL training loop and makes it simple for researchers to modify algorithms. 
-We follow a similar paradigm, but importing a couple common utility functions to avoid code duplication. 
+We follow a similar paradigm, but importing a couple common utility functions and training scripts to avoid code duplication. 
