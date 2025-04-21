@@ -1,7 +1,6 @@
 '''
 Script to rollout a policy for a given number of episodes on the overcooked environment.
 Differs from vis_lbf_policy.py in that it loads policies from ippo rather than fcp
-TODO: add support for loading policies from fcp
 '''
 import jax
 from envs import make_env

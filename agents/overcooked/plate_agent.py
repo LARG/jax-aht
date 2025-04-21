@@ -14,8 +14,8 @@ class PlateAgent(BaseAgent):
     place plates on counters instead of plating soup.
     """
     
-    def __init__(self, agent_name: str, layout: Dict[str, Any], p_plate_on_counter: float = 0.1):
-        super().__init__(agent_name, layout)
+    def __init__(self, agent_id: int, layout: Dict[str, Any], p_plate_on_counter: float = 0.1):
+        super().__init__(agent_id, layout)
         self.p_plate_on_counter = p_plate_on_counter
         
     @partial(jax.jit, static_argnums=(0,))

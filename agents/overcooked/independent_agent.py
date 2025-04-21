@@ -30,8 +30,8 @@ class IndependentAgent(BaseAgent):
     steps without coordination.
     """
     
-    def __init__(self, agent_name: str, layout: Dict[str, Any], p_onion_on_counter: float = 0, p_plate_on_counter: float = 0.5):
-        super().__init__(agent_name, layout)
+    def __init__(self, agent_id: int, layout: Dict[str, Any], p_onion_on_counter: float = 0, p_plate_on_counter: float = 0.5):
+        super().__init__(agent_id, layout)
         self.p_onion_on_counter = p_onion_on_counter
         self.p_plate_on_counter = p_plate_on_counter
         

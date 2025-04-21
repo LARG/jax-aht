@@ -1,9 +1,8 @@
 '''
-Script for training an PPO ego agent against a fixed partner policy.
-This script uses AgentPolicy and AgentPopulation abstractions to 
-support training with any type of ego or partner policy.
+Script for training a PPO ego agent against a population of partner agents. 
+Warning: this script is used as the main script for ego training throughout the project.
 '''
-import os
+import shutil
 import time
 import logging
 
@@ -16,11 +15,10 @@ from flax.training.train_state import TrainState
 
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from ppo.ippo import unbatchify, Transition
+from common.ppo_utils import Transition, unbatchify
 from common.run_episodes import run_episodes
-from common.agent_interface import AgentPopulation, MLPActorCriticPolicy
-from common.initialize_agents import initialize_s5_agent, initialize_mlp_agent, initialize_rnn_agent
-from common.wandb_visualizations import Logger
+from agents.agent_interface import AgentPopulation, MLPActorCriticPolicy
+from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, initialize_rnn_agent
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 
@@ -524,18 +522,15 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     # Saving artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     # TODO: in the future, add video logging feature
-    out_savepath = save_train_run(train_out, savedir, savename="saved_train_run")
+    out_savepath = save_train_run(train_out, savedir, savename="ego_train_run")
     if config["logger"]["log_train_out"]:
-        logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
+        logger.log_artifact(name="ego_train_run", path=out_savepath, type_name="train_run")
         # Cleanup locally logged out file
     if not config["local_logger"]["save_train_out"]:
-        os.remove(out_savepath)
+        shutil.rmtree(out_savepath)
    
-    # Cleanup
-    logger.close()
-
     
-def run_ego_training(config, partner_params, pop_size: int):
+def run_ego_training(config, wandb_logger, partner_params, pop_size: int):
     '''Run ego agent training against the population of partner agents.
     
     Args:
@@ -544,7 +539,6 @@ def run_ego_training(config, partner_params, pop_size: int):
         pop_size: int, number of partner agents in the population
     '''
     algorithm_config = dict(config["algorithm"])
-    wandb_logger = Logger(config)
 
     # Create only one environment instance
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
@@ -566,14 +560,14 @@ def run_ego_training(config, partner_params, pop_size: int):
     )
     
     # Initialize ego agent
-    if algorithm_config["ALG"] == "ppo_s5":
-        ego_policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng)
-    elif algorithm_config["ALG"] == "ppo_mlp":
-        ego_policy, init_params = initialize_mlp_agent(algorithm_config, env, init_rng)
-    elif algorithm_config["ALG"] == "ppo_rnn":
+    if algorithm_config["EGO_ACTOR_TYPE"] == "s5":
+        ego_policy, init_ego_params = initialize_s5_agent(algorithm_config, env, init_rng)
+    elif algorithm_config["EGO_ACTOR_TYPE"] == "mlp":
+        ego_policy, init_ego_params = initialize_mlp_agent(algorithm_config, env, init_rng)
+    elif algorithm_config["EGO_ACTOR_TYPE"] == "rnn":
         # WARNING: currently the RNN policy is not working. 
         # TODO: fix this!
-        ego_policy, init_params = initialize_rnn_agent(algorithm_config, env, init_rng)
+        ego_policy, init_ego_params = initialize_rnn_agent(algorithm_config, env, init_rng)
     
     log.info("Starting ego agent training...")
     start_time = time.time()
@@ -584,7 +578,7 @@ def run_ego_training(config, partner_params, pop_size: int):
         env=env,
         train_rng=train_rng,
         ego_policy=ego_policy,
-        init_ego_params=init_params,
+        init_ego_params=init_ego_params,
         n_ego_train_seeds=algorithm_config["NUM_EGO_TRAIN_SEEDS"],
         partner_population=partner_population,
         partner_params=partner_params

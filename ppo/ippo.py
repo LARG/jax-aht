@@ -1,47 +1,23 @@
 '''
-Based on the IPPO implementation from jaxmarl. Trains a parameter-shared IPPO agent on a
-fully cooperative multi-agent environment.
+Based on the IPPO implementation from jaxmarl. Trains a parameter-shared, MLP IPPO agent on a
+fully cooperative multi-agent environment. Note that this code is only compatible with MLP policies.
 '''
-from typing import NamedTuple
-
+import shutil
+import hydra
 import jax
 import jax.numpy as jnp
 import optax
 from flax.training.train_state import TrainState
 from envs.log_wrapper import LogWrapper
 
-from common.mlp_actor_critic import ActorCritic
+from agents.mlp_actor_critic import ActorCritic
 from common.plot_utils import get_stats, plot_train_metrics, get_metric_names
+from common.ppo_utils import Transition, batchify, unbatchify
+from common.save_load_utils import save_train_run
 from envs import make_env
 
 
-class Transition(NamedTuple):
-    done: jnp.ndarray
-    action: jnp.ndarray
-    value: jnp.ndarray
-    reward: jnp.ndarray
-    log_prob: jnp.ndarray
-    obs: jnp.ndarray
-    info: jnp.ndarray
-    avail_actions: jnp.ndarray
-
-def batchify(x: dict, agent_list, num_actors):
-    x = jnp.stack([x[a] for a in agent_list])
-    return x.reshape((num_actors, -1))
-
-def batchify_info(x: dict, agent_list, num_actors):
-    '''Handle special case that info has both per-agent and global information'''
-    x = jnp.stack([x[a] for a in x if a in agent_list])
-    return x.reshape((num_actors, -1))
-
-def unbatchify(x: jnp.ndarray, agent_list, num_envs, num_agents):
-    x = x.reshape((num_agents, num_envs, -1))
-    return {a: x[i] for i, a in enumerate(agent_list)}
-
-def make_train(config):
-    env = make_env(config["ENV_NAME"], config["ENV_KWARGS"])
-    env = LogWrapper(env)
-
+def make_train(config, env):
     config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
     config["NUM_UPDATES"] = (
         config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
@@ -327,43 +303,42 @@ def make_train(config):
         }
     return train
 
-if __name__ == "__main__":
-
-    # set hyperparameters:
-    config = {
-        "TOTAL_TIMESTEPS": 1e5,
-        "LR": 1.e-4,
-        "NUM_ENVS": 16,
-        "ROLLOUT_LENGTH": 400, 
-        "UPDATE_EPOCHS": 15,
-        "NUM_MINIBATCHES": 16, # 4,
-        "NUM_CHECKPOINTS": 5,
-        "GAMMA": 0.99,
-        "GAE_LAMBDA": 0.95,
-        "CLIP_EPS": 0.05,
-        "ENT_COEF": 0.01,
-        "VF_COEF": 1.0,
-        "MAX_GRAD_NORM": 1.0,
-        "ENV_NAME": "overcooked-v1", # "lbf",
-        "ENV_KWARGS": {
-            "layout": "cramped_room",
-            "random_reset": False,
-            "max_steps": 400,
-        },
-        "ANNEAL_LR": True,
-        "SEED": 0,
-        "NUM_SEEDS": 3
-    }
+def run_ippo(config, logger):
+    env = make_env(config["ENV_NAME"], config["ENV_KWARGS"])
+    env = LogWrapper(env)
 
     rng = jax.random.PRNGKey(config["SEED"])
     rngs = jax.random.split(rng, config["NUM_SEEDS"])
     with jax.disable_jit(False):
-        train_jit = jax.jit(jax.vmap(make_train(config)))
+        train_jit = jax.jit(jax.vmap(make_train(config, env)))
         out = train_jit(rngs)
 
-    # out['checkpoints']['params']['Dense_0']['kernel'] has shape (num_seeds, num_ckpts, *param_shape)
-    # metrics values shape is (num_seeds, num_updates, num_rollout_steps, num_envs*num_agents)
-    metrics = out['metrics']
+    log_metrics(config, out, logger)
+    return out
+
+def log_metrics(config, out, logger):
+    '''Save train run output and log to wandb as artifact.'''
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    # save artifacts
+    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
+    if config["logger"]["log_train_out"]:
+        logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
+        # Cleanup locally logged out file
+    if not config["local_logger"]["save_train_out"]:
+        shutil.rmtree(out_savepath)
+   
     metric_names = get_metric_names(config["ENV_NAME"])
-    all_stats = get_stats(metrics, metric_names)
-    plot_train_metrics(all_stats, config["ROLLOUT_LENGTH"], config["NUM_ENVS"])
+
+    # Generate plots
+    all_stats = get_stats(out["metrics"], metric_names)
+    figures, _ = plot_train_metrics(all_stats, 
+                                    config["ROLLOUT_LENGTH"], 
+                                    config["NUM_ENVS"],
+                                    savedir=savedir if config["local_logger"]["save_figures"] else None,
+                                    savename="ippo_train_metrics",
+                                    show_plots=False
+                                    )
+    
+    # Log plots to wandb
+    for stat_name, fig in figures.items():
+        logger.log({f"train_metrics/{stat_name}": fig})

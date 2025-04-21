@@ -7,9 +7,9 @@ ROLLOUT_LENGTH: 128 # rollout length must be greater than episode length
 ENV_KWARGS: {}
 
 algorithm:
-  ALG: ppo_s5
+  EGO_ACTOR_TYPE: s5 # options: s5, mlp, rnn
   TOTAL_TIMESTEPS: 3e5
-  TRAIN_SEED: 38410
+  TRAIN_SEED: 12345
   NUM_EGO_TRAIN_SEEDS: 1
   NUM_EVAL_EPISODES: 20
   NUM_CHECKPOINTS: 5
@@ -27,21 +27,12 @@ algorithm:
   VF_COEF: 1.0
   MAX_GRAD_NORM: 1.0
   ANNEAL_LR: true
-  S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-  S5_D_MODEL: 16
-  S5_SSM_SIZE: 16
-  S5_N_LAYERS: 2
-  S5_BLOCKS: 1
-  S5_ACTIVATION: full_glu
-  S5_DO_NORM: true
-  S5_PRENORM: true
-  S5_DO_GTRXL_NORM: true
 
 # WandB Params
 logger: 
   project: open-ended-aht
   entity: aht-project
-  mode: online # options: online, offline, disabled
+  mode: offline # options: online, offline, disabled
   verbose: true
   log_train_out: false # whether to log the out dictionary
 
@@ -52,7 +43,7 @@ local_logger:
 
 hydra:
   job:
-    name: ppo_ego_s5
+    name: ppo_ego_${algorithm.EGO_ACTOR_TYPE}
     chdir: true
   run:
     dir: results/${ENV_NAME}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}

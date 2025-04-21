@@ -1,26 +1,37 @@
 defaults:
-  - ippo_defaults
   - _self_         # Ensures that values in this file override imported ones if needed
 
 ENV_NAME: lbf-reward-shaping
 NUM_STEPS: 128 # rollout length must be greater than episode length
 ENV_KWARGS: {}
 
-TOTAL_TIMESTEPS: 5e6
+TOTAL_TIMESTEPS: 3e5
 SEED: 12345
+LR: .0001
+NUM_ENVS: 8
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 4
+NUM_CHECKPOINTS: 5
+NUM_SEEDS: 3
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.03
+ENT_COEF: 0.01
+VF_COEF: 1.0
+MAX_GRAD_NORM: 1.0
+ANNEAL_LR: True
 
 # WandB Params
 logger: 
   project: aht-benchmark
   entity: aht-project
   mode: offline # options: online, offline, disabled
-  verbose: true
-  log_train_out: # whether to log the out dictionary
-
+  verbose: false
+  log_train_out: false # whether to log the out dictionary
 
 local_logger:
   save_figures: true
-  save_train_out: true
+  save_train_out: false
 
 hydra:
   job:

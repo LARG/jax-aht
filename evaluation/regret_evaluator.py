@@ -12,16 +12,16 @@ import jax.numpy as jnp
 import optax
 import numpy as np
 
-from common.agent_interface import ActorWithDoubleCriticPolicy, MLPActorCriticPolicy
-from common.initialize_agents import initialize_s5_agent, initialize_mlp_agent
+from agents.agent_interface import ActorWithDoubleCriticPolicy, MLPActorCriticPolicy
 from common.plot_utils import get_metric_names, get_stats
 from common.save_load_utils import save_train_run
 from common.wandb_visualizations import Logger
 from common.run_episodes import run_episodes
+from common.ppo_utils import Transition, unbatchify
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from evaluation.vis_episodes import save_video
-from ppo.ippo import unbatchify, Transition
+from evaluation.agent_loader_from_config import initialize_rl_agent_from_config
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -362,8 +362,9 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
                         
                         # Entropy for interaction with best response agent
                         entropy_br = jnp.mean(pi_br.entropy())
-
-                        total_loss = (pg_loss_ego + pg_loss_br) + config["VF_COEF"] * (value_loss_ego + value_loss_br) - config["ENT_COEF"] * (entropy_ego+entropy_br)
+                        ego_loss = pg_loss_ego + config["VF_COEF"] * value_loss_ego - config["ENT_COEF"] * entropy_ego
+                        br_loss = pg_loss_br + config["VF_COEF"] * value_loss_br - config["ENT_COEF"] * entropy_br
+                        total_loss = (1 - config["CONF_BR_WEIGHT"]) * ego_loss + config["CONF_BR_WEIGHT"] * br_loss
                         return total_loss, (value_loss_ego, value_loss_br, pg_loss_ego, pg_loss_br, entropy_ego, entropy_br)
 
                     grad_fn = jax.value_and_grad(_loss_fn_conf, has_aux=True)
@@ -725,14 +726,16 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
             # initial state for scan over _update_step_with_ckpt
             update_steps = 0
             rng, rng_eval_ego, rng_eval_br = jax.random.split(rng, 3)
+            # conf vs ego
             ep_infos_ego = run_episodes(rng_eval_ego, env, 
                 agent_0_param=train_state_conf.params, agent_0_policy=confederate_policy,
                 agent_1_param=ego_params, agent_1_policy=ego_policy, 
                 max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]
             )
+            # br vs conf
             ep_infos_br = run_episodes(rng_eval_br, env, 
                 agent_0_param=train_state_br.params, agent_0_policy=br_policy,
-                agent_1_param=ego_params, agent_1_policy=ego_policy, 
+                agent_1_param=train_state_conf.params, agent_1_policy=confederate_policy, 
                 max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"])
 
             # Initialize hidden states
@@ -788,7 +791,7 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
     return out
 
 
-def run_regret_evaluation(config, ego_params):
+def run_regret_evaluation(config):
     algorithm_config = dict(config["algorithm"])
     wandb_logger = Logger(config)
 
@@ -798,21 +801,17 @@ def run_regret_evaluation(config, ego_params):
     
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rng, init_rng, train_rng = jax.random.split(rng, 3)
-    
-    # Initialize ego agent using initialize_s5_agent from ppo_ego.py
-    if algorithm_config["EGO_ACTOR_TYPE"] == "s5":
-        ego_policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng)
-    elif algorithm_config["EGO_ACTOR_TYPE"] == "mlp":
-        ego_policy, init_params = initialize_mlp_agent(algorithm_config, env, init_rng)
-    else:
-        raise ValueError(f"Invalid EGO_ACTOR_TYPE: {algorithm_config['EGO_ACTOR_TYPE']}")
-    
-    
+    ego_agent_config = dict(config["ego_agent"])
+    ego_policy, ego_params, _, idx_labels = initialize_rl_agent_from_config(ego_agent_config, "ego", env, init_rng)
+    n_ego_agents = len(np.array(idx_labels).flatten())
+    assert n_ego_agents == 1, "Regret evaluation only supports a single ego agent currently."
+    # TODO: update regret evaluation to vmap over multiple ego agents
+    ego_params = jax.tree.map(lambda x: x[0], ego_params)
+
+    # run evaluation
     log.info("Starting regret-maximizing evaluation...")
     start_time = time.time()
-
     train_out = train_regret_maximizing_partners(algorithm_config, ego_params, ego_policy, env, train_rng)
-    
     end_time = time.time()
     log.info(f"Regret-maximizing evaluation completed in {end_time - start_time} seconds.")
     

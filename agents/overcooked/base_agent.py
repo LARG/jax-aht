@@ -44,8 +44,8 @@ class BaseAgent:
     - Agent that create and deliver soups.
     """
     
-    def __init__(self, agent_name: str, layout: Dict[str, Any]):
-        self.agent_id = int(agent_name[-1])
+    def __init__(self, agent_id: int, layout: Dict[str, Any]):
+        self.agent_id = agent_id
         self.map_width = layout["width"]
         self.map_height = layout["height"]
 
@@ -64,6 +64,7 @@ class BaseAgent:
             soup_ready=False,
             rng_key=jax.random.PRNGKey(self.agent_id)
         )
+
     def get_name(self):
         return self.__class__.__name__
     

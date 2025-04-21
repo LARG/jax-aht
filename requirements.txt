@@ -13,6 +13,7 @@ distrax
 safetensors
 moviepy
 ffmpeg
+prettytable
 
 matplotlib
 wandb

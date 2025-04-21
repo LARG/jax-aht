@@ -7,10 +7,10 @@ Follow instructions at `install_instructions.md`
 - `agents/`: Contains heuristic agent implementations
 - `common/`: Shared utilities and common code
 - `envs/`: Environment implementations and wrappers
-- `evaluation/`: Evaluation and visualization scripts
+- `evaluation/`: heldout evaluation, and visualization scripts
 - `examples/`: Example usage scripts
-- `fcp/`: Fictitious Co-Play implementation
 - `ppo/`: IPPO algorithm implementation
+- `teammate_generation/`: contains FCP and BRDiv implementation
 - `tests/`: Test scripts used during development.
 
 ## Project Guide

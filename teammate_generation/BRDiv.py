@@ -1,6 +1,8 @@
 import os
+import shutil
 import time
 import logging
+from typing import NamedTuple
 
 import hydra
 import jax
@@ -12,12 +14,11 @@ from jaxmarl.wrappers.baselines import LogWrapper
 import wandb
 
 from envs import make_env
-from ppo.ippo import unbatchify
-from common.mlp_actor_critic import ActorWithConditionalCritic
-from common.wandb_visualizations import Logger
+from agents.agent_interface import ActorWithConditionalCriticPolicy, AgentPopulation
+from agents.mlp_actor_critic import ActorWithConditionalCritic
 from common.plot_utils import get_metric_names
+from common.ppo_utils import unbatchify
 from common.save_load_utils import save_train_run
-from typing import NamedTuple
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -776,9 +777,30 @@ def train_brdiv_partners(config, env, train_rng):
     out = train_fn(train_rng)
     return out
 
-def run_brdiv(config):
+def get_brdiv_population(config, out, env):
+    '''
+    Get the flattened partner params and partner population for ego training.
+    '''
+    brdiv_pop_size = config["algorithm"]["PARTNER_POP_SIZE"]
+
+    partner_params = out['final_params_conf'] # shape is (brdiv_pop_size, ...)
+    partner_policy = ActorWithConditionalCriticPolicy(
+        action_dim=env.action_space(env.agents[1]).n,
+        obs_dim=env.observation_space(env.agents[1]).shape[0],
+        pop_size=brdiv_pop_size, # used to create onehot agent id
+        activation=config["algorithm"].get("ACTIVATION", "tanh")
+    )
+
+    # Create partner population
+    partner_population = AgentPopulation( 
+        pop_size=brdiv_pop_size,
+        policy_cls=partner_policy
+    )
+
+    return partner_params, partner_population
+
+def run_brdiv(config, wandb_logger):
     algorithm_config = dict(config["algorithm"])
-    wandb_logger = Logger(config)
 
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
     env = LogWrapper(env)
@@ -792,6 +814,11 @@ def run_brdiv(config):
 
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
     log_metrics(config, out, wandb_logger, metric_names)
+
+    partner_params, partner_population = get_brdiv_population(config, out, env)
+
+    return partner_params, partner_population
+
 
 def compute_sp_mask_and_ids(pop_size):
     cross_product = np.meshgrid(
@@ -859,7 +886,4 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     
     # Cleanup locally logged out files
     if not config["local_logger"]["save_train_out"]:
-        os.remove(out_savepath)
-
-    # Cleanup
-    logger.close()
+        shutil.rmtree(out_savepath)

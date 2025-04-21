@@ -145,7 +145,7 @@ def run_episode_with_states(rng, env, agent_0_param, agent_0_policy,
 
 if __name__ == "__main__":
     from envs import make_env
-    from common.initialize_agents import initialize_mlp_agent
+    from agents.initialize_agents import initialize_mlp_agent
     from common.save_load_utils import load_checkpoints
 
     env = make_env("lbf", {})

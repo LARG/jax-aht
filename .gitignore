@@ -4,9 +4,6 @@ figures/*
 notebooks/
 notebooks/*
 
-# output files from jaxmarl
-outputs/ 
-outputs/*
 results/
 results/*
 results_sweep/

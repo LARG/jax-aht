@@ -3,13 +3,21 @@ defaults:
   - _self_
 
 ENV_NAME: lbf
-ROLLOUT_LENGTH: 128
+ROLLOUT_LENGTH: 128 # should be larger than episode length
 ENV_KWARGS: {}
-EGO_AGENT_PATH: results/lbf/fcp_s5/2025-04-13_18-42-46/saved_train_run
+
+ego_agent:
+  path: "results/lbf/ppo_ego_s5/2025-04-13_11-43-33/saved_train_run" # results/lbf/fcp_s5/2025-04-13_18-42-46/saved_train_run
+  actor_type: s5
+  idx_list: [[0, -1]] # list of idxs to load from checkpoint for evaluation. If null, all checkpoints will be loaded.
+  # provide any necessary args to initialize the agent here
+  # ex) S5_ACTOR_CRITIC_HIDDEN_DIM: 64 
+  # defaults for each actor type will be used if no args are provided
 
 algorithm:
   ALG: regret_maximizing
-  PARTNER_POP_SIZE: 2 # how many regret-maximizing pairs to train
+  PARTNER_POP_SIZE: 1 # how many regret-maximizing pairs to train
+  CONF_BR_WEIGHT: 0.5 # conf-ego weight set to 1 - conf-br weight
   TRAIN_SEED: 38410
   NUM_ENVS: 16
   ENV_NAME: ${ENV_NAME}
@@ -28,16 +36,6 @@ algorithm:
   VF_COEF: 1.0
   MAX_GRAD_NORM: 1.0
   ANNEAL_LR: false
-  EGO_ACTOR_TYPE: s5
-  S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-  S5_D_MODEL: 16
-  S5_SSM_SIZE: 16
-  S5_N_LAYERS: 2
-  S5_BLOCKS: 1
-  S5_ACTIVATION: full_glu
-  S5_DO_NORM: true
-  S5_PRENORM: true
-  S5_DO_GTRXL_NORM: true
 
 name: regret_maximizing
 
@@ -46,7 +44,7 @@ logger:
   load_dir: regret_maximizing
   project: open-ended-aht
   entity: aht-project
-  mode: online # options: online, offline, disabled
+  mode: offline # options: online, offline, disabled
   verbose: true
   log_train_out: false # whether to log the out dictionary
   log_video: true # whether to log the video

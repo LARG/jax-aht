@@ -51,6 +51,7 @@ class Logger:
         wandb.define_metric("Losses/*", step_metric="train_step")
         wandb.define_metric("Eval/*", step_metric="train_step")
         wandb.define_metric("Returns/*", step_metric="train_step")
+        wandb.define_metric("HeldoutEval/*", step_metric="iter")
     
     def log_artifact(self, name, path, type_name):
         artifact = wandb.Artifact(name, type=type_name)

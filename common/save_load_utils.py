@@ -31,11 +31,11 @@ def save_train_run(out, savedir, savename):
     checkpointer.save(savepath, out, save_args=save_args)
     return savepath
 
-def load_checkpoints(path):
+def load_checkpoints(path, ckpt_key="checkpoints"):
     '''Load checkpoints from orbax checkpoint. 
     Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
     restored = load_train_run(path)
-    return restored['checkpoints']
+    return restored[ckpt_key]
 
 def load_train_run(path):
     '''Load checkpoints from orbax checkpoint. 
@@ -62,10 +62,9 @@ def save_train_run_as_pickle(out, savedir, savename):
         pickle.dump(out, f)
     return savepath
 
-def load_checkpoints_from_pickle(path):
+def load_checkpoints_from_pickle(path, ckpt_key="checkpoints"):
     out = load_train_run_from_pickle(path)
-    checkpoints = out["checkpoints"]
-    return checkpoints
+    return out[ckpt_key]
 
 def load_train_run_from_pickle(path):
     with open(path, "rb") as f:

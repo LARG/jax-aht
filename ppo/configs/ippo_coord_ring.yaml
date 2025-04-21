@@ -1,0 +1,42 @@
+defaults:
+  - _self_         # Ensures that values in this file override imported ones if needed
+
+ENV_NAME: overcooked-v1
+ROLLOUT_LENGTH: 400 # rollout length must be greater than episode length
+ENV_KWARGS:
+  layout: coord_ring
+
+TOTAL_TIMESTEPS: 1e6
+SEED: 12345
+LR: .0001
+NUM_ENVS: 8
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 16 # 4
+NUM_CHECKPOINTS: 5
+NUM_SEEDS: 3
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+VF_COEF: 1.0
+MAX_GRAD_NORM: 1.0
+ANNEAL_LR: True
+
+# WandB Params
+logger: 
+  project: open-ended-aht
+  entity: aht-project
+  mode: offline # options: online, offline, disabled
+  verbose: false
+  log_train_out: false # whether to log the out dictionary
+
+local_logger:
+  save_figures: true
+  save_train_out: false
+
+hydra:
+  job:
+    name: ippo
+    chdir: true
+  run:
+    dir: results_sweep/${ENV_NAME}/${ENV_KWARGS.layout}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}

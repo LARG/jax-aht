@@ -2,11 +2,8 @@ import numpy as np
 from typing import Dict, Tuple
 
 import jax
-from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
-from envs.overcooked.overcooked_wrapper import OvercookedWrapper
-from envs.overcooked.augmented_layouts import augmented_layouts
 from envs import make_env
-from agents.overcooked import OnionAgent, PlateAgent, IndependentAgent, StaticAgent
+from agents.lbf import RandomAgent
 import time
 
 def run_episode(env, agent0, agent1, key) -> Tuple[Dict[str, float], int]:
@@ -68,34 +65,20 @@ def run_episode(env, agent0, agent1, key) -> Tuple[Dict[str, float], int]:
     return total_rewards, num_steps, state_seq
 
 def main(num_episodes, 
-         layout_name,
-         random_reset=True,
-         random_obj_state=True,
-         do_reward_shaping=False,
-         reward_shaping_params={},
          max_steps=100,
          visualize=False, 
          save_video=False):
     # Initialize environment
     print("Initializing environment...")
-    layout = augmented_layouts[layout_name]
     # directly initialize the env
-    env = OvercookedWrapper(
-        layout=layout,
-        random_reset=random_reset,
-        random_obj_state=random_obj_state,
-        max_steps=max_steps,
-        do_reward_shaping=do_reward_shaping,
-        reward_shaping_params=reward_shaping_params
-    )
     # use the make_env function to initialize the env
-    # env = make_env(env_name="overcooked-v1", env_kwargs={"layout": layout_name})
+    env = make_env(env_name="lbf", env_kwargs={"time_limit": max_steps})
     print("Environment initialized")
     
     # Initialize agents
     print("Initializing agents...")
-    agent0 = OnionAgent(agent_id=0, layout=layout) # red
-    agent1 = IndependentAgent(agent_id=1, layout=layout) # blue
+    agent0 = RandomAgent(agent_id=0) # boxed
+    agent1 = RandomAgent(agent_id=1) # not boxed
     print("Agents initialized")
     
     print("Agent 0:", agent0.get_name())
@@ -135,18 +118,14 @@ def main(num_episodes,
     # Visualize state sequences
     if visualize:
         print("Visualizing state sequences...")
-        viz = AdHocOvercookedVisualizer()
         for state in state_seq_all:
-            # viz.render(env.agent_view_size, state, highlight=True)
-            viz.render(env.agent_view_size, state, highlight_agent_idx=0)
+            env.render(state)
             time.sleep(.1)
     if save_video:
         print(f"\nSaving mp4 with {len(state_seq_all)} frames...")
-        viz = AdHocOvercookedVisualizer()
-        viz.animate_mp4(state_seq_all, env.agent_view_size, 
-            highlight_agent_idx=0,
-            filename=f'results/overcooked/videos/{layout_name}_{agent0.get_name()}_vs_{agent1.get_name()}.mp4', 
-            pixels_per_tile=32, fps=25)
+        anim = env.animate(state_seq_all, interval=150)
+        anim.save(f"results/lbf/videos/{agent0.get_name()}_vs_{agent1.get_name()}.mp4", 
+                  writer="ffmpeg")
         print("MP4 saved successfully!")
 
 if __name__ == "__main__":
@@ -155,23 +134,9 @@ if __name__ == "__main__":
     SAVE_VIDEO = not VISUALIZE    
     NUM_EPISODES = 1
 
-    layout_names = [
-        "asymm_advantages", 
-        # "coord_ring", 
-        # "counter_circuit", 
-        # "cramped_room", 
-        # "forced_coord"
-                    ]
 
-
-    for layout_name in layout_names:
-        with jax.disable_jit(DEBUG):
-            main(num_episodes=NUM_EPISODES, 
-                layout_name=layout_name,
-                random_reset=True,
-                random_obj_state=False,
-                do_reward_shaping=True,
-                reward_shaping_params={},
-                max_steps=100,
-                visualize=VISUALIZE, 
-                save_video=SAVE_VIDEO) 
+    with jax.disable_jit(DEBUG):
+        main(num_episodes=NUM_EPISODES, 
+             max_steps=100,
+             visualize=VISUALIZE, 
+             save_video=SAVE_VIDEO) 

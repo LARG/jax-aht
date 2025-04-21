@@ -5,14 +5,18 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from common.mlp_actor_critic import ActorCritic
-from common.mlp_actor_critic import ActorWithDoubleCritic
-from common.mlp_actor_critic import ActorWithConditionalCritic
-from common.s5_actor_critic import S5ActorCritic, StackedEncoderModel, init_S5SSM, make_DPLR_HiPPO
-from common.rnn_actor_critic import RNNActorCritic, ScannedRNN
+from agents.mlp_actor_critic import ActorCritic
+from agents.mlp_actor_critic import ActorWithDoubleCritic
+from agents.mlp_actor_critic import ActorWithConditionalCritic
+from agents.s5_actor_critic import S5ActorCritic, StackedEncoderModel, init_S5SSM, make_DPLR_HiPPO
+from agents.rnn_actor_critic import RNNActorCritic, ScannedRNN
+
 
 class AgentPopulation:
-    '''Base class for a population of identical agents'''
+    '''Base class for a population of identical agents
+    TODO: develop more complex population classes that can handle heterogeneous agents
+    and agents that depend on auxiliary observations or environment state.
+    '''
     def __init__(self, pop_size, policy_cls):
         '''
         Args:
@@ -38,9 +42,10 @@ class AgentPopulation:
             return jax.vmap(lambda idx: leaf[idx])(agent_indices)
         return jax.tree.map(gather_leaf, pop_params)
     
-    def get_actions(self, pop_params, agent_indices, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_actions(self, pop_params, agent_indices, obs, done, avail_actions, hstate, rng, test_mode=False):
         '''
-        Get the actions of the agents specified by agent_indices.
+        Get the actions of the agents specified by agent_indices. Does not support agents that 
+        require environment state or auxiliary observations.
         
         Args:
             pop_params: pytree of parameters for the population of agents of shape (pop_size, ...).
@@ -50,6 +55,7 @@ class AgentPopulation:
             avail_actions: available actions with shape (num_envs, num_actions)
             hstate: hidden state with shape (num_envs, ...) or None if policy doesn't use hidden state
             rng: random key
+            env_state: environment state with shape (num_envs, ...) or None if policy doesn't use env state
             aux_obs: an optional auxiliary vector to append to the observation
         Returns:
             actions: actions with shape (num_envs,)
@@ -58,14 +64,19 @@ class AgentPopulation:
         gathered_params = self.gather_agent_params(pop_params, agent_indices)
         num_envs = agent_indices.squeeze().shape[0]
         rngs_batched = jax.random.split(rng, num_envs)
-        actions, new_hstate = jax.vmap(self.policy_cls.get_action)(
+        vmapped_get_action = jax.vmap(partial(self.policy_cls.get_action, 
+                                              aux_obs=None, 
+                                              env_state=None, 
+                                              test_mode=test_mode))
+        actions, new_hstate = vmapped_get_action(
             gathered_params, obs, done, avail_actions, hstate, 
-            rngs_batched, aux_obs)
+            rngs_batched)
         return actions, new_hstate
     
     def init_hstate(self, n: int):
         '''Initialize the hidden state for n members of the population.'''
         return self.policy_cls.init_hstate(n)
+
 
 class AgentPolicy(abc.ABC):
     '''Abstract base class for a policy.'''
@@ -81,7 +92,8 @@ class AgentPolicy(abc.ABC):
 
     @abc.abstractmethod
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None) -> Tuple[int, chex.Array]:
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+                   aux_obs=None, env_state=None, test_mode=False) -> Tuple[int, chex.Array]:
         """
         Only computes an action given an observation, done flag, available actions, hidden state, and random key.
 
@@ -92,6 +104,7 @@ class AgentPolicy(abc.ABC):
             avail_actions (chex.Array): The available actions.
             hstate (chex.Array): The hidden state.
             key (jax.random.PRNGKey): The random key.
+            env_state (chex.Array): The environment state.
             aux_obs (chex.Array): an optional auxiliary vector to append to the observation
         Returns:
             Tuple[int, chex.Array]: A tuple containing the action and the new hidden state.
@@ -99,7 +112,8 @@ class AgentPolicy(abc.ABC):
         pass
 
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None) -> Tuple[int, chex.Array, chex.Array, chex.Array]:
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None) -> Tuple[int, chex.Array, chex.Array, chex.Array]:
         """
         Computes the action, value, and policy given an observation, 
         done flag, available actions, hidden state, and random key.
@@ -142,14 +156,18 @@ class MLPActorCriticPolicy(AgentPolicy):
         self.network = ActorCritic(action_dim, activation=activation)
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+                   aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the MLP policy."""
         pi, _ = self.network.apply(params, (obs, avail_actions))
-        action = pi.sample(seed=rng)
+        action = jax.lax.cond(test_mode, 
+                              lambda: pi.mode(), 
+                              lambda: pi.sample(seed=rng))
         return action, None  # no hidden state
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
         """Get actions, values, and policy for the MLP policy."""
         pi, val = self.network.apply(params, (obs, avail_actions))
         action = pi.sample(seed=rng)
@@ -178,15 +196,19 @@ class ActorWithDoubleCriticPolicy(AgentPolicy):
         self.network = ActorWithDoubleCritic(action_dim, activation=activation)
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+                   aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the policy with double critics.
         """
         pi, _, _ = self.network.apply(params, (obs, avail_actions))
-        action = pi.sample(seed=rng)
+        action = jax.lax.cond(test_mode, 
+                              lambda: pi.mode(), 
+                              lambda: pi.sample(seed=rng))
         return action, None  # no hidden state
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
         """Get actions, values, and policy for the policy with double critics."""
         # convention: val1 is value of of ego agent, val2 is value of best response agent
         pi, val1, val2 = self.network.apply(params, (obs, avail_actions))
@@ -218,17 +240,21 @@ class ActorWithConditionalCriticPolicy(AgentPolicy):
         self.network = ActorWithConditionalCritic(action_dim, activation=activation)
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+                   aux_obs=None, env_state=None, test_mode=False):
         """Get actions."""
         # The agent id is only used by the critic, so we pass in a 
         # dummy vector to represent the one-hot agent id
         dummy_agent_id = jnp.zeros(obs.shape[:-1] + (self.pop_size,))
-        pi, _, _ = self.network.apply(params, (obs, dummy_agent_id, avail_actions))
-        action = pi.sample(seed=rng)
+        pi, _ = self.network.apply(params, (obs, dummy_agent_id, avail_actions))
+        action = jax.lax.cond(test_mode, 
+                              lambda: pi.mode(), 
+                              lambda: pi.sample(seed=rng))
         return action, None  # no hidden state
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, aux_obs):
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
         """Get actions, values, and policy for the policy with conditional critics.
         The auxiliary observation should be used to pass in the agent ids that we wish to predict 
         values for.
@@ -261,9 +287,6 @@ class RNNActorCriticPolicy(AgentPolicy):
             gru_hidden_dim: int, dimension of the GRU hidden state
         """
         super().__init__(action_dim, obs_dim)
-        # self.activation = activation
-        # self.fc_hidden_dim = fc_hidden_dim
-        # self.gru_hidden_dim = gru_hidden_dim
         self.network = RNNActorCritic(
             action_dim, 
             fc_hidden_dim=fc_hidden_dim,
@@ -272,15 +295,19 @@ class RNNActorCriticPolicy(AgentPolicy):
         )
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+                   aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the RNN policy. 
         The first dim of obs and done should be the time dimension."""
         new_hstate, pi, _ = self.network.apply(params, hstate, (obs, done, avail_actions))
-        action = pi.sample(seed=rng)
+        action = jax.lax.cond(test_mode, 
+                              lambda: pi.mode(), 
+                              lambda: pi.sample(seed=rng))
         return action, new_hstate
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
         """Get actions, values, and policy for the RNN policy.
         The first dim of obs and done should be the time dimension."""
         new_hstate, pi, val = self.network.apply(params, hstate, (obs, done, avail_actions))
@@ -380,14 +407,18 @@ class S5ActorCriticPolicy(AgentPolicy):
         )
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+                   aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the S5 policy."""
         new_hstate, pi, _ = self.network.apply(params, hstate, (obs, done, avail_actions))
-        action = pi.sample(seed=rng)
+        action = jax.lax.cond(test_mode, 
+                              lambda: pi.mode(), 
+                              lambda: pi.sample(seed=rng))
         return action, new_hstate
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, aux_obs=None):
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
         """Get actions, values, and policy for the S5 policy."""
         new_hstate, pi, val = self.network.apply(params, hstate, (obs, done, avail_actions))
         action = pi.sample(seed=rng)

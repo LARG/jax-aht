@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 
 from common.save_load_utils import load_checkpoints
-from common.agent_interface import S5ActorCriticPolicy, MLPActorCriticPolicy
+from agents.agent_interface import S5ActorCriticPolicy, MLPActorCriticPolicy
 
 
 def select_checkpoint_params(full_checkpoints, seed_idx, ckpt_idx):

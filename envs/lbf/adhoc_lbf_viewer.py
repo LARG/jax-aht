@@ -1,7 +1,6 @@
 from jumanji.environments.routing.lbf.viewer import LevelBasedForagingViewer
-import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from typing import Optional, Tuple
+from typing import Optional
 
 
 class AdHocLBFViewer(LevelBasedForagingViewer):
