@@ -39,4 +39,4 @@ hydra:
     name: ippo
     chdir: true
   run:
-    dir: results_sweep/${ENV_NAME}/${ENV_KWARGS.layout}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+    dir: results/${ENV_NAME}/${ENV_KWARGS.layout}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
