@@ -5,8 +5,19 @@ ENV_NAME: overcooked-v1
 ROLLOUT_LENGTH: 400 # rollout length must be greater than episode length
 ENV_KWARGS:
   layout: counter_circuit
+  do_reward_shaping: true
+  reward_shaping_params:
+    PLACEMENT_IN_POT_REW: 4 # reward for putting ingredients 
+    PLATE_PICKUP_REWARD: 3 # reward for picking up a plate
+    SOUP_PICKUP_REWARD: 5 # reward for picking up a ready soup
+    ONION_PICKUP_REWARD: 4
+    COUNTER_PICKUP_REWARD: 0
+    COUNTER_DROP_REWARD: 0
+    DISH_DISP_DISTANCE_REW: 0
+    POT_DISTANCE_REW: 0
+    SOUP_DISTANCE_REW: 0
 
-TOTAL_TIMESTEPS: 1e6
+TOTAL_TIMESTEPS: 3e6
 SEED: 12345
 LR: .0001
 NUM_ENVS: 8
@@ -32,7 +43,7 @@ logger:
 
 local_logger:
   save_figures: true
-  save_train_out: false
+  save_train_out: true
 
 hydra:
   job:

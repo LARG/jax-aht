@@ -9,7 +9,7 @@ def get_metric_names(env_name):
     if env_name == "lbf":
         return ("percent_eaten", "returned_episode_returns")
     elif env_name == "overcooked-v1":
-        return ("original_reward", "returned_episode_returns")
+        return ("base_return", "returned_episode_returns")
     else:
         return ("returned_episode_returns", "returned_episode_lengths")
 

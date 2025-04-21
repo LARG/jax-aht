@@ -35,19 +35,21 @@ def run_heldout_evaluation(config, ego_policy, ego_params, init_ego_params):
     
     return eval_metrics, ego_names, heldout_names
 
-def log_heldout_metrics(config, logger, eval_metrics, ego_names, heldout_names, metric_names: tuple):
+def log_heldout_metrics(config, logger, eval_metrics, 
+        ego_names, heldout_names, metric_names: tuple, 
+        log_dim0_as_curve: bool = False):
     '''Log heldout evaluation metrics.'''
     num_oel_iter, _, num_eval_episodes, _ = eval_metrics[metric_names[0]].shape
     table_data = []
     for metric_name in metric_names:
-        # shape of eval_metrics is (num_oel_iter, num_heldout_agents, num_eval_episodes, 2)
-        metric_mean = eval_metrics[metric_name][..., 0].mean(axis=(-1)) # shape (num_oel_iter, num_heldout_agents)
-        metric_std = eval_metrics[metric_name][..., 0].std(axis=(-1)) # shape (num_oel_iter, num_heldout_agents)
-        metric_ci = 1.96 * metric_std / np.sqrt(num_eval_episodes) # shape (num_oel_iter, num_heldout_agents)
+        # shape of eval_metrics is (num_iter/num_seeds, num_heldout_agents, num_eval_episodes, 2)
+        metric_mean = eval_metrics[metric_name][..., 0].mean(axis=(-1)) # shape (num_iter/num_seeds, num_heldout_agents)
+        metric_std = eval_metrics[metric_name][..., 0].std(axis=(-1)) # shape (num_iter/num_seeds, num_heldout_agents)
+        metric_ci = 1.96 * metric_std / np.sqrt(num_eval_episodes) # shape (num_iter/num_seeds, num_heldout_agents)
         # log curve
-        for i in range(num_oel_iter):
-            logger.log_item(f"HeldoutEval/AvgEgo_{metric_name}", metric_mean[i].mean(), iter=i)
-        
+        if log_dim0_as_curve:
+            for i in range(num_oel_iter):
+                logger.log_item(f"HeldoutEval/AvgEgo_{metric_name}", metric_mean[i].mean(), iter=i)        
         mean0, ci0 = metric_mean[-1], metric_ci[-1]
 
         mean_and_ci_str = [f"{mean0[i]:.3f} ± {ci0[i]:.3f}" for i in range(len(mean0))]

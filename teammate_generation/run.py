@@ -31,7 +31,7 @@ def run_training(cfg):
     
     if cfg["heldout_eval"]:
         eval_metrics, ego_names, heldout_names = run_heldout_evaluation(cfg, ego_policy, out['checkpoints'], init_ego_params)
-        log_heldout_metrics(cfg, wandb_logger, eval_metrics, ego_names, heldout_names, metric_names)
+        log_heldout_metrics(cfg, wandb_logger, eval_metrics, ego_names, heldout_names, metric_names, log_dim0_as_curve=False)
     wandb_logger.close()
 
 if __name__ == '__main__':

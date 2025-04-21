@@ -5,8 +5,11 @@ import jax
 import jax.numpy as jnp
 from flax import struct
 from jax import lax
-from jaxmarl.environments.overcooked.overcooked import Actions, State as OvercookedState
+from jaxmarl.environments.overcooked.overcooked import Actions
 from jaxmarl.environments.overcooked.common import OBJECT_TO_INDEX
+
+from envs.overcooked.overcooked_wrapper import WrappedEnvState as WrappedOvercookedState
+
 
 @struct.dataclass
 class Holding:
@@ -69,12 +72,12 @@ class BaseAgent:
         return self.__class__.__name__
     
     def get_action(self, 
-                   obs: jnp.ndarray, env_state: OvercookedState, 
+                   obs: jnp.ndarray, env_state: WrappedOvercookedState, 
                    agent_state: AgentState = None) -> Tuple[int, AgentState]:
         """Update agent state based on observation and get action."""
         if agent_state is None:
             agent_state = self.initial_state
-            
+        
         # Update state based on observation before getting action
         agent_state = self._update_state(obs, env_state, agent_state)
         action, agent_state = self._get_action(obs, agent_state)
@@ -82,7 +85,7 @@ class BaseAgent:
         return action, agent_state
         
     @partial(jax.jit, static_argnums=(0,))
-    def _update_state(self, obs: jnp.ndarray, env_state: OvercookedState, agent_state: AgentState) -> AgentState:
+    def _update_state(self, obs: jnp.ndarray, env_state: WrappedOvercookedState, agent_state: AgentState) -> AgentState:
         """Update agent state based on observation.
         
         Args:
@@ -92,6 +95,7 @@ class BaseAgent:
         Returns:
             Updated agent state
         """
+        env_state = env_state.env_state
         # Reshape observation to 3D
         obs_3d = jnp.reshape(obs, self.obs_shape)
         

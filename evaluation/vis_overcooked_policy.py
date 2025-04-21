@@ -81,7 +81,7 @@ def rollout(ego_run_path, partner_run_path,
     if savevideo:
         print(f"\nSaving mp4 with {len(states)} frames...")
         viz = AdHocOvercookedVisualizer()
-        viz.animate_mp4(states, env.agent_view_size, 
+        viz.animate_mp4([s.env_state for s in states], env.agent_view_size, 
             highlight_agent_idx=0,
             filename=f'results/overcooked-v1/videos/{kwargs["layout"]}_{save_name}.mp4', 
             pixels_per_tile=32, fps=25)
@@ -89,17 +89,17 @@ def rollout(ego_run_path, partner_run_path,
 
 if __name__ == "__main__":
     NUM_EPISODES = 2
-    RENDER = True
+    RENDER = False
     SAVEVIDEO = True
     VERBOSE = False # whether or not we should print information at each step
     ENV_KWARGS = { # specify the layout for overcooked 
-        "layout": "cramped_room",
+        "layout": "counter_circuit",
         "random_reset": False,
         "max_steps": 400
     }
 
-    ego_run_path = "results/overcooked-v2/ippo/2025-04-07_15-09-58/ippo_train_run" # ippo agent, trained for 3e6 steps
-    partner_run_path = "results/overcooked-v2/ippo/2025-04-07_15-09-58/ippo_train_run" # ippo training partner, trained for 3e6 steps
+    ego_run_path = "results_sweep/overcooked-v1/counter_circuit/ippo/2025-04-21_15-46-35/saved_train_run" # ippo agent, trained for 3e6 steps
+    partner_run_path = ego_run_path # ippo training partner, trained for 3e6 steps
     
     import re
     ego_name = re.findall("\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}", ego_run_path)[0]

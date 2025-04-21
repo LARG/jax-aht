@@ -1,16 +1,16 @@
 import numpy as np
 from typing import Tuple, Dict
+from functools import partial
 
 import chex
 from flax.core.frozen_dict import FrozenDict
 import jax
 from jax import lax
 import jax.numpy as jnp
-from jaxmarl.environments.overcooked.overcooked import Overcooked, State
+from jaxmarl.environments.overcooked.overcooked import Overcooked, State as OvercookedState
 from jaxmarl.environments.overcooked.common import (
     OBJECT_TO_INDEX,
     DIR_TO_VEC,
-    COLOR_TO_INDEX,
     OBJECT_INDEX_TO_VEC,
     make_overcooked_map)
 
@@ -123,6 +123,21 @@ class OvercookedV1(Overcooked):
             agent_idx = self.random_reset*agent_idx + (1-self.random_reset)*self.layout.get("agent_idx", agent_idx)
             
         return key, agent_idx
+
+    @partial(jax.jit, static_argnums=(0,))
+    def step_env(self, key: jax.random.PRNGKey, state: OvercookedState, actions: Dict[str, jnp.ndarray]) -> tuple:
+        """Override step_env to perform reward shaping and reshape the info dictionary."""
+        obs, state, rewards, dones, info = super().step_env(key, state, actions)
+        
+        rewards_shaped = {"agent_0": rewards["agent_0"] + self.do_reward_shaping * info['shaped_reward']["agent_0"], 
+                         "agent_1": rewards["agent_1"] + self.do_reward_shaping * info['shaped_reward']["agent_1"]}
+
+        # Add shaped rewards to info dictionary
+        shaped_rewards = jnp.array([info['shaped_reward'][agent] for agent in self.agents])
+        base_reward = jnp.array([rewards[agent] for agent in self.agents])
+        info = {'shaped_reward': shaped_rewards, "base_reward": base_reward}
+        
+        return obs, state, rewards_shaped, dones, info
 
     def process_interact(
             self,
@@ -252,7 +267,7 @@ class OvercookedV1(Overcooked):
     def reset(
             self,
             key: chex.PRNGKey,
-    ) -> Tuple[Dict[str, chex.Array], State]:
+    ) -> Tuple[Dict[str, chex.Array], OvercookedState]:
         """Reset environment state based on `self.random_reset` and `self.random_obj_state`
 
         If random_reset, agent initial positions are randomized.
@@ -333,7 +348,7 @@ class OvercookedV1(Overcooked):
         agent_inv = self.random_obj_state * random_agent_inv + \
                     (1-self.random_obj_state) * jnp.array([OBJECT_TO_INDEX['empty'], OBJECT_TO_INDEX['empty']])
 
-        state = State(
+        state = OvercookedState(
             agent_pos=agent_pos,
             agent_dir=agent_dir,
             agent_dir_idx=agent_dir_idx,
