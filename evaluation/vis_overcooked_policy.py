@@ -2,6 +2,7 @@
 Script to rollout a policy for a given number of episodes on the overcooked environment.
 Differs from vis_lbf_policy.py in that it loads policies from ippo rather than fcp
 '''
+import os
 import jax
 from envs import make_env
 from evaluation.policy_loaders import MLPActorCriticLoader, S5ActorCriticLoader, RandomActor
@@ -80,6 +81,8 @@ def rollout(ego_run_path, partner_run_path,
         
     if savevideo:
         print(f"\nSaving mp4 with {len(states)} frames...")
+        if not os.path.exists('results/overcooked-v1/videos'):
+            os.makedirs('results/overcooked-v1/videos')
         viz = AdHocOvercookedVisualizer()
         viz.animate_mp4([s.env_state for s in states], env.agent_view_size, 
             highlight_agent_idx=0,
