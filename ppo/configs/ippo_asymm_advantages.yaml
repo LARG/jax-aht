@@ -5,6 +5,7 @@ ENV_NAME: overcooked-v1
 ROLLOUT_LENGTH: 400 # rollout length must be greater than episode length
 ENV_KWARGS:
   layout: asymm_advantages
+  random_obj_state: true
 
 TOTAL_TIMESTEPS: 1e6
 SEED: 12345

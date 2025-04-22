@@ -5,22 +5,35 @@ ENV_NAME: overcooked-v1
 ROLLOUT_LENGTH: 400 # rollout length must be greater than episode length
 ENV_KWARGS:
   layout: coord_ring
+  random_obj_state: true
+  do_reward_shaping: true
+  reward_shaping_params:
+    PLACEMENT_IN_POT_REW: .5 # reward for putting ingredients 
+    PLATE_PICKUP_REWARD: .1 # reward for picking up a plate
+    SOUP_PICKUP_REWARD: 1. # reward for picking up a ready soup
+    ONION_PICKUP_REWARD: .1
+    COUNTER_PICKUP_REWARD: 0
+    COUNTER_DROP_REWARD: 0
+    DISH_DISP_DISTANCE_REW: 0
+    POT_DISTANCE_REW: 0
+    SOUP_DISTANCE_REW: 0
 
-TOTAL_TIMESTEPS: 1e6
+TOTAL_TIMESTEPS: 3e6
 SEED: 12345
-LR: .0001
+LR: 1e-3
 NUM_ENVS: 8
 UPDATE_EPOCHS: 15
-NUM_MINIBATCHES: 16 # 4
+NUM_MINIBATCHES: 16
 NUM_CHECKPOINTS: 5
 NUM_SEEDS: 3
 GAMMA: 0.99
 GAE_LAMBDA: 0.95
-CLIP_EPS: 0.1 # 0.2
+CLIP_EPS: 0.1
 ENT_COEF: 0.05
 VF_COEF: 1.0
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: True
+
 
 # WandB Params
 logger: 
