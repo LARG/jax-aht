@@ -1,4 +1,5 @@
 '''Script to rollout a policy for a given number of episodes on the LBF environment.'''
+import os
 import jax
 from envs import make_env
 from evaluation.policy_loaders import MLPActorCriticLoader, S5ActorCriticLoader, RandomActor
@@ -75,8 +76,17 @@ def rollout(ego_run_path, partner_run_path,
         
     if savevideo:
         anim = env.animate(states, interval=150)
-        anim.save(f"results/lbf/videos/{save_name}.mp4", 
-                  writer="ffmpeg")
+        if not os.path.exists("results/lbf/videos"):
+            os.makedirs("results/lbf/videos", exist_ok=True)
+        try:
+            anim.save(
+                f"results/lbf/videos/{save_name}.mp4", 
+                writer="ffmpeg"
+            )
+        except:
+            anim.save(
+                f"results/lbf/videos/{save_name}.gif",
+            )
 
 if __name__ == "__main__":
     NUM_EPISODES = 2
