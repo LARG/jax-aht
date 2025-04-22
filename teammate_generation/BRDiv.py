@@ -10,10 +10,10 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 from flax.training.train_state import TrainState
-from jaxmarl.wrappers.baselines import LogWrapper
 import wandb
 
 from envs import make_env
+from envs.log_wrapper import LogWrapper
 from agents.agent_interface import ActorWithConditionalCriticPolicy, AgentPopulation
 from agents.mlp_actor_critic import ActorWithConditionalCritic
 from common.plot_utils import get_metric_names
@@ -286,7 +286,6 @@ def train_brdiv_partners(config, env, train_rng):
                 
                 # Do one step to get a dummy info structure.
                 ep_rng, act_rng, part_rng, step_rng = jax.random.split(ep_rng, 4)
-
                 pi0, _ = conf_agent_net.apply(conf_param, (obs["agent_0"], br_id, avail_actions_0))
                 act0 = pi0.sample(seed=act_rng)
 

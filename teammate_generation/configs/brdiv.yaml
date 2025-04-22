@@ -10,10 +10,9 @@ defaults:
 
 ENV_NAME: overcooked-v1
 ROLLOUT_LENGTH: 400
-ENV_KWARGS: {
-  layout: "cramped_room", # asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord
+ENV_KWARGS: 
+  layout: "cramped_room" # asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord
   max_steps: 400
-}
 
 # name: brdiv
 name: ${ENV_KWARGS.layout}/brdiv

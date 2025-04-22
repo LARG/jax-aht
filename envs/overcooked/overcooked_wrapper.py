@@ -40,7 +40,8 @@ class OvercookedWrapper():
     
     def reset(self, key: chex.PRNGKey, ) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
         obs, env_state = self.env.reset(key)
-        return obs, WrappedEnvState(env_state, jnp.zeros(self.num_agents))
+        flat_obs = {agent: obs[agent].flatten() for agent in self.agents} # flatten obs
+        return flat_obs, WrappedEnvState(env_state, jnp.zeros(self.num_agents))
 
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
@@ -52,11 +53,6 @@ class OvercookedWrapper():
     def get_step_count(self, state: WrappedEnvState) -> jnp.array:
         """Returns the step count for the environment."""
         return state.env_state.time
-
-    def get_obs(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
-        """Returns flattened observations for each agent."""
-        obs = self.env.get_obs(state.env_state)
-        return {agent: obs[agent].flatten() for agent in self.agents}
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
@@ -70,7 +66,7 @@ class OvercookedWrapper():
         tracked in the info dictionary, so that the return can be obtained from the final info.
         '''
         obs, env_state, rewards, dones, infos = self.env.step(key, state.env_state, actions, reset_state)
-        
+        flat_obs = {agent: obs[agent].flatten() for agent in self.agents} # flatten obs
         # log the base return in the info
         base_reward = infos['base_reward']
         base_return_so_far = base_reward + state.base_return_so_far
@@ -79,5 +75,5 @@ class OvercookedWrapper():
         # handle auto-resetting the base return upon episode termination
         base_return_so_far = jax.lax.select(dones['__all__'], jnp.zeros(self.num_agents), base_return_so_far)
         new_state = WrappedEnvState(env_state=env_state, base_return_so_far=base_return_so_far)
-        return obs, new_state, rewards, dones, new_info
+        return flat_obs, new_state, rewards, dones, new_info
 
