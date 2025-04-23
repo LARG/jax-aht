@@ -46,6 +46,15 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         
     elif env_name == 'overcooked-v1':
         default_env_kwargs = {"random_reset": True, "random_obj_state": False, "max_steps": 400}
+        
+        # preprocess env_kwargs to maintain compatibility with symmetric reward shaping
+        if "reward_shaping_params" in env_kwargs:
+            for param in env_kwargs["reward_shaping_params"]:
+                payload = env_kwargs["reward_shaping_params"][param]
+                if type(payload) == int:
+                    # turn the param into symmetric form
+                    env_kwargs["reward_shaping_params"][param] = [payload, payload] 
+
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         # add default args that are not already in env_kwargs
         for key in default_env_kwargs:

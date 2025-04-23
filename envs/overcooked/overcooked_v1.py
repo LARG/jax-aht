@@ -17,15 +17,17 @@ from jaxmarl.environments.overcooked.common import (
 from envs.overcooked.augmented_layouts import augmented_layouts as layouts
 
 BASE_REW_SHAPING_PARAMS = {
-    "PLACEMENT_IN_POT_REW": 3, # reward for putting ingredients 
-    "PLATE_PICKUP_REWARD": 3, # reward for picking up a plate
-    "SOUP_PICKUP_REWARD": 5, # reward for picking up a ready soup
-    "ONION_PICKUP_REWARD": 0,
-    "COUNTER_PICKUP_REWARD": 0,
-    "COUNTER_DROP_REWARD": 0,
-    "DISH_DISP_DISTANCE_REW": 0,
-    "POT_DISTANCE_REW": 0,
-    "SOUP_DISTANCE_REW": 0,
+    "PLACEMENT_IN_POT_REW": [3, 3], # reward for putting ingredients 
+    "PLATE_PICKUP_REWARD": [3, 3], # reward for picking up a plate
+    "SOUP_PICKUP_REWARD": [5, 5], # reward for picking up a ready soup
+    "ONION_PICKUP_REWARD": [0, 0],
+    "COUNTER_PICKUP_REWARD": [0, 0],
+    "COUNTER_DROP_REWARD": [0, 0],
+    "ONION_HOLDING": [0, 0],
+    "PLATE_HOLDING": [0, 0],
+    "DISH_DISP_DISTANCE_REW": [0, 0],
+    "POT_DISTANCE_REW": [0, 0],
+    "SOUP_DISTANCE_REW": [0, 0],
 }
 
 # Pot status indicated by an integer, which ranges from 23 to 0
@@ -191,8 +193,12 @@ class OvercookedV1(Overcooked):
         else_case = ~case_1 * ~case_2 * ~case_3
 
         # give reward for placing onion in pot, and for picking up soup
-        shaped_reward += case_1 * self.reward_shaping_params["PLACEMENT_IN_POT_REW"]
-        shaped_reward += case_2 * self.reward_shaping_params["SOUP_PICKUP_REWARD"]
+        shaped_reward += case_1 * self.reward_shaping_params["PLACEMENT_IN_POT_REW"][player_idx]
+        shaped_reward += case_2 * self.reward_shaping_params["SOUP_PICKUP_REWARD"][player_idx]
+
+        # bonus rewards (or penalty) for holding different objects
+        shaped_reward += holding_onion * self.reward_shaping_params["ONION_HOLDING"][player_idx]
+        shaped_reward += holding_plate * self.reward_shaping_params["PLATE_HOLDING"][player_idx]
 
         # Update pot status and object in inventory
         new_pot_status = \
@@ -214,9 +220,9 @@ class OvercookedV1(Overcooked):
         no_effect = jnp.logical_and(jnp.logical_and(~successful_pickup, ~successful_drop), ~successful_delivery)
 
         # give reward for picking up onion, placing on a counter, and removing from a counter
-        shaped_reward += jnp.logical_and(successful_pickup, object_is_pile) * self.reward_shaping_params["ONION_PICKUP_REWARD"]
-        shaped_reward += jnp.logical_and(successful_pickup, object_is_pickable) * self.reward_shaping_params["COUNTER_PICKUP_REWARD"]
-        shaped_reward += successful_drop * self.reward_shaping_params["COUNTER_DROP_REWARD"]
+        shaped_reward += jnp.logical_and(successful_pickup, object_is_pile) * self.reward_shaping_params["ONION_PICKUP_REWARD"][player_idx]
+        shaped_reward += jnp.logical_and(successful_pickup, object_is_pickable) * self.reward_shaping_params["COUNTER_PICKUP_REWARD"][player_idx]
+        shaped_reward += successful_drop * self.reward_shaping_params["COUNTER_DROP_REWARD"][player_idx]
 
         # Update object on table
         new_object_on_table = \
@@ -248,7 +254,7 @@ class OvercookedV1(Overcooked):
         plate_loc_layer = jnp.array(maze_map == OBJECT_TO_INDEX["plate"], dtype=jnp.uint8)
         no_plates_on_counters = jnp.sum(plate_loc_layer) == 0
         
-        shaped_reward += no_plates_on_counters*has_picked_up_plate*is_dish_picku_useful*self.reward_shaping_params["PLATE_PICKUP_REWARD"]
+        shaped_reward += no_plates_on_counters*has_picked_up_plate*is_dish_picku_useful*self.reward_shaping_params["PLATE_PICKUP_REWARD"][player_idx]
 
         inventory = new_object_in_inv
         

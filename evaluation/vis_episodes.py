@@ -148,9 +148,17 @@ if __name__ == "__main__":
     from agents.initialize_agents import initialize_mlp_agent
     from common.save_load_utils import load_checkpoints
 
-    env = make_env("lbf", {})
+    import sys
 
-    ego_ckpt_path = "results/lbf/ppo_ego_mlp/2025-04-13_23-19-15/saved_train_run" # mlp ego agent
+
+    if len(sys.argv) > 1: # either load from command line arguments
+        # argument in the form of the raw path, include to a minimal the /results portion
+        # ex: /scratch/cluster/jyliu/Documents/jax-aht/results/overcooked-v1/counter_circuit/ippo/2025-04-22_15-46-55
+        import re
+        ego_ckpt_path = re.findall("results/.*", sys.argv[1])[0] + "/saved_train_run"
+    else: # or load the path manually
+        ego_ckpt_path = "results/overcooked-v1/counter_circuit/ippo/2025-04-22_15-46-55/saved_train_run" # mlp ego agent
+
     ego_agent_ckpt = load_checkpoints(ego_ckpt_path)
     # ego_agent_params = jax.tree.map(lambda x: x[0, -1][np.newaxis, ...], ego_agent_ckpt)
     ego_agent_params = jax.tree.map(lambda x: x[0, -1], ego_agent_ckpt)
@@ -159,17 +167,27 @@ if __name__ == "__main__":
     base_rng = jax.random.PRNGKey(112358)
     rng, init1_rng, init2_rng = jax.random.split(base_rng, 3)
     
+    # choose env
+    env_name = "overcooked-v1"
+    env_kwargs = { # specify the layout for overcooked 
+        "layout": "counter_circuit",
+        "random_reset": False,
+        "max_steps": 400
+    }
+    
+    env = make_env(env_name, env_kwargs if env_name[:10] == "overcooked" else {})
+
     # Initialize the policies with the loaded parameters
     agent_0_policy, _ = initialize_mlp_agent({}, env, init1_rng)
     agent_1_policy, _ = initialize_mlp_agent({}, env, init2_rng)
     
     # Make sure the policies are properly initialized with the parameters
     
-    save_video(env, "lbf", 
+    save_video(env, env_name, 
         agent_0_param=ego_agent_params, agent_0_policy=agent_0_policy, 
         agent_1_param=ego_agent_params, agent_1_policy=agent_1_policy, 
-        max_episode_steps=100, num_eps=1, 
+        max_episode_steps=100 if env_name == "lbf" else 400, num_eps=1, 
         savevideo=True, 
-        save_dir="results/lbf/videos/", save_name="ego-vs-ego-test")
+        save_dir=f"results/{env_name}/videos/", save_name="ego-vs-ego-test")
 
 
