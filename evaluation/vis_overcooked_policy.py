@@ -97,11 +97,12 @@ if __name__ == "__main__":
     VERBOSE = False # whether or not we should print information at each step
     ENV_KWARGS = { # specify the layout for overcooked 
         "layout": "counter_circuit",
-        "random_reset": False,
+        "random_reset": True,
+        "random_obj_state": True,
         "max_steps": 400
     }
 
-    ego_run_path = "results_sweep/overcooked-v1/counter_circuit/ippo/2025-04-21_15-46-35/saved_train_run" # ippo agent, trained for 3e6 steps
+    ego_run_path = "results/overcooked-v1/counter_circuit/ippo/2025-04-23_15-28-23/saved_train_run" # ippo agent, trained for 3e6 steps
     partner_run_path = ego_run_path # ippo training partner, trained for 3e6 steps
     
     import re
@@ -112,8 +113,8 @@ if __name__ == "__main__":
     
     rollout(ego_run_path=ego_run_path, 
             partner_run_path=partner_run_path,
-            ego_seed_idx=0,
-            partner_seed_idx=0,
+            ego_seed_idx=2,
+            partner_seed_idx=2,
             ego_checkpoint_idx=-1, # use last checkpoint
             partner_checkpoint_idx=-1, # use last checkpoint
             num_episodes=NUM_EPISODES, 
