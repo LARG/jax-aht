@@ -1,9 +1,10 @@
+import os
 import numpy as np
 from typing import Dict, Tuple
 
 import jax
 from envs import make_env
-from agents.lbf import RandomAgent
+from agents.lbf import RandomAgent, SequentialFruitAgent
 import time
 
 def run_episode(env, agent0, agent1, key) -> Tuple[Dict[str, float], int]:
@@ -77,8 +78,9 @@ def main(num_episodes,
     
     # Initialize agents
     print("Initializing agents...")
-    agent0 = RandomAgent(agent_id=0) # boxed
-    agent1 = RandomAgent(agent_id=1) # not boxed
+    # choices: lexicographic, reverse_lexicographic, column_major, reverse_column_major, nearest_agent, farthest_agent
+    agent0 = SequentialFruitAgent(agent_id=0, grid_size=7, num_fruits=3, ordering_strategy='nearest_agent') # boxed
+    agent1 = SequentialFruitAgent(agent_id=1, grid_size=7, num_fruits=3, ordering_strategy='farthest_agent') # not boxed
     print("Agents initialized")
     
     print("Agent 0:", agent0.get_name())
@@ -122,21 +124,25 @@ def main(num_episodes,
             env.render(state)
             time.sleep(.1)
     if save_video:
-        print(f"\nSaving mp4 with {len(state_seq_all)} frames...")
+        savedir = "results/lbf/videos"
+        if not os.path.exists(savedir):
+            os.makedirs(savedir, exist_ok=True)
+
         anim = env.animate(state_seq_all, interval=150)
-        anim.save(f"results/lbf/videos/{agent0.get_name()}_vs_{agent1.get_name()}.mp4", 
-                  writer="ffmpeg")
-        print("MP4 saved successfully!")
+        print(f"\nSaving mp4 with {len(state_seq_all)} frames...")
+        savepath = os.path.join(savedir, f"{agent0.get_name()}_vs_{agent1.get_name()}.mp4")
+        anim.save(savepath, writer="ffmpeg")
+        print(f"MP4 saved successfully at {savepath}")
 
 if __name__ == "__main__":
     DEBUG = False
-    VISUALIZE = True
+    VISUALIZE = False
     SAVE_VIDEO = not VISUALIZE    
-    NUM_EPISODES = 1
+    NUM_EPISODES = 10
 
 
     with jax.disable_jit(DEBUG):
         main(num_episodes=NUM_EPISODES, 
-             max_steps=100,
+             max_steps=10,
              visualize=VISUALIZE, 
              save_video=SAVE_VIDEO) 

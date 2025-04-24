@@ -1,9 +1,8 @@
-from functools import partial
-from typing import Tuple, Dict, Any
+from typing import Tuple
 
 import jax
 import jax.numpy as jnp
-from jumanji.environments.routing.lbf.types import Agent, Food, State as LBFState
+from jumanji.environments.routing.lbf.types import State as LBFState
 
 from agents.lbf.base_agent import BaseAgent, AgentState
 
@@ -14,8 +13,7 @@ class RandomAgent(BaseAgent):
     def __init__(self, agent_id: int):
         super().__init__(agent_id)
 
-    @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, obs: jnp.ndarray, env_state: LBFState, agent_state: AgentState) -> Tuple[int, AgentState]:
+    def _get_action(self, obs: jnp.ndarray, env_state: LBFState, agent_state: AgentState) -> Tuple[int, AgentState]:
         """Return a random action and updated state.
         
         Args:

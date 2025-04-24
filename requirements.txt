@@ -20,6 +20,7 @@ wandb
 omegaconf
 hydra-core
 plotly
+prettytable
 
 jumanji==1.1.0
 jaxmarl==0.0.7
