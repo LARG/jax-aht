@@ -2,6 +2,7 @@
 from agents.agent_interface import AgentPolicy
 from agents.lbf.random_agent import RandomAgent
 
+
 class LBFRandomPolicyWrapper(AgentPolicy):
     def __init__(self, agent_id: int = 0):
         self.policy = RandomAgent(agent_id) # agent id doesn't matter for the random agent
