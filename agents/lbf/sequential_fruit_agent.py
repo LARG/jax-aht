@@ -25,7 +25,7 @@ class SequentialFruitAgent(BaseAgent):
     @struct.dataclass
     class SeqAgentState:
         """Internal state for the SequentialFruitAgent."""
-        rng_key: jax.random.PRNGKey      # For any stochasticity
+        agent_id: int                   # The unique ID of this agent.
         sequence: jnp.ndarray           # Sorted fruit positions (num_fruits, 2)
         idx: jnp.ndarray                # Current index in the sequence (scalar int32)
         initialized: jnp.ndarray        # Flag (scalar bool) indicating if sequence is set
@@ -40,7 +40,7 @@ class SequentialFruitAgent(BaseAgent):
         'farthest_agent'
     ]
 
-    def __init__(self, agent_id: int, grid_size: int = 7, num_fruits: int = 3, ordering_strategy: str = 'lexicographic'):
+    def __init__(self, grid_size: int = 7, num_fruits: int = 3, ordering_strategy: str = 'lexicographic'):
         """
         Initializes the agent.
 
@@ -51,21 +51,16 @@ class SequentialFruitAgent(BaseAgent):
             ordering_strategy: String selecting the fruit ordering (default: 'lexicographic').
                                See class docstring for options.
         """
-        super().__init__(agent_id)
+        super().__init__()
         self.grid_size = grid_size
         self.num_fruits = num_fruits
         if ordering_strategy not in self.VALID_ORDERING_STRATEGIES:
              raise ValueError(f"Invalid ordering_strategy: '{ordering_strategy}'. Must be one of {self.VALID_ORDERING_STRATEGIES}")
         self.ordering_strategy = ordering_strategy # Store the chosen strategy string
-        self.init_rng = jax.random.PRNGKey(self.agent_id)
-        # Initialize the state structure here
-        self.initial_state = self.init(self.init_rng, self.num_fruits)
 
-
-    @staticmethod
-    def init(rng_key: jax.random.PRNGKey, num_fruits: int) -> 'SequentialFruitAgent.SeqAgentState':
+    def init_agent_state(self, agent_id: int) -> 'SequentialFruitAgent.SeqAgentState':
         """
-        Creates an initial, uninitialized agent state structure.
+        Creates an initial, uninitialized agent state structure. Only used in the __init__ method.
 
         Args:
             rng_key: A JAX random key for the agent's state.
@@ -75,8 +70,8 @@ class SequentialFruitAgent(BaseAgent):
             An initial SeqAgentState with initialized=False.
         """
         return SequentialFruitAgent.SeqAgentState(
-            rng_key=rng_key,
-            sequence=jnp.zeros((num_fruits, 2), dtype=jnp.int32),
+            agent_id=agent_id,
+            sequence=jnp.zeros((self.num_fruits, 2), dtype=jnp.int32),
             idx=jnp.array(0, dtype=jnp.int32),
             initialized=jnp.array(False)
         )
@@ -213,6 +208,7 @@ class SequentialFruitAgent(BaseAgent):
         obs: jnp.ndarray,
         env_state: LBFState,
         agent_state: SeqAgentState,
+        rng: jax.random.PRNGKey
     ) -> Tuple[jnp.ndarray, SeqAgentState]:
         """Calculates the agent's action for the current step."""
 
@@ -220,7 +216,7 @@ class SequentialFruitAgent(BaseAgent):
         def initialize_state_sequence(current_agent_state, current_env_state):
             """Computes the fruit sequence based on self.ordering_strategy."""
             positions = current_env_state.food_items.position # Shape (F, 2)
-            agent_start_pos = current_env_state.agents.position[self.agent_id]
+            agent_start_pos = current_env_state.agents.position[current_agent_state.agent_id]
 
             # --- Select ordering based on strategy string ---
             # Use standard Python conditional logic here, as this runs only once
@@ -279,8 +275,7 @@ class SequentialFruitAgent(BaseAgent):
         # --- Get current state information ---
         seq = agent_state.sequence
         i = agent_state.idx
-        agent_pos = env_state.agents.position[self.agent_id]
-        rng_key = agent_state.rng_key # Get key from state
+        agent_pos = env_state.agents.position[agent_state.agent_id]
 
         # --- 1) Check target status and advance index ---
         current_target = seq[i]
@@ -309,7 +304,7 @@ class SequentialFruitAgent(BaseAgent):
             num_agents = all_agent_pos.shape[0]
             agent_id_indices = jnp.arange(num_agents)
             obstacles = jnp.where(
-                (agent_id_indices == self.agent_id)[:, None],
+                (agent_id_indices == agent_state.agent_id)[:, None],
                 jnp.array([[-1, -1]], dtype=all_agent_pos.dtype),
                 all_agent_pos
             )
@@ -326,14 +321,13 @@ class SequentialFruitAgent(BaseAgent):
             should_calculate_move,
             calculate_move,
             no_move,
-            rng_key
+            rng
         )
 
         action = jnp.where(action == 0, move_action, action)
 
         # --- 4) Update agent state ---
         new_agent_state = agent_state.replace(
-            rng_key=rng_key,
             idx=new_idx,
         )
 

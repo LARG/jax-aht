@@ -10,28 +10,23 @@ from agents.lbf.base_agent import BaseAgent, AgentState
 class RandomAgent(BaseAgent):
     """A random agent that takes random actions."""
     
-    def __init__(self, agent_id: int):
-        super().__init__(agent_id)
+    def __init__(self):
+        super().__init__()
 
-    def _get_action(self, obs: jnp.ndarray, env_state: LBFState, agent_state: AgentState) -> Tuple[int, AgentState]:
+    def _get_action(self, obs: jnp.ndarray, env_state: LBFState, 
+                    agent_state: AgentState, rng: jax.random.PRNGKey) -> Tuple[int, AgentState]:
         """Return a random action and updated state.
         
         Args:
             obs: Flattened observation array (not used)
             agent_state: AgentState containing agent's internal state
+            rng: jax.random.PRNGKey for any stochasticity. The rng key is not returned,
+                so the user should split the key before passing it to an agent. 
             
         Returns:
             Tuple of (random_action, updated_agent_state)
         """
-        # Split key for this step
-        rng_key, subkey = jax.random.split(agent_state.rng_key)
-        
         # Generate random action (excluding Actions.done which is 6)
-        action = jax.random.randint(subkey, (), 0, 6)
+        action = jax.random.randint(rng, (), 0, 6)
         
-        # Create new state with updated key
-        updated_agent_state = AgentState(
-            rng_key=rng_key
-        )
-        
-        return action, updated_agent_state
+        return action, agent_state

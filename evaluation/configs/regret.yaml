@@ -1,15 +1,19 @@
 defaults:
+  - task: overcooked/cramped_room # task configs
   - hydra: hydra_simple
   - _self_
 
-ENV_NAME: lbf
-ROLLOUT_LENGTH: 128 # should be larger than episode length
-ENV_KWARGS: {}
+# TODO: restructure this config to use per task and per-algorithm configs!
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
+TASK_NAME: ${task.TASK_NAME}
 
 ego_agent:
   path: "results/lbf/ppo_ego_s5/2025-04-13_11-43-33/saved_train_run" # results/lbf/fcp_s5/2025-04-13_18-42-46/saved_train_run
   actor_type: s5
   idx_list: [[0, -1]] # list of idxs to load from checkpoint for evaluation. If null, all checkpoints will be loaded.
+  test_mode: true
   # provide any necessary args to initialize the agent here
   # ex) S5_ACTOR_CRITIC_HIDDEN_DIM: 64 
   # defaults for each actor type will be used if no args are provided
@@ -37,13 +41,16 @@ algorithm:
   MAX_GRAD_NORM: 1.0
   ANNEAL_LR: false
 
-name: regret_maximizing
+label: ""
+name: ${TASK_NAME}/regret_maximizing/${label}
 
 # wandb settings
 logger: 
-  load_dir: regret_maximizing
   project: open-ended-aht
   entity: aht-project
+  tags: 
+    - regret_maximizing
+    - ${TASK_NAME}
   mode: offline # options: online, offline, disabled
   verbose: true
   log_train_out: false # whether to log the out dictionary

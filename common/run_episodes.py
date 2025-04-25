@@ -1,5 +1,5 @@
 '''
-This file contains the code for running episodes with an ego agent and a partner agent.
+This file contains the code for running evaluation episodes with an ego agent and a partner agent.
 Does not currently support actors that require aux_obs.
 '''
 import jax
@@ -8,15 +8,15 @@ import jax.numpy as jnp
 
 def run_single_episode(rng, env, agent_0_param, agent_0_policy, 
                        agent_1_param, agent_1_policy, 
-                       max_episode_steps, test_mode=False):
+                       max_episode_steps, agent_0_test_mode=False, agent_1_test_mode=False):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
     obs, env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
     
     # Initialize hidden states
-    init_hstate_0 = agent_0_policy.init_hstate(1)
-    init_hstate_1 = agent_1_policy.init_hstate(1)
+    init_hstate_0 = agent_0_policy.init_hstate(1, aux_info={"agent_id": 0})
+    init_hstate_1 = agent_1_policy.init_hstate(1, aux_info={"agent_id": 1})
 
     # Get agent obses
     obs_0 = obs["agent_0"]
@@ -45,7 +45,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
         act1_rng,
         aux_obs=None,
         env_state=env_state,
-        test_mode=test_mode
+        test_mode=agent_0_test_mode
     )
     act_0 = act_0.squeeze()
 
@@ -62,7 +62,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
         act2_rng,
         aux_obs=None,
         env_state=env_state,
-        test_mode=test_mode
+        test_mode=agent_1_test_mode
     )
     act_1 = act_1.squeeze()
     
@@ -103,7 +103,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
                 hstate_0,
                 act_rng,
                 env_state=env_state,
-                test_mode=test_mode
+                test_mode=agent_0_test_mode
             )
             act_0 = act_0.squeeze()
 
@@ -116,7 +116,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
                 hstate_1,
                 part_rng,
                 env_state=env_state,
-                test_mode=test_mode
+                test_mode=agent_1_test_mode
             )
             act_1 = act_1.squeeze()
             
@@ -143,7 +143,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
 
 def run_episodes(rng, env, agent_0_param, agent_0_policy, 
                  agent_1_param, agent_1_policy, 
-                 max_episode_steps, num_eps, test_mode=False):
+                 max_episode_steps, num_eps, agent_0_test_mode=False, agent_1_test_mode=False):
     '''Given a single ego agent and a single partner agent, run num_eps episodes in parallel using vmap.'''
     # Create episode-specific RNGs
     rngs = jax.random.split(rng, num_eps + 1)
@@ -153,7 +153,8 @@ def run_episodes(rng, env, agent_0_param, agent_0_policy,
     vmap_run_single_episode = jax.jit(jax.vmap(
         lambda ep_rng: run_single_episode(
             ep_rng, env, agent_0_param, agent_0_policy,
-            agent_1_param, agent_1_policy, max_episode_steps, test_mode
+            agent_1_param, agent_1_policy, max_episode_steps, 
+            agent_0_test_mode, agent_1_test_mode
         )
     ))
     # Run episodes in parallel

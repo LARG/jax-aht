@@ -5,7 +5,7 @@ ENV_NAME: lbf-reward-shaping
 NUM_STEPS: 128 # rollout length must be greater than episode length
 ENV_KWARGS: {}
 
-TOTAL_TIMESTEPS: 3e5
+TOTAL_TIMESTEPS: 5e5
 SEED: 12345
 LR: .0001
 NUM_ENVS: 8
@@ -25,12 +25,15 @@ ANNEAL_LR: True
 logger: 
   project: aht-benchmark
   entity: aht-project
+  tags: 
+    - ippo
+    - "${ENV_NAME}"
   mode: offline # options: online, offline, disabled
   verbose: false
   log_train_out: false # whether to log the out dictionary
 
 local_logger:
-  save_figures: true
+  save_figures: true  
   save_train_out: false
 
 hydra:

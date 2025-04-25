@@ -1,23 +1,25 @@
 '''Script to rollout a policy for a given number of episodes on the LBF environment.'''
 import os
+import re
 import jax
+import jax.numpy as jnp
+
 from envs import make_env
 from evaluation.policy_loaders import MLPActorCriticLoader, S5ActorCriticLoader, RandomActor
-import jax.numpy as jnp
 
 
 def rollout(ego_run_path, partner_run_path, 
             ego_seed_idx, partner_seed_idx,
             ego_checkpoint_idx, partner_checkpoint_idx,
             num_episodes, render, highlight_agent_idx,
-            savevideo, save_name
+            savevideo, save_name, save_dir=None
             ):
     env = make_env('lbf', env_kwargs={"highlight_agent_idx": highlight_agent_idx})
     action_dim = env.action_spaces['agent_0'].n
     obs_dim = env.observation_spaces['agent_0'].shape[0]
 
     policies = {}
-    policies[0] = S5ActorCriticLoader(ego_run_path, action_dim, obs_dim, 
+    policies[0] = MLPActorCriticLoader(ego_run_path, action_dim, obs_dim, 
                                       n=ego_seed_idx, m=ego_checkpoint_idx)
     policies[1] = MLPActorCriticLoader(partner_run_path, action_dim, obs_dim, 
                                       n=partner_seed_idx, m=partner_checkpoint_idx) 
@@ -75,17 +77,24 @@ def rollout(ego_run_path, partner_run_path,
         print(f"Episode {episode} finished. Total rewards: {total_rewards}. Num steps: {num_steps}")
         
     if savevideo:
+        if save_dir is None: 
+            save_dir = "results/lbf/videos"
+            savepath = f"{save_dir}/{save_name}"
+        else:
+            savepath = f"{save_dir}/{save_name}"
+
         anim = env.animate(states, interval=150)
-        if not os.path.exists("results/lbf/videos"):
-            os.makedirs("results/lbf/videos", exist_ok=True)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
+
         try:
             anim.save(
-                f"results/lbf/videos/{save_name}.mp4", 
+                f"{savepath}.mp4", 
                 writer="ffmpeg"
             )
         except:
             anim.save(
-                f"results/lbf/videos/{save_name}.gif",
+                f"{savepath}.gif",
             )
 
 if __name__ == "__main__":
@@ -93,19 +102,31 @@ if __name__ == "__main__":
     RENDER = False
     SAVEVIDEO = True
 
-    ego_run_path = "results/lbf/ppo_ego_s5/2025-04-13_11-43-33/saved_train_run" # PPO ego s5 agent
-    partner_run_path = "results/lbf/ppo_ego_mlp/2025-04-13_23-19-15/saved_train_run" # MLP ego agent
-    save_name = "video-test"
+    ego_run_path = "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
+    partner_run_path = ego_run_path
+
+    ego_name = re.findall("\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}", ego_run_path)[0]
+    partner_name = re.findall("\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}", partner_run_path)[0]
+    for ego_seed_idx in range(3):
+        # ego_seed_idx, ego_checkpoint_idx = 0, -1
+        # partner_seed_idx, partner_checkpoint_idx = 0, -1
+        ego_checkpoint_idx = 1
+        partner_seed_idx = ego_seed_idx
+        partner_checkpoint_idx = ego_checkpoint_idx
+
+        save_name = f"seed={ego_seed_idx}_checkpoint={ego_checkpoint_idx}"
+
     
-    rollout(ego_run_path=ego_run_path, 
-            partner_run_path=partner_run_path,
-            ego_seed_idx=0,
-            partner_seed_idx=0,
-            ego_checkpoint_idx=-1, # use last checkpoint
-            partner_checkpoint_idx=-1, # use last checkpoint
-            num_episodes=NUM_EPISODES, 
-            render=RENDER, 
-            highlight_agent_idx=0, # highlight the ego agent
-            savevideo=SAVEVIDEO,
-            save_name=save_name
-            )
+        rollout(ego_run_path=ego_run_path, 
+                partner_run_path=partner_run_path,
+                ego_seed_idx=ego_seed_idx,
+                partner_seed_idx=partner_seed_idx,
+                ego_checkpoint_idx=ego_checkpoint_idx, # use last checkpoint
+                partner_checkpoint_idx=partner_checkpoint_idx, # use last checkpoint
+                num_episodes=NUM_EPISODES, 
+                render=RENDER, 
+                highlight_agent_idx=0, # highlight the ego agent
+                savevideo=SAVEVIDEO,
+                save_name=save_name,
+                save_dir=os.path.dirname(ego_run_path)
+                )

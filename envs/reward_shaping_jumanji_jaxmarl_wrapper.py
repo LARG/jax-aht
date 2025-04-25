@@ -39,8 +39,8 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
              of collecting the three items available in the environment.
     """
 
-    def __init__(self, env, reward_shaping_params=None):
-        super().__init__(env)
+    def __init__(self, env, share_rewards: bool=False, reward_shaping_params=None):
+        super().__init__(env, share_rewards)
 
         self.reward_shaping_params = (
             {

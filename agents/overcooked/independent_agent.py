@@ -20,6 +20,7 @@ class IndependentAgent(BaseAgent):
     in the soup pot, and p_plate_on_counter to place the plate on the counter instead of 
     delivering it. 
 
+    Currently, only the "nearest" preference works. 
     This agent is suitable for: 
     - Asymmetric advantages
     - Cramped Room
@@ -30,11 +31,13 @@ class IndependentAgent(BaseAgent):
     steps without coordination.
     """
     
-    def __init__(self, agent_id: int, layout: Dict[str, Any], p_onion_on_counter: float = 0, p_plate_on_counter: float = 0.5):
-        super().__init__(agent_id, layout)
+    def __init__(self, layout: Dict[str, Any], 
+                 p_onion_on_counter: float = 0.1, p_plate_on_counter: float = 0.1, pref: str="nearest"):
+        super().__init__(layout)
         self.p_onion_on_counter = p_onion_on_counter
         self.p_plate_on_counter = p_plate_on_counter
-        
+        self.pref = pref
+
     @partial(jax.jit, static_argnums=(0,))
     def _get_action(self, obs: jnp.ndarray, agent_state: AgentState) -> Tuple[int, AgentState]:
         """Get action based on observation and current agentstate.
@@ -52,43 +55,43 @@ class IndependentAgent(BaseAgent):
         def get_onion(carry):
             '''Go to the nearest onion and pick it up.'''
             obs_3d, agent_state = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "onion", agent_state.rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "onion", self.pref, agent_state.rng_key)
             return (action, Goal.get_onion, new_rng_key)
             
         def put_onion_in_pot(carry):
             '''Go to the nearest non-full pot and put the onion in it.'''
             obs_3d, agent_state = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "nonfull_pot", agent_state.rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "nonfull_pot", self.pref, agent_state.rng_key)
             return (action, Goal.put_onion, new_rng_key)
             
         def put_onion_on_counter(carry):
             '''Go to the nearest free counter and put the onion on it.'''
             obs_3d, agent_state = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "counter", agent_state.rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "counter", self.pref, agent_state.rng_key)
             return (action, Goal.put_onion, new_rng_key)
             
         def get_plate(carry):
             '''Go to the nearest plate and pick it up.'''
             obs_3d, agent_state = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "plate", agent_state.rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "plate", self.pref, agent_state.rng_key)
             return (action, Goal.get_plate, new_rng_key)
             
         def put_plate_on_counter(carry):
             '''Go to the nearest free counter and put the plate on it.'''
             obs_3d, agent_state = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "counter", agent_state.rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "counter", self.pref, agent_state.rng_key)
             return (action, Goal.put_plate, new_rng_key)
             
         def plate_soup(carry):
             '''Go to the nearest pot with ready soup and plate it.'''
             obs_3d, agent_state = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "ready_pot", agent_state.rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "ready_pot", self.pref, agent_state.rng_key)
             return (action, Goal.get_soup, new_rng_key)
             
         def deliver_dish(carry):
             '''Go to the delivery window and deliver the dish.'''
             obs_3d, agent_state = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "delivery", agent_state.rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "delivery", self.pref, agent_state.rng_key)
             return (action, Goal.deliver, new_rng_key)
         
         # Handle onion-related actions
@@ -110,6 +113,7 @@ class IndependentAgent(BaseAgent):
             
             # Create temporary state with updated rng_key
             temp_state = AgentState(
+                agent_id=agent_state.agent_id,
                 holding=agent_state.holding,
                 goal=agent_state.goal,
                 nonfull_pots=agent_state.nonfull_pots,
@@ -133,6 +137,7 @@ class IndependentAgent(BaseAgent):
             
             # Create temporary state with updated rng_key
             temp_state = AgentState(
+                agent_id=agent_state.agent_id,
                 holding=agent_state.holding,
                 goal=agent_state.goal,
                 nonfull_pots=agent_state.nonfull_pots,
@@ -192,6 +197,7 @@ class IndependentAgent(BaseAgent):
 
         # Create new state with updated key and goal, preserving other state values
         updated_agent_state = AgentState(
+            agent_id=agent_state.agent_id,
             holding=agent_state.holding,
             goal=new_goal,
             nonfull_pots=agent_state.nonfull_pots,

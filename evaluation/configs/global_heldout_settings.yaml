@@ -1,0 +1,187 @@
+# @package _global_
+# THIS SCRIPT CONTAINS THE PATHS FOR THE HELDOUT EVALUATION. DO NOT MODIFY THIS FILE.
+global_heldout_settings:
+  EVAL_SEED: 34957
+  MAX_EPISODE_STEPS: ${task.ROLLOUT_LENGTH}
+  NUM_EVAL_EPISODES: 64
+
+heldout_set:
+  lbf: # DONE - DO NOT MODIFY
+    ippo_mlp: 
+      path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0] # load in seed 0 only
+      test_mode: true
+    ippo_mlp_s2c1:
+      path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
+      actor_type: mlp
+      idx_list: [[2, 1]] # load in seed 2 ckpt 1
+      test_mode: true
+    brdiv-conf1: 
+      path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [0, 1, 2] # load in population members 0, 1, 2
+      ckpt_key: final_params_conf # key to load from checkpoint.
+      POP_SIZE: 5 # for brdiv, we need to specify population size that the method was trained with
+    brdiv-conf2:
+      path: "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [0, 1]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+    seq_agent_lexi:
+      actor_type: seq_agent
+      ordering_strategy: lexicographic
+    seq_agent_rlexi:
+      actor_type: seq_agent
+      ordering_strategy: reverse_lexicographic
+    seq_agent_col:
+      actor_type: seq_agent
+      ordering_strategy: column_major
+    seq_agent_rcol:
+      actor_type: seq_agent
+      ordering_strategy: reverse_column_major
+    seq_agent_nearest:
+      actor_type: seq_agent
+      ordering_strategy: nearest_agent
+    seq_agent_farthest:
+      actor_type: seq_agent
+      ordering_strategy: farthest_agent
+  overcooked-v1/cramped_room: # DONE - DO NOT MODIFY
+    ippo_mlp: 
+      path: "eval_teammates/overcooked-v1/cramped_room/ippo/2025-04-21_22-53-04/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0, 1, 2]
+      test_mode: true
+    brdiv-conf:
+      path: "eval_teammates/overcooked-v1/cramped_room/brdiv/2025-04-23-12-55-47/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [0, 1] # load in population members 1, 2
+      ckpt_key: final_params_conf
+      POP_SIZE: 4
+    independent_agent_0.4:
+      actor_type: independent_agent
+      p_onion_on_counter: 0.4
+      p_plate_on_counter: 0.4
+    independent_agent_0:
+      actor_type: independent_agent
+      p_onion_on_counter: 0.0
+      p_plate_on_counter: 0.0
+    onion_agent_0.1:  
+      actor_type: onion_agent
+      p_onion_on_counter: 0.1
+    plate_agent_0.1:
+      actor_type: plate_agent
+      p_plate_on_counter: 0.1
+  overcooked-v1/asymm_advantages: # DONE - DO NOT MODIFY
+    ippo_mlp: 
+      path: "eval_teammates/overcooked-v1/asymm_advantages/ippo/2025-04-21_22-53-56/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0, 1, 2]
+      test_mode: true
+    brdiv-conf: 
+      path: "eval_teammates/overcooked-v1/asymm_advantages/brdiv/2025-04-23/13-16-34/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [0, 1, 2]
+      ckpt_key: final_params_conf
+      POP_SIZE: 4
+    independent_agent_0:
+      actor_type: independent_agent
+      p_onion_on_counter: 0.0
+      p_plate_on_counter: 0.0
+    onion_agent_0:
+      actor_type: onion_agent
+      p_onion_on_counter: 0.0
+    plate_agent_0:
+      actor_type: plate_agent
+      p_plate_on_counter: 0.0
+  overcooked-v1/counter_circuit: # DONE - DO NOT MODIFY
+    ippo_mlp_cc: # counterclockwise mmt 
+      path: "eval_teammates/overcooked-v1/counter_circuit/ippo/2025-04-21_22-55-42/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0, 1, 2]
+      test_mode: true
+    ippo_mlp_pass: # passes onions across counter
+      path: "eval_teammates/overcooked-v1/counter_circuit/ippo/2025-04-23_15-28-23/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0, 1, 2]
+      test_mode: true
+    independent_agent_0:
+      actor_type: independent_agent
+      p_onion_on_counter: 0.0
+      p_plate_on_counter: 0.0
+    onion_agent_0:
+      actor_type: onion_agent
+      p_onion_on_counter: 0.0
+    plate_agent_0:
+      actor_type: plate_agent
+      p_plate_on_counter: 0.0
+    onion_agent_0.9:
+      actor_type: onion_agent
+      p_onion_on_counter: 0.9
+    plate_agent_0.9:
+      actor_type: plate_agent
+      p_plate_on_counter: 0.9
+  overcooked-v1/coord_ring: # DONE - DO NOT MODIFY
+    ippo_mlp: 
+      path: "eval_teammates/overcooked-v1/coord_ring/ippo/2025-04-21_22-58-26/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [1, 2, 3]
+      test_mode: true
+    brdiv-conf1:
+      path: "eval_teammates/overcooked-v1/coord_ring/brdiv/2025_04-23_15-00-27/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [1, 2]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+    brdiv-conf2:
+      path: "eval_teammates/overcooked-v1/coord_ring/brdiv/2025_04-23_14-17-36/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [0]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+    independent_agent_0:
+      actor_type: independent_agent
+      p_onion_on_counter: 0.0
+      p_plate_on_counter: 0.0
+    onion_agent_0:
+      actor_type: onion_agent
+      p_onion_on_counter: 0.0
+    plate_agent_0:
+      actor_type: plate_agent
+      p_plate_on_counter: 0.0
+  overcooked-v1/forced_coord:  # DONE - DO NOT MODIFY
+    ippo_mlp: 
+      path: "eval_teammates/overcooked-v1/forced_coord/ippo/2025-04-21_23-00-17/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0, 1, 2]
+      test_mode: true
+    brdiv-conf1: 
+      path: "eval_teammates/overcooked-v1/forced_coord/brdiv/2025-04-23_19-44-30/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [0, 2]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+    brdiv-conf2:
+      path: "eval_teammates/overcooked-v1/forced_coord/brdiv/2025-04-23_20-25-28/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [1]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+    brdiv-conf3:
+      path: "eval_teammates/overcooked-v1/forced_coord/brdiv/2025-04-23_21-06-05/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [0, 2]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+    independent_agent_0.6:
+      actor_type: independent_agent
+      p_onion_on_counter: 0.6
+      p_plate_on_counter: 0.6

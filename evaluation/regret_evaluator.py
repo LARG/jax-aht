@@ -870,8 +870,8 @@ def log_metrics(config, env, logger, train_out, metric_names: tuple):
     num_updates = metrics["returned_episode_returns"].shape[1]
 
     # shape (num_partner_seeds, num_updates, num_eval_episodes, num_agents_per_env)
-    avg_teammate_sp_returns = np.asarray(metrics["eval_ep_last_info_br"]["returned_episode_returns"])[..., 0].mean(axis=(0, 2))
-    avg_teammate_xp_returns = np.asarray(metrics["eval_ep_last_info_ego"]["returned_episode_returns"])[..., 0].mean(axis=(0, 2))
+    avg_teammate_sp_returns = np.asarray(metrics["eval_ep_last_info_br"]["returned_episode_returns"]).mean(axis=(0, 2, 3))
+    avg_teammate_xp_returns = np.asarray(metrics["eval_ep_last_info_ego"]["returned_episode_returns"]).mean(axis=(0, 2, 3))
 
     # Conf vs ego, conf vs br, br losses
     #  shape (num_partner_seeds, num_updates, update_epochs, num_minibatches)

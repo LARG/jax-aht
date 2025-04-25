@@ -19,13 +19,16 @@ class WrappedEnvState:
 class JumanjiToJaxMARL(object):
     """Use a Jumanji Environment within JaxMARL.
     Warning: this wrapper has only been tested with LBF.
+    It also runs with RWare, but has not been tested. 
+
+    We add the option to share rewards between agents, since it is shared according to the agent level in the LBF environment. 
     """
-    def __init__(self, env: JumanjiEnv):
+    def __init__(self, env: JumanjiEnv, share_rewards: bool = False):
         self.env = env
         self.num_agents = env.num_agents
         self.name = env.__class__.__name__
         self.agents = [f"agent_{i}" for i in range(self.num_agents)]
-
+        self.share_rewards = share_rewards
         # warning: this wrapper currently only supports homogeneous agent envs
         self.observation_spaces = {
             agent: self._convert_jumanji_obs_spec_to_jaxmarl_space(env.observation_spec, agent_idx)
@@ -107,7 +110,11 @@ class JumanjiToJaxMARL(object):
 
     def _extract_rewards(self, reward):
         '''Extract per-agent rewards'''
-        rewards = {agent: reward[i] for i, agent in enumerate(self.agents)}
+        if self.share_rewards:
+            tot_reward = jnp.mean(reward)
+            rewards = {agent: tot_reward for agent in self.agents}
+        else: 
+            rewards = {agent: reward[i] for i, agent in enumerate(self.agents)}
         return rewards
 
     def _extract_dones(self, timestep):

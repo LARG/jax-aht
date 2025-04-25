@@ -1,0 +1,17 @@
+[2025-04-23 23:09:53] Starting task: open_ended_minimax/overcooked/asymm_advantages
+Mock failure for task: open_ended_minimax/overcooked/asymm_advantages
+[2025-04-23 23:09:54] ❌ Failed to complete task: open_ended_minimax/overcooked/asymm_advantages
+[2025-04-23 23:09:54] Starting task: open_ended_minimax/overcooked/coord_ring
+[2025-04-23 23:09:54] ✅ Successfully completed task: open_ended_minimax/overcooked/coord_ring
+[2025-04-23 23:09:54] Starting task: open_ended_minimax/overcooked/counter_circuit
+[2025-04-23 23:09:54] ✅ Successfully completed task: open_ended_minimax/overcooked/counter_circuit
+[2025-04-23 23:09:55] Starting task: open_ended_minimax/overcooked/cramped_room
+Mock failure for task: open_ended_minimax/overcooked/cramped_room
+[2025-04-23 23:09:55] ❌ Failed to complete task: open_ended_minimax/overcooked/cramped_room
+[2025-04-23 23:09:55] Starting task: open_ended_minimax/overcooked/forced_coord
+[2025-04-23 23:09:55] ✅ Successfully completed task: open_ended_minimax/overcooked/forced_coord
+[2025-04-23 23:09:55] Experiment Summary:
+[2025-04-23 23:09:55] Total tasks attempted: 5
+[2025-04-23 23:09:55] Successful tasks: 3
+[2025-04-23 23:09:55] Failed tasks: 2
+[2025-04-23 23:09:55] Warning: Some tasks failed. Check the log file for details: logs/test/experiment_open_ended_minimax_20250423_230953.log

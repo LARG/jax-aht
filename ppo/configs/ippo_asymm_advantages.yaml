@@ -7,7 +7,7 @@ ENV_KWARGS:
   layout: asymm_advantages
   random_obj_state: true
 
-TOTAL_TIMESTEPS: 1e6
+TOTAL_TIMESTEPS: 5e5
 SEED: 12345
 LR: .0001
 NUM_ENVS: 8
@@ -27,6 +27,9 @@ ANNEAL_LR: True
 logger: 
   project: open-ended-aht
   entity: aht-project
+  tags: 
+    - ippo
+    - "${ENV_NAME}/${ENV_KWARGS.layout}"
   mode: offline # options: online, offline, disabled
   verbose: false
   log_train_out: false # whether to log the out dictionary

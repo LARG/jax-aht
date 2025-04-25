@@ -1,12 +1,23 @@
 defaults:
+  - task: overcooked/cramped_room # task configs
   - hydra: hydra_simple
   - _self_         # Ensures that values in this file override imported ones if needed
 
-ENV_NAME: lbf
-ROLLOUT_LENGTH: 128 # rollout length must be greater than episode length
-ENV_KWARGS: {}
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
+TASK_NAME: ${task.TASK_NAME}
+
+partner_agent:
+  ippo_mlp: 
+    path: "eval_teammates/overcooked-v1/cramped_room/ippo/2025-04-21_22-53-04/saved_train_run"
+    actor_type: mlp
+    ckpt_key: final_params
+    idx_list: [0]
+    test_mode: true
 
 algorithm:
+  ALG: ppo_br
   EGO_ACTOR_TYPE: s5 # options: s5, mlp, rnn
   TOTAL_TIMESTEPS: 3e5
   TRAIN_SEED: 12345
@@ -32,6 +43,9 @@ algorithm:
 logger: 
   project: open-ended-aht
   entity: aht-project
+  tags: 
+    - ${algorithm.ALG}
+    - ${TASK_NAME}
   mode: offline # options: online, offline, disabled
   verbose: true
   log_train_out: false # whether to log the out dictionary
@@ -41,9 +55,5 @@ local_logger:
   save_figures: true # currently unused
   save_train_out: true
 
-hydra:
-  job:
-    name: ppo_ego_${algorithm.EGO_ACTOR_TYPE}
-    chdir: true
-  run:
-    dir: results/${ENV_NAME}/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+label: ""
+name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.EGO_ACTOR_TYPE}/${label}

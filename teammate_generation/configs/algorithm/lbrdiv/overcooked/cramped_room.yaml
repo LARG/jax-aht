@@ -1,0 +1,11 @@
+defaults:
+  - brdiv/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 2e7
+LR: .0001
+NUM_ENVS: 8
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 16
+CLIP_EPS: 0.2
+ENT_COEF: 0.01

@@ -17,7 +17,13 @@ class WrappedEnvState:
 
 class OvercookedWrapper():
     '''Wrapper for the Overcooked-v1 environment to ensure that it follows a common interface 
-    with other environments provided in this library.'''
+    with other environments provided in this library.
+    
+    Main features:
+    - Randomized agent order
+    - Flattened observations
+    - Base return tracking
+    '''
     def __init__(self, *args, **kwargs):
         self.env = OvercookedV1(*args, **kwargs)
         self.agents = self.env.agents

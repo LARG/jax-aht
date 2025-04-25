@@ -14,11 +14,8 @@ ENV_KWARGS:
     ONION_PICKUP_REWARD: .1
     COUNTER_PICKUP_REWARD: 0
     COUNTER_DROP_REWARD: 0
-    DISH_DISP_DISTANCE_REW: 0
-    POT_DISTANCE_REW: 0
-    SOUP_DISTANCE_REW: 0
 
-TOTAL_TIMESTEPS: 5e6
+TOTAL_TIMESTEPS: 3e6
 SEED: 12345
 LR: 1e-3
 NUM_ENVS: 8
@@ -38,13 +35,16 @@ ANNEAL_LR: True
 logger: 
   project: open-ended-aht
   entity: aht-project
+  tags: 
+    - ippo
+    - "${ENV_NAME}/${ENV_KWARGS.layout}"
   mode: offline # options: online, offline, disabled
   verbose: false
   log_train_out: false # whether to log the out dictionary
 
 local_logger:
   save_figures: true
-  save_train_out: true
+  save_train_out: false
 
 hydra:
   job:

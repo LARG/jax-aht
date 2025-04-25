@@ -9,6 +9,8 @@ Follow instructions at `install_instructions.md`
 - `envs/`: Environment implementations and wrappers
 - `evaluation/`: heldout evaluation, and visualization scripts
 - `examples/`: Example usage scripts
+- `ego_agent_training/`: all ego-agent implementations. Currently only PPO
+- `teammate_generation/`: teammate generation algorithms
 - `ppo/`: IPPO algorithm implementation
 - `teammate_generation/`: contains FCP and BRDiv implementation
 - `tests/`: Test scripts used during development.

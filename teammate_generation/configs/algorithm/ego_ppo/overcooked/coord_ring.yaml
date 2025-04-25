@@ -1,0 +1,6 @@
+defaults:
+  - ego_ppo/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 1e7
+LR: 1e-3

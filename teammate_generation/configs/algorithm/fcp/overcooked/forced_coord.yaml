@@ -1,0 +1,12 @@
+defaults:
+  - fcp/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 3e6
+PARTNER_POP_SIZE: 15 # true partner pop size is PARTNER_POP_SIZE * NUM_CHECKPOINTS
+LR: 1e-3
+NUM_ENVS: 8
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 16
+CLIP_EPS: 0.1
+ENT_COEF: 0.05

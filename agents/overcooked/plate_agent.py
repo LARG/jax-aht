@@ -12,11 +12,14 @@ class PlateAgent(BaseAgent):
     """A heuristic agent for the Overcooked environment that plates dishes
     when ready and delivers. With probability p_plate_on_counter, it will
     place plates on counters instead of plating soup.
+
+    Currently, only the "nearest" preference works. 
     """
     
-    def __init__(self, agent_id: int, layout: Dict[str, Any], p_plate_on_counter: float = 0.1):
-        super().__init__(agent_id, layout)
+    def __init__(self, layout: Dict[str, Any], p_plate_on_counter: float = 0.1, pref: str="nearest"):
+        super().__init__(layout)
         self.p_plate_on_counter = p_plate_on_counter
+        self.pref = pref
         
     @partial(jax.jit, static_argnums=(0,))
     def _get_action(self, obs: jnp.ndarray, agent_state: AgentState) -> Tuple[int, AgentState]:
@@ -35,25 +38,25 @@ class PlateAgent(BaseAgent):
         def get_plate(carry):
             '''Go to the nearest plate and pick it up. '''
             obs_3d, rng_key = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "plate", rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "plate", self.pref, rng_key)
             return (action, Goal.get_plate, new_rng_key)
             
         def put_plate_on_counter(carry):
             '''Go to the nearest free counter and put the plate on it. '''
             obs_3d, rng_key = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "counter", rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "counter", self.pref, rng_key)
             return (action, Goal.put_plate, new_rng_key)
             
         def plate_soup(carry):
             '''Go to the nearest pot with ready soup and plate it. '''
             obs_3d, rng_key = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "ready_pot", rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "ready_pot", self.pref, rng_key)
             return (action, Goal.get_soup, new_rng_key)
             
         def deliver_dish(carry):
             '''Go to the delivery window and deliver the dish. '''
             obs_3d, rng_key = carry
-            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "delivery", rng_key)
+            action, new_rng_key = self._go_to_obj_and_interact(obs_3d, "delivery", self.pref, rng_key)
             return (action, Goal.deliver, new_rng_key)
         
         # Get action and update RNG key based on current state
@@ -96,6 +99,7 @@ class PlateAgent(BaseAgent):
         
         # Create new state with updated key and goal, preserving other state values
         updated_agent_state = AgentState(
+            agent_id=agent_state.agent_id,
             holding=agent_state.holding,
             goal=new_goal,
             nonfull_pots=agent_state.nonfull_pots,

@@ -3,27 +3,29 @@ Script to rollout a policy for a given number of episodes on the overcooked envi
 Differs from vis_lbf_policy.py in that it loads policies from ippo rather than fcp
 '''
 import os
+import re
 import jax
-from envs import make_env
-from evaluation.policy_loaders import MLPActorCriticLoader, S5ActorCriticLoader, RandomActor
 import jax.numpy as jnp
 
+from envs import make_env
 from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
+from evaluation.policy_loaders import MLPActorCriticLoader, S5ActorCriticLoader, RandomActor
+
 
 def rollout(ego_run_path, partner_run_path, 
             ego_seed_idx, partner_seed_idx,
             ego_checkpoint_idx, partner_checkpoint_idx,
             num_episodes, render,
-            savevideo, save_name, 
-            kwargs, verbose
+            kwargs, verbose,
+            savevideo, save_name, save_dir=None,
             ):
     env = make_env('overcooked-v1', env_kwargs=kwargs)
     action_dim = env.action_spaces['agent_0'].n
     obs_dim = env.observation_spaces['agent_0'].shape[0]
 
     policies = {}
-    policies[0] = MLPActorCriticLoader(partner_run_path, action_dim, obs_dim, 
-                                      n=partner_seed_idx, m=partner_checkpoint_idx) 
+    policies[0] = MLPActorCriticLoader(ego_run_path, action_dim, obs_dim, 
+                                      n=ego_seed_idx, m=ego_checkpoint_idx) 
     policies[1] = MLPActorCriticLoader(partner_run_path, action_dim, obs_dim, 
                                       n=partner_seed_idx, m=partner_checkpoint_idx) 
 
@@ -81,12 +83,14 @@ def rollout(ego_run_path, partner_run_path,
         
     if savevideo:
         print(f"\nSaving mp4 with {len(states)} frames...")
-        if not os.path.exists('results/overcooked-v1/videos'):
-            os.makedirs('results/overcooked-v1/videos')
+        savedir = "results/overcooked-v1/videos"
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        savepath = f"{savedir}/{save_name}.mp4"
         viz = AdHocOvercookedVisualizer()
         viz.animate_mp4([s.env_state for s in states], env.agent_view_size, 
             highlight_agent_idx=0,
-            filename=f'results/overcooked-v1/videos/{kwargs["layout"]}_{save_name}.mp4', 
+            filename=savepath, 
             pixels_per_tile=32, fps=25)
         print("MP4 saved successfully!")
 
@@ -105,7 +109,6 @@ if __name__ == "__main__":
     ego_run_path = "results/overcooked-v1/counter_circuit/ippo/2025-04-23_15-28-23/saved_train_run" # ippo agent, trained for 3e6 steps
     partner_run_path = ego_run_path # ippo training partner, trained for 3e6 steps
     
-    import re
     ego_name = re.findall("\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}", ego_run_path)[0]
     partner_name = re.findall("\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}", partner_run_path)[0]
 

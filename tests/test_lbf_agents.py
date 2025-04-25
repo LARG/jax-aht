@@ -28,16 +28,18 @@ def run_episode(env, agent0, agent1, key) -> Tuple[Dict[str, float], int]:
     num_steps = 0
     
     # Initialize agent states
-    agent0_state = agent0.initial_state
-    agent1_state = agent1.initial_state
+    agent0_state = agent0.init_agent_state(0)
+    agent1_state = agent1.init_agent_state(1)
     
     # Initialize state sequence
     state_seq = []    
     while not done['__all__']:
         # Get actions from both agents with their states
+        key, act0_rng, act1_rng = jax.random.split(key, 3)
+
         print(f"Step {num_steps}")
-        action0, agent0_state = agent0.get_action(obs["agent_0"], state, agent0_state)
-        action1, agent1_state = agent1.get_action(obs["agent_1"], state, agent1_state)
+        action0, agent0_state = agent0.get_action(obs["agent_0"], state, agent0_state, act0_rng)
+        action1, agent1_state = agent1.get_action(obs["agent_1"], state, agent1_state, act1_rng)
         
         actions = {"agent_0": action0, "agent_1": action1}
         
@@ -79,8 +81,8 @@ def main(num_episodes,
     # Initialize agents
     print("Initializing agents...")
     # choices: lexicographic, reverse_lexicographic, column_major, reverse_column_major, nearest_agent, farthest_agent
-    agent0 = SequentialFruitAgent(agent_id=0, grid_size=7, num_fruits=3, ordering_strategy='nearest_agent') # boxed
-    agent1 = SequentialFruitAgent(agent_id=1, grid_size=7, num_fruits=3, ordering_strategy='farthest_agent') # not boxed
+    agent0 = SequentialFruitAgent(grid_size=7, num_fruits=3, ordering_strategy='lexicographic') # boxed
+    agent1 = SequentialFruitAgent(grid_size=7, num_fruits=3, ordering_strategy='lexicographic') # not boxed
     print("Agents initialized")
     
     print("Agent 0:", agent0.get_name())
@@ -101,13 +103,13 @@ def main(num_episodes,
         print(f"Total states in sequence after episode: {len(state_seq_all)}")
         
         # Calculate episode return
-        episode_return = sum(total_rewards.values())
+        episode_return = np.mean(list(total_rewards.values()))
         returns.append(episode_return)
         
         print(f"\nEpisode {episode + 1} finished:")
         print(f"Total steps: {num_steps}")
-        print(f"Episode return: {episode_return:.2f}")
-        print("Final rewards:")
+        print(f"Mean episode return: {episode_return:.2f}")
+        print("Episode returns per agent:")
         for agent in env.agents:
             print(f" {agent}: {total_rewards[agent]:.2f}")
     
@@ -138,11 +140,11 @@ if __name__ == "__main__":
     DEBUG = False
     VISUALIZE = False
     SAVE_VIDEO = not VISUALIZE    
-    NUM_EPISODES = 10
+    NUM_EPISODES = 5
 
 
     with jax.disable_jit(DEBUG):
         main(num_episodes=NUM_EPISODES, 
-             max_steps=10,
+             max_steps=30,
              visualize=VISUALIZE, 
              save_video=SAVE_VIDEO) 

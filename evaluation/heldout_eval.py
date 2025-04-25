@@ -8,14 +8,26 @@ from common.save_load_utils import save_train_run
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from evaluation.heldout_evaluator import eval_egos_vs_heldouts, load_heldout_set
+import logging
 
+log = logging.getLogger(__name__)   
+logging.basicConfig(level=logging.INFO)
 
-def run_heldout_evaluation(config, ego_policy, ego_params, init_ego_params):
-    '''Run heldout evaluation given an ego policy, ego params, and init_ego_params.'''
+def run_heldout_evaluation(config, ego_policy, ego_params, init_ego_params, ego_test_mode=False):
+    '''Run heldout evaluation given an ego policy, ego params, and init_ego_params.
+    
+    Args:
+        config: Configuration dictionary
+        ego_policy: Policy for the ego agent
+        ego_params: Parameters for the ego agent
+        init_ego_params: Initial parameters for the ego agent
+        ego_test_mode: Whether the ego agent should run in test mode (default: False)
+    '''
+    log.info("Running heldout evaluation...")
     env = make_env(config["ENV_NAME"], config["ENV_KWARGS"])
     env = LogWrapper(env)
     
-    rng = jax.random.PRNGKey(config["EVAL_SEED"])
+    rng = jax.random.PRNGKey(config["global_heldout_settings"]["EVAL_SEED"])
     rng, heldout_init_rng, eval_rng = jax.random.split(rng, 3)
     
     # flatten ego checkpoints and idx labels
@@ -24,14 +36,14 @@ def run_heldout_evaluation(config, ego_policy, ego_params, init_ego_params):
     ego_names = [f"ego ({i})" for i in range(num_ego_agents)]
     
     # load heldout agents
-    heldout_cfg = config["heldout_set"][config["ENV_NAME"]]
-    heldout_agents = load_heldout_set(heldout_cfg, env, config["ENV_NAME"], config["ENV_KWARGS"], heldout_init_rng)
+    heldout_cfg = config["heldout_set"][config["TASK_NAME"]]
+    heldout_agents = load_heldout_set(heldout_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], heldout_init_rng)
     heldout_agent_list = list(heldout_agents.values())
     heldout_names = list(heldout_agents.keys())
 
     # run evaluation
-    eval_metrics = eval_egos_vs_heldouts(config, env, eval_rng, config["NUM_EVAL_EPISODES"], 
-                                        ego_policy, flattened_ego_params, heldout_agent_list)
+    eval_metrics = eval_egos_vs_heldouts(config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"], 
+                                        ego_policy, flattened_ego_params, heldout_agent_list, ego_test_mode)
     
     return eval_metrics, ego_names, heldout_names
 
@@ -42,10 +54,11 @@ def log_heldout_metrics(config, logger, eval_metrics,
     num_oel_iter, _, num_eval_episodes, _ = eval_metrics[metric_names[0]].shape
     table_data = []
     for metric_name in metric_names:
+        # dim 0 could be the number of iterations, seeds, or checkpoints.
         # shape of eval_metrics is (num_iter/num_seeds, num_heldout_agents, num_eval_episodes, 2)
-        metric_mean = eval_metrics[metric_name][..., 0].mean(axis=(-1)) # shape (num_iter/num_seeds, num_heldout_agents)
-        metric_std = eval_metrics[metric_name][..., 0].std(axis=(-1)) # shape (num_iter/num_seeds, num_heldout_agents)
-        metric_ci = 1.96 * metric_std / np.sqrt(num_eval_episodes) # shape (num_iter/num_seeds, num_heldout_agents)
+        metric_mean = eval_metrics[metric_name].mean(axis=(-2, -1)) # shape (num_iter/num_seeds, num_heldout_agents)
+        metric_std = eval_metrics[metric_name].std(axis=(-2, -1)) # shape (num_iter/num_seeds, num_heldout_agents)
+        metric_ci = 1.96 * metric_std / np.sqrt(num_eval_episodes) # shape (dim0, num_heldout_agents)
         # log curve
         if log_dim0_as_curve:
             for i in range(num_oel_iter):
@@ -57,8 +70,8 @@ def log_heldout_metrics(config, logger, eval_metrics,
         
     # log table where the columns are the metric names and the rows are the heldout agents vs the last ego agent
     table_data = np.array(table_data) # shape (num_metrics, num_heldout_agents)
-    logger.log_xp_matrix("HeldoutEval/FinalEgoVsHeldout-Mean-CI", table_data.T, 
-                         columns=list(metric_names), rows=heldout_names)
+    logger.log_xp_matrix("HeldoutEval/FinalEgoVsHeldout-Mean-CI", table_data, 
+                         columns=list(heldout_names), rows=list(metric_names))
     logger.commit()
 
     # Saving artifacts

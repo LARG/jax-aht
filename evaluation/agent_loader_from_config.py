@@ -92,7 +92,11 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         agent_params = agent_ckpt
     else: # load specific checkpoints
         # convert omegaconf list config to list recursively
-        idx_list = OmegaConf.to_object(agent_config["idx_list"])
+        try:
+            idx_list = OmegaConf.to_object(agent_config["idx_list"])
+        except Exception as e:
+            log.warning(f"Error interpreting agent_config['idx_list'] as OmegaConf object: {e}. Treating as list.")
+            idx_list = agent_config["idx_list"]
         idx_list = jax.tree.map(lambda x: int(x), idx_list)
         idxs = process_idx_list(idx_list)
         agent_params = jax.tree.map(lambda x: x[idxs], agent_ckpt)

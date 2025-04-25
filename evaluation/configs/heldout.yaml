@@ -1,54 +1,28 @@
 defaults:
+  - task: overcooked/cramped_room # task configs
+  - global_heldout_settings # global settings for heldout evaluation
   - hydra: hydra_simple
   - _self_
 
-ENV_NAME: lbf
-ENV_KWARGS: {}
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+TASK_NAME: ${task.TASK_NAME}
 
-EVAL_SEED: 34957
-MAX_EPISODE_STEPS: 400 # evaluation will use true episode length
-NUM_EVAL_EPISODES: 32
-
-name: heldout_eval
+label: ""
+name: ${TASK_NAME}/heldout_ego_eval/${label}
 
 ego_agent:
-  # overcooked test policy
-  # path: results/overcooked-v1/cramped_room/brdiv/2025-04-16/13-53-06/saved_train_run
-  # actor_type: actor_with_conditional_critic
-  # idx_list: [[0, -1], [1, -1]]
-  # ckpt_key: checkpoints_conf
-  # POP_SIZE: 4
-  # lbf test policy
-  path: results/lbf/fcp_s5/2025-04-13_18-42-46/saved_train_run
-  actor_type: s5
-  idx_list: [[0, -1]] # list of seed and checkpoint index to evaluate. If null, all checkpoints will be loaded.
   # provide any necessary args to initialize the agent here
   # ex) S5_ACTOR_CRITIC_HIDDEN_DIM: 64
   # defaults for each actor type will be used if no args are provided
-
-# heldout set
-heldout_set:
-  lbf:
-    # brdiv: 
-    #   path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
-    #   actor_type: actor_with_conditional_critic
-    #   idx_list: [[0, -1], [1, -1], [2, -1]] # If null, all checkpoints will be loaded.
-    #   ckpt_key: checkpoints_conf # key to load from checkpoint. default is "checkpoints"
-    #   POP_SIZE: 5 # for brdiv, we need to specify population size that the method was trained with
-    ppo_ego_s5: 
-      path: "results/lbf/ppo_ego_s5/2025-04-13_11-43-33/saved_train_run"
-      actor_type: s5
-      idx_list: [[0, -1]]
-    # random_agent: 
-    #   actor_type: random_agent
-  overcooked-v1:
-    random_agent:
-      actor_type: random_agent
-    static_agent:
-      actor_type: static_agent
-    independent_agent:
-      actor_type: independent_agent
-    onion_agent:
-      actor_type: onion_agent
-    plate_agent:
-      actor_type: plate_agent
+  # overcooked test policy
+  path: results/overcooked-v1/cramped_room/brdiv/2025-04-16/13-53-06/saved_train_run
+  actor_type: actor_with_conditional_critic
+  idx_list: [[0, -1], [1, -1]]
+  ckpt_key: final_params_conf
+  POP_SIZE: 4
+  # lbf test policy
+  # path: results/lbf/fcp_s5/2025-04-13_18-42-46/saved_train_run
+  # actor_type: s5
+  # idx_list: [[0, -1]] # list of seed and checkpoint index to evaluate. If null, all checkpoints will be loaded.
+  # test_mode: true
