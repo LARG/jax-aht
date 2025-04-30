@@ -15,11 +15,11 @@ class RewardShapingEnvState:
 
 REWARD_SHAPING_PARAMS = {
     "agent_0": {
-    "DISTANCE_TO_NEAREST_FOOD_REW": 0.5, # Reward for moving closer to food (H1)
+    "DISTANCE_TO_NEAREST_FOOD_REW": 0.0, # Reward for moving closer to food (H1)
     "DISTANCE_TO_FARTHEST_FOOD_REW": 0.0, # Reward for moving further from food (H2)
     "SEQUENCE_REW": 0.0, # Reward for completing a sequence of actions (H3-H8)
     "FOLLOWING_TEAMMATE_REW": 0.0, # Reward for following another agent
-    "CENTERED_FOOD_DISTANCE_REW": 0.0, # Reward for moving towards towards the food that is closest to the midpoint of the two agents
+    "CENTERED_FOOD_DISTANCE_REW": 0.5, # Reward for moving towards towards the food that is closest to the midpoint of the two agents
     "PROXIMITY_TO_TEAMMATE_REW": 0.2, # Reward for proximity to teammate
     "COLLECT_FOOD_REW": 3.0,
     },
@@ -88,7 +88,7 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
         done = self._extract_dones(timestep)
         info = self._extract_infos(timestep)
 
-        shaped_rewards_dict = self._extract_shaped_rewards(next_obs, state.prev_env_state, next_state.env_state, actions)
+        shaped_rewards_dict = self._extract_shaped_rewards(next_obs, next_state.prev_env_state, next_state.env_state, actions)
         total_reward_dict = {
             agent: reward[agent] + (REWARD_SHAPING_PARAMS["REWARD_SHAPING_COEF"] * shaped_rewards_dict[agent])
             for agent in self.agents
