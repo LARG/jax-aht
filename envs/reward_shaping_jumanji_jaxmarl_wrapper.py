@@ -136,8 +136,6 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
         )
 
         reset_obs, reset_state = self.reset(key_reset)
-        # reset_state = reset_state.replace(prev_env_state=reset_state.env_state)
-        # reset_state = reset_state.replace(target_food_idx=jnp.full((self.num_agents, 3), -1))
 
         (obs, state) = jax.tree_util.tree_map(
             lambda reset_val, next_val: jax.lax.select(done["__all__"], reset_val, next_val),
