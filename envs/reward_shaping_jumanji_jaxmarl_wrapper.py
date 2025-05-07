@@ -184,7 +184,6 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
     #     return shaped_rewards
 
     def _extract_shaped_rewards(self, prev_env_state, env_state, actions, target_food_idx):
-        #target_food_idx = jnp.broadcast_to(target_food_idx, (self.num_agents, 3)) # [0] = nearest, [1] = farthest, [2] = centered
         shaped_rewards = {}
         updated_target_indices = []
 
@@ -225,10 +224,6 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
             total_shaped_reward += collect_food_reward
 
             shaped_rewards[agent_id] = total_shaped_reward
-            
-            # new_nearest_target   = jax.lax.select(nearest_food_reward != 0.0, nearest_target_index,  current_target_nearest)
-            # new_farthest_target    = jax.lax.select(farthest_food_reward != 0.0, farthest_target_index, current_target_farthest)
-            # new_center_target = jax.lax.select(centered_food_reward != 0.0, centered_target_index, current_target_centered)
 
             updated_index = jnp.stack([nearest_target_index, farthest_target_index, centered_target_index])
             updated_target_indices.append(updated_index)
