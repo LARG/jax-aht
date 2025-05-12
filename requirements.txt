@@ -21,7 +21,6 @@ omegaconf
 hydra-core
 plotly
 prettytable
-scikit-learn
 
 jumanji==1.1.0
 jaxmarl==0.0.7
