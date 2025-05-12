@@ -38,15 +38,26 @@ def PCA(points: List[jax.Array]) -> List[jax.Array]:
 # TODO: implement / use t-SNE
 # @ Aditya
 
+import numpy as np
+from sklearn.manifold import TSNE
+
 def tSNE(points: List[jax.Array]) -> List[jax.Array]:
     # take the input (list of points in N-d space) and map to a list of 2d using tSNE
     # we should implement using jax because this is time sensitive?
-    return None    
+
+    # Convert list of JAX arrays to NumPy and stack into a matrix
+    X = np.stack([np.array(p) for p in points])
+
+    # Apply t-SNE
+    tsne = TSNE(n_components=2, perplexity=30.0, random_state=42)
+    X_tsne = tsne.fit_transform(X)
+
+    # Convert result back to list of JAX arrays
+    return [jnp.array(p) for p in X_tsne]   
 
 # TODO: implement / use t-SNE
 # @ Aditya
 
-import numpy as np
 import matplotlib as plt
 
 def visualize(points: List[jax.Array]):
