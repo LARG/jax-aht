@@ -179,8 +179,22 @@ def collect_n_trajectories(rng, env, agent_0_param, agent_0_policy,
     return_val = {
         "actions": jnp.transpose(jnp.stack([all_trajectories[1][0], all_trajectories[1][1]], axis=1), axes=(0, 2, 1)),
         # actions[i][j][k] is the action of trajectory # i (0-(n_episodes-1)), at step # j (0-399), of agent # k (0-1)
-        "states": all_trajectories[0]
+        "states": jax.tree_map(lambda x: jax.vmap(lambda i: x[i])(jnp.arange(x.shape[0])), all_trajectories[0].env_state.env_state) 
     }
+
+
+    # print(dir(return_val["states"]))
+
+    # print(return_val["states"].wall_map.shape)
+
+    print(len(return_val["states"]))
+
+    print(dir(return_val["states"][0]))
+
+    print(return_val["states"][0]["wall_map"].shape)
+
+    exit()
+
 
     return return_val
 
@@ -196,17 +210,6 @@ def aggregate_events(data: List[jax.Array]):
 
 # sample usage
 if __name__ == "__main__":
-
-    a = jnp.array([[1, 2, 3], [4, 5, 6]])  
-    b = jnp.array([[7, 8, 9], [10, 11, 12]])  
-
-    print(a.shape)
-
-    stacked = jnp.stack([a, b], axis=1)
-    print(stacked.shape)  # (2, 2, 2)
-    print(stacked)
-
-    exit()
 
     print("sample trajectory collection for visualization with overcooked")
 
