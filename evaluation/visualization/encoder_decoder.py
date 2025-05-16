@@ -5,6 +5,7 @@
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
+from flax.linen.recurrent import LSTMCell
 
 class TrajectoryEncoder(nn.Module):
     hidden_size: int
@@ -16,8 +17,8 @@ class TrajectoryEncoder(nn.Module):
         trajectory: [T, D] where T is the sequence length and D is the feature dimension
         Returns: [embedding_size]
         """
-        lstm = nn.LSTMCell()
-        carry = lstm.initialize_carry(jax.random.PRNGKey(0), (), self.hidden_size)
+        lstm = LSTMCell(features=self.hidden_size)
+        carry = lstm.initialize_carry(rng=jax.random.PRNGKey(0), input_shape=())
         for t in range(trajectory.shape[0]):
             carry, _ = lstm(carry, trajectory[t])
         h, _ = carry
@@ -35,8 +36,8 @@ class TrajectoryDecoder(nn.Module):
         embedding: [embedding_size]
         Returns: [T, D] reconstructed trajectory
         """
-        lstm = nn.LSTMCell()
-        carry = lstm.initialize_carry(jax.random.PRNGKey(0), (), self.hidden_size)
+        lstm = LSTMCell(features=self.hidden_size)
+        carry = lstm.initialize_carry(rng=jax.random.PRNGKey(0), input_shape=())
         # Optional: condition hidden state on the embedding
         carry = (nn.Dense(self.hidden_size)(embedding), carry[1])
 
@@ -105,7 +106,27 @@ if __name__ == "__main__":
         return jnp.mean((recon - batch) ** 2)
 
     # -----------------------
+    print("Training")
+    # @jax.jit
+    def train_step(state, batch):
+        def loss_fn(params):
+            recon, _ = model.apply(params, batch)
+            return jnp.mean((recon - batch) ** 2)
+        loss, grads = jax.value_and_grad(loss_fn)(state.params)
+        state = state.apply_gradients(grads=grads)
+        return state, loss
 
+    # Training loop without scan
+    losses = []
+    for i in range(10):
+        print(f"i = {i}")
+        state, loss = train_step(state, dummy_input)
+        print("Train step done")
+        losses.append(loss)
+
+    print("Final loss:", losses[-1])
+
+    '''
     @jax.jit
     def train_helper(carry, x):
         def train_step(state, batch):
@@ -123,7 +144,7 @@ if __name__ == "__main__":
         train_helper, init_carry, xs, length=10)
 
     print(final_carry)
-
+    '''
     # @jax.jit
     # def train_helper(carry, x):
 
