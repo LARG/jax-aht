@@ -622,62 +622,16 @@ if __name__ == "__main__":
 
     print(loss)
 
-    exit()
+    # now do multiple training steps with lax.scan
 
-    # TODO: wrap the train steps in a scan
-
-    # -----------------------
-    print("Training")
-    # @jax.jit
-    def train_step(state, batch):
-        def loss_fn(params):
-            recon, _ = model.apply(params, batch)
-            return jnp.mean((recon - batch) ** 2)
-        loss, grads = jax.value_and_grad(loss_fn)(state.params)
-        state = state.apply_gradients(grads=grads)
+    def train_step_wrapper(state, batch):
+        src, tgt = batch
+        state, loss = train_step(state, src, tgt)        
         return state, loss
 
-    # Training loop without scan
-    losses = []
-    for i in range(10):
-        print(f"i = {i}")
-        state, loss = train_step(state, dummy_input)
-        print("Train step done")
-        losses.append(loss)
+    sample_batch = jnp.array([src.copy(), tgt.copy()])
+    inputs = jnp.array([sample_batch.copy() for _ in range(10)])
 
-    print("Final loss:", losses[-1])
-
-    '''
-    @jax.jit
-    def train_helper(carry, x):
-        def train_step(state, batch):
-            loss, grads = jax.value_and_grad(loss_fn)(state.params, batch)
-            state = state.apply_gradients(grads=grads)
-            return state, loss
-        
-        new_carry, loss = train_step(carry, x)
-
-        return new_carry, loss
-
-    init_carry = state
-    xs = jnp.array([dummy_input] * 10) 
-    final_carry, losses = jax.lax.scan(
-        train_helper, init_carry, xs, length=10)
-
-    print(final_carry)
-    '''
-    # @jax.jit
-    # def train_helper(carry, x):
-
-    #     # new_carry, loss = train_step(carry, x)
-
-    #     return carry, x
-
-    # init_carry = 1
-    # xs = jnp.array([i for i in range(10)]) 
-    # final_carry, stack = jax.lax.scan(
-    #     train_helper, init_carry, xs, length=10)
-
-    # print(final_carry)
-
-    # print(stack)
+    final_state, losses = jax.lax.scan(train_step_wrapper, state, inputs, length=10)
+    
+    print(losses)
