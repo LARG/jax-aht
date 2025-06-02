@@ -18,20 +18,18 @@ REWARD_SHAPING_PARAMS = {
     "agent_0": {
     "DISTANCE_TO_NEAREST_FOOD_REW": -1.0, # Reward for moving closer to food (H1)
     "DISTANCE_TO_FARTHEST_FOOD_REW": 1.0, # Reward for moving further from food (H2)
-    "SEQUENCE_REW": 0.0, # Reward for completing a sequence of actions (H3-H8)
     "FOLLOWING_TEAMMATE_REW": 0.0, # Reward for following another agent (H9)
     "CENTERED_FOOD_DISTANCE_REW": 0.0, # Reward for moving towards towards the food that is closest to the midpoint of the two agents
     "PROXIMITY_TO_TEAMMATE_REW": 0.0, # Reward for proximity to teammate
-    "COLLECT_FOOD_REW": 0.0, # Reward for collecting food
+    "COLLECT_FOOD_REW": 0.5, # Reward for collecting food
     },
     "agent_1": {
     "DISTANCE_TO_NEAREST_FOOD_REW": 0.0, # Reward for moving closer to food (H1)
     "DISTANCE_TO_FARTHEST_FOOD_REW": 0.0, # Reward for moving further from food (H2)
-    "SEQUENCE_REW": 0.0, # Reward for completing a sequence of actions (H3-H8)
     "FOLLOWING_TEAMMATE_REW": 1.0, # Reward for following another agent (H9)
     "CENTERED_FOOD_DISTANCE_REW": 0.0, # Reward for moving towards towards the food that is closest to the midpoint of the two agents
     "PROXIMITY_TO_TEAMMATE_REW": 0.0, # Reward for proximity to teammate
-    "COLLECT_FOOD_REW": 0.0, # Reward for collecting food
+    "COLLECT_FOOD_REW": 0.5, # Reward for collecting food
     },
     "REWARD_SHAPING_COEF": 0.1,
 }    
@@ -48,16 +46,12 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
     - H2. At the beginning of an episode, agents will move towards the furthest object from its location and collect it.
           Every time its targeted iteme is collected, the agent will move to collect the remaining item whose location is furthest
           from the agent's current location. Process is repeated until no item is left.
-    - H3-H8. H3-H8 corresponds to a heuristic that collects items following one of six possible permuations
-             of collecting the three items available in the environment.
     - H9. Agents under H9 will follow their teammate.
     """
 
     def __init__(self, env, share_rewards: bool = False):
         super().__init__(env, share_rewards)
-
         self.reward_shaping_params = REWARD_SHAPING_PARAMS
-
 
     def _compute_initial_targets(self, env_state):
         """
@@ -143,7 +137,7 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
 
         # add the original reward to the info dict
         original_reward = jnp.array([reward[agent] for agent in self.agents])
-        # create a new info dictionary with all the keys of the original info dictionary plus the inew original_reward key
+        # create a new info dictionary with all the keys of the original info dictionary plus the new original_reward key
         new_info = {**info, "original_reward": original_reward}
         return obs, state, total_reward_dict, done, new_info
 
@@ -182,7 +176,7 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
             )
 
             total_shaped_reward += self._calculate_collect_food_reward(
-                env_state, agent_id, agent_index, actions
+                prev_env_state, env_state, agent_id
             )
 
             shaped_rewards[agent_id] = total_shaped_reward
@@ -216,7 +210,7 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
         food_eaten = new_state.food_items.eaten
         uneaten_mask = ~food_eaten
 
-        # Compute reward based on current target
+        # Compute Manhattan distance to current target food
         target_food_pos = food_pos[target_food_idx]
         old_dist = jnp.sum(jnp.abs(old_pos - target_food_pos))
         new_dist = jnp.sum(jnp.abs(new_pos - target_food_pos))
@@ -308,6 +302,7 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
         """
         Rewards the agent for being close to the centered food target (based on midpoint of both agents).
         """
+        # Agent and teammate positions
         agent_pos = new_state.agents.position[i]
         teammate_pos = new_state.agents.position[1 - i]
         food_pos = prev_state.food_items.position 
@@ -316,11 +311,11 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
         # Manhattan distance from agent to target food
         dist = jnp.sum(jnp.abs(agent_pos - target_food_pos))
 
-        # Rew
+        # Reward is based on the distance to the centered food target which is closest to the midpoint of both agents (the closer the agent is the higher the reward)
         reward_val = self.reward_shaping_params[agent_id]["CENTERED_FOOD_DISTANCE_REW"]
         reward = reward_val * jnp.exp(-dist.astype(jnp.float32)) 
 
-        # Only skip reward if inputs are invalid (NOT based on food_eaten)
+        # Only skip reward if inputs are invalid
         valid_mask = (
             jnp.isfinite(dist)
             & jnp.all(jnp.isfinite(agent_pos))
@@ -342,7 +337,7 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
 
         new_dist = jnp.sum(jnp.abs(new_pos - teammate_pos))
          
-        # Calculate the reward based on the distance between the agent and its teammate, the closer they are, the higher the reward
+        # Calculate the reward based on the distance between the agent and its teammate (the closer the agent is the higher the reward)
         reward_val = self.reward_shaping_params[agent_id]["PROXIMITY_TO_TEAMMATE_REW"]
         reward = reward_val * jnp.tanh(-new_dist.astype(jnp.float32))
 
@@ -350,38 +345,15 @@ class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
         reward = jnp.where(valid_mask, reward, 0.0)
         return reward
 
-    def _calculate_collect_food_reward(self, state, agent_id: str, i: int, actions: Dict[str, int]) -> float:
+    def _calculate_collect_food_reward(self, prev_state, new_state, agent_id: str) -> float:
         """
-        Rewards both agents simultaneoulsly for collaboratively collecting food.
-        Only works if both agents are adjacent to the same food item and both are trying to load it.
-        If both agents successfully collect the food, they receive a reward.
-        If no food is left, the reward is 0.
+        Rewards agents for collecting food.
+        The reward is given if the agent has eaten a food item that was not eaten in the previous state.
         """
-        # Agent and teammate positions
-        agent_pos = state.agents.position[i]
-        teammate_idx = 1 - i
-        teammate_id = f'agent_{teammate_idx}'
-        teammate_pos = state.agents.position[teammate_idx]
+        prev_eaten = prev_state.food_items.eaten
+        curr_eaten = new_state.food_items.eaten
+        newly_eaten = jnp.logical_and(curr_eaten, jnp.logical_not(prev_eaten))
+        any_newly_eaten = jnp.any(newly_eaten)
 
-        # Food positions and status (food is uneaten or eaten)
-        food_pos = state.food_items.position
-        food_eaten = state.food_items.eaten
-        uneaten_mask = ~food_eaten
-        masked_food_pos = jnp.where(uneaten_mask[:, None], food_pos, jnp.array([jnp.inf, jnp.inf]))
-
-
-        # Check if both agents are adjacent to the same food item and trying to load it
-        agent_dists = jnp.sum(jnp.abs(masked_food_pos - agent_pos), axis=1)
-        teammate_dists = jnp.sum(jnp.abs(masked_food_pos - teammate_pos), axis=1)
-
-        both_adjacent_to_same_uneaten = jnp.logical_and(agent_dists == 1, teammate_dists == 1)
-
-        agent_loading = actions[agent_id] == LOAD
-        teammate_loading = actions[teammate_id] == LOAD
-        both_loading = jnp.logical_and(agent_loading, teammate_loading)
-        successful = jnp.logical_and(jnp.any(both_adjacent_to_same_uneaten), both_loading)
-
-        # If both agents are collecting the same food item, reward them
-        reward_val = self.reward_shaping_params[agent_id]["COLLECT_FOOD_REW"]
-        reward = jnp.where(jnp.any(uneaten_mask), reward_val, 0.0)
-        return jnp.where(successful, reward, 0.0)
+        reward = self.reward_shaping_params[agent_id]["COLLECT_FOOD_REW"]
+        return jnp.where(any_newly_eaten, reward, 0.0)
