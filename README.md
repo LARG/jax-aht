@@ -157,7 +157,7 @@ following subdirectories:
 - `configs/task/`: Contains environment configs necessary to specify a task.
 
 Given an algorithm and task, Hydra retrieves the appropriate configs from the subdirectories above
-and merges them into the **master config** found in `configs/base_config_<method_type>.yaml` (e.g., `configs/base_config_teammate_generation.yaml`).
+and merges them into the *master config* found in `configs/base_config_<method_type>.yaml` (e.g., `configs/base_config_teammate_generation.yaml`).
 The algorithm and task may be manually specified by modifying the master config, or by using
 Hydra's command line argument support.
 
@@ -165,6 +165,13 @@ For example, the following command runs Fictitious Co-Play on the Level-Based Fo
 ```bash
 python teammate_generation/run.py task=lbf algorithm=fcp/lbf
 ```
+
+Note that Hydra allows the user to modify any config value specified in the algorithm/task config files from the command line. For example, to set the number of training interactions for FCP, use the following command: 
+
+```bash
+python teammate_generation/run.py task=lbf algorithm=fcp/lbf algorithm.TOTAL_TIMESTEPS=1e5
+```
+
 
 #### Logging
 
