@@ -618,9 +618,10 @@ class StackedEncoderModel(nn.Module):
 class S5ActorCritic(nn.Module):
     action_dim: Sequence[int]
     ssm_init_fn: Any
-    fc_hidden_dim: int = 64
-    ssm_hidden_dim: int = 16 # ssm_size
-    s5_d_model: int = 16
+    fc_hidden_dim: int = 1024
+    fc_n_layers: int = 3
+    ssm_hidden_dim: int = 512 # ssm_size
+    s5_d_model: int = 512
     s5_n_layers: int = 2
     s5_activation: str = "full_glu"
     s5_do_norm: bool = True
@@ -632,12 +633,16 @@ class S5ActorCritic(nn.Module):
         self.encoder_0 = nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
         self.encoder_1 = nn.Dense(self.ssm_hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
     
-        self.action_body_0 = nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
-        self.action_body_1 = nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
+        self.action_body_layers = [
+            nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
+            for _ in range(self.fc_n_layers)
+        ]
         self.action_decoder = nn.Dense(self.action_dim, kernel_init=orthogonal(0.01), bias_init=constant(0.0))
 
-        self.value_body_0 = nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
-        self.value_body_1 = nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
+        self.value_body_layers = [
+            nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
+            for _ in range(self.fc_n_layers)
+        ]
         self.value_decoder = nn.Dense(1, kernel_init=orthogonal(1.0), bias_init=constant(0.0))
 
         self.s5 = StackedEncoderModel(
@@ -665,10 +670,10 @@ class S5ActorCritic(nn.Module):
         # dones: (1, num_actors)
         hidden, embedding = self.s5(hidden, embedding, dones)
 
-        actor_mean = self.action_body_0(embedding)
-        actor_mean = nn.leaky_relu(actor_mean)
-        actor_mean = self.action_body_1(actor_mean)
-        actor_mean = nn.leaky_relu(actor_mean)
+        actor_mean = embedding
+        for layer in self.action_body_layers:
+            actor_mean = layer(actor_mean)
+            actor_mean = nn.leaky_relu(actor_mean)
         actor_mean = self.action_decoder(actor_mean)
 
         unavail_actions = 1 - avail_actions
@@ -676,10 +681,10 @@ class S5ActorCritic(nn.Module):
 
         pi = distrax.Categorical(logits=action_logits)
 
-        critic = self.value_body_0(embedding)
-        critic = nn.leaky_relu(critic)
-        critic = self.value_body_1(critic)
-        critic = nn.leaky_relu(critic)
+        critic = embedding
+        for layer in self.value_body_layers:
+            critic = layer(critic)
+            critic = nn.leaky_relu(critic)
         critic = self.value_decoder(critic)
 
         return hidden, pi, jnp.squeeze(critic, axis=-1)

@@ -1,0 +1,9 @@
+defaults:
+  - paired/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 1.5e8
+LR: 1e-3
+NUM_MINIBATCHES: 8
+CLIP_EPS: 0.1
+ENT_COEF: 0.05

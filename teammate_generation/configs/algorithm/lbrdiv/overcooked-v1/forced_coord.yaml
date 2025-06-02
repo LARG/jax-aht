@@ -1,0 +1,17 @@
+defaults:
+  - lbrdiv/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 9e7
+PARTNER_POP_SIZE: 3
+TOLERANCE_FACTOR: 5.0 # require that SP - XP > TOLERANCE_FACTOR
+LR: 5e-4
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 16
+CLIP_EPS: 0.05
+ENT_COEF: 0.01
+ego_train_algorithm: 
+  TOTAL_TIMESTEPS: 6e7
+  LR: 1e-3
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.05

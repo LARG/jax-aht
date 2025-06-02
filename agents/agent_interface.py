@@ -12,71 +12,6 @@ from agents.s5_actor_critic import S5ActorCritic, StackedEncoderModel, init_S5SS
 from agents.rnn_actor_critic import RNNActorCritic, ScannedRNN
 
 
-class AgentPopulation:
-    '''Base class for a population of identical agents
-    TODO: develop more complex population classes that can handle heterogeneous agents
-    '''
-    def __init__(self, pop_size, policy_cls):
-        '''
-        Args:
-            pop_size: int, number of agents in the population
-            policy_cls: an instance of the AgentPolicy class. The policy class for the population of agents
-        '''
-        self.pop_size = pop_size
-        self.policy_cls = policy_cls # AgentPolicy class
-
-    def sample_agent_indices(self, n, rng):
-        '''Sample n indices from the population, with replacement.'''
-        return jax.random.randint(rng, (n,), 0, self.pop_size)
-    
-    def gather_agent_params(self, pop_params, agent_indices):
-        '''Gather the parameters of the agents specified by agent_indices.
-
-        Args:
-            pop_params: pytree of parameters for the population of agents of shape (pop_size, ...).
-            agent_indices: indices with shape (num_envs,), each in [0, pop_size)
-        '''
-        def gather_leaf(leaf):
-            # leaf shape: (num_envs,  ...)
-            return jax.vmap(lambda idx: leaf[idx])(agent_indices)
-        return jax.tree.map(gather_leaf, pop_params)
-    
-    def get_actions(self, pop_params, agent_indices, obs, done, avail_actions, hstate, rng, 
-                    env_state=None, aux_obs=None, test_mode=False):
-        '''
-        Get the actions of the agents specified by agent_indices. 
-        
-        Args:
-            pop_params: pytree of parameters for the population of agents of shape (pop_size, ...).
-            agent_indices: indices with shape (num_envs,), each in [0, pop_size)
-            obs: observations with shape (num_envs, ...) 
-            done: done flags with shape (num_envs,)
-            avail_actions: available actions with shape (num_envs, num_actions)
-            hstate: hidden state with shape (num_envs, ...) or None if policy doesn't use hidden state
-            rng: random key
-            env_state: environment state with shape (num_envs, ...) or None if policy doesn't use env state
-            aux_obs: an optional auxiliary vector to append to the observation
-        Returns:
-            actions: actions with shape (num_envs,)
-            new_hstate: new hidden state with shape (num_envs, ...) or None
-        '''
-        gathered_params = self.gather_agent_params(pop_params, agent_indices)
-        num_envs = agent_indices.squeeze().shape[0]
-        rngs_batched = jax.random.split(rng, num_envs)
-        vmapped_get_action = jax.vmap(partial(self.policy_cls.get_action, 
-                                              aux_obs=aux_obs, 
-                                              env_state=env_state, 
-                                              test_mode=test_mode))
-        actions, new_hstate = vmapped_get_action(
-            gathered_params, obs, done, avail_actions, hstate, 
-            rngs_batched)
-        return actions, new_hstate
-    
-    def init_hstate(self, n: int, aux_info: dict=None):
-        '''Initialize the hidden state for n members of the population.'''
-        return self.policy_cls.init_hstate(n, aux_info)
-
-
 class AgentPolicy(abc.ABC):
     '''Abstract base class for a policy.'''
 
@@ -198,7 +133,6 @@ class ActorWithDoubleCriticPolicy(AgentPolicy):
             activation: str, activation function to use
         """
         super().__init__(action_dim, obs_dim)
-        # self.activation = activation
         self.network = ActorWithDoubleCritic(action_dim, activation=activation)
     
     @partial(jax.jit, static_argnums=(0,))
@@ -228,9 +162,20 @@ class ActorWithDoubleCriticPolicy(AgentPolicy):
         init_x = (dummy_obs, dummy_avail)
         return self.network.init(rng, init_x)
 
+class PseudoActorWithDoubleCriticPolicy(ActorWithDoubleCriticPolicy):
+    """Enables ActorWithDoubleCritic to masquerade as an actor with a single critic."""
+    def __init__(self, action_dim, obs_dim, activation="tanh"):
+        super().__init__(action_dim, obs_dim, activation)
+
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
+        action, (val1, _), pi, hidden_state = super().get_action_value_policy(
+            params, obs, done, avail_actions, hstate, rng, 
+            aux_obs, env_state)
+        return action, val1, pi, hidden_state
+
 class ActorWithConditionalCriticPolicy(AgentPolicy):
     """Policy wrapper for ActorWithConditionalCritic
-    WARNING: this policy is not tested and may not work. (TODO: test)
     """
     def __init__(self, action_dim, obs_dim, pop_size, activation="tanh"):
         """
@@ -275,9 +220,22 @@ class ActorWithConditionalCriticPolicy(AgentPolicy):
         dummy_ids = jnp.zeros((self.pop_size,))
         dummy_avail = jnp.ones((self.action_dim,))
         init_x = (dummy_obs, dummy_ids, dummy_avail)
-        # TODO: determine if it's okay to use the basic init function or if we must 
-        # use the init_with_output function
         return self.network.init(rng, init_x)
+
+class PseudoActorWithConditionalCriticPolicy(ActorWithConditionalCriticPolicy):
+    """Enables PseudoActorWithConditionalCriticPolicy to act as an MLPActorCriticPolicy.
+    by passing in a dummy agent id.
+    """
+    def __init__(self, action_dim, obs_dim, pop_size, activation="tanh"):
+        super().__init__(action_dim, obs_dim, pop_size, activation)
+
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
+        dummy_agent_id = jnp.zeros(obs.shape[:-1] + (self.pop_size,))
+        action, val, pi, hidden_state = super().get_action_value_policy(
+            params, obs, done, avail_actions, hstate, rng, 
+            dummy_agent_id, env_state)
+        return action, val, pi, hidden_state
     
 class RNNActorCriticPolicy(AgentPolicy):
     """Policy wrapper for RNN Actor-Critic"""
@@ -299,30 +257,41 @@ class RNNActorCriticPolicy(AgentPolicy):
             gru_hidden_dim=gru_hidden_dim,
             activation=activation
         )
+        self.gru_hidden_dim = gru_hidden_dim
     
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng, 
                    aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the RNN policy. 
-        The first dim of obs and done should be the time dimension."""
-        new_hstate, pi, _ = self.network.apply(params, hstate, (obs, done, avail_actions))
+        Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
+        Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for 
+        compatibility with the learning codes. 
+        """
+        batch_size = obs.shape[1]
+        new_hstate, pi, _ = self.network.apply(params, hstate.squeeze(0), (obs, done, avail_actions))
         action = jax.lax.cond(test_mode, 
                               lambda: pi.mode(), 
                               lambda: pi.sample(seed=rng))
-        return action, new_hstate
+        return action, new_hstate.reshape(1, batch_size, -1)
     
     @partial(jax.jit, static_argnums=(0,))
     def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
                                 aux_obs=None, env_state=None):
         """Get actions, values, and policy for the RNN policy.
-        The first dim of obs and done should be the time dimension."""
-        new_hstate, pi, val = self.network.apply(params, hstate, (obs, done, avail_actions))
+        Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
+        Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for 
+        compatibility with the learning codes. 
+        """
+        batch_size = obs.shape[1]
+        new_hstate, pi, val = self.network.apply(params, hstate.squeeze(0), (obs, done, avail_actions))
         action = pi.sample(seed=rng)
-        return action, val, pi, new_hstate
+        return action, val, pi, new_hstate.reshape(1, batch_size, -1)
     
     def init_hstate(self, batch_size, aux_info=None):
         """Initialize hidden state for the RNN policy."""
-        return ScannedRNN.initialize_carry(batch_size, self.gru_hidden_dim)
+        hstate =  ScannedRNN.initialize_carry(batch_size, self.gru_hidden_dim)
+        hstate = hstate.reshape(1, batch_size, self.gru_hidden_dim)
+        return hstate
     
     def init_params(self, rng):
         """Initialize parameters for the RNN policy."""
@@ -337,7 +306,7 @@ class RNNActorCriticPolicy(AgentPolicy):
         dummy_x = (dummy_obs, dummy_done, dummy_avail)
         
         # Initialize model
-        return self.network.init(rng, init_hstate, dummy_x)
+        return self.network.init(rng, init_hstate.reshape(batch_size, -1), dummy_x)
 
 
 class S5ActorCriticPolicy(AgentPolicy):
@@ -345,8 +314,9 @@ class S5ActorCriticPolicy(AgentPolicy):
     
     def __init__(self, action_dim, obs_dim, 
                  d_model=16, ssm_size=16, 
-                 n_layers=2, blocks=1,
+                 ssm_n_layers=2, blocks=1,
                  fc_hidden_dim=64,
+                 fc_n_layers=2,
                  s5_activation="full_glu",
                  s5_do_norm=True,
                  s5_prenorm=True,
@@ -370,9 +340,10 @@ class S5ActorCriticPolicy(AgentPolicy):
         super().__init__(action_dim, obs_dim)
         self.d_model = d_model
         self.ssm_size = ssm_size
-        self.n_layers = n_layers
+        self.ssm_n_layers = ssm_n_layers
         self.blocks = blocks
         self.fc_hidden_dim = fc_hidden_dim
+        self.fc_n_layers = fc_n_layers
         self.s5_activation = s5_activation
         self.s5_do_norm = s5_do_norm
         self.s5_prenorm = s5_prenorm
@@ -402,9 +373,10 @@ class S5ActorCriticPolicy(AgentPolicy):
             action_dim,
             ssm_init_fn=self.ssm_init_fn,
             fc_hidden_dim=self.fc_hidden_dim,
+            fc_n_layers=self.fc_n_layers,
             ssm_hidden_dim=self.ssm_size,
             s5_d_model=self.d_model,
-            s5_n_layers=self.n_layers,
+            s5_n_layers=self.ssm_n_layers,
             s5_activation=self.s5_activation,
             s5_do_norm=self.s5_do_norm, 
             s5_prenorm=self.s5_prenorm,
@@ -425,14 +397,19 @@ class S5ActorCriticPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
                                 aux_obs=None, env_state=None):
-        """Get actions, values, and policy for the S5 policy."""
+        """Get actions, values, and policy for the S5 policy.
+        Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
+        Shape of hstate should correspond to (1, batch_size, -1)
+        """
         new_hstate, pi, val = self.network.apply(params, hstate, (obs, done, avail_actions))
         action = pi.sample(seed=rng)
         return action, val, pi, new_hstate
     
     def init_hstate(self, batch_size, aux_info=None):
         """Initialize hidden state for the S5 policy."""
-        return StackedEncoderModel.initialize_carry(batch_size, self.ssm_size // 2, self.n_layers)
+        
+        init_hstate =  StackedEncoderModel.initialize_carry(batch_size, self.ssm_size // 2, self.ssm_n_layers)
+        return init_hstate
     
     def init_params(self, rng):
         """Initialize parameters for the S5 policy."""

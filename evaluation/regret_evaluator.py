@@ -1,5 +1,6 @@
 '''
 Given an ego agent policy, train a regret-maximizing confederate and best-response pair against the ego policy.
+TODO: this code computes the per-trajectory regret. We may wish to change this to per-state regret or something else. 
 '''
 import os
 import logging
@@ -17,7 +18,7 @@ from common.plot_utils import get_metric_names, get_stats
 from common.save_load_utils import save_train_run
 from common.wandb_visualizations import Logger
 from common.run_episodes import run_episodes
-from common.ppo_utils import Transition, unbatchify
+from marl.ppo_utils import Transition, unbatchify
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from evaluation.vis_episodes import save_video
@@ -322,9 +323,7 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
                             -config["CLIP_EPS"], config["CLIP_EPS"])
                         value_losses_ego = jnp.square(value_ego - target_v_ego)
                         value_losses_clipped_ego = jnp.square(value_pred_ego_clipped - target_v_ego)
-                        value_loss_ego = (
-                            0.5 * jnp.maximum(value_losses_ego, value_losses_clipped_ego).mean()
-                        )
+                        value_loss_ego = jnp.maximum(value_losses_ego, value_losses_clipped_ego).mean()
 
                         # Value loss for interaction with best response agent
                         value_pred_br_clipped = traj_batch_br.value + (
@@ -333,9 +332,7 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
                             -config["CLIP_EPS"], config["CLIP_EPS"])
                         value_losses_br = jnp.square(value_br - target_v_br)
                         value_losses_clipped_br = jnp.square(value_pred_br_clipped - target_v_br)
-                        value_loss_br = (
-                            0.5 * jnp.maximum(value_losses_br, value_losses_clipped_br).mean()
-                        )
+                        value_loss_br = jnp.maximum(value_losses_br, value_losses_clipped_br).mean()
 
                         # Policy gradient loss for interaction with ego agent
                         ratio_ego = jnp.exp(log_prob_ego - traj_batch_ego.log_prob)
@@ -396,9 +393,7 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
                             -config["CLIP_EPS"], config["CLIP_EPS"])
                         value_losses = jnp.square(value - target_v)
                         value_losses_clipped = jnp.square(value_pred_clipped - target_v)
-                        value_loss = (
-                            0.5 * jnp.maximum(value_losses, value_losses_clipped).mean()
-                        )
+                        value_loss = jnp.maximum(value_losses, value_losses_clipped).mean()
 
                         # Policy gradient loss
                         ratio = jnp.exp(log_prob - traj_batch_br.log_prob)
@@ -631,7 +626,7 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
             # --------------------------
             # PPO Update and Checkpoint saving
             # --------------------------
-            checkpoint_interval = max(1, config["NUM_UPDATES"] // config["NUM_CHECKPOINTS"])
+            ckpt_and_eval_interval = config["NUM_UPDATES"] // max(1, config["NUM_CHECKPOINTS"] - 1)
             num_ckpts = config["NUM_CHECKPOINTS"]
 
             # Build a PyTree that holds parameters for all conf agent checkpoints
@@ -666,8 +661,10 @@ def train_regret_maximizing_partners(config, ego_params, ego_policy, env, partne
                 ) = new_runner_state
 
                 # Decide if we store a checkpoint
-                to_store = jnp.equal(jnp.mod(update_steps, checkpoint_interval), 0)
-                
+                # update steps is 1-indexed because it was incremented at the end of the update step
+                to_store = jnp.logical_or(jnp.equal(jnp.mod(update_steps-1, ckpt_and_eval_interval), 0),
+                                        jnp.equal(update_steps, config["NUM_UPDATES"]))
+                              
                 def store_and_eval_ckpt(args):
                     ckpt_arr_and_ep_infos, rng, cidx = args
                     ckpt_arr_conf, ckpt_arr_br, prev_ep_infos_br, prev_ep_infos_ego = ckpt_arr_and_ep_infos
@@ -906,6 +903,7 @@ def log_metrics(config, env, logger, train_out, metric_names: tuple):
         # Eval metrics
         logger.log_item("Eval/ConfReturn-Against-Ego", avg_teammate_xp_returns[step], train_step=step)
         logger.log_item("Eval/ConfReturn-Against-BR", avg_teammate_sp_returns[step], train_step=step)
+        logger.log_item("Eval/EgoRegret", avg_teammate_sp_returns[step] - avg_teammate_xp_returns[step], train_step=step)
         
         # Confederate losses
         logger.log_item("Losses/ConfValLoss-Against-Ego", avg_value_losses_teammate_against_ego[step], train_step=step)

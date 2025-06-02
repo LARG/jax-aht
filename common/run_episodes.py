@@ -37,12 +37,12 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
     
     # Get ego action
     act_0, hstate_0 = agent_0_policy.get_action(
-        agent_0_param,
-        obs_0_reshaped,
-        done_0_reshaped,
-        avail_actions_0,
-        init_hstate_0,
-        act1_rng,
+        params=agent_0_param,
+        obs=obs_0_reshaped,
+        done=done_0_reshaped,
+        avail_actions=avail_actions_0,
+        hstate=init_hstate_0,
+        rng=act1_rng,
         aux_obs=None,
         env_state=env_state,
         test_mode=agent_0_test_mode
@@ -54,12 +54,12 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
     done_1_reshaped = init_done["agent_1"].reshape(1, 1)
 
     act_1, hstate_1 = agent_1_policy.get_action(
-        agent_1_param, 
-        obs_1_reshaped, 
-        done_1_reshaped,
-        avail_actions_1,
-        init_hstate_1,  # shape of entry 0 is (1, 1, 8)
-        act2_rng,
+        params=agent_1_param, 
+        obs=obs_1_reshaped, 
+        done=done_1_reshaped,
+        avail_actions=avail_actions_1,
+        hstate=init_hstate_1,  # shape of entry 0 is (1, 1, 8)
+        rng=act2_rng,
         aux_obs=None,
         env_state=env_state,
         test_mode=agent_1_test_mode
@@ -96,12 +96,12 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
             # Get ego action
             rng, act_rng, part_rng, step_rng = jax.random.split(rng, 4)
             act_0, hstate_0_next = agent_0_policy.get_action(
-                agent_0_param,
-                obs_0_reshaped,
-                done_0_reshaped,
-                avail_actions_0,
-                hstate_0,
-                act_rng,
+                params=agent_0_param,
+                obs=obs_0_reshaped,
+                done=done_0_reshaped,
+                avail_actions=avail_actions_0,
+                hstate=hstate_0,
+                rng=act_rng,
                 env_state=env_state,
                 test_mode=agent_0_test_mode
             )
@@ -109,12 +109,12 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
 
             # Get partner action with proper hidden state tracking
             act_1, hstate_1_next = agent_1_policy.get_action(
-                agent_1_param, 
-                obs_1_reshaped,
-                done_1_reshaped,
-                avail_actions_1,
-                hstate_1,
-                part_rng,
+                params=agent_1_param, 
+                obs=obs_1_reshaped,
+                done=done_1_reshaped,
+                avail_actions=avail_actions_1,
+                hstate=hstate_1,
+                rng=part_rng,
                 env_state=env_state,
                 test_mode=agent_1_test_mode
             )

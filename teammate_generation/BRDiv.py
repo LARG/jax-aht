@@ -1,8 +1,8 @@
-import os
 import shutil
 import time
 import logging
 from typing import NamedTuple
+from functools import partial
 
 import hydra
 import jax
@@ -14,10 +14,12 @@ import wandb
 
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from agents.agent_interface import ActorWithConditionalCriticPolicy, AgentPopulation
+from agents.agent_interface import ActorWithConditionalCriticPolicy
+from agents.population_interface import AgentPopulation
 from agents.mlp_actor_critic import ActorWithConditionalCritic
 from common.plot_utils import get_metric_names
-from common.ppo_utils import unbatchify
+from common.run_episodes import run_episodes
+from marl.ppo_utils import unbatchify
 from common.save_load_utils import save_train_run
 
 log = logging.getLogger(__name__)
@@ -35,7 +37,7 @@ class XPTransition(NamedTuple):
     info: jnp.ndarray
     avail_actions: jnp.ndarray
 
-def train_brdiv_partners(config, env, train_rng):
+def train_brdiv_partners(train_rng, env, config):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -168,6 +170,7 @@ def train_brdiv_partners(config, env, train_rng):
 
                 # Agent_0 action
                 forward_pass_conf = lambda param, ob, id, avail_act: conf_agent_net.apply(param, (ob, id, avail_act))
+                # TODO: what is this being vmapped across? 
                 pi_0, val_0 = jax.vmap(forward_pass_conf)(conf_params, obs_0, br_agent_id, avail_actions_0)
                 act_0 = pi_0.sample(seed=actor_rng)
                 logp_0 = pi_0.log_prob(act_0)
@@ -390,13 +393,10 @@ def train_brdiv_partners(config, env, train_rng):
                         value_losses = jnp.square(value - target_v)
                         value_losses_clipped = jnp.square(value_pred_clipped - target_v)
                         value_loss = jax.lax.cond(
-                            loss_weights.sum() == 0, lambda x: jnp.zeros_like(x).astype(jnp.float32), 
+                            loss_weights.sum() == 0, 
+                            lambda x: jnp.zeros_like(x).astype(jnp.float32), 
                             lambda x: x,
-                            (
-                                0.5 * (
-                                loss_weights * jnp.maximum(value_losses, value_losses_clipped)
-                                ).sum()
-                            )/(loss_weights.sum())
+                            (loss_weights * jnp.maximum(value_losses, value_losses_clipped)).sum() / loss_weights.sum()
                         )
                         
                         choose_actor_weight = lambda self_id, other_id, rew: jax.lax.cond(
@@ -435,7 +435,6 @@ def train_brdiv_partners(config, env, train_rng):
                         )
                         
                         total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy
-
                         return total_loss, (value_loss, pg_loss, entropy)
 
                     possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
@@ -540,12 +539,6 @@ def train_brdiv_partners(config, env, train_rng):
                 return update_state, total_loss
 
             def _update_step(update_runner_state, unused):
-                """
-                1. Collect rollout for interactions against ego agent.
-                2. Collect rollout for interactions against br agent.
-                3. Compute advantages for ego-conf and conf-br interactions.
-                4. PPO updates for best response and confederate policies.
-                """
                 (
                     all_train_state_conf, all_train_state_br, rng, update_steps
                 ) = update_runner_state
@@ -640,7 +633,7 @@ def train_brdiv_partners(config, env, train_rng):
             # --------------------------
             # PPO Update and Checkpoint saving
             # --------------------------
-            checkpoint_interval = max(1, config["NUM_UPDATES"] // config["NUM_CHECKPOINTS"])
+            ckpt_and_eval_interval = config["NUM_UPDATES"] // max(1, config["NUM_CHECKPOINTS"] - 1)  # -1 because we store a ckpt at the last update
             num_ckpts = config["NUM_CHECKPOINTS"]
 
             # Build a PyTree that holds parameters for all conf agent checkpoints
@@ -668,7 +661,9 @@ def train_brdiv_partners(config, env, train_rng):
                 ) = new_runner_state
 
                 # Decide if we store a checkpoint
-                to_store = jnp.equal(jnp.mod(update_steps, checkpoint_interval), 0)
+                # update steps is 1-indexed because it was incremented at the end of the update step
+                to_store = jnp.logical_or(jnp.equal(jnp.mod(update_steps-1, ckpt_and_eval_interval), 0),
+                                        jnp.equal(update_steps, config["NUM_UPDATES"]))
                 max_eval_episodes = config["NUM_EVAL_EPISODES"]
                 
                 def store_and_eval_ckpt(args):
@@ -706,7 +701,6 @@ def train_brdiv_partners(config, env, train_rng):
                         checkpoint_array_conf, checkpoint_array_br, ckpt_idx, 
                         ckpt_infos), metric
 
-            # TODO
             # init checkpoint array
             checkpoint_array_conf = init_ckpt_array(all_conf_optims.params)
             checkpoint_array_br = init_ckpt_array(all_br_optims.params)
@@ -762,11 +756,13 @@ def train_brdiv_partners(config, env, train_rng):
 
 def get_brdiv_population(config, out, env):
     '''
-    Get the flattened partner params and partner population for ego training.
+    Get the partner params and partner population for ego training.
     '''
     brdiv_pop_size = config["algorithm"]["PARTNER_POP_SIZE"]
 
-    partner_params = out['final_params_conf'] # shape is (brdiv_pop_size, ...)
+    # partner_params has shape (num_seeds, brdiv_pop_size, ...)
+    partner_params = out['final_params_conf']
+    
     partner_policy = ActorWithConditionalCriticPolicy(
         action_dim=env.action_space(env.agents[1]).n,
         obs_dim=env.observation_space(env.agents[1]).shape[0],
@@ -790,8 +786,20 @@ def run_brdiv(config, wandb_logger):
 
     log.info("Starting BRDiv training...")
     start = time.time()
-    train_rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
-    out = train_brdiv_partners(algorithm_config, env, train_rng)
+    
+    # Generate multiple random seeds from the base seed
+    rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
+    rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
+    
+    # Create a vmapped version of train_brdiv_partners
+    with jax.disable_jit(False):
+        vmapped_train_fn = jax.jit(
+            jax.vmap(
+                partial(train_brdiv_partners, env=env, config=algorithm_config)
+            )
+        )
+        out = vmapped_train_fn(rngs)
+    
     end = time.time()
     log.info(f"BRDiv training complete in {end - start} seconds")
 
@@ -816,40 +824,43 @@ def compute_sp_mask_and_ids(pop_size):
 
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
-    num_updates, _, _, pop_size = metrics["pg_loss_conf_agent"].shape # number of trained pairs
+    # metrics now has shape (num_seeds, num_updates, _, _, pop_size)
+    num_seeds, num_updates, _, _, pop_size = metrics["pg_loss_conf_agent"].shape # number of trained pairs
 
     ### Log evaluation metrics
     # we plot XP return curves separately from SP return curves 
-    # shape (num_updates, (pop_size)^2, num_eval_episodes, 1)
+    # shape (num_seeds, num_updates, (pop_size)^2, num_eval_episodes, 1)
     all_returns = np.asarray(metrics["eval_ep_last_info"])
     xs = list(range(num_updates))
     
     sp_mask, agent_id_cartesian_product = compute_sp_mask_and_ids(pop_size)
-    sp_returns = all_returns[:, sp_mask]
-    xp_returns = all_returns[:, ~sp_mask]
+    sp_returns = all_returns[:, :, sp_mask]
+    xp_returns = all_returns[:, :, ~sp_mask]
     
-    sp_return_curve = sp_returns.mean(axis=(1, 2, 3))
-    xp_return_curve = xp_returns.mean(axis=(1, 2, 3))
+    # Average over seeds, then over agent pairs, episodes and num_agents_per_game
+    sp_return_curve = sp_returns.mean(axis=(0, 2, 3, 4))
+    xp_return_curve = xp_returns.mean(axis=(0, 2, 3, 4))
 
     for step in range(num_updates):
         logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[step], train_step=step)
         logger.log_item("Eval/AvgXPReturnCurve", xp_return_curve[step], train_step=step)
     logger.commit()
 
-    # log final XP matrix to wandb
-    last_returns_array = all_returns[-1].mean(axis=(1, 2))
+    # log final XP matrix to wandb - average over seeds
+    last_returns_array = all_returns[:, -1].mean(axis=(0, 2, 3))
     last_returns_array = np.reshape(last_returns_array, (pop_size, pop_size))
     logger.log_xp_matrix("Eval/LastXPMatrix", last_returns_array)
 
     ### Log population loss as multi-line plots, where each line is a different population member
-    # shape (num_updates, update_epochs, num_minibatches, pop_size)
+    # shape (num_seeds, num_updates, update_epochs, num_minibatches, pop_size)
+    # Average over seeds
     processed_losses = {
-        "ConfPGLoss": np.asarray(metrics["pg_loss_conf_agent"]).mean(axis=(1, 2)).transpose(),
-        "BRPGLoss": np.asarray(metrics["pg_loss_br_agent"]).mean(axis=(1, 2)).transpose(),
-        "ConfValLoss": np.asarray(metrics["value_loss_conf_agent"]).mean(axis=(1, 2)).transpose(),
-        "BRValLoss": np.asarray(metrics["value_loss_br_agent"]).mean(axis=(1, 2)).transpose(),
-        "ConfEntropy": np.asarray(metrics["entropy_conf"]).mean(axis=(1, 2)).transpose(),
-        "BREntropy": np.asarray(metrics["entropy_br"]).mean(axis=(1, 2)).transpose(),
+        "ConfPGLoss": np.asarray(metrics["pg_loss_conf_agent"]).mean(axis=(0, 2, 3)).transpose(),
+        "BRPGLoss": np.asarray(metrics["pg_loss_br_agent"]).mean(axis=(0, 2, 3)).transpose(),
+        "ConfValLoss": np.asarray(metrics["value_loss_conf_agent"]).mean(axis=(0, 2, 3)).transpose(),
+        "BRValLoss": np.asarray(metrics["value_loss_br_agent"]).mean(axis=(0, 2, 3)).transpose(),
+        "ConfEntropy": np.asarray(metrics["entropy_conf"]).mean(axis=(0, 2, 3)).transpose(),
+        "BREntropy": np.asarray(metrics["entropy_br"]).mean(axis=(0, 2, 3)).transpose(),
     }
     
     xs = list(range(num_updates))

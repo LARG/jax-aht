@@ -1,0 +1,38 @@
+# @package algorithm
+# ^ tells hydra to place these value directly under algorithm key
+ALG: comedi
+TOTAL_TIMESTEPS_PER_ITERATION: 1.2e7  # number of steps used to train each comedi agent at each iteration
+NUM_CHECKPOINTS: 5
+PARTNER_POP_SIZE: 4
+NUM_ENVS_SP: 16
+NUM_ENVS_XP: 16
+NUM_ENVS_MP: 16
+LR: 1e-4
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 8
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.05
+ENT_COEF: 0.01
+VF_COEF: 0.5
+MAX_GRAD_NORM: 1.0
+ANNEAL_LR: false
+ACTOR_TYPE: actor_with_conditional_critic
+NUM_ARGMAX_ROLLOUT_EPS: 20
+COMEDI_ALPHA: 1.0
+COMEDI_BETA: 0.5
+ego_train_algorithm:
+  EGO_ACTOR_TYPE: s5
+  TOTAL_TIMESTEPS: 1e7
+  NUM_CHECKPOINTS: 5 
+  NUM_ENVS: 8
+  LR: 1e-4
+  UPDATE_EPOCHS: 15
+  NUM_MINIBATCHES: 4
+  GAMMA: 0.99
+  GAE_LAMBDA: 0.95
+  CLIP_EPS: 0.05
+  ENT_COEF: 0.01
+  VF_COEF: 0.5
+  MAX_GRAD_NORM: 1.0
+  ANNEAL_LR: true

@@ -1,0 +1,23 @@
+# @package algorithm
+# ^ tells hydra to place these value directly under algorithm key
+ALG: ppo_br
+EGO_ACTOR_TYPE: s5
+NUM_EGO_TRAIN_SEEDS: 1
+TOTAL_TIMESTEPS: 1e7
+NUM_CHECKPOINTS: 5
+NUM_ENVS: 8
+LR: 1.e-4 
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 4
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.05
+ENT_COEF: 0.01
+VF_COEF: 0.5
+MAX_GRAD_NORM: 1.0
+ANNEAL_LR: true
+partner_agent: # partner config for ppo_br
+  independent_agent_0.6:
+    actor_type: independent_agent
+    p_onion_on_counter: 0.6
+    p_plate_on_counter: 0.6

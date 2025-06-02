@@ -4,50 +4,84 @@ global_heldout_settings:
   EVAL_SEED: 34957
   MAX_EPISODE_STEPS: ${task.ROLLOUT_LENGTH}
   NUM_EVAL_EPISODES: 64
+  AGGREGATE_STAT: mean # choices: mean, iqm. both are computed with the bootstrapped CI using rliable.
+  NORMALIZE_RETURNS: true # if true, use performance bounds to normalize returns
 
 heldout_set:
-  lbf: # DONE - DO NOT MODIFY
+  lbf: # DONE - DO NOT MODIFY. In LBF, results are much better with test mode = false.
     ippo_mlp: 
       path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
       idx_list: [0] # load in seed 0 only
-      test_mode: true
-    ippo_mlp_s2c1:
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 100.0]]
+        returned_episode_returns: [[0.0, 0.5]]
+    ippo_mlp_s2c0:
       path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
       actor_type: mlp
-      idx_list: [[2, 1]] # load in seed 2 ckpt 1
-      test_mode: true
+      idx_list: [[2, 0]] # load in seed 2 ckpt 0
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 69.27]]
+        returned_episode_returns: [[0.0, 0.35]]
     brdiv-conf1: 
       path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [0, 1, 2] # load in population members 0, 1, 2
       ckpt_key: final_params_conf # key to load from checkpoint.
       POP_SIZE: 5 # for brdiv, we need to specify population size that the method was trained with
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 61.98], [0.0, 83.33], [0.0, 78.65]]
+        returned_episode_returns: [[0.0, 0.31], [0.0, 0.42], [0.0, 0.39]]
     brdiv-conf2:
       path: "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [0, 1]
       ckpt_key: final_params_conf
       POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 90.62], [0.0, 52.08]]
+        returned_episode_returns: [[0.0, 0.45], [0.0, 0.26]]
     seq_agent_lexi:
       actor_type: seq_agent
       ordering_strategy: lexicographic
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
     seq_agent_rlexi:
       actor_type: seq_agent
       ordering_strategy: reverse_lexicographic
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
     seq_agent_col:
       actor_type: seq_agent
       ordering_strategy: column_major
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
     seq_agent_rcol:
       actor_type: seq_agent
       ordering_strategy: reverse_column_major
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
     seq_agent_nearest:
       actor_type: seq_agent
       ordering_strategy: nearest_agent
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
     seq_agent_farthest:
       actor_type: seq_agent
       ordering_strategy: farthest_agent
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
   overcooked-v1/cramped_room: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/cramped_room/ippo/2025-04-21_22-53-04/saved_train_run"
@@ -55,26 +89,44 @@ heldout_set:
       ckpt_key: final_params
       idx_list: [0, 1, 2]
       test_mode: true
+      performance_bounds:
+        base_return: [[0.0, 196.25], [0.0, 180.94], [0.0, 211.88]]
+        returned_episode_returns: [[0.0, 209.55], [0.0, 193.39], [0.0, 226.68]]
     brdiv-conf:
       path: "eval_teammates/overcooked-v1/cramped_room/brdiv/2025-04-23-12-55-47/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [0, 1] # load in population members 1, 2
       ckpt_key: final_params_conf
       POP_SIZE: 4
+      performance_bounds:
+        base_return: [[0.0, 204.06], [0.0, 240.94]]
+        returned_episode_returns: [[0.0, 217.77], [0.0, 257.61]]
     independent_agent_0.4:
       actor_type: independent_agent
       p_onion_on_counter: 0.4
       p_plate_on_counter: 0.4
+      performance_bounds:
+        base_return: [0.0, 158.75]
+        returned_episode_returns: [0.0, 169.27]
     independent_agent_0:
       actor_type: independent_agent
       p_onion_on_counter: 0.0
       p_plate_on_counter: 0.0
-    onion_agent_0.1:  
+      performance_bounds:
+        base_return: [0.0, 132.5]
+        returned_episode_returns: [0.0, 133.64]
+    onion_agent_0.1:
       actor_type: onion_agent
       p_onion_on_counter: 0.1
+      performance_bounds:
+        base_return: [0.0, 83.13]
+        returned_episode_returns: [0.0, 89.34]
     plate_agent_0.1:
       actor_type: plate_agent
       p_plate_on_counter: 0.1
+      performance_bounds:
+        base_return: [0.0, 137.5]
+        returned_episode_returns: [0.0, 146.45]
   overcooked-v1/asymm_advantages: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/asymm_advantages/ippo/2025-04-21_22-53-56/saved_train_run"
@@ -82,22 +134,37 @@ heldout_set:
       ckpt_key: final_params
       idx_list: [0, 1, 2]
       test_mode: true
+      performance_bounds:
+        base_return: [[0.0, 91.56], [0.0, 117.50], [0.0, 153.44]]
+        returned_episode_returns: [[0.0, 91.56], [0.0, 117.50], [0.0, 153.44]]
     brdiv-conf: 
       path: "eval_teammates/overcooked-v1/asymm_advantages/brdiv/2025-04-23/13-16-34/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [0, 1, 2]
       ckpt_key: final_params_conf
       POP_SIZE: 4
+      performance_bounds:
+        base_return: [[0.0, 157.81], [0.0, 148.44], [0.0, 160.00]]
+        returned_episode_returns: [[0.0, 157.81], [0.0, 148.44], [0.0, 160.00]]
     independent_agent_0:
       actor_type: independent_agent
       p_onion_on_counter: 0.0
       p_plate_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 257.5]
+        returned_episode_returns: [0.0, 257.5]
     onion_agent_0:
       actor_type: onion_agent
       p_onion_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 199.69]
+        returned_episode_returns: [0.0, 199.69]
     plate_agent_0:
       actor_type: plate_agent
       p_plate_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 191.25]
+        returned_episode_returns: [0.0, 191.25]
   overcooked-v1/counter_circuit: # DONE - DO NOT MODIFY
     ippo_mlp_cc: # counterclockwise mmt 
       path: "eval_teammates/overcooked-v1/counter_circuit/ippo/2025-04-21_22-55-42/saved_train_run"
@@ -105,28 +172,49 @@ heldout_set:
       ckpt_key: final_params
       idx_list: [0, 1, 2]
       test_mode: true
+      performance_bounds:
+        base_return: [[0.0, 196.88], [0.0, 198.12], [0.0, 189.06]]
+        returned_episode_returns: [[0.0, 209.12], [0.0, 210.51], [0.0, 207.01]]
     ippo_mlp_pass: # passes onions across counter
       path: "eval_teammates/overcooked-v1/counter_circuit/ippo/2025-04-23_15-28-23/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
       idx_list: [0, 1, 2]
       test_mode: true
+      performance_bounds:
+        base_return: [[0.0, 59.38], [0.0, 46.25], [0.0, 142.5]] # RE-EVALUATE
+        returned_episode_returns: [[0.0, 62.86], [0.0, 47.63], [0.0, 150.60]]
     independent_agent_0:
       actor_type: independent_agent
       p_onion_on_counter: 0.0
       p_plate_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 65.0]
+        returned_episode_returns: [0.0, 65.5]
     onion_agent_0:
       actor_type: onion_agent
       p_onion_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 62.5]
+        returned_episode_returns: [0.0, 65.93]
     plate_agent_0:
       actor_type: plate_agent
       p_plate_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 56.25]
+        returned_episode_returns: [0.0, 58.79]
     onion_agent_0.9:
       actor_type: onion_agent
       p_onion_on_counter: 0.9
+      performance_bounds:
+        base_return: [0.0, 46.25]
+        returned_episode_returns: [0.0, 48.62]
     plate_agent_0.9:
       actor_type: plate_agent
       p_plate_on_counter: 0.9
+      performance_bounds:
+        base_return: [0.0, 55.31]
+        returned_episode_returns: [0.0, 57.91]
   overcooked-v1/coord_ring: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/coord_ring/ippo/2025-04-21_22-58-26/saved_train_run"
@@ -134,28 +222,46 @@ heldout_set:
       ckpt_key: final_params
       idx_list: [1, 2, 3]
       test_mode: true
+      performance_bounds:
+        base_return: [[0.0, 218.44], [0.0, 246.56], [0.0, 246.56]]
+        returned_episode_returns: [[0.0, 232.62], [0.0, 262.83], [0.0, 262.83]]
     brdiv-conf1:
       path: "eval_teammates/overcooked-v1/coord_ring/brdiv/2025_04-23_15-00-27/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [1, 2]
       ckpt_key: final_params_conf
       POP_SIZE: 3
+      performance_bounds:
+        base_return: [[0.0, 161.25], [0.0, 183.44]]
+        returned_episode_returns: [[0.0, 171.35], [0.0, 194.60]]
     brdiv-conf2:
       path: "eval_teammates/overcooked-v1/coord_ring/brdiv/2025_04-23_14-17-36/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [0]
       ckpt_key: final_params_conf
       POP_SIZE: 3
+      performance_bounds:
+        base_return: [[0.0, 142.81]]
+        returned_episode_returns: [[0.0, 150.98]]
     independent_agent_0:
       actor_type: independent_agent
       p_onion_on_counter: 0.0
       p_plate_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 136.25]
+        returned_episode_returns: [0.0, 137.08]  
     onion_agent_0:
       actor_type: onion_agent
       p_onion_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 38.13]
+        returned_episode_returns: [0.0, 40.25]  
     plate_agent_0:
       actor_type: plate_agent
       p_plate_on_counter: 0.0
+      performance_bounds:
+        base_return: [0.0, 67.5]
+        returned_episode_returns: [0.0, 70.33]
   overcooked-v1/forced_coord:  # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/forced_coord/ippo/2025-04-21_23-00-17/saved_train_run"
@@ -163,25 +269,40 @@ heldout_set:
       ckpt_key: final_params
       idx_list: [0, 1, 2]
       test_mode: true
+      performance_bounds:
+        base_return: [[0.0, 220.00], [0.0, 214.38], [0.0, 225.62]]
+        returned_episode_returns: [[0.0, 233.83], [0.0, 227.73], [0.0, 239.82]]
     brdiv-conf1: 
       path: "eval_teammates/overcooked-v1/forced_coord/brdiv/2025-04-23_19-44-30/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [0, 2]
       ckpt_key: final_params_conf
       POP_SIZE: 3
+      performance_bounds:
+        base_return: [[0.0, 131.56], [0.0, 184.69]]
+        returned_episode_returns: [[0.0, 139.33], [0.0, 195.88]]
     brdiv-conf2:
       path: "eval_teammates/overcooked-v1/forced_coord/brdiv/2025-04-23_20-25-28/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [1]
       ckpt_key: final_params_conf
       POP_SIZE: 3
+      performance_bounds:
+        base_return: [[0.0, 143.75]]
+        returned_episode_returns: [[0.0, 152.50]]
     brdiv-conf3:
       path: "eval_teammates/overcooked-v1/forced_coord/brdiv/2025-04-23_21-06-05/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [0, 2]
       ckpt_key: final_params_conf
       POP_SIZE: 3
+      performance_bounds:
+        base_return: [[0.0, 69.06], [0.0, 174.69]]
+        returned_episode_returns: [[0.0, 72.45], [0.0, 185.49]]
     independent_agent_0.6:
       actor_type: independent_agent
       p_onion_on_counter: 0.6
       p_plate_on_counter: 0.6
+      performance_bounds:
+        base_return: [0.0, 61.88]
+        returned_episode_returns: [0.0, 65.22]

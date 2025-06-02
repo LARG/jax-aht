@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="fcp"
-label="baselines-v0"
+algo="comedi"
+label="jax-aht:test"
+num_seeds=3
 
 # Create log directory if it doesn't exist
 mkdir -p results/teammate_generation_logs/${algo}/${label}
@@ -11,20 +12,14 @@ mkdir -p results/teammate_generation_logs/${algo}/${label}
 timestamp=$(date +"%Y%m%d_%H%M%S")
 log_file="results/teammate_generation_logs/${algo}/${label}/experiment_${timestamp}.log"
 
-# Available algorithms (commented out for reference)
-# algorithms=(
-#     "brdiv"
-#     "fcp"
-# )
-
 # Tasks to run
 tasks=(
-    "overcooked/asymm_advantages"
-    "overcooked/coord_ring"
-    "overcooked/counter_circuit"
-    "overcooked/cramped_room"
-    "overcooked/forced_coord"
-    # "lbf"
+    "overcooked-v1/asymm_advantages"
+    "overcooked-v1/coord_ring"
+    "overcooked-v1/counter_circuit"
+    "overcooked-v1/cramped_room"
+    "overcooked-v1/forced_coord"
+    "lbf"
 )
 
 # Function to log messages
@@ -42,7 +37,7 @@ failure_count=0
 for task in "${tasks[@]}"; do
     log "Starting task: ${algo}/${task}"
     
-    if python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" 2>> "${log_file}"; then
+    if python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" algorithm.NUM_SEEDS="${num_seeds}" 2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
         ((success_count++))
     else

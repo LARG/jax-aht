@@ -1,8 +1,7 @@
 defaults:
-  - task: overcooked/cramped_room # task configs
-  - algorithm@algorithm: brdiv/${task} # task-specific algorithm configs
+  - task: lbf # task configs
+  - algorithm@algorithm: fcp/${task} # task-specific algorithm configs
   - hydra: hydra_simple
-  - algorithm@ego_train_algorithm: ego_ppo/${task} # task-specific ego configs
   - ../../evaluation/configs/global_heldout_settings
   - _self_
 
@@ -19,20 +18,20 @@ run_heldout_eval: true # whether to run a heldout evaluation of the ego agent
 algorithm:
   NUM_EVAL_EPISODES: 20 # used during training
   TRAIN_SEED: 20374 # 112358 # 20374
+  NUM_SEEDS: 1
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
   ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+  # ego training settings
+  ego_train_algorithm:
+    NUM_EGO_TRAIN_SEEDS: 1 # per seed of teammate generation
+    NUM_EVAL_EPISODES: 20
+    TRAIN_SEED: 204829
+    ENV_NAME: ${ENV_NAME}
+    ENV_KWARGS: ${ENV_KWARGS}
+    ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
 
-# ego training settings
-ego_train_algorithm:
-  NUM_EGO_TRAIN_SEEDS: 1
-  NUM_EVAL_EPISODES: 20
-  TRAIN_SEED: 204829
-  ENV_NAME: ${ENV_NAME}
-  ENV_KWARGS: ${ENV_KWARGS}
-  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
-
-label: ""
+label: "default_label"
 name: ${TASK_NAME}/${algorithm.ALG}/${label}
 
 # wandb settings
@@ -45,12 +44,11 @@ logger:
     - seed=${algorithm.TRAIN_SEED}
     - ${label}
   mode: online # options: online, offline, disabled
-  verbose: true
+  verbose: false
   log_train_out: true # whether to log the out dictionary
   log_eval_out: true # whether to log the eval metrics
 
 # Local logger
 local_logger:
-  save_figures: false # unused
   save_train_out: true
   save_eval_out: true

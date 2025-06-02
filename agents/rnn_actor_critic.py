@@ -21,9 +21,9 @@ class ScannedRNN(nn.Module):
     def __call__(self, carry, x):
         """Applies the module."""
         rnn_state = carry
-        ins, resets = x
+        ins, dones = x
         rnn_state = jnp.where(
-            resets[:, np.newaxis],
+            dones[:, np.newaxis],
             self.initialize_carry(*rnn_state.shape),
             rnn_state,
         )

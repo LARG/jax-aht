@@ -1,6 +1,7 @@
 defaults:
-  - task: lbf # overcooked/cramped_room # task configs
+  - task: lbf # overcooked-v1/cramped_room # task configs
   - global_heldout_settings # global settings for heldout evaluation
+  - global_heldout_br # best responses to global heldout set
   - hydra: hydra_simple
   - _self_
 
@@ -9,4 +10,4 @@ ENV_KWARGS: ${task.ENV_KWARGS}
 TASK_NAME: ${task.TASK_NAME}
 
 label: ""
-name: ${TASK_NAME}/heldout_xp_eval/${label}
+name: ${TASK_NAME}/heldout_xp_matrix/${label}

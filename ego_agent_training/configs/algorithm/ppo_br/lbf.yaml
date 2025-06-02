@@ -1,0 +1,14 @@
+defaults:
+  - ppo_br/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 6e7
+LR: 5e-5
+ENT_COEF: 1e-4
+CLIP_EPS: 0.1
+ANNEAL_LR: false
+UPDATE_EPOCHS: 10
+S5_D_MODEL: 128
+S5_SSM_SIZE: 128
+S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+FC_N_LAYERS: 3

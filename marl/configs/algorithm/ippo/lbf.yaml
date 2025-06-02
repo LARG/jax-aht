@@ -1,0 +1,12 @@
+defaults:
+  - ippo/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 5e5
+SEED: 12345
+LR: .0001
+NUM_ENVS: 8
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 4
+CLIP_EPS: 0.03
+ENT_COEF: 0.01

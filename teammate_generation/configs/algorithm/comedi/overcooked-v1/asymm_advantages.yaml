@@ -1,0 +1,16 @@
+defaults:
+  - comedi/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 6e6
+PARTNER_POP_SIZE: 10
+LR: .0001
+UPDATE_EPOCHS: 15
+CLIP_EPS: 0.3
+ENT_COEF: 0.01
+ego_train_algorithm: 
+  TOTAL_TIMESTEPS: 3e7
+  LR: 5e-5
+  ENT_COEF: .001
+  CLIP_EPS: 0.1
+  UPDATE_EPOCHS: 10

@@ -14,13 +14,15 @@ safetensors
 moviepy
 ffmpeg
 prettytable
-
+rliable
 matplotlib
 wandb
 omegaconf
 hydra-core
 plotly
 prettytable
+kaleido
+gdown
 
 jumanji==1.1.0
 jaxmarl==0.0.7

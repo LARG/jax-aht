@@ -1,0 +1,20 @@
+# @package algorithm
+# ^ tells hydra to place these value directly under algorithm key
+
+ALG: open_ended_minimax
+TIMESTEPS_PER_ITER_PARTNER: 1e6 # per iter of open-ended training
+TIMESTEPS_PER_ITER_EGO: 1e6
+NUM_OPEN_ENDED_ITERS: 30
+NUM_CHECKPOINTS: 5 # per iter of open-ended training
+PARTNER_POP_SIZE: 1 # true pop size is PARTNER_POP_SIZE * NUM_CHECKPOINTS per iter of open-ended training
+NUM_ENVS: 16
+LR: 1.e-4
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 4
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.05
+ENT_COEF: 0.01
+VF_COEF: 0.5
+MAX_GRAD_NORM: 1.0
+ANNEAL_LR: false

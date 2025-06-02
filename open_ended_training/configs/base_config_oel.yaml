@@ -1,0 +1,45 @@
+defaults:
+  - task: overcooked-v1/coord_ring # task configs
+  - algorithm@algorithm: rotate/${task} # task-specific algorithm configs
+  - hydra: hydra_simple
+  - ../../evaluation/configs/global_heldout_settings
+  - _self_
+
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
+TASK_NAME: ${task.TASK_NAME}
+
+# whether to run a heldout evaluation of the ego agent
+run_heldout_eval: true
+
+# teammate generation settings
+algorithm:
+  NUM_EVAL_EPISODES: 20 # used during training
+  NUM_SEEDS: 1
+  TRAIN_SEED: 20374
+  ENV_NAME: ${ENV_NAME}
+  ENV_KWARGS: ${ENV_KWARGS}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+
+label: "default_label"
+name: ${TASK_NAME}/${algorithm.ALG}/${label}
+
+# wandb settings
+logger: 
+  project: open-ended-aht
+  entity: aht-project
+  tags: 
+    - ${algorithm.ALG}
+    - ${TASK_NAME}
+    - seed=${algorithm.TRAIN_SEED}
+    - ${label}
+  mode: online # options: online, offline, disabled
+  verbose: false
+  log_train_out: true # whether to log the out dictionary
+  log_eval_out: true # whether to log the eval metrics
+
+# Local logger
+local_logger:
+  save_train_out: true
+  save_eval_out: true

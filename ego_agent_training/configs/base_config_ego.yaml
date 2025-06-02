@@ -1,0 +1,44 @@
+defaults:
+  - task: overcooked-v1/cramped_room # task configs
+  - algorithm@algorithm: ppo_ego/${task} # task-specific algorithm configs
+  - hydra: hydra_simple
+  - ../../evaluation/configs/global_heldout_settings
+  - _self_         # Ensures that values in this file override imported ones if needed
+
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
+TASK_NAME: ${task.TASK_NAME}
+
+run_heldout_eval: true
+
+# partner configs are specified in each algorithm _base_ config file
+# note that ppo_ego and ppo_br support different types of partner configs
+algorithm:
+  TRAIN_SEED: 12345
+  NUM_EGO_TRAIN_SEEDS: 3
+  NUM_EVAL_EPISODES: 20
+  ENV_NAME: ${ENV_NAME}
+  ENV_KWARGS: ${ENV_KWARGS}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+
+label: "default_label"
+name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.EGO_ACTOR_TYPE}/${label}
+
+# WandB Params
+logger: 
+  project: open-ended-aht
+  entity: aht-project
+  tags: 
+    - ${algorithm.ALG}
+    - ${TASK_NAME}
+    - ${label}
+  mode: offline # options: online, offline, disabled
+  verbose: false
+  log_train_out: true # whether to log the out dictionary
+  log_eval_out: true # whether to log the eval metrics
+
+# Local logger
+local_logger:
+  save_train_out: true
+  save_eval_out: true

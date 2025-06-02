@@ -1,5 +1,6 @@
 import os
 from functools import partial
+
 import jax
 import jax.numpy as jnp
 import seaborn as sns
@@ -11,7 +12,7 @@ def get_metric_names(env_name):
     elif env_name == "overcooked-v1":
         return ("base_return", "returned_episode_returns")
     else:
-        return ("returned_episode_returns", "returned_episode_lengths")
+        return ("returned_episode_returns",)
 
 @partial(jax.jit, static_argnames=['stats'])
 def get_stats(metrics, stats: tuple):
@@ -20,13 +21,10 @@ def get_stats(metrics, stats: tuple):
     using only the final steps of episodes. Note that each rollout contains multiple episodes.
 
     metrics is a pytree where each leaf has shape 
-        (num_seeds, num_updates, rollout_length, num_envs)
+        (..., rollout_length, num_envs)
     stats is a tuple of strings, each corresponding to a metric of interest in metrics
     '''
-    num_seeds, num_updates, rollout_len, _ = metrics["returned_episode_lengths"].shape
-
     # Get mask for final steps of episodes
-    # mask = metrics["returned_episode_lengths"] > 0
     mask = metrics["returned_episode"]
     
     # Initialize output dictionary
@@ -34,20 +32,21 @@ def get_stats(metrics, stats: tuple):
     stats = list(stats) # convert to list to correctly iterate if the tuple only has a single element
     for stat_name in stats:
         # Get the metric array
-        metric_data = metrics[stat_name]  # Shape: (num_seeds, num_updates, rollout_length, num_envs)
+        metric_data = metrics[stat_name]  # Shape: (..., rollout_length, num_envs)
 
         # Compute means and stds for each seed and update
         # Use masked operations to only consider final episode steps
-        means = jnp.where(mask, metric_data, 0).sum(axis=(2, 3)) / mask.sum(axis=(2, 3))
+        means = jnp.where(mask, metric_data, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
         # For std, first compute masked values
         masked_vals = jnp.where(mask, metric_data, 0)
         squared_diff = (masked_vals - means[..., None, None]) ** 2
-        variance = jnp.where(mask, squared_diff, 0).sum(axis=(2, 3)) / mask.sum(axis=(2, 3))
+        variance = jnp.where(mask, squared_diff, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
         stds = jnp.sqrt(variance)
         # Stack means and stds
         all_stats[stat_name] = jnp.stack([means, stds], axis=-1)
     
     return all_stats
+
 
 def plot_train_metrics(all_stats, 
                        num_rollout_steps, num_envs,

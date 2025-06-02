@@ -1,9 +1,10 @@
 # @package algorithm
 # ^ tells hydra to place these value directly under algorithm key
 ALG: fcp
+ACTOR_TYPE: mlp
 TOTAL_TIMESTEPS: 1e6 # per PARTNER_POP_SIZE trained
 NUM_CHECKPOINTS: 5
-PARTNER_POP_SIZE: 5 # true partner pop size is PARTNER_POP_SIZE * NUM_CHECKPOINTS
+PARTNER_POP_SIZE: 20 # true partner pop size is PARTNER_POP_SIZE * NUM_CHECKPOINTS
 NUM_ENVS: 8
 LR: 1e-4
 UPDATE_EPOCHS: 15
@@ -12,6 +13,25 @@ GAMMA: 0.99
 GAE_LAMBDA: 0.95
 CLIP_EPS: 0.05
 ENT_COEF: 0.01
-VF_COEF: 1.0
+VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: true
+ego_train_algorithm:
+  EGO_ACTOR_TYPE: s5
+  S5_D_MODEL: 16
+  S5_SSM_SIZE: 16
+  S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+  FC_N_LAYERS: 2
+  TOTAL_TIMESTEPS: 1e7
+  NUM_CHECKPOINTS: 5 
+  NUM_ENVS: 8
+  LR: 1e-4
+  UPDATE_EPOCHS: 15
+  NUM_MINIBATCHES: 4
+  GAMMA: 0.99
+  GAE_LAMBDA: 0.95
+  CLIP_EPS: 0.05
+  ENT_COEF: 0.01
+  VF_COEF: 0.5
+  MAX_GRAD_NORM: 1.0
+  ANNEAL_LR: true
