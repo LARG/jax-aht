@@ -39,7 +39,7 @@ ANNEAL_LR: False
 
 # WandB Params
 logger: 
-  project: open-ended-aht
+  project: aht-benchmark
   entity: aht-project
   mode: offline # options: online, offline, disabled
   verbose: false

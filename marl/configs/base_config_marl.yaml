@@ -21,7 +21,7 @@ name: ${TASK_NAME}/${algorithm.ALG}/${label}
 
 # wandb settings
 logger: 
-  project: open-ended-aht
+  project: aht-benchmark
   entity: aht-project
   tags: 
     - ${algorithm.ALG}

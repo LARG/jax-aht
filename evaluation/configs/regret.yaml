@@ -46,7 +46,7 @@ name: ${TASK_NAME}/regret_maximizing/${label}
 
 # wandb settings
 logger: 
-  project: open-ended-aht
+  project: aht-benchmark
   entity: aht-project
   tags: 
     - regret_maximizing
