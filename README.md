@@ -26,6 +26,7 @@ High priority issues that will propagate if not fixed:
     - Switch from logging BR/Conf losses to SP/XP losses!
 
 Lower priority fixes / additional features: 
+- Where to store reward shaping configs? For example, the config at `marl/configs/ippo_counter_circuit_passing.yaml` records reward shaping parameters to develop an agent that passes onions across the counter. 
 - Heuristic agents: 
     - Enable decision-making to account for the available actions
 - Evaluation
@@ -45,7 +46,8 @@ Lower priority fixes / additional features:
 - Remove ROTATE-specific paths throughout the codebase
 - README 
     - Reorient README towards benchmark
-    - Add a figure for the design philosophy! 
+    - Add a figure for the design philosophy
+    - Add documentation for reward shaping wrappers
 
 ### Evaluation
 - Heldout eval teammates: write a script to compute the best response teammates for all heldout agents

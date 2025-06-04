@@ -27,7 +27,7 @@ name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.EGO_ACTOR_TYPE}/${label}
 
 # WandB Params
 logger: 
-  project: open-ended-aht
+  project: aht-benchmark
   entity: aht-project
   tags: 
     - ${algorithm.ALG}
