@@ -1,0 +1,29 @@
+# @package algorithm
+# ^ tells hydra to place these value directly under algorithm key
+ALG: liam_ego
+EGO_ACTOR_TYPE: mlp
+NUM_EGO_TRAIN_SEEDS: 1
+TOTAL_TIMESTEPS: 1e7
+NUM_CHECKPOINTS: 5
+NUM_ENVS: 8
+LR: 3e-4
+ENCODER_DECODER_LR: 7e-4
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 4
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.05         # Do we keep this for LIAM?
+ENT_COEF: 0.01
+VF_COEF: 0.5
+MAX_GRAD_NORM: 0.5
+ANNEAL_LR: false
+
+partner_agent: # partner config for liam_ego
+  name: rotate # overcooked cramped room
+  path: results/overcooked-v1/cramped_room/oe_persistent/paper-v0:1reg/2025-05-10_16-28-55/saved_train_run/
+  actor_type: actor_with_double_critic
+  custom_loader: 
+    name: open_ended # if null, use default loader
+    type: ego # options: ego, partner
+  ckpt_key: final_buffer
+  idx_list: [[0, -1]]
