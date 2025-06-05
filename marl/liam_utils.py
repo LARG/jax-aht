@@ -1,0 +1,172 @@
+import functools
+
+from typing import NamedTuple
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+import flax.linen as nn
+
+class Transition(NamedTuple):
+    done: jnp.ndarray
+    action: jnp.ndarray
+    value: jnp.ndarray
+    reward: jnp.ndarray
+    log_prob: jnp.ndarray
+    obs: jnp.ndarray
+    info: jnp.ndarray
+    avail_actions: jnp.ndarray
+
+class ScannedLSTM(nn.Module):
+    @functools.partial(
+        nn.scan,
+        variable_broadcast="params",
+        in_axes=0,
+        out_axes=0,
+        split_rngs={"params": False},
+    )
+    @nn.compact
+    def __call__(self, carry, x):
+        """Applies the module."""
+        lstm_state = carry
+        ins, dones = x
+        lstm_state = jnp.where(
+            dones[:, np.newaxis],
+            self.initialize_carry(*lstm_state.shape),
+            lstm_state,
+        )
+        new_lstm_state, y = nn.OptimizedLSTMCell(features=ins.shape[1])(lstm_state, ins)
+        return new_lstm_state, y
+
+    @staticmethod
+    def initialize_carry(batch_size, hidden_size):
+        # Use a dummy key since the default state init fn is just zeros.
+        cell = nn.OptimizedLSTMCell(features=hidden_size)
+        return cell.initialize_carry(jax.random.PRNGKey(0), (batch_size, hidden_size))
+
+class EncoderNetwork(nn.Module):
+    hidden_dim: int
+    ouput_dim: int
+
+    @nn.compact
+    def __call__(self, hidden, x):
+        obs, dones = x
+        lstm_in = (obs, dones)
+        hidden, embedding = ScannedLSTM()(hidden, lstm_in)
+        embedding = nn.Dense(self.hidden_dim)(embedding)
+        embedding = nn.relu(embedding)
+        embedding = nn.Dense(self.ouput_dim)(embedding)
+        return embedding, hidden
+
+class DecoderNetwork(nn.Module):
+    hidden_dim: int
+    ouput_dim1: int
+    ouput_dim2: int
+
+    @nn.compact
+    def __call__(self, x):
+        h1 = nn.Dense(self.hidden_dim)(x)
+        h1 = nn.relu(h1)
+        h1 = nn.Dense(self.hidden_dim)(h1)
+        h1 = nn.relu(h1)
+        out = nn.Dense(self.ouput_dim1)(h1)
+
+        # TODO: Handle more than 1 partner
+        h2 = nn.Dense(self.hidden_dim)(x)
+        h2 = nn.relu(h2)
+        h2 = nn.Dense(self.hidden_dim)(h2)
+        h2 = nn.relu(h2)
+        prob1 = nn.Dense(self.ouput_dim2)(h2)
+        prob1 = nn.softmax(prob1, axis=-1)
+        # prob2 = nn.Dense(self.ouput_dim2)(h2)
+        # prob2 = nn.softmax(prob2, axis=-1)
+        # prob3 = nn.Dense(self.ouput_dim2)(h2)
+        # prob3 = nn.softmax(prob3, axis=-1)
+        return out, prob1 #, prob2, prob3
+    
+class Encoder():
+    """Model wrapper for EncoderNetwork."""
+    
+    def __init__(self, hidden_dim, ouput_dim):
+        """
+        Args:
+            hidden_dim: int, dimension of the encoder hidden layers
+            ouput_dim: int, dimension of the encoder output
+        """
+        self.model = EncoderNetwork(hidden_dim, ouput_dim)
+        self.lstm_hidden_dim = hidden_dim
+
+    def init_hstate(self, batch_size, aux_info=None):
+        """Initialize hidden state for the encoder LSTM."""
+        hstate =  ScannedLSTM.initialize_carry(batch_size, self.lstm_hidden_dim)
+        hstate = hstate.reshape(1, batch_size, self.lstm_hidden_dim)
+        return hstate
+    
+    def init_params(self, rng):
+        """Initialize parameters for the encoder model."""
+        batch_size = 1
+        # Initialize hidden state
+        init_hstate = self.init_hstate(batch_size)
+        
+        # Create dummy inputs - add time dimension
+        dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_done = jnp.zeros((1, batch_size))
+        dummy_x = (dummy_obs, dummy_done)
+        
+        # Initialize model
+        return self.model.init(rng, init_hstate.reshape(batch_size, -1), dummy_x)
+
+class Decoder():
+    """Model wrapper for DecoderNetwork."""
+    
+    def __init__(self, hidden_dim, ouput_dim1, ouput_dim2):
+        """
+        Args:
+            hidden_dim: int, dimension of the decoder hidden layers
+            ouput_dim1: int, dimension of the decoder output
+            ouput_dim2: int, dimension of the decoder probs
+        """
+        self.model = DecoderNetwork(hidden_dim, ouput_dim1, ouput_dim2)
+    
+    def init_params(self, rng):
+        """Initialize parameters for the decoder model."""
+        batch_size = 1
+        
+        # Create dummy inputs - add time dimension
+        dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_done = jnp.zeros((1, batch_size))
+        dummy_x = (dummy_obs, dummy_done)
+        
+        # Initialize model
+        return self.model.init(rng, dummy_x)
+
+def initialize_encoder_decoder(config, env, rng):
+    """Initialize the Encoder and Decoder models with the given config.
+    
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        
+    Returns:
+        encoder: Encoder, the model object
+        decoder: Decoder, the model object
+        params: dict, initial parameters for the encoder and decoder
+    """
+    # Create the RNN policy
+    encoder = Encoder(
+        hidden_dim=config.get("ENCODER_HIDDEN_DIM", 64),
+        ouput_dim=config.get("ENCODER_OUTPUT_DIM", 64)
+    )
+
+    decoder = Decoder(
+        hidden_dim=config.get("DECODER_HIDDEN_DIM", 64),
+        ouput_dim1=config.get("DECODER_OUTPUT_DIM1", 64),
+        ouput_dim2=config.get("DECODER_OUTPUT_DIM2", env.action_space(env.agents[0]).n)
+    )
+    
+    rng, init_rng_encoder, init_rng_decoder  = jax.random.split(rng, 3)
+    init_params_encoder = encoder.init_params(init_rng_encoder)
+    init_params_decoder = decoder.init_params(init_rng_decoder)
+
+    return encoder, decoder, {'encoder': init_params_encoder['params'], 'decoder': init_params_decoder['params']}
