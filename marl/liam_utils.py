@@ -16,6 +16,8 @@ class Transition(NamedTuple):
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
+    partner_obs: jnp.ndarray
+    partner_action: jnp.ndarray
 
 class ScannedLSTM(nn.Module):
     @functools.partial(
@@ -115,6 +117,11 @@ class Encoder():
         
         # Initialize model
         return self.model.init(rng, init_hstate.reshape(batch_size, -1), dummy_x)
+    
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def compute_embedding(self, params, hstate, obs, done):
+        """Embed observations using the encoder model."""
+        return self.model.apply(params, hstate, (obs, done))
 
 class Decoder():
     """Model wrapper for DecoderNetwork."""
@@ -139,6 +146,14 @@ class Decoder():
         
         # Initialize model
         return self.model.init(rng, dummy_x)
+
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def evaluate(self, params, embeddings, modelled_agent_obs, modelled_agent_act):
+        """Evaluate the decoder model with given parameters and inputs."""
+        mean, prob1 = self.model.apply(params, embeddings)
+        recon_loss_1 = 0.5 * ((modelled_agent_obs - mean) ** 2).sum(-1)
+        recon_loss_2 = -jnp.log(jnp.sum(prob1 * modelled_agent_act, axis=-1))
+        return recon_loss_1, recon_loss_2
 
 def initialize_encoder_decoder(config, env, rng):
     """Initialize the Encoder and Decoder models with the given config.
