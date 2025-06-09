@@ -1,10 +1,16 @@
-'''Implementation of the BRDiv teammate generation algorithm (Rahman et al., TMLR 2023)
-https://arxiv.org/abs/2207.14138
+'''Command to run BRDiv: 
+python teammate_generation/run.py algorithm=brdiv/lbf task=lbf label=test_brdiv algorithm.ego_train_algorithm.TOTAL_TIMESTEPS=3e6
 
-Command to run BRDiv only on LBF: 
-python teammate_generation/run.py algorithm=brdiv/lbf task=lbf label=test_brdiv run_heldout_eval=false train_ego=false
+Debug command: 
+python teammate_generation/run.py algorithm=brdiv/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_ENVS=16 train_ego=false run_heldout_eval=false
 
-Limitations: does not support recurrent actors.
+Cleanup Steps: 
+1. Convert code to use the agent interface (done)
+2. Use run_episodes to run evaluation episodes (done)
+3. Replace minibatch creation code with create_minibatches utility function (done)
+4. Remove unnecessary vmaps (not needed)
+5. Refactor NUM_CONTROLLED_ACTORS->NUM_CONF_ACTORS, NUM_BR_ACTORS
+5. Use AgentPopulation object to manage agent parameters
 '''
 import shutil
 import time
@@ -36,51 +42,43 @@ class XPTransition(NamedTuple):
     done: jnp.ndarray
     action: jnp.ndarray
     value: jnp.ndarray
-    self_onehot_id: jnp.ndarray
-    oppo_onehot_id: jnp.ndarray
+    self_id: jnp.ndarray
+    oppo_id: jnp.ndarray
     reward: jnp.ndarray
     log_prob: jnp.ndarray
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
 
-def _get_all_ids(pop_size):
-    cross_product = np.meshgrid(
-        np.arange(pop_size),
-        np.arange(pop_size)
-    )
-    agent_id_cartesian_product = np.stack([g.ravel() for g in cross_product], axis=-1)
-    all_conf_ids = agent_id_cartesian_product[:, 1]
-    all_br_ids = agent_id_cartesian_product[:, 0]
-    return all_conf_ids, all_br_ids
-
-def gather_params(partner_params_pytree, idx_vec):
-    """
-    partner_params_pytree: pytree with all partner params. Each leaf has shape (n_seeds, m_ckpts, ...).
-    idx_vec: a vector of indices with shape (num_envs,) each in [0, n_seeds*m_ckpts).
-
-    Return a new pytree where each leaf has shape (num_envs, ...). Each leaf has a sampled
-    partner's parameters for each environment.
-    """
-    # We'll define a function that gathers from each leaf
-    # where leaf has shape (n_seeds, m_ckpts, ...), we want [idx_vec[i]] for each i.
-    # We'll vmap a slicing function.
-    def gather_leaf(leaf):
-        def slice_one(idx):
-            return leaf[idx]  # shape (...)
-        return jax.vmap(slice_one)(idx_vec)
-
-    return jax.tree.map(gather_leaf, partner_params_pytree)
-
 def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
     # Define different minibatch sizes for interactions with ego agent and one with BR agent
+    config["SP_COLLECT_SIZE"] = config["NUM_ENVS"] // 2
+    config["XP_COLLECT_SIZE"] = config["NUM_ENVS"] - config["SP_COLLECT_SIZE"]
     config["NUM_GAME_AGENTS"] = num_agents
-    config["NUM_CONF_ACTORS"] = config["NUM_ENVS"]
-    config["NUM_BR_ACTORS"] = config["NUM_ENVS"]
+    config["NUM_ACTORS"] = num_agents * config["NUM_ENVS"]
+    config["NUM_CONTROLLED_ACTORS"] = config["NUM_ACTORS"] // config["NUM_GAME_AGENTS"]
     config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // (num_agents * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
+
+    def gather_params(partner_params_pytree, idx_vec):
+        """
+        partner_params_pytree: pytree with all partner params. Each leaf has shape (n_seeds, m_ckpts, ...).
+        idx_vec: a vector of indices with shape (num_envs,) each in [0, n_seeds*m_ckpts).
+
+        Return a new pytree where each leaf has shape (num_envs, ...). Each leaf has a sampled
+        partner's parameters for each environment.
+        """
+        # We'll define a function that gathers from each leaf
+        # where leaf has shape (n_seeds, m_ckpts, ...), we want [idx_vec[i]] for each i.
+        # We'll vmap a slicing function.
+        def gather_leaf(leaf):
+            def slice_one(idx):
+                return leaf[idx]  # shape (...)
+            return jax.vmap(slice_one)(idx_vec)
+
+        return jax.tree.map(gather_leaf, partner_params_pytree)
 
     def make_brdiv_agents(config):
         def linear_schedule(count):
@@ -91,10 +89,6 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
             rng, init_conf_rng, init_br_rng = jax.random.split(rng, 3)
             all_conf_init_rngs = jax.random.split(init_conf_rng, config["PARTNER_POP_SIZE"])
             all_br_init_rngs = jax.random.split(init_br_rng, config["PARTNER_POP_SIZE"])
-            identity_matrix = jnp.eye(config["PARTNER_POP_SIZE"])
-
-            init_conf_hstate = conf_policy.init_hstate(config["NUM_CONF_ACTORS"])
-            init_br_hstate = br_policy.init_hstate(config["NUM_BR_ACTORS"])
 
             def init_train_states(rng_agents, rng_brs):
                 def init_single_pair_optimizers(rng_agent, rng_br):
@@ -164,56 +158,9 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 agent_0 = confederate, agent_1 = br
                 Returns updated runner_state, and Transitions for agent_0 and agent_1
                 """
-                (
-                    all_train_state_conf, all_train_state_br, last_conf_ids, last_br_ids,
-                    env_state, last_obs, last_done, last_conf_h, last_br_h, rng 
-                ) = runner_state
-                rng, act0_rng, act1_rng, step_rng, conf_sampling_rng, br_sampling_rng = jax.random.split(rng, 6)
+                conf_params, br_params, conf_agent_id, br_agent_id, env_state, last_obs, last_done, last_conf_h, last_br_h, rng = runner_state
 
-                # For done envs, resample both conf and brs 
-                needs_resample = last_done["__all__"]
-                resampled_conf_ids = jax.random.randint(conf_sampling_rng, (config["NUM_CONF_ACTORS"],), 0, config["PARTNER_POP_SIZE"])
-                resampled_br_ids = jax.random.randint(br_sampling_rng, (config["NUM_BR_ACTORS"],), 0, config["PARTNER_POP_SIZE"])
-
-                # Determine final indices based on whether resampling was needed for each env
-                updated_conf_ids = jnp.where(
-                    needs_resample,         
-                    resampled_conf_ids,     # Use newly sampled index if True
-                    last_conf_ids           # Else, keep index from previous step
-                )
-
-                updated_br_ids = jnp.where(
-                    needs_resample,         
-                    resampled_br_ids,       # Use newly sampled index if True
-                    last_br_ids             # Else, keep index from previous step
-                )  
-
-                # Reset the hidden states for resampled conf and br if they are not None
-                # WARNING: BRDiv was not tested with recurrent actors, so the code for if the hstate is not None may not work
-                if last_conf_h is not None:
-                    updated_conf_h = jnp.where(
-                        needs_resample,
-                        init_conf_hstate,
-                        last_conf_h
-                    )
-                else:
-                    updated_conf_h = last_conf_h
-
-                if last_br_h is not None:
-                    updated_br_h = jnp.where(
-                        needs_resample,
-                        init_br_hstate,
-                        last_br_h
-                    )
-                else:
-                    updated_br_h = last_br_h
-
-                # Get the corresponding conf and br params
-                updated_conf_params = gather_params(all_train_state_conf.params, updated_conf_ids)
-                updated_br_params = gather_params(all_train_state_br.params, updated_br_ids)
-
-                updated_conf_onehot_ids = identity_matrix[updated_conf_ids]
-                updated_br_onehot_ids = identity_matrix[updated_br_ids]
+                rng, act0_rng, act1_rng, step_rng = jax.random.split(rng, 4)
 
                 # Get available actions for agent 0 from environment state
                 avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)
@@ -223,17 +170,17 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
 
                 # Agent_0 action
                 act0_rng = jax.random.split(act0_rng, config["NUM_ENVS"])
-                act_0, val_0, pi_0, new_conf_h = jax.vmap(forward_pass_conf)(updated_conf_params, 
-                        last_obs["agent_0"], updated_br_onehot_ids, last_done["agent_0"], avail_actions_0, 
-                        updated_conf_h, act0_rng)
+                act_0, val_0, pi_0, new_conf_h = jax.vmap(forward_pass_conf)(conf_params, 
+                        last_obs["agent_0"], br_agent_id, last_done["agent_0"], avail_actions_0, 
+                        last_conf_h, act0_rng)
                 logp_0 = pi_0.log_prob(act_0)
                 act_0, val_0, logp_0 = act_0.squeeze(), val_0.squeeze(), logp_0.squeeze()
 
                 # Agent_1 action
                 act1_rng = jax.random.split(act1_rng, config["NUM_ENVS"])
-                act_1, val_1, pi_1, new_br_h = jax.vmap(forward_pass_br)(updated_br_params, 
-                        last_obs["agent_1"], updated_conf_onehot_ids, last_done["agent_1"], avail_actions_1, 
-                        updated_br_h, act1_rng)
+                act_1, val_1, pi_1, new_br_h = jax.vmap(forward_pass_br)(br_params, 
+                        last_obs["agent_1"], conf_agent_id, last_done["agent_1"], avail_actions_1, 
+                        last_br_h, act1_rng)
                 logp_1 = pi_1.log_prob(act_1)
                 act_1, val_1, logp_1 = act_1.squeeze(), val_1.squeeze(), logp_1.squeeze()
 
@@ -251,25 +198,24 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 info_0 = jax.tree.map(lambda x: x[:, 0], info)
                 info_1 = jax.tree.map(lambda x: x[:, 1], info)
 
-                def _compute_rewards(conf_id, br_id, agent_rew):
-                    return jax.lax.cond(jnp.equal(
-                        jnp.argmax(conf_id, axis=-1), jnp.argmax(br_id, axis=-1)
-                    ), 
-                    lambda x: x, 
-                    lambda x: -x, 
-                    agent_rew
-                    )
+                indiv_conf_rew_compute = lambda conf_id, br_id, agent1_rew: jax.lax.cond(jnp.equal(
+                    jnp.argmax(conf_id, axis=-1), jnp.argmax(br_id, axis=-1)
+                ), lambda x: x, lambda x: -x, agent1_rew)
 
-                agent_0_rews = jax.vmap(_compute_rewards)(updated_conf_onehot_ids, updated_br_onehot_ids, reward["agent_1"])
-                agent_1_rews = jax.vmap(_compute_rewards)(updated_conf_onehot_ids, updated_br_onehot_ids, reward["agent_0"])
+                indiv_ego_rew_compute = lambda conf_id, br_id, agent0_rew: jax.lax.cond(jnp.equal(
+                    jnp.argmax(conf_id, axis=-1), jnp.argmax(br_id, axis=-1)
+                ), lambda x: x, lambda x: -x, agent0_rew)
+
+                agent_0_rews = jax.vmap(indiv_conf_rew_compute)(conf_agent_id, br_agent_id, reward["agent_1"])
+                agent_1_rews = jax.vmap(indiv_ego_rew_compute)(conf_agent_id, br_agent_id, reward["agent_0"])
                 
                 # Store agent_0 data in transition
                 transition_0 = XPTransition(
                     done=done["agent_0"],
                     action=act_0,
                     value=val_0,
-                    self_onehot_id=updated_conf_onehot_ids,
-                    oppo_onehot_id=updated_br_onehot_ids,
+                    self_id=conf_agent_id,
+                    oppo_id=br_agent_id,
                     reward=agent_0_rews,
                     log_prob=logp_0,
                     obs=last_obs["agent_0"],
@@ -281,15 +227,15 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     done=done["agent_1"],
                     action=act_1,
                     value=val_1,
-                    self_onehot_id=updated_br_onehot_ids,
-                    oppo_onehot_id=updated_conf_onehot_ids,
+                    self_id=br_agent_id,
+                    oppo_id=conf_agent_id,
                     reward=agent_1_rews,
                     log_prob=logp_1,
                     obs=last_obs["agent_1"],
                     info=info_1,
                     avail_actions=avail_actions_1
                 )
-                new_runner_state = (all_train_state_conf, all_train_state_br, updated_conf_ids, updated_br_ids,
+                new_runner_state = (conf_params, br_params, conf_agent_id, br_agent_id, 
                                     env_state_next, obs_next, done, new_conf_h, new_br_h, rng)
                 return new_runner_state, (transition_0, transition_1)
             
@@ -318,7 +264,15 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 return advantages, advantages + traj_batch.value
             
             def run_all_episodes(rng, train_state_conf, train_state_br):
-                conf_ids, br_ids = _get_all_ids(config["PARTNER_POP_SIZE"])
+                cross_product = jnp.meshgrid(
+                    jnp.arange(config["PARTNER_POP_SIZE"]),
+                    jnp.arange(config["PARTNER_POP_SIZE"])
+                )
+                agent_id_cartesian_product = jnp.stack([g.ravel() for g in cross_product], axis=-1)
+
+                conf_ids = agent_id_cartesian_product[:, 0]
+                br_ids = agent_id_cartesian_product[:, 1]
+
                 gathered_conf_model_params = gather_params(train_state_conf.params, conf_ids)
                 gathered_br_model_params = gather_params(train_state_br.params, br_ids)
 
@@ -341,24 +295,25 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     minbatch_conf, minbatch_br = all_data
 
                     def _loss_fn(param, agent_policy, minbatch, agent_id):
-                        '''Compute loss for agent corresponding to agent_id.
-                        '''
                         init_hstate, traj_batch, gae, target_v = minbatch
                         # get policy and value of confederate versus ego and best response agents respectively
-                        squeezed_param = jax.tree.map(lambda x: jnp.squeeze(x, 0), param)
-                        _, value, pi, _ = agent_policy.get_action_value_policy(
-                            params=squeezed_param,
-                            obs=traj_batch.obs,
-                            done=traj_batch.done,
-                            avail_actions=traj_batch.avail_actions,
-                            hstate=init_hstate,
-                            rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here 
-                            aux_obs=traj_batch.oppo_onehot_id
-                        )
+                        param = jax.tree.map(lambda x: jnp.squeeze(x, 0), param)
+                        pi, value = agent_policy.network.apply(param, (traj_batch.obs, traj_batch.oppo_id, traj_batch.avail_actions)) # DEBUG FLAG
                         log_prob = pi.log_prob(traj_batch.action)
 
+                        # _, value, pi, _ = agent_policy.get_action_value_policy(
+                        #     params=param,
+                        #     obs=traj_batch.obs,
+                        #     done=traj_batch.done,
+                        #     avail_actions=traj_batch.avail_actions,
+                        #     hstate=init_hstate,
+                        #     rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here 
+                        #     aux_obs=traj_batch.oppo_id
+                        # )
+                        # log_prob = pi.log_prob(traj_batch.action)
+
                         is_relevant = jnp.equal(
-                            jnp.argmax(traj_batch.self_onehot_id, axis=-1), 
+                            jnp.argmax(traj_batch.self_id, axis=-1), 
                             agent_id
                         )
                         loss_weights = jnp.where(is_relevant, 1, 0).astype(jnp.float32)
@@ -374,20 +329,22 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                             loss_weights.sum() == 0, 
                             lambda x: jnp.zeros_like(x).astype(jnp.float32), 
                             lambda x: x,
-                            (loss_weights * jnp.maximum(value_losses, value_losses_clipped)).sum() / (loss_weights.sum() + 1e-8)
+                            (loss_weights * jnp.maximum(value_losses, value_losses_clipped)).sum() / loss_weights.sum()
                         )
                         
-                        n = config["PARTNER_POP_SIZE"]
-                        # Apply different loss weights for SP and XP data
-                        # Loss weights consist of two parts: the first term is the weighting from the BRDiv loss fucntion
-                        # The second term is a reweighting term to compensate for the data collection process, which uniformly and independently 
-                        # samples the conf and br ids from 1, ..., n, resulting in P(SP) = 1/n and P(XP) = (n-1)/n.
-                        # To prevent the XP loss term from dominating the SP loss term, we would like P(SP) = P(XP) = 1/2.
-                        # Thus, we set the 2nd term of the SP weight to n/2, and the 2nd term of the XP weight to n/(2 * (n-1)).
+                        # def choose_actor_weight(self_id, other_id, rew):
+                        #     return jax.lax.cond(
+                        #     jnp.equal(jnp.argmax(self_id, axis=-1), jnp.argmax(other_id, axis=-1)), 
+                        #     lambda x: (1 + 2*config["XP_LOSS_WEIGHTS"]) * jnp.ones_like(x), # true fn
+                        #     lambda x: config["XP_LOSS_WEIGHTS"] * jnp.ones_like(x), # false fn
+                        #     rew # operand
+                        #     )
                         
-                        is_sp = jnp.equal(jnp.argmax(traj_batch.self_onehot_id, axis=-1), jnp.argmax(traj_batch.oppo_onehot_id, axis=-1))
-                        sp_weight = (1 + 2*config["XP_LOSS_WEIGHTS"]) * (n/2)
-                        xp_weight = config["XP_LOSS_WEIGHTS"] * (n / (2 * (n-1)))
+                        # actor_weights_v0 = jax.vmap(jax.vmap(choose_actor_weight))(traj_batch.self_id, traj_batch.oppo_id, traj_batch.reward)
+                        
+                        is_sp = jnp.equal(jnp.argmax(traj_batch.self_id, axis=-1), jnp.argmax(traj_batch.oppo_id, axis=-1))
+                        sp_weight = 1 + 2*config["XP_LOSS_WEIGHTS"]
+                        xp_weight = config["XP_LOSS_WEIGHTS"]
                         actor_weights = jnp.where(is_sp, sp_weight, xp_weight)
                         
                         # Policy gradient loss
@@ -404,7 +361,7 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                             lambda x: x, 
                             -(
                                 loss_weights*jnp.minimum(pg_loss_1, pg_loss_2)
-                            ).sum()/(loss_weights.sum() + 1e-8)
+                            ).sum()/loss_weights.sum()
                         )
 
                         # Entropy
@@ -412,7 +369,7 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                             loss_weights.sum() == 0, 
                             lambda x: jnp.zeros_like(x).astype(jnp.float32), 
                             lambda x: x,
-                            (loss_weights * pi.entropy()).sum()/(loss_weights.sum() + 1e-8)
+                            (loss_weights * pi.entropy()).sum()/loss_weights.sum()
                         )
                         
                         total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy
@@ -420,23 +377,26 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
 
                     possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
                     grad_fn = jax.value_and_grad(_loss_fn, has_aux=True)
-
-                    def gather_conf_params_and_return_grads(agent_id):
-                        param_vector = gather_params(train_state_conf.params, agent_id)
+                    
+                    def gather_conf_params_and_return_grads(train_state_params, agent_id):
+                        param_vector = gather_params(train_state_params, agent_id)
                         (loss_val_conf, aux_vals_conf), grads_conf = grad_fn(
                             param_vector, conf_policy, minbatch_conf, agent_id
                         )
                         return (loss_val_conf, aux_vals_conf), grads_conf
                     
-                    def gather_br_params_and_return_grads(agent_id):
-                        param_vector = gather_params(train_state_br.params, agent_id)
+                    def gather_br_params_and_return_grads(train_state_params, agent_id):
+                        param_vector = gather_params(train_state_params, agent_id)
                         (loss_val_br, aux_vals_br), grads_br = grad_fn(
                             param_vector, br_policy, minbatch_br, agent_id
                         )
                         return (loss_val_br, aux_vals_br), grads_br
 
-                    (loss_val_conf, aux_vals_conf), grads_conf = jax.vmap(gather_conf_params_and_return_grads)(possible_agent_ids)
-                    (loss_val_br, aux_vals_br), grads_br = jax.vmap(gather_br_params_and_return_grads)(possible_agent_ids)
+                    compute_conf_grads = lambda agent_ids: gather_conf_params_and_return_grads(train_state_conf.params, agent_ids)
+                    compute_br_grads = lambda agent_ids: gather_br_params_and_return_grads(train_state_br.params, agent_ids)
+
+                    (loss_val_conf, aux_vals_conf), grads_conf = jax.vmap(compute_conf_grads)(possible_agent_ids)
+                    (loss_val_br, aux_vals_br), grads_br = jax.vmap(compute_br_grads)(possible_agent_ids)
                     
                     grads_conf_new = jax.tree.map(lambda x: jnp.squeeze(x, 1), grads_conf)
                     grads_br_new = jax.tree.map(lambda x: jnp.squeeze(x, 1), grads_br)
@@ -455,9 +415,9 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 rng, perm_rng_conf, perm_rng_br = jax.random.split(rng, 3)
 
                 minibatches_conf = _create_minibatches(traj_batch_conf, advantages_conf, targets_conf, init_conf_hstate, 
-                                                       config["NUM_CONF_ACTORS"], config["NUM_MINIBATCHES"], perm_rng_conf)
+                                                       config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng_conf)
                 minibatches_br = _create_minibatches(traj_batch_br, advantages_br, targets_br, init_br_hstate, 
-                                                     config["NUM_BR_ACTORS"], config["NUM_MINIBATCHES"], perm_rng_br)
+                                                     config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng_br)
 
                 # Update both policies
                 (train_state_conf, train_state_br), all_losses = jax.lax.scan(
@@ -481,30 +441,44 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 """
                 (
                     all_train_state_conf, all_train_state_br, 
-                    last_env_state, last_obs, last_done, last_conf_h, last_br_h, 
+                    last_env_state,last_obs, last_done, last_conf_h, last_br_h, 
                     rng, update_steps
                 ) = update_runner_state
 
-                rng, conf_sampling_rng, br_sampling_rng = jax.random.split(rng, 3)
+                rng, conf_sampling_sp_rng, conf_sampling_rng, br_sampling_rng = jax.random.split(rng, 4)
 
-                conf_ids = jax.random.randint(conf_sampling_rng, (config["NUM_ENVS"],), 0, config["PARTNER_POP_SIZE"])
-                br_ids = jax.random.randint(br_sampling_rng, (config["NUM_ENVS"],), 0, config["PARTNER_POP_SIZE"])
+                # Sampling IDs for SP data collection
+                ids_sp = jax.random.randint(conf_sampling_sp_rng, (config["SP_COLLECT_SIZE"],), 0, config["PARTNER_POP_SIZE"])
+
+                # Sampling IDs for XP data collection
+                conf_ids_xp = jax.random.randint(conf_sampling_rng, (config["XP_COLLECT_SIZE"],), 0, config["PARTNER_POP_SIZE"])
+
+                br_sampling_rngs = jax.random.split(br_sampling_rng, config["XP_COLLECT_SIZE"]+1)
+
+                # Sample BR IDs that are different from conf id
+                br_ids_xp = jax.random.randint(br_sampling_rngs[0], (config["XP_COLLECT_SIZE"],), 0, config["PARTNER_POP_SIZE"])
+                sample_new_id = lambda a: (jax.random.split(a[0], 2)[1], jax.random.randint(a[0], a[1].shape, minval=0, maxval=config["PARTNER_POP_SIZE"]))
+                loop_logic = lambda z, x, y: jax.lax.while_loop(lambda a: jnp.equal(z,a[1]), sample_new_id, (x, y))
+                _, br_ids_xp = jax.vmap(loop_logic)(conf_ids_xp, br_sampling_rngs[1:], br_ids_xp)
+                
+                conf_ids = jnp.concatenate([ids_sp, conf_ids_xp], axis=-1)
+                br_ids = jnp.concatenate([ids_sp, br_ids_xp], axis=-1)
+
+                identity_matrix = jnp.eye(config["PARTNER_POP_SIZE"])
+                conf_one_hots = identity_matrix[conf_ids]
+                br_one_hots = identity_matrix[br_ids]
+                
+                gather_conf_params = gather_params(all_train_state_conf.params, conf_ids)
+                gather_br_params = gather_params(all_train_state_br.params, br_ids)
 
                 runner_state = (
-                    all_train_state_conf, all_train_state_br, conf_ids, br_ids,
+                    gather_conf_params, gather_br_params, conf_one_hots, br_one_hots,
                     last_env_state, last_obs, last_done, last_conf_h, last_br_h, rng
                 )
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
-                (all_train_state_conf, all_train_state_br, last_conf_ids, last_br_ids, 
+                (gather_conf_params, gather_br_params, conf_one_hots, br_one_hots, 
                  last_env_state, last_obs, last_done, last_conf_h, last_br_h, rng) = runner_state
-                
-                # Get the last conf and br params and ids
-                last_conf_params = gather_params(all_train_state_conf.params, last_conf_ids)
-                last_br_params = gather_params(all_train_state_br.params, last_br_ids)
-
-                last_conf_one_hots = identity_matrix[last_conf_ids]
-                last_br_one_hots = identity_matrix[last_br_ids]
 
                 # Get agent 0 and agent 1 trajectories from interaction between conf policy and its BR policy.
                 traj_batch_conf, traj_batch_br = traj_batch
@@ -512,9 +486,9 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 # Compute advantage for confederate agent from interaction with br policy
                 avail_actions_0 = jax.vmap(env.get_avail_actions)(last_env_state.env_state)["agent_0"].astype(jnp.float32)
                 _, last_val_conf, _, _ = jax.vmap(forward_pass_conf)(
-                    params=last_conf_params,
+                    params=gather_conf_params,
                     obs=last_obs["agent_0"],
-                    id=last_br_one_hots,
+                    id=br_one_hots,
                     done=last_done["agent_0"],
                     avail_actions=avail_actions_0,
                     hstate=last_conf_h,
@@ -526,9 +500,9 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 # Compute advantage for br policy from interaction with confederate agent
                 avail_actions_1 = jax.vmap(env.get_avail_actions)(last_env_state.env_state)["agent_1"].astype(jnp.float32)
                 _, last_val_br, _, _ = jax.vmap(forward_pass_br)(
-                    params=last_br_params,
+                    params=gather_br_params,
                     obs=last_obs["agent_1"],
-                    id=last_conf_one_hots,
+                    id=conf_one_hots,
                     done=last_done["agent_1"],
                     avail_actions=avail_actions_1,
                     hstate=last_br_h,
@@ -555,8 +529,11 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
 
                 # 3) PPO update
                 rng, update_rng = jax.random.split(rng, 2)
+                init_conf_hstate = conf_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+                init_br_hstate = br_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
                 update_state = (
                     all_train_state_conf, all_train_state_br, 
+                    init_conf_hstate, init_br_hstate,
                     traj_batch_conf, traj_batch_br, 
                     advantages_conf, advantages_br, 
                     targets_conf, targets_br, 
@@ -666,8 +643,8 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
             init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
             # Initialize conf and br hstates
-            init_conf_h = conf_policy.init_hstate(config["NUM_CONF_ACTORS"])
-            init_br_h = br_policy.init_hstate(config["NUM_BR_ACTORS"])
+            init_conf_h = conf_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            init_br_h = br_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
 
             update_runner_state = (
                 all_conf_optims, all_br_optims, 
@@ -780,6 +757,17 @@ def run_brdiv(config, wandb_logger):
     return partner_params, partner_population
 
 
+def compute_sp_mask_and_ids(pop_size):
+    cross_product = np.meshgrid(
+        np.arange(pop_size),
+        np.arange(pop_size)
+    )
+    agent_id_cartesian_product = np.stack([g.ravel() for g in cross_product], axis=-1)
+    conf_ids = agent_id_cartesian_product[:, 0]
+    ego_ids = agent_id_cartesian_product[:, 1]
+    sp_mask = (conf_ids == ego_ids)
+    return sp_mask, agent_id_cartesian_product
+
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
     # metrics now has shape (num_seeds, num_updates, _, _, pop_size)
@@ -791,8 +779,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     all_returns = np.asarray(metrics["eval_ep_last_info"]["returned_episode_returns"])
     xs = list(range(num_updates))
     
-    all_conf_ids, all_br_ids = _get_all_ids(pop_size)
-    sp_mask = (all_conf_ids == all_br_ids)
+    sp_mask, agent_id_cartesian_product = compute_sp_mask_and_ids(pop_size)
     sp_returns = all_returns[:, :, sp_mask]
     xp_returns = all_returns[:, :, ~sp_mask]
     
@@ -825,8 +812,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     xs = list(range(num_updates))
     keys = [f"pair {i}" for i in range(pop_size)]
     for loss_name, loss_data in processed_losses.items():
-        if np.isnan(loss_data).any():
-            raise ValueError(f"Found nan in loss {loss_name}")
+        import pdb; pdb.set_trace()
         logger.log_item(f"Losses/{loss_name}", 
             wandb.plot.line_series(xs=xs, ys=loss_data, keys=keys, 
             title=loss_name, xname="train_step")
