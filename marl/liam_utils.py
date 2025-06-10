@@ -35,6 +35,11 @@ class ScannedLSTM(nn.Module):
         """Applies the module."""
         lstm_state = carry
         ins, dones = x
+        # jax.debug.print("ScannedLSTM ins shape: {ins_s}", ins_s=ins.shape)
+        # jax.debug.print("ScannedLSTM dones shape: {done_s}", done_s=dones.shape)
+        # jax.debug.print("ScannedLSTM dones shape: {lstm_state_s}", lstm_state_s=lstm_state[0].shape)
+        # if dones.shape[0] > 1:
+        #     import pdb; pdb.set_trace()
         lstm_state_0 = jnp.where(
             dones[:, np.newaxis],
             self.initialize_carry(*lstm_state[0].shape)[0],
@@ -66,7 +71,7 @@ class EncoderLSTMNetwork(nn.Module):
         embedding = nn.Dense(self.hidden_dim)(embedding)
         embedding = nn.relu(embedding)
         embedding = nn.Dense(self.ouput_dim)(embedding)
-        return embedding, hidden
+        return hidden, embedding
 
 class EncoderRNNNetwork(nn.Module):
     hidden_dim: int
@@ -80,7 +85,7 @@ class EncoderRNNNetwork(nn.Module):
         embedding = nn.Dense(self.hidden_dim)(embedding)
         embedding = nn.relu(embedding)
         embedding = nn.Dense(self.ouput_dim)(embedding)
-        return embedding, hidden
+        return hidden, embedding
 
 class EncoderS5Network(nn.Module):
     hidden_dim: int
@@ -94,7 +99,7 @@ class EncoderS5Network(nn.Module):
         embedding = nn.Dense(self.hidden_dim)(embedding)
         embedding = nn.relu(embedding)
         embedding = nn.Dense(self.ouput_dim)(embedding)
-        return embedding, hidden
+        return hidden, embedding
 
 class DecoderNetwork(nn.Module):
     hidden_dim: int
@@ -141,6 +146,8 @@ class EncoderLSTM():
     def init_hstate(self, batch_size=1, aux_info=None):
         """Initialize hidden state for the encoder LSTM."""
         hstate =  ScannedLSTM.initialize_carry(batch_size, self.lstm_hidden_dim)
+        hstate = (hstate[0].reshape(1, batch_size, self.lstm_hidden_dim),
+                  hstate[1].reshape(1, batch_size, self.lstm_hidden_dim))
         return hstate
     
     def init_params(self, rng):
@@ -163,7 +170,16 @@ class EncoderLSTM():
     @functools.partial(jax.jit, static_argnums=(0,))
     def compute_embedding(self, params, hstate, obs, done):
         """Embed observations using the encoder model."""
-        return self.model.apply(params, hstate, (obs, done))
+        batch_size = obs.shape[1]
+
+        hstate = (hstate[0].squeeze(0),
+                  hstate[1].squeeze(0))
+
+        new_hstate, embedding = self.model.apply(params, hstate, (obs, done))
+
+        new_hstate = (new_hstate[0].reshape(1, batch_size, -1),
+                      new_hstate[1].reshape(1, batch_size, -1))
+        return embedding, new_hstate
 
 class EncoderRNN():
     """Model wrapper for EncoderRNNNetwork."""
@@ -184,6 +200,7 @@ class EncoderRNN():
     def init_hstate(self, batch_size=1, aux_info=None):
         """Initialize hidden state for the encoder RNN."""
         hstate =  ScannedRNN.initialize_carry(batch_size, self.rnn_hidden_dim)
+        hstate = hstate.reshape(1, batch_size, self.rnn_hidden_dim)
         return hstate
     
     def init_params(self, rng):
@@ -205,8 +222,13 @@ class EncoderRNN():
     @functools.partial(jax.jit, static_argnums=(0,))
     def compute_embedding(self, params, hstate, obs, done):
         """Embed observations using the encoder model."""
-        return self.model.apply(params, hstate, (obs, done))
+        batch_size = obs.shape[1]
 
+        new_hstate, embedding = self.model.apply(params, hstate.squeeze(0), (obs, done))
+
+        return embedding, new_hstate.reshape(1, batch_size, -1)
+
+# TODO: Fix S5 encoder
 class EncoderS5():
     """Model wrapper for EncoderS5Network."""
     
@@ -276,9 +298,9 @@ class Decoder():
         return self.model.init(rng, dummy_x)
 
     @functools.partial(jax.jit, static_argnums=(0,))
-    def evaluate(self, params, embeddings, modelled_agent_obs, modelled_agent_act):
+    def evaluate(self, params, embedding, modelled_agent_obs, modelled_agent_act):
         """Evaluate the decoder model with given parameters and inputs."""
-        mean, prob1 = self.model.apply(params, embeddings)
+        mean, prob1 = self.model.apply(params, embedding)
         recon_loss_1 = 0.5 * ((modelled_agent_obs - mean) ** 2).sum(-1)
         recon_loss_2 = -jnp.log(jnp.sum(prob1 * modelled_agent_act, axis=-1))
         return recon_loss_1, recon_loss_2
