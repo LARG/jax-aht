@@ -223,9 +223,10 @@ def train_liam_ego_agent(config, env, train_rng,
                 
                 return advantages, advantages + traj_batch.value
 
-            def _update_minbatch(train_state, encoder_decoder_train_state, batch_info):
+            def _update_minbatch(init_state, batch_info):
+                train_state, encoder_decoder_train_state = init_state
                 init_ego_hstate, init_ego_encoder_hstate, traj_batch, advantages, returns = batch_info
-                def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
+                def _loss_fn(params, encoder_decoder_params, init_ego_hstate, init_ego_encoder_hstate, traj_batch, gae, target_v):
 
                     # Agent 0 Encoder
                     embedded_batch_obs, _ = encoder.compute_embedding(
@@ -298,14 +299,14 @@ def train_liam_ego_agent(config, env, train_rng,
                 encoder_decoder_n_elements = len(jax.tree.leaves(encoder_decoder_grad_l2_norms))
                 encoder_decoder_avg_grad_norm = encoder_decoder_sum_of_grad_norms / encoder_decoder_n_elements
                 
-                return train_state, encoder_decoder_train_state, (loss_val, aux_vals, avg_grad_norm, encoder_decoder_avg_grad_norm)
+                return (train_state, encoder_decoder_train_state), (loss_val, aux_vals, avg_grad_norm, encoder_decoder_avg_grad_norm)
 
             def _update_epoch(update_state, unused):
                 train_state, encoder_decoder_train_state, init_ego_hstate, init_ego_encoder_hstate, traj_batch, advantages, targets, rng = update_state
                 rng, perm_rng = jax.random.split(rng)
                 minibatches = _create_minibatches(traj_batch, advantages, targets, init_ego_hstate, init_ego_encoder_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
                 (train_state, encoder_decoder_train_state), losses_and_grads = jax.lax.scan(
-                    _update_minbatch, train_state, encoder_decoder_train_state, minibatches
+                    _update_minbatch, (train_state, encoder_decoder_train_state), minibatches
                 )
                 update_state = (train_state, encoder_decoder_train_state, init_ego_hstate, init_ego_encoder_hstate, traj_batch, advantages, targets, rng)
                 return update_state, losses_and_grads
