@@ -122,7 +122,7 @@ def train_liam_ego_agent(config, env, train_rng,
 
                 # Agent 0 Encoder
                 embedded_obs_0, ego_encoder_hstate = encoder.compute_embedding(
-                    params=encoder_decoder_train_state.params,
+                    params=encoder_decoder_train_state.params['encoder'],
                     hstate=ego_encoder_hstate,
                     obs=prev_obs["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1), 
                     done=prev_done["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"])
@@ -229,7 +229,7 @@ def train_liam_ego_agent(config, env, train_rng,
 
                     # Agent 0 Encoder
                     embedded_batch_obs, _ = encoder.compute_embedding(
-                        params=encoder_decoder_params,
+                        params=encoder_decoder_params['encoder'],
                         hstate=init_ego_encoder_hstate,
                         obs=traj_batch.obs,
                         done=traj_batch.done
@@ -247,7 +247,7 @@ def train_liam_ego_agent(config, env, train_rng,
 
                     # Reconstruction Loss
                     recon_loss1, recon_loss2 = decoder.evaluate(
-                        params=encoder_decoder_params,
+                        params=encoder_decoder_params['decoder'],
                         embedding=embedded_batch_obs,
                         modelled_agent_obs=traj_batch.partner_obs,
                         modelled_agent_act=traj_batch.partner_action
@@ -330,8 +330,8 @@ def train_liam_ego_agent(config, env, train_rng,
 
                 # Agent 0 Encoder
                 embedded_obs, _ = encoder.compute_embedding(
-                    params=encoder_decoder_train_state.params,
-                    params=ego_encoder_hstate,
+                    params=encoder_decoder_train_state.params['encoder'],
+                    hstate=ego_encoder_hstate,
                     obs=obs["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
                     done=done["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"])
                 )
@@ -350,7 +350,7 @@ def train_liam_ego_agent(config, env, train_rng,
 
                 # 3) LIAM update
                 init_ego_hstate = ego_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
-                init_ego_encoder_hstate = encoder.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+                init_ego_encoder_hstate = encoder.init_hstate(batch_size=config["NUM_CONTROLLED_ACTORS"])
                 update_state = (
                     train_state,
                     encoder_decoder_train_state,
@@ -457,7 +457,7 @@ def train_liam_ego_agent(config, env, train_rng,
             
             # Init ego and partner hstates
             init_ego_hstate = ego_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
-            init_ego_encoder_hstate = encoder.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            init_ego_encoder_hstate = encoder.init_hstate(batch_size=config["NUM_CONTROLLED_ACTORS"])
             init_partner_hstate = partner_population.init_hstate(config["NUM_UNCONTROLLED_ACTORS"])
 
             checkpoint_array = init_ckpt_array(train_state.params)
@@ -565,7 +565,7 @@ def run_ego_training(config, wandb_logger):
         init_ego_params=init_ego_params,
         encoder=encoder,
         decoder=decoder,
-        init_ecoder_decoder_params=init_ecoder_decoder_params,
+        init_encoder_decoder_params=init_ecoder_decoder_params,
         n_ego_train_seeds=algorithm_config["NUM_EGO_TRAIN_SEEDS"],
         partner_population=partner_population,
         partner_params=flattened_partner_params

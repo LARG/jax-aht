@@ -19,11 +19,11 @@ MAX_GRAD_NORM: 0.5
 ANNEAL_LR: false
 
 partner_agent: # partner config for liam_ego
-  name: rotate # overcooked cramped room
-  path: results/overcooked-v1/cramped_room/oe_persistent/paper-v0:1reg/2025-05-10_16-28-55/saved_train_run/
-  actor_type: actor_with_double_critic
+  name: lbf
+  path: results/lbf/fcp/default_label/2025-06-06_21-43-40/saved_train_run
+  actor_type: mlp
   custom_loader: 
-    name: open_ended # if null, use default loader
-    type: ego # options: ego, partner
-  ckpt_key: final_buffer
+  #  name:  # if null, use default loader
+  #  type:  # options: ego, partner
+  ckpt_key: final_params
   idx_list: [[0, -1]]
