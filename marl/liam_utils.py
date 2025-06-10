@@ -35,11 +35,6 @@ class ScannedLSTM(nn.Module):
         """Applies the module."""
         lstm_state = carry
         ins, dones = x
-        # jax.debug.print("ScannedLSTM ins shape: {ins_s}", ins_s=ins.shape)
-        # jax.debug.print("ScannedLSTM dones shape: {done_s}", done_s=dones.shape)
-        # jax.debug.print("ScannedLSTM dones shape: {lstm_state_s}", lstm_state_s=lstm_state[0].shape)
-        # if dones.shape[0] > 1:
-        #     import pdb; pdb.set_trace()
         lstm_state_0 = jnp.where(
             dones[:, np.newaxis],
             self.initialize_carry(*lstm_state[0].shape)[0],
