@@ -192,7 +192,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     info=info_0,
                     avail_actions=avail_actions_0,
                     partner_obs=prev_obs["agent_1"],
-                    partner_action=act_1
+                    partner_action=jax.nn.one_hot(act_1, env.action_space(env.agents[1]).n)
                 )
                 new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, 
                                     ego_hstate, ego_encoder_hstate, new_partner_hstate, updated_partner_indices, rng)
