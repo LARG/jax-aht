@@ -15,10 +15,10 @@ import hydra
 from flax.training.train_state import TrainState
 
 from agents.population_interface import AgentPopulation
-from marl.liam_utils import Transition, ScannedLSTM, initialize_encoder_decoder
+from marl.liam_utils import Transition, initialize_encoder_decoder, _create_minibatches
 from common.run_episodes import run_episodes
 from common.plot_utils import get_stats, get_metric_names
-from marl.ppo_utils import unbatchify, _create_minibatches
+from marl.ppo_utils import unbatchify
 from common.save_load_utils import save_train_run
 from ego_agent_training.utils import initialize_ego_agent
 from envs import make_env
@@ -195,7 +195,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     partner_action=act_1
                 )
                 new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, 
-                                    ego_hstate, new_partner_hstate, updated_partner_indices, rng)
+                                    ego_hstate, ego_encoder_hstate, new_partner_hstate, updated_partner_indices, rng)
                 return new_runner_state, transition
 
             def _calculate_gae(traj_batch, last_val):
@@ -303,7 +303,7 @@ def train_liam_ego_agent(config, env, train_rng,
             def _update_epoch(update_state, unused):
                 train_state, encoder_decoder_train_state, init_ego_hstate, init_ego_encoder_hstate, traj_batch, advantages, targets, rng = update_state
                 rng, perm_rng = jax.random.split(rng)
-                minibatches = _create_minibatches(traj_batch, advantages, targets, init_ego_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
+                minibatches = _create_minibatches(traj_batch, advantages, targets, init_ego_hstate, init_ego_encoder_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
                 train_state, encoder_decoder_train_state, losses_and_grads = jax.lax.scan(
                     _update_minbatch, train_state, encoder_decoder_train_state, minibatches
                 )

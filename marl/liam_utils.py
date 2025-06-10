@@ -7,6 +7,9 @@ import jax.numpy as jnp
 import numpy as np
 import flax.linen as nn
 
+from agents.rnn_actor_critic import ScannedRNN
+from agents.s5_actor_critic import SequenceLayer
+
 class Transition(NamedTuple):
     done: jnp.ndarray
     action: jnp.ndarray
@@ -51,7 +54,7 @@ class ScannedLSTM(nn.Module):
         cell = nn.OptimizedLSTMCell(features=hidden_size)
         return cell.initialize_carry(jax.random.PRNGKey(0), (batch_size, hidden_size))
 
-class EncoderNetwork(nn.Module):
+class EncoderLSTMNetwork(nn.Module):
     hidden_dim: int
     ouput_dim: int
 
@@ -65,6 +68,34 @@ class EncoderNetwork(nn.Module):
         embedding = nn.Dense(self.ouput_dim)(embedding)
         return embedding, hidden
 
+class EncoderRNNNetwork(nn.Module):
+    hidden_dim: int
+    ouput_dim: int
+
+    @nn.compact
+    def __call__(self, hidden, x):
+        obs, dones = x
+        rnn_in = (obs, dones)
+        hidden, embedding = ScannedRNN()(hidden, rnn_in)
+        embedding = nn.Dense(self.hidden_dim)(embedding)
+        embedding = nn.relu(embedding)
+        embedding = nn.Dense(self.ouput_dim)(embedding)
+        return embedding, hidden
+
+class EncoderS5Network(nn.Module):
+    hidden_dim: int
+    ouput_dim: int
+
+    @nn.compact
+    def __call__(self, hidden, x):
+        obs, dones = x
+        # TODO: Fix S5 initialization
+        hidden, embedding = SequenceLayer()(hidden, obs, dones)
+        embedding = nn.Dense(self.hidden_dim)(embedding)
+        embedding = nn.relu(embedding)
+        embedding = nn.Dense(self.ouput_dim)(embedding)
+        return embedding, hidden
+
 class DecoderNetwork(nn.Module):
     hidden_dim: int
     ouput_dim1: int
@@ -72,7 +103,6 @@ class DecoderNetwork(nn.Module):
 
     @nn.compact
     def __call__(self, x):
-        jax.debug.print(f"Decoder input shape: {x.shape}")
         h1 = nn.Dense(self.hidden_dim)(x)
         h1 = nn.relu(h1)
         h1 = nn.Dense(self.hidden_dim)(h1)
@@ -92,8 +122,8 @@ class DecoderNetwork(nn.Module):
         # prob3 = nn.softmax(prob3, axis=-1)
         return out, prob1 #, prob2, prob3
     
-class Encoder():
-    """Model wrapper for EncoderNetwork."""
+class EncoderLSTM():
+    """Model wrapper for EncoderLSTMNetwork."""
     
     def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
         """
@@ -103,7 +133,7 @@ class Encoder():
             hidden_dim: int, dimension of the encoder hidden layers
             ouput_dim: int, dimension of the encoder output
         """
-        self.model = EncoderNetwork(hidden_dim, ouput_dim)
+        self.model = EncoderLSTMNetwork(hidden_dim, ouput_dim)
         self.action_dim = action_dim
         self.obs_dim = obs_dim
         self.lstm_hidden_dim = hidden_dim
@@ -127,7 +157,87 @@ class Encoder():
         init_hstate = (init_hstate[0].reshape(batch_size, -1),
                        init_hstate[1].reshape(batch_size, -1))
         
-        # import pdb; pdb.set_trace()
+        # Initialize model
+        return self.model.init(rng, init_hstate, dummy_x)
+    
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def compute_embedding(self, params, hstate, obs, done):
+        """Embed observations using the encoder model."""
+        return self.model.apply(params, hstate, (obs, done))
+
+class EncoderRNN():
+    """Model wrapper for EncoderRNNNetwork."""
+    
+    def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
+        """
+        Args:
+            action_dim: int, dimension of the action space  
+            obs_dim: int, dimension of the observation space
+            hidden_dim: int, dimension of the encoder hidden layers
+            ouput_dim: int, dimension of the encoder output
+        """
+        self.model = EncoderRNNNetwork(hidden_dim, ouput_dim)
+        self.action_dim = action_dim
+        self.obs_dim = obs_dim
+        self.rnn_hidden_dim = hidden_dim
+
+    def init_hstate(self, batch_size=1, aux_info=None):
+        """Initialize hidden state for the encoder RNN."""
+        hstate =  ScannedRNN.initialize_carry(batch_size, self.rnn_hidden_dim)
+        return hstate
+    
+    def init_params(self, rng):
+        """Initialize parameters for the encoder model."""
+        batch_size = 1
+        # Initialize hidden state
+        init_hstate = self.init_hstate(batch_size=batch_size)
+        
+        # Create dummy inputs - add time dimension
+        dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_done = jnp.zeros((1, batch_size))
+        dummy_x = (dummy_obs, dummy_done)
+
+        init_hstate = init_hstate.reshape(batch_size, -1)
+        
+        # Initialize model
+        return self.model.init(rng, init_hstate, dummy_x)
+    
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def compute_embedding(self, params, hstate, obs, done):
+        """Embed observations using the encoder model."""
+        return self.model.apply(params, hstate, (obs, done))
+
+class EncoderS5():
+    """Model wrapper for EncoderS5Network."""
+    
+    def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
+        """
+        Args:
+            action_dim: int, dimension of the action space  
+            obs_dim: int, dimension of the observation space
+            hidden_dim: int, dimension of the encoder hidden layers
+            ouput_dim: int, dimension of the encoder output
+        """
+        self.model = EncoderS5Network(hidden_dim, ouput_dim)
+        self.action_dim = action_dim
+        self.obs_dim = obs_dim
+        self.s5_hidden_dim = hidden_dim
+
+    def init_hstate(self, batch_size=1, aux_info=None):
+        """Initialize hidden state for the encoder S5."""
+        hstate =  SequenceLayer.initialize_carry(batch_size, self.s5_hidden_dim)
+        return hstate
+    
+    def init_params(self, rng):
+        """Initialize parameters for the encoder model."""
+        batch_size = 1
+        # Initialize hidden state
+        init_hstate = self.init_hstate(batch_size=batch_size)
+        
+        # Create dummy inputs - add time dimension
+        dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_done = jnp.zeros((1, batch_size))
+        dummy_x = (dummy_obs, dummy_done)
         
         # Initialize model
         return self.model.init(rng, init_hstate, dummy_x)
@@ -187,7 +297,7 @@ def initialize_encoder_decoder(config, env, rng):
         params: dict, initial parameters for the encoder and decoder
     """
     # Create the RNN policy
-    encoder = Encoder(
+    encoder = EncoderLSTM(
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=env.observation_space(env.agents[0]).shape[0],
         hidden_dim=config.get("ENCODER_HIDDEN_DIM", 64),
@@ -208,3 +318,39 @@ def initialize_encoder_decoder(config, env, rng):
     init_params_decoder = decoder.init_params(init_rng_decoder)
 
     return encoder, decoder, {'encoder': init_params_encoder, 'decoder': init_params_decoder}
+
+def _create_minibatches(traj_batch, advantages, targets, init_hstate, init_encoder_hstate, num_actors, num_minibatches, perm_rng):
+    """Create minibatches for PPO updates, where each leaf has shape 
+        (num_minibatches, rollout_len, num_actors / num_minibatches, ...) 
+    This function ensures that the rollout (time) dimension is kept separate from the minibatch and num_actors 
+    dimensions, so that the minibatches are compatible with recurrent ActorCritics.
+    """
+    # Create batch containing trajectory, advantages, and targets
+    batch = (
+        init_hstate, # shape (1, num_actors, hidden_dim)
+        init_encoder_hstate, # shape (1, num_actors, hidden_dim)
+        traj_batch, # pytree: obs is shape (rollout_len, num_actors, feat_shape)
+        advantages, # shape (rollout_len, num_actors)
+        targets # shape (rollout_len, num_actors)
+            )
+
+    permutation = jax.random.permutation(perm_rng, num_actors)
+
+    # each leaf of shuffled batch has shape (rollout_len, num_actors, feat_shape)
+    # except for init_hstate which has shape (1, num_actors, hidden_dim)
+    shuffled_batch = jax.tree.map(
+        lambda x: jnp.take(x, permutation, axis=1), batch
+    )
+    # each leaf has shape (num_minibatches, rollout_len, num_actors/num_minibatches, feat_shape)
+    # except for init_hstate which has shape (num_minibatches, 1, num_actors/num_minibatches, hidden_dim)
+    minibatches = jax.tree_util.tree_map(
+        lambda x: jnp.swapaxes(
+            jnp.reshape(
+                x,
+                [x.shape[0], num_minibatches, -1] 
+                + list(x.shape[2:]),
+        ), 1, 0,),
+        shuffled_batch,
+    )
+
+    return minibatches
