@@ -304,7 +304,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 train_state, encoder_decoder_train_state, init_ego_hstate, init_ego_encoder_hstate, traj_batch, advantages, targets, rng = update_state
                 rng, perm_rng = jax.random.split(rng)
                 minibatches = _create_minibatches(traj_batch, advantages, targets, init_ego_hstate, init_ego_encoder_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
-                train_state, encoder_decoder_train_state, losses_and_grads = jax.lax.scan(
+                (train_state, encoder_decoder_train_state), losses_and_grads = jax.lax.scan(
                     _update_minbatch, train_state, encoder_decoder_train_state, minibatches
                 )
                 update_state = (train_state, encoder_decoder_train_state, init_ego_hstate, init_ego_encoder_hstate, traj_batch, advantages, targets, rng)
