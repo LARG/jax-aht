@@ -481,7 +481,10 @@ class LIAMPolicy(AgentPolicy):
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
-            rng=rng
+            rng=rng,
+            aux_obs=aux_obs,
+            env_state=env_state,
+            test_mode=test_mode
         )
 
         return action, (new_encoder_hstate, new_policy_hstate)
@@ -507,7 +510,9 @@ class LIAMPolicy(AgentPolicy):
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
-            rng=rng
+            rng=rng,
+            aux_obs=aux_obs,
+            env_state=env_state
         )
 
         return action, val, pi, (new_encoder_hstate, new_policy_hstate)
@@ -535,6 +540,8 @@ class LIAMPolicy(AgentPolicy):
             avail_actions=avail_actions,
             hstate=hstate[1],
             rng=rng
+            aux_obs=aux_obs,
+            env_state=env_state
         )
 
         # Reconstruction Loss
