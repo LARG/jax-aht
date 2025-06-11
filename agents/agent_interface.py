@@ -449,14 +449,15 @@ class LIAMPolicy(AgentPolicy):
         policy_hstate = self.policy.init_hstate(batch_size=batch_size, aux_info=aux_info)
         return (encoder_hstate, policy_hstate)
     
-    def init_params(self, rng, training=False):
+    def init_params(self, rng):
         """Initialize parameters for the LIAM policy.
         Returns:
             params: dict, containing encoder and policy parameters
         """
-        encoder_params = self.encoder.init_params(rng)
-        decoder_params = self.decoder.init_params(rng)
-        policy_params = self.policy.init_params(rng)
+        rng, init_rng_encoder, init_rng_decoder, init_rng_policy  = jax.random.split(rng, 4)
+        encoder_params = self.encoder.init_params(init_rng_encoder)
+        decoder_params = self.decoder.init_params(init_rng_decoder)
+        policy_params = self.policy.init_params(init_rng_policy)
         return {'encoder': encoder_params, 'decoder': decoder_params, 'policy': policy_params}
 
     @partial(jax.jit, static_argnums=(0,))
@@ -539,7 +540,7 @@ class LIAMPolicy(AgentPolicy):
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
-            rng=rng
+            rng=rng,
             aux_obs=aux_obs,
             env_state=env_state
         )
