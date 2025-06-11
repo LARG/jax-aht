@@ -426,3 +426,123 @@ class S5ActorCriticPolicy(AgentPolicy):
         # Initialize model using the pre-initialized network
         return self.network.init(rng, init_hstate, dummy_x)
     
+class LIAMPolicy(AgentPolicy):
+    """LIAM inference policy that uses an encoder and decoder to model partner behavior."""
+    
+    def __init__(self, policy, encoder, decoder):
+        """
+        Args:
+            encoder: Encoder, the encoder model
+            decoder: Decoder, the decoder model
+        """
+        super().__init__(action_dim=policy.action_dim, obs_dim=policy.obs_dim)
+        self.policy = policy
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def init_hstate(self, batch_size=1, aux_info=None):
+        """Initialize hidden state for the LIAM policy.
+        Returns:
+            hstate: tuple of (encoder_hstate, policy_hstate)
+        """
+        encoder_hstate = self.encoder.init_hstate(batch_size=batch_size, aux_info=aux_info)
+        policy_hstate = self.policy.init_hstate(batch_size=batch_size, aux_info=aux_info)
+        return (encoder_hstate, policy_hstate)
+    
+    def init_params(self, rng, training=False):
+        """Initialize parameters for the LIAM policy.
+        Returns:
+            params: dict, containing encoder and policy parameters
+        """
+        encoder_params = self.encoder.init_params(rng)
+        decoder_params = self.decoder.init_params(rng)
+        policy_params = self.policy.init_params(rng)
+        return {'encoder': encoder_params, 'decoder': decoder_params, 'policy': policy_params}
+
+    @partial(jax.jit, static_argnums=(0,))
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+                   aux_obs=None, env_state=None, test_mode=False):
+        """Get actions for the LIAM policy. 
+        Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
+        Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for 
+        compatibility with the learning codes. 
+        """
+
+        embbeding, new_encoder_hstate = self.encoder.compute_embedding(
+            params=params['encoder'],
+            hstate=hstate[0],
+            obs=obs, 
+            done=done
+        )
+
+        action, new_policy_hstate = self.policy.get_action(
+            params=params['policy'],
+            obs=embbeding,
+            done=done,
+            avail_actions=avail_actions,
+            hstate=hstate[1],
+            rng=rng
+        )
+
+        return action, (new_encoder_hstate, new_policy_hstate)
+        
+    @partial(jax.jit, static_argnums=(0,))
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+                                aux_obs=None, env_state=None):
+        """Get actions, values, and policy for the lIAM policy.
+        Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
+        Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for 
+        compatibility with the learning codes. 
+        """
+        embbeding, new_encoder_hstate = self.encoder.compute_embedding(
+            params=params['encoder'],
+            hstate=hstate[0],
+            obs=obs, 
+            done=done
+        )
+
+        action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
+            params=params['policy'],
+            obs=embbeding,
+            done=done,
+            avail_actions=avail_actions,
+            hstate=hstate[1],
+            rng=rng
+        )
+
+        return action, val, pi, (new_encoder_hstate, new_policy_hstate)
+    
+    @partial(jax.jit, static_argnums=(0,))
+    def evalute(self, params, obs, done, avail_actions, hstate, rng,
+                modelled_agent_obs, modelled_agent_act, 
+                aux_obs=None, env_state=None):
+        """Get actions, values, policy, and decoder reconstructions for the lIAM policy.
+        Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
+        Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for 
+        compatibility with the learning codes. 
+        """
+        embbeding, new_encoder_hstate = self.encoder.compute_embedding(
+            params=params['encoder'],
+            hstate=hstate[0],
+            obs=obs, 
+            done=done
+        )
+
+        action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
+            params=params['policy'],
+            obs=jax.lax.stop_gradient(embbeding),
+            done=done,
+            avail_actions=avail_actions,
+            hstate=hstate[1],
+            rng=rng
+        )
+
+        # Reconstruction Loss
+        recon_loss1, recon_loss2 = self.decoder.evaluate(
+            params=params['decoder'],
+            embedding=embbeding,
+            modelled_agent_obs=modelled_agent_obs,
+            modelled_agent_act=modelled_agent_act
+        )
+
+        return action, val, pi, recon_loss1, recon_loss2, (new_encoder_hstate, new_policy_hstate)

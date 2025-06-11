@@ -2,8 +2,9 @@ import jax
 from agents.agent_interface import S5ActorCriticPolicy, \
     MLPActorCriticPolicy, RNNActorCriticPolicy, ActorWithDoubleCriticPolicy, \
     ActorWithConditionalCriticPolicy, PseudoActorWithDoubleCriticPolicy, \
-    PseudoActorWithConditionalCriticPolicy
+    PseudoActorWithConditionalCriticPolicy, LIAMPolicy
 
+from agents.liam_encoder_decoder import initialize_encoder_decoder
 
 def initialize_s5_agent(config, env, rng):
     """Initialize an S5 agent with the given config.
@@ -131,3 +132,38 @@ def initialize_pseudo_actor_with_conditional_critic(config, env, rng):
     init_params = policy.init_params(init_rng)
 
     return policy, init_params
+
+def initialize_liam_agent(config, env, rng):
+    """Initialize the LIAM ego agent with the given config.
+    
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        
+    Returns:
+        liam: LIAMPolicy, the policy object
+        params: tuple, initial parameters for the {encoder, decoder} and policy
+    """
+    rng, init_encoder_decoder_rng, init_policy_rng = jax.random.split(rng, 3)
+
+    # Initialize the policy based on the specified type
+    if config["EGO_ACTOR_TYPE"] == "s5":
+        ego_policy, init_ego_params = initialize_s5_agent(config, env, init_policy_rng)
+    elif config["EGO_ACTOR_TYPE"] == "mlp":
+        ego_policy, init_ego_params = initialize_mlp_agent(config, env, init_policy_rng)
+    elif config["EGO_ACTOR_TYPE"] == "rnn":
+        ego_policy, init_ego_params = initialize_rnn_agent(config, env, init_policy_rng)
+
+    # Initialize the encoder and decoder for LIAM
+    encoder, decoder, init_encoder_decoder_params = initialize_encoder_decoder(config, env, init_encoder_decoder_rng)
+
+    liam = LIAMPolicy(
+        policy=ego_policy,
+        encoder=encoder,
+        decoder=decoder
+    )
+    params = {'encoder': init_encoder_decoder_params['encoder'], 
+              'decoder': init_encoder_decoder_params['decoder'],
+              'policy': init_ego_params}
+    return liam, params
