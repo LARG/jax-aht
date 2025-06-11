@@ -398,7 +398,6 @@ def train_liam_ego_agent(config, env, train_rng,
                     gathered_params = partner_population.gather_agent_params(partner_params, eval_partner_indices)
                     
                     rng, eval_rng = jax.random.split(rng)
-                    # TODO: Fix eval to use encoder
                     eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
                         eval_rng, env, agent_0_param={"encoder": encoder_decoder_train_state.params["encoder"], 
                                                       "decoder": encoder_decoder_train_state.params["decoder"],
