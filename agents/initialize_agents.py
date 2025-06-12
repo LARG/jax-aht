@@ -21,7 +21,7 @@ def initialize_s5_agent(config, env, rng):
     # Create the S5 policy with direct parameters
     policy = S5ActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         d_model=config.get("S5_D_MODEL", 128),
         ssm_size=config.get("S5_SSM_SIZE", 128),
         # d_model=config.get("S5_D_MODEL", 16),
@@ -58,7 +58,7 @@ def initialize_rnn_agent(config, env, rng):
     # Create the RNN policy
     policy = RNNActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
         gru_hidden_dim=config.get("GRU_HIDDEN_DIM", 64),
@@ -75,7 +75,7 @@ def initialize_mlp_agent(config, env, rng):
     """
     policy = MLPActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
     ) 
     rng, init_rng = jax.random.split(rng)
@@ -87,7 +87,7 @@ def initialize_actor_with_double_critic(config, env, rng):
     """Initialize an actor with double critic with the given config."""
     policy = ActorWithDoubleCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
     )
     rng, init_rng = jax.random.split(rng)
@@ -99,7 +99,7 @@ def initialize_pseudo_actor_with_double_critic(config, env, rng):
     """Initialize a pseudo actor with double critic with the given config."""
     policy = PseudoActorWithDoubleCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
     )
     rng, init_rng = jax.random.split(rng)
@@ -111,7 +111,7 @@ def initialize_actor_with_conditional_critic(config, env, rng):
     """Initialize an actor with conditional critic with the given config."""
     policy = ActorWithConditionalCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         pop_size=config["POP_SIZE"],
         activation=config.get("ACTIVATION", "tanh"),
     )
@@ -124,7 +124,7 @@ def initialize_pseudo_actor_with_conditional_critic(config, env, rng):
     """Initialize a pseudo actor with conditional critic with the given config."""
     policy = PseudoActorWithConditionalCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         pop_size=config["POP_SIZE"],
         activation=config.get("ACTIVATION", "tanh"),
     )

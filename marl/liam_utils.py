@@ -11,5 +11,6 @@ class Transition(NamedTuple):
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
+    prev_action_onehot: jnp.ndarray
     partner_obs: jnp.ndarray
-    partner_action: jnp.ndarray
+    partner_action_onehot: jnp.ndarray

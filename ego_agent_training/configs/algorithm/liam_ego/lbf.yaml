@@ -10,5 +10,6 @@ CLIP_EPS: 0.1        # Do we keep this for LIAM?
 ANNEAL_LR: false
 UPDATE_EPOCHS: 10
 ENCODER_HIDDEN_DIM: 128
-ENCODER_OUTPUT_DIM: 15 # Embedding dimension
+ENCODER_OUTPUT_DIM: 20 # Embedding dimension
 DECODER_HIDDEN_DIM: 128
+POLICY_INPUT_DIM: 20 # Embedding dimension + observation dimension (obs dim added in the run script)

@@ -110,7 +110,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 2. Step environment using sampled actions
                 3. Return state, reward, ...
                 """
-                train_state, encoder_decoder_train_state, env_state, prev_obs, prev_done, ego_hstate, partner_hstate, partner_indices, rng = runner_state
+                train_state, encoder_decoder_train_state, env_state, prev_obs, prev_done, act_onehot, ego_hstate, partner_hstate, partner_indices, rng = runner_state
                 rng, actor_rng, partner_rng, step_rng = jax.random.split(rng, 4)
 
                  # Get available actions for agent 0 from environment state
@@ -129,7 +129,8 @@ def train_liam_ego_agent(config, env, train_rng,
                     done=prev_done["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=avail_actions_0,
                     hstate=ego_hstate,
-                    rng=actor_rng
+                    rng=actor_rng,
+                    actions=act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
                 )
                 logp_0 = pi_0.log_prob(act_0)
 
@@ -166,6 +167,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 combined_actions = jnp.concatenate([act_0, act_1], axis=0)  # shape (2*num_envs,)
                 env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS"], num_agents)
                 env_act = {k: v.flatten() for k, v in env_act.items()}
+                env_act_onehot = {k: jax.nn.one_hot(v.flatten(), env.action_space(env.agents[i]).n) for i, (k, v) in enumerate(env_act.items())}
 
                 # Step env
                 step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
@@ -185,10 +187,11 @@ def train_liam_ego_agent(config, env, train_rng,
                     obs=prev_obs["agent_0"],
                     info=info_0,
                     avail_actions=avail_actions_0,
+                    prev_action_onehot=act_onehot["agent_0"],
                     partner_obs=prev_obs["agent_1"],
-                    partner_action=jax.nn.one_hot(act_1, env.action_space(env.agents[1]).n)
+                    partner_action_onehot=jax.nn.one_hot(act_1, env.action_space(env.agents[1]).n)
                 )
-                new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, 
+                new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, env_act_onehot,
                                     ego_hstate, new_partner_hstate, updated_partner_indices, rng)
                 return new_runner_state, transition
 
@@ -228,12 +231,13 @@ def train_liam_ego_agent(config, env, train_rng,
                                 "decoder": encoder_decoder_params["decoder"],
                                 "policy": params},
                         obs=traj_batch.obs,
+                        actions=traj_batch.prev_action_onehot,
                         done=traj_batch.done,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
                         rng=jax.random.PRNGKey(0), # only used for action sampling, which is unused here
                         modelled_agent_obs=traj_batch.partner_obs,
-                        modelled_agent_act=traj_batch.partner_action
+                        modelled_agent_act=traj_batch.partner_action_onehot
                     )
                     log_prob = pi.log_prob(traj_batch.action)
                     recon_loss = (recon_loss1 + recon_loss2)
@@ -262,7 +266,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     # Entropy
                     entropy = jnp.mean(pi.entropy())
 
-                    total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy
+                    total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy + recon_loss
                     return total_loss, (value_loss, pg_loss, entropy, recon_loss)
 
                 grad_fn = jax.value_and_grad(_loss_fn, argnums=(0,1), has_aux=True)
@@ -277,12 +281,17 @@ def train_liam_ego_agent(config, env, train_rng,
                 n_elements = len(jax.tree.leaves(grad_l2_norms))
                 avg_grad_norm = sum_of_grad_norms / n_elements
 
-                encoder_decoder_grad_l2_norms = jax.tree.map(lambda g: jnp.linalg.norm(g.astype(jnp.float32)), encoder_decoder_grads)
-                encoder_decoder_sum_of_grad_norms = jax.tree.reduce(lambda x, y: x + y, encoder_decoder_grad_l2_norms)
-                encoder_decoder_n_elements = len(jax.tree.leaves(encoder_decoder_grad_l2_norms))
-                encoder_decoder_avg_grad_norm = encoder_decoder_sum_of_grad_norms / encoder_decoder_n_elements
+                encoder_grad_l2_norms = jax.tree.map(lambda g: jnp.linalg.norm(g.astype(jnp.float32)), encoder_decoder_grads["encoder"])
+                encoder_sum_of_grad_norms = jax.tree.reduce(lambda x, y: x + y, encoder_grad_l2_norms)
+                encoder_n_elements = len(jax.tree.leaves(encoder_grad_l2_norms))
+                encoder_avg_grad_norm = encoder_sum_of_grad_norms / encoder_n_elements
+
+                decoder_grad_l2_norms = jax.tree.map(lambda g: jnp.linalg.norm(g.astype(jnp.float32)), encoder_decoder_grads["decoder"])
+                decoder_sum_of_grad_norms = jax.tree.reduce(lambda x, y: x + y, decoder_grad_l2_norms)
+                decoder_n_elements = len(jax.tree.leaves(decoder_grad_l2_norms))
+                decoder_avg_grad_norm = decoder_sum_of_grad_norms / decoder_n_elements
                 
-                return (train_state, encoder_decoder_train_state), (loss_val, aux_vals, avg_grad_norm, encoder_decoder_avg_grad_norm)
+                return (train_state, encoder_decoder_train_state), (loss_val, aux_vals, avg_grad_norm, encoder_avg_grad_norm, decoder_avg_grad_norm)
 
             def _update_epoch(update_state, unused):
                 train_state, encoder_decoder_train_state, init_ego_hstate, traj_batch, advantages, targets, rng = update_state
@@ -300,13 +309,13 @@ def train_liam_ego_agent(config, env, train_rng,
                 2. Compute advantage
                 3. LIAM updates
                 """
-                (train_state, encoder_decoder_train_state, last_env_state, last_obs, last_done, last_ego_hstate, last_partner_hstate, last_partner_indices, rng, update_steps) = update_runner_state
+                (train_state, encoder_decoder_train_state, last_env_state, last_obs, last_done, last_act_onehot, last_ego_hstate, last_partner_hstate, last_partner_indices, rng, update_steps) = update_runner_state
 
                 # 1) rollout
-                runner_state = (train_state, encoder_decoder_train_state, last_env_state, last_obs, last_done, last_ego_hstate, last_partner_hstate, last_partner_indices, rng)
+                runner_state = (train_state, encoder_decoder_train_state, last_env_state, last_obs, last_done, last_act_onehot, last_ego_hstate, last_partner_hstate, last_partner_indices, rng)
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
-                (train_state, encoder_decoder_train_state, env_state, obs, done, ego_hstate, partner_hstate, partner_indices, rng) = runner_state
+                (train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot, ego_hstate, partner_hstate, partner_indices, rng) = runner_state
 
                 # 2) advantage
                 # Get available actions for agent 0 from environment state
@@ -321,7 +330,8 @@ def train_liam_ego_agent(config, env, train_rng,
                     done=done["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=jax.lax.stop_gradient(avail_actions_0),
                     hstate=ego_hstate,
-                    rng=jax.random.PRNGKey(0)  # Dummy key since we're just extracting the value
+                    rng=jax.random.PRNGKey(0),  # Dummy key since we're just extracting the value
+                    actions=last_act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
                 )
                 last_val = last_val.squeeze()
                 advantages, targets = _calculate_gae(traj_batch, last_val)
@@ -341,7 +351,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     _update_epoch, update_state, None, config["UPDATE_EPOCHS"])
                 train_state = update_state[0]
                 encoder_decoder_train_state = update_state[1]
-                _, loss_terms, avg_grad_norm, encoder_decoder_avg_grad_norm = losses_and_grads
+                _, loss_terms, avg_grad_norm, encoder_avg_grad_norm, decoder_avg_grad_norm = losses_and_grads
                 
                 metric = traj_batch.info
                 metric["update_steps"] = update_steps
@@ -350,8 +360,9 @@ def train_liam_ego_agent(config, env, train_rng,
                 metric["entropy_loss"] = loss_terms[2]
                 metric["reconstruction_loss"] = loss_terms[3]
                 metric["avg_grad_norm"] = avg_grad_norm
-                metric["encoder_decoder_avg_grad_norm"] = encoder_decoder_avg_grad_norm
-                new_runner_state = (train_state, encoder_decoder_train_state, env_state, obs, done, 
+                metric["encoder_avg_grad_norm"] = encoder_avg_grad_norm
+                metric["decoder_avg_grad_norm"] = decoder_avg_grad_norm
+                new_runner_state = (train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot,
                                     ego_hstate, partner_hstate, partner_indices, 
                                     rng, update_steps + 1)
                 return (new_runner_state, metric)
@@ -376,7 +387,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     update_state,
                     None
                 )
-                (train_state, encoder_decoder_train_state, env_state, obs, done, 
+                (train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot,
                  ego_hstate, partner_hstate, partner_indices, 
                  rng, update_steps) = new_update_state
 
@@ -416,7 +427,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 )
 
                 metric["eval_ep_last_info"] = eval_last_infos
-                return ((train_state, encoder_decoder_train_state, env_state, obs, done, 
+                return ((train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot,
                          ego_hstate, partner_hstate, partner_indices, 
                          rng, update_steps),
                          checkpoint_array, ckpt_idx, eval_last_infos), metric
@@ -426,6 +437,7 @@ def train_liam_ego_agent(config, env, train_rng,
             reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
             init_obs, init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
             init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
+            init_act_onehot = {k: jnp.zeros((config["NUM_ENVS"], env.action_space(env.agents[i]).n)) for i, k in enumerate(env.agents)}
 
             # Each environment picks a partner index in [0, n_seeds*m_ckpts)
             rng, partner_rng = jax.random.split(rng)
@@ -466,6 +478,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 init_env_state,
                 init_obs,
                 init_done,
+                init_act_onehot,
                 init_ego_hstate,
                 init_partner_hstate,
                 init_partner_indices,
@@ -510,6 +523,8 @@ def run_ego_training(config, wandb_logger):
     # Create only one environment instance
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
     env = LogWrapper(env)
+
+    algorithm_config['POLICY_INPUT_DIM'] = algorithm_config['POLICY_INPUT_DIM'] + env.observation_space(env.agents[0]).shape[0]
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rng, init_partner_rng, init_ego_rng, train_rng = jax.random.split(rng, 4)
@@ -575,7 +590,8 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_reconstruction_losses = np.asarray(train_metrics["reconstruction_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_grad_norms = np.asarray(train_metrics["avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_encoder_decoder_grad_norms = np.asarray(train_metrics["encoder_decoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
+    all_ego_encoder_grad_norms = np.asarray(train_metrics["encoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
+    all_ego_decoder_grad_norms = np.asarray(train_metrics["decoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     # Process eval return metrics - average across ego seeds, eval episodes,  training partners 
     # and num_agents per game for each checkpoint
     all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
@@ -588,7 +604,8 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=(0, 2, 3))
     average_ego_reconstruction_losses = np.mean(all_ego_reconstruction_losses, axis=(0, 2, 3))
     average_ego_grad_norms = np.mean(all_ego_grad_norms, axis=(0, 2, 3))
-    average_ego_encoder_decoder_grad_norms = np.mean(all_ego_encoder_decoder_grad_norms, axis=(0, 2, 3))
+    average_ego_encoder_grad_norms = np.mean(all_ego_encoder_grad_norms, axis=(0, 2, 3))
+    average_ego_decoder_grad_norms = np.mean(all_ego_decoder_grad_norms, axis=(0, 2, 3))
 
     # Log metrics for each update step
     num_updates = len(average_ego_value_losses)
@@ -604,7 +621,8 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoReconstructionLoss", average_ego_reconstruction_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoGradNorm", average_ego_grad_norms[step], train_step=step, commit=True)
-        logger.log_item("Train/EgoEncoderDecoderGradNorm", average_ego_encoder_decoder_grad_norms[step], train_step=step, commit=True)
+        logger.log_item("Train/EgoEncoderGradNorm", average_ego_encoder_grad_norms[step], train_step=step, commit=True)
+        logger.log_item("Train/EgoDecoderGradNorm", average_ego_decoder_grad_norms[step], train_step=step, commit=True)
         logger.commit()
     
     # Saving artifacts

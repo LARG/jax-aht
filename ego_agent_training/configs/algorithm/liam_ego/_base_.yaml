@@ -18,6 +18,11 @@ VF_COEF: 0.5
 MAX_GRAD_NORM: 0.5
 ANNEAL_LR: false
 
+ENCODER_HIDDEN_DIM: 64
+ENCODER_OUTPUT_DIM: 20 # Embedding dimension
+DECODER_HIDDEN_DIM: 64
+POLICY_INPUT_DIM: 20 # Embedding dimension + observation dimension (obs dim added in the run script)
+
 partner_agent: # partner config for liam_ego
   name: lbf
   path: results/lbf/fcp/default_label/2025-06-06_21-43-40/saved_train_run

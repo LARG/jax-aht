@@ -26,7 +26,7 @@ class AgentPolicy(abc.ABC):
 
     @abc.abstractmethod
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                    aux_obs=None, env_state=None, test_mode=False) -> Tuple[int, chex.Array]:
         """
         Only computes an action given an observation, done flag, available actions, hidden state, and random key.
@@ -46,7 +46,7 @@ class AgentPolicy(abc.ABC):
         pass
 
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None) -> Tuple[int, chex.Array, chex.Array, chex.Array]:
         """
         Computes the action, value, and policy given an observation, 
@@ -97,7 +97,7 @@ class MLPActorCriticPolicy(AgentPolicy):
         self.network = ActorCritic(action_dim, activation=activation)
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                    aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the MLP policy."""
         pi, _ = self.network.apply(params, (obs, avail_actions))
@@ -107,7 +107,7 @@ class MLPActorCriticPolicy(AgentPolicy):
         return action, None  # no hidden state
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None):
         """Get actions, values, and policy for the MLP policy."""
         pi, val = self.network.apply(params, (obs, avail_actions))
@@ -136,7 +136,7 @@ class ActorWithDoubleCriticPolicy(AgentPolicy):
         self.network = ActorWithDoubleCritic(action_dim, activation=activation)
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                    aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the policy with double critics.
         """
@@ -147,7 +147,7 @@ class ActorWithDoubleCriticPolicy(AgentPolicy):
         return action, None  # no hidden state
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None):
         """Get actions, values, and policy for the policy with double critics."""
         # convention: val1 is value of of ego agent, val2 is value of best response agent
@@ -167,7 +167,7 @@ class PseudoActorWithDoubleCriticPolicy(ActorWithDoubleCriticPolicy):
     def __init__(self, action_dim, obs_dim, activation="tanh"):
         super().__init__(action_dim, obs_dim, activation)
 
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None):
         action, (val1, _), pi, hidden_state = super().get_action_value_policy(
             params, obs, done, avail_actions, hstate, rng, 
@@ -191,7 +191,7 @@ class ActorWithConditionalCriticPolicy(AgentPolicy):
         self.network = ActorWithConditionalCritic(action_dim, activation=activation)
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                    aux_obs=None, env_state=None, test_mode=False):
         """Get actions."""
         # The agent id is only used by the critic, so we pass in a 
@@ -204,7 +204,7 @@ class ActorWithConditionalCriticPolicy(AgentPolicy):
         return action, None  # no hidden state
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None):
         """Get actions, values, and policy for the policy with conditional critics.
         The auxiliary observation should be used to pass in the agent ids that we wish to predict 
@@ -229,7 +229,7 @@ class PseudoActorWithConditionalCriticPolicy(ActorWithConditionalCriticPolicy):
     def __init__(self, action_dim, obs_dim, pop_size, activation="tanh"):
         super().__init__(action_dim, obs_dim, pop_size, activation)
 
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None):
         dummy_agent_id = jnp.zeros(obs.shape[:-1] + (self.pop_size,))
         action, val, pi, hidden_state = super().get_action_value_policy(
@@ -260,7 +260,7 @@ class RNNActorCriticPolicy(AgentPolicy):
         self.gru_hidden_dim = gru_hidden_dim
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                    aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the RNN policy. 
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
@@ -275,7 +275,7 @@ class RNNActorCriticPolicy(AgentPolicy):
         return action, new_hstate.reshape(1, batch_size, -1)
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None):
         """Get actions, values, and policy for the RNN policy.
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
@@ -385,7 +385,7 @@ class S5ActorCriticPolicy(AgentPolicy):
         )
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                    aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the S5 policy."""
         new_hstate, pi, _ = self.network.apply(params, hstate, (obs, done, avail_actions))
@@ -395,7 +395,7 @@ class S5ActorCriticPolicy(AgentPolicy):
         return action, new_hstate
     
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions=None,
                                 aux_obs=None, env_state=None):
         """Get actions, values, and policy for the S5 policy.
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
@@ -461,7 +461,7 @@ class LIAMPolicy(AgentPolicy):
         return {'encoder': encoder_params, 'decoder': decoder_params, 'policy': policy_params}
 
     @partial(jax.jit, static_argnums=(0,))
-    def get_action(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action(self, params, obs, done, avail_actions, hstate, rng, actions,
                    aux_obs=None, env_state=None, test_mode=False):
         """Get actions for the LIAM policy. 
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
@@ -472,13 +472,13 @@ class LIAMPolicy(AgentPolicy):
         embbeding, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=obs, 
+            obs=jnp.concatenate((obs, actions), axis=-1), 
             done=done
         )
 
         action, new_policy_hstate = self.policy.get_action(
             params=params['policy'],
-            obs=embbeding,
+            obs=jnp.concatenate((obs, embbeding), axis=-1),
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
@@ -491,7 +491,7 @@ class LIAMPolicy(AgentPolicy):
         return action, (new_encoder_hstate, new_policy_hstate)
         
     @partial(jax.jit, static_argnums=(0,))
-    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, 
+    def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng, actions,
                                 aux_obs=None, env_state=None):
         """Get actions, values, and policy for the lIAM policy.
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
@@ -501,13 +501,13 @@ class LIAMPolicy(AgentPolicy):
         embbeding, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=obs, 
+            obs=jnp.concatenate((obs, actions), axis=-1), 
             done=done
         )
 
         action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
             params=params['policy'],
-            obs=embbeding,
+            obs=jnp.concatenate((obs, embbeding), axis=-1),
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
@@ -519,8 +519,8 @@ class LIAMPolicy(AgentPolicy):
         return action, val, pi, (new_encoder_hstate, new_policy_hstate)
     
     @partial(jax.jit, static_argnums=(0,))
-    def evalute(self, params, obs, done, avail_actions, hstate, rng,
-                modelled_agent_obs, modelled_agent_act, 
+    def evalute(self, params, obs, actions, done, avail_actions, hstate, rng,
+                modelled_agent_obs, modelled_agent_act,
                 aux_obs=None, env_state=None):
         """Get actions, values, policy, and decoder reconstructions for the lIAM policy.
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
@@ -530,13 +530,13 @@ class LIAMPolicy(AgentPolicy):
         embbeding, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=obs, 
+            obs=jnp.concatenate((obs, actions), axis=-1), 
             done=done
         )
 
         action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
             params=params['policy'],
-            obs=jax.lax.stop_gradient(embbeding),
+            obs=jnp.concatenate((obs, jax.lax.stop_gradient(embbeding)), axis=-1),
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],

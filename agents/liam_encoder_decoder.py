@@ -139,8 +139,9 @@ class EncoderLSTM():
         
         # Create dummy inputs - add time dimension
         dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_act = jnp.zeros((1, batch_size, self.action_dim))
         dummy_done = jnp.zeros((1, batch_size))
-        dummy_x = (dummy_obs, dummy_done)
+        dummy_x = (jnp.concatenate((dummy_obs, dummy_act), axis=-1), dummy_done)
 
         init_hstate = (init_hstate[0].reshape(batch_size, -1),
                        init_hstate[1].reshape(batch_size, -1))
@@ -192,8 +193,9 @@ class EncoderRNN():
         
         # Create dummy inputs - add time dimension
         dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_act = jnp.zeros((1, batch_size, self.action_dim))
         dummy_done = jnp.zeros((1, batch_size))
-        dummy_x = (dummy_obs, dummy_done)
+        dummy_x = (jnp.concatenate((dummy_obs, dummy_act), axis=-1), dummy_done)
 
         init_hstate = init_hstate.reshape(batch_size, -1)
         
@@ -239,8 +241,9 @@ class EncoderS5():
         
         # Create dummy inputs - add time dimension
         dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_act = jnp.zeros((1, batch_size, self.action_dim))
         dummy_done = jnp.zeros((1, batch_size))
-        dummy_x = (dummy_obs, dummy_done)
+        dummy_x = (jnp.concatenate((dummy_obs, dummy_act), axis=-1), dummy_done)
         
         # Initialize model
         return self.model.init(rng, init_hstate, dummy_x)
