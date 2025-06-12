@@ -284,7 +284,7 @@ class Decoder():
         mean, prob1 = self.model.apply(params, embedding)
         recon_loss_1 = 0.5 * ((modelled_agent_obs - mean) ** 2).sum(-1)
         recon_loss_2 = -jnp.log(jnp.sum(prob1 * modelled_agent_act, axis=-1))
-        return recon_loss_1, recon_loss_2
+        return recon_loss_1.mean(), recon_loss_2.mean()
 
 def initialize_encoder_decoder(config, env, rng):
     """Initialize the Encoder and Decoder models with the given config.

@@ -236,7 +236,7 @@ def train_liam_ego_agent(config, env, train_rng,
                         modelled_agent_act=traj_batch.partner_action
                     )
                     log_prob = pi.log_prob(traj_batch.action)
-                    recon_loss = (recon_loss1.mean() + recon_loss2.mean())
+                    recon_loss = (recon_loss1 + recon_loss2)
 
                     # Value loss
                     value_pred_clipped = traj_batch.value + (
