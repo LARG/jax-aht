@@ -64,7 +64,6 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
         avail_actions=avail_actions_1,
         hstate=init_hstate_1,  # shape of entry 0 is (1, 1, 8)
         rng=act2_rng,
-        actions=act_1_onehot_reshaped,
         aux_obs=None,
         env_state=env_state,
         test_mode=agent_1_test_mode
@@ -123,7 +122,6 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
                 done=done_1_reshaped,
                 avail_actions=avail_actions_1,
                 hstate=hstate_1,
-                actions=act_1_onehot_reshaped,
                 rng=part_rng,
                 env_state=env_state,
                 test_mode=agent_1_test_mode
