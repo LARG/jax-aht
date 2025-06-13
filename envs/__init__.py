@@ -83,13 +83,14 @@ def make_env(env_name: str, env_kwargs: dict = {}):
 
     elif env_name == 'hanabi':
         default_env_kwargs = {
-            "num_players": 2,
+            "num_agents": 2,
             "num_colors": 5,
             "num_ranks": 5,
             "max_info_tokens": 8,
             "max_life_tokens": 3,
             "num_cards_of_rank": np.array([3, 2, 2, 2, 1]),
         }
+        env_kwargs = default_env_kwargs
         env = HanabiWrapper(**env_kwargs)
 
     else:
