@@ -45,8 +45,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
         avail_actions=avail_actions_0,
         hstate=init_hstate_0,
         rng=act1_rng,
-        actions=act_0_onehot_reshaped,
-        aux_obs=None,
+        aux_obs=act_0_onehot_reshaped,
         env_state=env_state,
         test_mode=agent_0_test_mode
     )
@@ -72,12 +71,13 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
     
     both_actions = [act_0, act_1]
     env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
-    _, _, _, done, dummy_info = env.step(step_rng, env_state, env_act)
+    env_act_onehot = {k: jax.nn.one_hot(both_actions[i], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
+    obs_next, env_state_next, _, done_next, dummy_info = env.step(step_rng, env_state, env_act)
 
 
     # We'll use a scan to iterate steps until the episode is done.
     ep_ts = 1
-    init_carry = (ep_ts, env_state, obs, rng, done, init_act_onehot, hstate_0, hstate_1, dummy_info)
+    init_carry = (ep_ts, env_state_next, obs_next, rng, done_next, env_act_onehot, hstate_0, hstate_1, dummy_info)
     def scan_step(carry, _):
         def take_step(carry_step):
             ep_ts, env_state, obs, rng, done, act_onehot, hstate_0, hstate_1, last_info = carry_step
@@ -108,8 +108,8 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
                 done=done_0_reshaped,
                 avail_actions=avail_actions_0,
                 hstate=hstate_0,
-                actions=act_0_onehot_reshaped,
                 rng=act_rng,
+                aux_obs=act_0_onehot_reshaped,
                 env_state=env_state,
                 test_mode=agent_0_test_mode
             )
