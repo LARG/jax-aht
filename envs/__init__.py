@@ -70,6 +70,16 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         layout = augmented_layouts[env_kwargs['layout']]
         env_kwargs_copy["layout"] = layout
         env = OvercookedWrapper(**env_kwargs_copy)
+
+    elif env_name == 'coin-game':
+        from envs.coins.coins import CoinGameWrapper
+        default_env_kwargs = {"num_agents": 2, "grid_size": 7, "max_steps": 1000}
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        for key in default_env_kwargs:
+            if key not in env_kwargs:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+        env = CoinGameWrapper(**env_kwargs_copy)
+
     else:
         env = jaxmarl.make(env_name, **env_kwargs)
     return env
