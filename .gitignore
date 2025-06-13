@@ -14,3 +14,6 @@ eval_teammates/*
 # pycache
 **/__pycache__/
 **/*.pyc
+
+# pretrained model weights
+obl-r2d2-flax/
