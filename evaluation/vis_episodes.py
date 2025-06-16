@@ -25,7 +25,7 @@ def save_video(env, env_name,
         save_dir: Directory to save the video
         save_name: Name to use for the saved video
     '''
-    assert env_name in ['lbf', 'overcooked-v1'], "Supported environments are lbf or overcooked-v1"
+    assert env_name in ['lbf', 'lbf-reward-shaping', 'overcooked-v1'], "Supported environments are lbf or overcooked-v1"
     
     # Step 1: run the episode and generate a list of env states 
     states = []
@@ -49,7 +49,7 @@ def save_video(env, env_name,
     # Create directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
     savepath = f"{save_dir}/{save_name}.mp4"
-    if env_name == 'lbf':
+    if env_name == 'lbf' or env_name == 'lbf-reward-shaping':
         anim = env.animate(states, interval=150)
         anim.save(savepath, writer="ffmpeg")
         print(f"Video saved successfully at {savepath}")
@@ -77,6 +77,9 @@ def run_episode_with_states(rng, env, agent_0_param, agent_0_policy,
     '''
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
+
+   
+
     obs, env_state = env.reset(reset_rng)
     done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
     
@@ -105,6 +108,11 @@ def run_episode_with_states(rng, env, agent_0_param, agent_0_policy,
         done_0_reshaped = prev_done_0.reshape(1, 1)
         obs_1_reshaped = obs_1.reshape(1, 1, -1)
         done_1_reshaped = prev_done_1.reshape(1, 1)
+
+        # print("obs_0_reshaped shape:", obs_0_reshaped.shape)
+        # print("avail_actions_0 shape:", avail_actions_0.shape)
+        # print("obs_1_reshaped shape:", obs_1_reshaped.shape)
+        # print("avail_actions_1 shape:", avail_actions_1.shape)
         
         # Get actions for both agents
         rng, act_rng, part_rng, step_rng = jax.random.split(rng, 4)
@@ -168,11 +176,11 @@ if __name__ == "__main__":
     rng, init1_rng, init2_rng = jax.random.split(base_rng, 3)
     
     # choose env
-    env_name = "overcooked-v1"
+    env_name = "lbf-reward-shaping" # "lbf" or "overcooked-v1"
     env_kwargs = { # specify the layout for overcooked 
-        "layout": "counter_circuit",
-        "random_reset": False,
-        "max_steps": 400
+        # "layout": "counter_circuit",
+        # "random_reset": False,
+        # "max_steps": 400
     }
     
     env = make_env(env_name, env_kwargs if env_name[:10] == "overcooked" else {})
@@ -186,7 +194,7 @@ if __name__ == "__main__":
     save_video(env, env_name, 
         agent_0_param=ego_agent_params, agent_0_policy=agent_0_policy, 
         agent_1_param=ego_agent_params, agent_1_policy=agent_1_policy, 
-        max_episode_steps=100 if env_name == "lbf" else 400, num_eps=1, 
+        max_episode_steps=100 if env_name == "lbf" or env_name == "lbf-reward-shaping" else 400, num_eps=1, 
         savevideo=True, 
         save_dir=f"results/{env_name}/videos/", save_name="ego-vs-ego-test")
 
