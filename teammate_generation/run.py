@@ -1,3 +1,4 @@
+'''Main entry point for running teammate generation algorithms.'''
 import hydra
 from omegaconf import OmegaConf
 

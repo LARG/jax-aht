@@ -4,9 +4,7 @@ ALG: comedi
 TOTAL_TIMESTEPS_PER_ITERATION: 1.2e7  # number of steps used to train each comedi agent at each iteration
 NUM_CHECKPOINTS: 5
 PARTNER_POP_SIZE: 4
-NUM_ENVS_SP: 16
-NUM_ENVS_XP: 16
-NUM_ENVS_MP: 16
+NUM_ENVS: 48
 LR: 1e-4
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 8
