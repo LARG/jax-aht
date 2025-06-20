@@ -4,8 +4,7 @@ ALG: brdiv
 TOTAL_TIMESTEPS: 4.5e7  # divided among each pair of BR and Conf agents
 NUM_CHECKPOINTS: 5
 PARTNER_POP_SIZE: 4
-NUM_ENVS_SP: 32
-NUM_ENVS_XP: 32
+NUM_ENVS: 64
 # SP weight = 1 + 2*XP weight. 
 # Thus, as XP weight -> 0, SP/(SP+XP) -> 1.
 # If XP weight -> infinity, XP/(SP+XP) -> 1/3, and SP/(SP+XP) -> 2/3.

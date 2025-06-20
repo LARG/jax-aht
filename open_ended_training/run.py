@@ -1,3 +1,4 @@
+'''Main entry point for running open-ended training algorithms.'''
 import hydra
 from omegaconf import OmegaConf
 

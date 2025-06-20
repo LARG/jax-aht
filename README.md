@@ -17,31 +17,29 @@ If you find this repository useful for your research, please cite,
 ## TODOs
 
 ### Clean Up Code
-High priority issues that will propagate if not fixed:
-
-- Clean up (L)-BRDiv and CoMeDi code
-    - Update codes to use the agent interface
-    - Use run_episodes
-    - Consider making ego and br nets the same 
-    - Switch from logging BR/Conf losses to SP/XP losses!
-
 Lower priority fixes / additional features: 
 - Where to store reward shaping configs? For example, the config at `marl/configs/ippo_counter_circuit_passing.yaml` records reward shaping parameters to develop an agent that passes onions across the counter. 
+- LBRDiv logging - lagrange multipliers are not logged correctly, we need to fix this.
 - Heuristic agents: 
     - Enable decision-making to account for the available actions
 - Evaluation
-    - Update regret evaluator
+    - Fix regret evaluator
 - Move best response computation code to its own directory?
 
-### Collaboration Guide
-- Create list of things to check for others when checking PRs
-- Creae list of requirements for each algorithm: 
-  - input 
-  - output
-  - test
-- Create an abstract environment API for our codebase
+### Enabling Collaboration
+- Create a contribution guide
+  - Create list of things to check for others when checking PRs
+  - Creae list of requirements for each algorithm: 
+    - input 
+    - output
+    - test
+- Create an abstract environment API for our codebase (Jiaxun)
+
 
 ### Benchmark Release
+- Ego agent training: 
+   - Add option to train IPPO teammates for training
+   - Make compatible with option to specify teammates in the ego agent
 - Create demo notebook
 - Remove ROTATE-specific paths throughout the codebase
 - README 
@@ -55,7 +53,6 @@ Lower priority fixes / additional features:
     - Figure out how to return regret-maximizing teammates that don't sabotage
 
 ### Baselines 
-- FIX LBRDIV! - Arrasy will do this
 - Implement PLR style FCP baseline (this requires implementing a regret-based curator)
 - Implement MEP (we should prioritize MEP over TraGeDi because MEP is stronger)
 

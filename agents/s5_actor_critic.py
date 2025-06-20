@@ -246,8 +246,8 @@ def binary_operator(q_i, q_j):
 def binary_operator_reset(q_i, q_j):
     """ Binary operator for parallel scan of linear recurrence. Assumes a diagonal matrix A.
         Args:
-            q_i: tuple containing A_i and Bu_i at position i       (P,), (P,)
-            q_j: tuple containing A_j and Bu_j at position j       (P,), (P,)
+            q_i: tuple containing A_i and Bu_i at position i with shape (P,), (P,), and c_i which represents the reset signal at position i with shape (1,)
+            q_j: tuple containing A_j and Bu_j at position j with shape (P,), (P,), and c_j which represents the reset signal at position j with shape (1,)
         Returns:
             new element ( A_out, Bu_out )
     """
@@ -258,7 +258,6 @@ def binary_operator_reset(q_i, q_j):
         (A_j * b_i + b_j)*(1 - c_j) + b_j * c_j,
         c_i * (1 - c_j) + c_j,
     )
-
 
 
 def apply_ssm(Lambda_bar, B_bar, C_tilde, hidden, input_sequence, resets, conj_sym, bidirectional):

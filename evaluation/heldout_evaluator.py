@@ -16,7 +16,7 @@ from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicy
     OvercookedStaticPolicyWrapper,
     OvercookedRandomPolicyWrapper)
 
-from evaluation.agent_loader_from_config import initialize_rl_agent_from_config
+from common.agent_loader_from_config import initialize_rl_agent_from_config
 from common.run_episodes import run_episodes
 from common.tree_utils import tree_stack
 from common.plot_utils import get_metric_names

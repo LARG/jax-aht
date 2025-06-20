@@ -22,7 +22,7 @@ from marl.ppo_utils import Transition, unbatchify
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from evaluation.vis_episodes import save_video
-from evaluation.agent_loader_from_config import initialize_rl_agent_from_config
+from common.agent_loader_from_config import initialize_rl_agent_from_config
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
