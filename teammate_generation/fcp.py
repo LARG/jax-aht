@@ -1,3 +1,6 @@
+'''Implementation of the Fictitious Co-Play teammate generation algorithm (Strouse et al. NeurIPS 2021)
+https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html
+'''
 import shutil
 import time
 import logging

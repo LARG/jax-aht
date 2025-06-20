@@ -1,43 +1,39 @@
+'''Implementation of the CoMeDi teammate generation algorithm (Sarkar et al. NeurIPS 2023)
+https://openreview.net/forum?id=MljeRycu9s
+
+Command to run CoMeDi only on LBF: 
+python teammate_generation/run.py algorithm=comedi/lbf task=lbf label=test_comedi run_heldout_eval=false train_ego=false
+
+Limitations: does not support recurrent actors.
+'''
+from functools import partial
+import logging
 import shutil
 import time
-import logging
 from typing import NamedTuple
-from functools import partial
 
+from flax.training.train_state import TrainState
 import hydra
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-from flax.training.train_state import TrainState
 import wandb
 
 from agents.agent_interface import ActorWithConditionalCriticPolicy
 from agents.initialize_agents import initialize_actor_with_conditional_critic
 from agents.population_interface import AgentPopulation
 from agents.population_buffer import BufferedPopulation
-from marl.ppo_utils import Transition, unbatchify, _create_minibatches
 from common.save_load_utils import save_train_run
 from common.plot_utils import get_metric_names
 from common.run_episodes import run_episodes
 from envs import make_env
 from envs.log_wrapper import LogWrapper, LogEnvState
 from marl.ippo import make_train as make_ppo_train
+from marl.ppo_utils import Transition, unbatchify, _create_minibatches
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
-class XPTransition(NamedTuple):
-    done: jnp.ndarray
-    action: jnp.ndarray
-    value: jnp.ndarray
-    self_id: jnp.ndarray
-    oppo_id: jnp.ndarray
-    reward: jnp.ndarray
-    log_prob: jnp.ndarray
-    obs: jnp.ndarray
-    info: jnp.ndarray
-    avail_actions: jnp.ndarray
 
 class ResetTransition(NamedTuple):
     '''Stores extra information for resetting agents to a point in some trajectory.'''
@@ -53,18 +49,15 @@ def train_comedi_partners(train_rng, env, config):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
-    # Define different minibatch sizes for interactions with ego agent and one with BR agent
-    config["NUM_ENVS"] = config["NUM_ENVS_XP"] + config["NUM_ENVS_SP"] + config["NUM_ENVS_MP"]
+    # Define 4 types of rollouts: SP, XP, MP, MP2
     config["NUM_GAME_AGENTS"] = num_agents
-    config["NUM_ACTORS"] = num_agents * config["NUM_ENVS"]
 
+    config["NUM_ACTORS"] = num_agents * config["NUM_ENVS"]
     # Right now assume control of both agent and its BR
     config["NUM_CONTROLLED_ACTORS"] = config["NUM_ACTORS"]
 
     # Divide by 4 because we have 4 types of rollouts
-    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS_PER_ITERATION"] // ( 4* num_agents * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
-    config["MINIBATCH_SIZE_EGO"] = ((config["NUM_GAME_AGENTS"]-1) * config["NUM_ACTORS"] * config["ROLLOUT_LENGTH"]) // config["NUM_MINIBATCHES"]
-    config["MINIBATCH_SIZE_BR"] = (config["NUM_ACTORS"] * config["ROLLOUT_LENGTH"]) // config["NUM_MINIBATCHES"]
+    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS_PER_ITERATION"] // ( 4 * num_agents * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
 
     def make_comedi_agents(config):
         def linear_schedule(count):
@@ -84,28 +77,27 @@ def train_comedi_partners(train_rng, env, config):
         
         def train(rng):
             # Start by training a single PPO agent via self-play
-            ppo_rng, init_conf_rng, rng = jax.random.split(rng, 3)
-            rngs = jax.random.split(rng, config["PARTNER_POP_SIZE"])
-            rng, add_conf_iter_rngs = rngs[0], rngs[1:]
+            rng, init_ppo_rng, init_conf_rng = jax.random.split(rng, 3)
 
-            init_ppo_partner = train_init_ippo_partners(config, ppo_rng, env)
+            init_ppo_partner = train_init_ippo_partners(config, init_ppo_rng, env)
 
             # Initialize a population buffer
-            conf_policy2, init_conf_params2 = initialize_actor_with_conditional_critic(config, env, init_conf_rng)
+            dummy_policy, dummy_init_params = initialize_actor_with_conditional_critic(config, env, init_conf_rng)
             partner_population = BufferedPopulation(
                 max_pop_size=config["PARTNER_POP_SIZE"],
-                policy_cls=conf_policy2,
+                policy_cls=dummy_policy,
             )
             
-            population_buffer = partner_population.reset_buffer(init_conf_params2)
+            population_buffer = partner_population.reset_buffer(dummy_init_params)
             population_buffer = partner_population.add_agent(population_buffer, init_ppo_partner["final_params"])
 
             def add_conf_policy(pop_buffer, func_input):
                 num_existing_agents, rng = func_input
+                rng, init_conf_rng = jax.random.split(rng)
 
                 # Create new confederate agent policy and critic
                 policy, init_params = initialize_actor_with_conditional_critic(
-                    config, env, rng
+                    config, env, init_conf_rng
                 )
 
                 # Create a train_state and optimizer for the newly initialzied model
@@ -126,12 +118,12 @@ def train_comedi_partners(train_rng, env, config):
                 )
 
                 # Reset envs for SP, XP, and MP
-                rng, reset_rng_eval, reset_rng_eval2, reset_rng_sp, reset_rng_xp, reset_rng_mp, reset_rng_mp2 = jax.random.split(rng, 7)
+                rng, reset_rng_eval, reset_rng_sp, reset_rng_xp, reset_rng_mp, reset_rng_mp2 = jax.random.split(rng, 6)
 
-                reset_rngs_sps = jax.random.split(reset_rng_sp, config["NUM_ENVS_SP"])
-                reset_rngs_xps = jax.random.split(reset_rng_xp, config["NUM_ENVS_XP"])
-                reset_rngs_mps = jax.random.split(reset_rng_mp, config["NUM_ENVS_MP"])
-                reset_rngs_mps2 = jax.random.split(reset_rng_mp2, config["NUM_ENVS_MP"])
+                reset_rngs_sps = jax.random.split(reset_rng_sp, config["NUM_ENVS"])
+                reset_rngs_xps = jax.random.split(reset_rng_xp, config["NUM_ENVS"])
+                reset_rngs_mps = jax.random.split(reset_rng_mp, config["NUM_ENVS"])
+                reset_rngs_mps2 = jax.random.split(reset_rng_mp2, config["NUM_ENVS"])
 
                 obsv_xp, env_state_xp = jax.vmap(env.reset, in_axes=(0,))(reset_rngs_sps)
                 obsv_sp, env_state_sp = jax.vmap(env.reset, in_axes=(0,))(reset_rngs_xps)
@@ -147,90 +139,20 @@ def train_comedi_partners(train_rng, env, config):
                         params_pytree
                     )
 
-                def run_single_episode(ep_rng, conf_param, prev_trained_conf_param, max_episode_steps):
-                    '''agent_0 is the confederate, agent 1 is the best response'''
-                    # Reset the env.
-                    ep_rng, reset_rng = jax.random.split(ep_rng)
-                    obs, env_state = env.reset(reset_rng)
-                    # Get available actions for agent 0 from environment state
-                    avail_actions = env.get_avail_actions(env_state.env_state)
-                    avail_actions = jax.lax.stop_gradient(avail_actions)
-                    avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
-                    avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
-                    against_br_return = jnp.zeros(1, dtype=float)
-
-                    dummy_oppo_id = jnp.zeros(config["POP_SIZE"])
-                    init_done = {
-                        k: jnp.zeros((1,), dtype=bool) for k in env.agents + ["__all__"]
-                    }
-                    
-                    # Do one step to get a dummy info structure.
-                    ep_rng, act_rng, part_rng, step_rng = jax.random.split(ep_rng, 4)
-                    act0, _ = policy.get_action(conf_param, obs["agent_0"], init_done["agent_0"], avail_actions_0, None, act_rng)
-                    act1, _ = policy.get_action(prev_trained_conf_param, obs["agent_1"], init_done["agent_1"], avail_actions_1, None, part_rng)
-                        
-                    both_actions = [act0, act1]
-                    env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
-                    _, _, reward, done, dummy_info = env.step(step_rng, env_state, env_act)
-                    against_br_return = against_br_return + reward["agent_0"]
-
-                    # We'll use a scan to iterate steps until the episode is done.
-                    ep_ts = 1
-                    ep_rng, remaining_steps_rng = jax.random.split(ep_rng)
-                    init_carry = (ep_ts, env_state, obs, remaining_steps_rng, done, dummy_info, against_br_return)
-                    def scan_step(carry, _):
-                        def take_step(carry_step):
-                            ep_ts, env_state, obs, ep_rng, done, info_next, against_br_return = carry_step
-                            ep_rng, act_rng, part_rng, step_rng = jax.random.split(ep_rng, 4)
-                            
-                            # Get available actions for agent 0 from environment state
-                            avail_actions = env.get_avail_actions(env_state.env_state)
-                            avail_actions = jax.lax.stop_gradient(avail_actions)
-                            avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
-                            avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
-
-                            act0, _ = policy.get_action(conf_param, obs["agent_0"], done["agent_0"], avail_actions_0, None, act_rng)
-                            act1, _ = policy.get_action(prev_trained_conf_param, obs["agent_1"], done["agent_1"], avail_actions_1, None, part_rng)
-
-                            both_actions = [act0, act1]
-                            env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
-
-                            obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
-                            against_br_return = against_br_return + reward["agent_0"]
-
-                            return (ep_ts + 1, env_state_next, obs_next, ep_rng, done_next, info_next, against_br_return)
-                                
-                        ep_ts, env_state, obs, ep_rng, done, info_next, against_br_return = carry
-                        new_carry = jax.lax.cond(
-                            done["__all__"],
-                            # if done, execute true function(operand). else, execute false function(operand).
-                            lambda curr_carry: curr_carry, # True fn
-                            take_step, # False fn
-                            operand=carry
-                        )
-                        return new_carry, None
-
-                    final_carry, _ = jax.lax.scan(
-                        scan_step, init_carry, None, length=max_episode_steps)
-                    # Return the final info (which includes the episode return via LogWrapper).
-                    return (final_carry[-2], final_carry[-1])
-
-                def run_episodes(ep_rng, conf_param, prev_trained_conf_param, max_episode_steps, num_eps):
-                    '''TODO: convert to vmap'''
-                    def body_fn(carry, _):
-                        ep_rng = carry
-                        ep_rng, ep_rng_step = jax.random.split(ep_rng)
-                        all_outs = run_single_episode(ep_rng_step, conf_param, prev_trained_conf_param, max_episode_steps)
-                        return ep_rng, all_outs
-                    ep_rng, all_outs = jax.lax.scan(body_fn, ep_rng, None, length=num_eps)
+                # define evaluation function
+                rng, eval_rng = jax.random.split(rng, 2)
+                def per_id_run_episode_fixed_rng(agent0_param, agent1_id):
+                    agent1_param = partner_population.gather_agent_params(pop_buffer, 
+                                        agent_indices=agent1_id * jnp.ones((1,), dtype=np.int32))
+                    agent1_param = jax.tree_map(lambda y: jnp.squeeze(y, 0), agent1_param)
+                    all_outs =  run_episodes(
+                        rng=eval_rng, env=env, 
+                        agent_0_param=agent0_param, agent_0_policy=policy,
+                        agent_1_param=agent1_param, agent_1_policy=policy,
+                        max_episode_steps=config["ROLLOUT_LENGTH"], 
+                        num_eps=config["NUM_ARGMAX_ROLLOUT_EPS"]
+                    )
                     return all_outs
-                
-                def gather_agent_params(buffer, agent_indices):
-                    
-                    def gather_leaf(leaf):
-                        # leaf shape: (buffer_size, ...)
-                        return jax.vmap(lambda idx: leaf[idx])(agent_indices)
-                    return jax.tree_map(gather_leaf, buffer.params)
                     
                 def _update_step(update_with_ckpt_runner_state, unused):
                     update_runner_state, checkpoint_array, ckpt_idx = update_with_ckpt_runner_state
@@ -251,22 +173,14 @@ def train_comedi_partners(train_rng, env, config):
                     # Identify the expected returns from the newly trained policy
                     # when interacting with the previously generated confederate
                     # policies
-                    max_episode_steps = config["ROLLOUT_LENGTH"]
-                    num_argmax_rollouts = config["NUM_ARGMAX_ROLLOUT_EPS"]
-                    rng, eps_rng = jax.random.split(rng, 2)
-                    
-                    per_id_run_episode = lambda x: run_episodes(
-                        eps_rng, train_state.params, 
-                        jax.tree_map(lambda y: jnp.squeeze(y, 0), gather_agent_params(pop_buffer, x * jnp.ones((1,), dtype=np.int32))),
-                        max_episode_steps, num_argmax_rollouts
-                    )
                     valid_sampling_indices = jnp.arange(config["POP_SIZE"])
-                    run_all_rollouts = jax.vmap(per_id_run_episode)(valid_sampling_indices)
+                    run_all_rollouts = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                        train_state.params,valid_sampling_indices)
 
                     # Mask out the XP returns against invalid policies
                     # resulting from IDs that are yet set to a specific
                     # confederate params
-                    all_mean_returns = run_all_rollouts[0]["returned_episode_returns"][:, :, 0].mean(axis=-1)
+                    all_mean_returns = run_all_rollouts["returned_episode_returns"][:, :, 0].mean(axis=-1)
                     masked_mean_returns = jnp.where(
                         valid_sampling_indices >= num_prev_trained_conf, -jnp.inf, all_mean_returns
                     )
@@ -275,12 +189,12 @@ def train_comedi_partners(train_rng, env, config):
                     max_means_id = masked_mean_returns.argmax()
                     xp_param = jax.tree_map(
                         lambda x: jnp.squeeze(x, 0), 
-                        gather_agent_params(pop_buffer, max_means_id * jnp.ones((1,), dtype=np.int32))
+                        partner_population.gather_agent_params(pop_buffer, 
+                                                               agent_indices=max_means_id * jnp.ones((1,), dtype=np.int32))
                     )
 
                     rng, rng_xp, rng_sp, rng_mp, rng_mp2 = jax.random.split(rng, 5)
 
-                    # Do the updates as in oe_paired_comedi
                     def _env_step_conf_ego(runner_state, unused):
                         """
                         agent_0 = confederate, agent_1 = ego
@@ -306,11 +220,11 @@ def train_comedi_partners(train_rng, env, config):
                         )
                         
                         # Agent_0 (confederate) action using policy interface
-                        aux_obs = jnp.repeat(xp_one_hot_id, config["NUM_ENVS_XP"], axis=1)
+                        aux_obs = jnp.repeat(xp_one_hot_id, config["NUM_ENVS"], axis=1)
                         act_0, val_0, pi_0, _ = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=obs_0.reshape(1, config["NUM_ENVS_XP"], -1),
-                            done=last_dones["agent_0"].reshape(1, config["NUM_ENVS_XP"]),
+                            obs=obs_0.reshape(1, config["NUM_ENVS"], -1),
+                            done=last_dones["agent_0"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_0),
                             hstate=None,
                             rng=act_rng,
@@ -323,10 +237,10 @@ def train_comedi_partners(train_rng, env, config):
                         val_0 = val_0.squeeze()
 
                         # Agent_1 (ego) action using policy interface
-                        act_1, _, _, new_ego_h = policy.get_action_value_policy(
+                        act_1, _, _, _ = policy.get_action_value_policy(
                             params=xp_param,
-                            obs=obs_1.reshape(1, config["NUM_ENVS_XP"], -1),
-                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS_XP"]),
+                            obs=obs_1.reshape(1, config["NUM_ENVS"], -1),
+                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_1),
                             hstate=None,
                             rng=partner_rng,
@@ -336,11 +250,11 @@ def train_comedi_partners(train_rng, env, config):
 
                         # Combine actions into the env format
                         combined_actions = jnp.concatenate([act_0, act_1], axis=0)  # shape (2*num_envs,)
-                        env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS_XP"], num_agents)
+                        env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS"], num_agents)
                         env_act = {k: v.flatten() for k, v in env_act.items()}
 
                         # Step env
-                        step_rngs = jax.random.split(step_rng, config["NUM_ENVS_XP"])
+                        step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
                         obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0,0,0))(
                             step_rngs, env_state, env_act
                         )
@@ -371,7 +285,7 @@ def train_comedi_partners(train_rng, env, config):
 
                         def gather_sampled(data_pytree, flat_indices, first_nonbatch_dim: int):
                             '''Will treat all dimensions up to the first_nonbatch_dim as batch dimensions. '''
-                            batch_size = config["ROLLOUT_LENGTH"] * config["NUM_ENVS_MP"]
+                            batch_size = config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
                             flat_data = jax.tree.map(lambda x: x.reshape(batch_size, *x.shape[first_nonbatch_dim:]), data_pytree)
                             sampled_data = jax.tree.map(lambda x: x[flat_indices], flat_data) # Shape (N, ...)
                             return sampled_data
@@ -380,8 +294,8 @@ def train_comedi_partners(train_rng, env, config):
                             rng, sample_rng = jax.random.split(rng)
                             needs_resample = last_dones["__all__"] # shape (N,) bool
 
-                            total_reset_states = config["ROLLOUT_LENGTH"] * config["NUM_ENVS_MP"]
-                            sampled_indices = jax.random.randint(sample_rng, shape=(config["NUM_ENVS_MP"],), minval=0, 
+                            total_reset_states = config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
+                            sampled_indices = jax.random.randint(sample_rng, shape=(config["NUM_ENVS"],), minval=0, 
                                                                 maxval=total_reset_states)
                             
                             # Gather sampled leaves from each data pytree
@@ -426,11 +340,11 @@ def train_comedi_partners(train_rng, env, config):
                             ), 0
                         )
 
-                        aux_obs = jnp.repeat(sp_one_hot_id, config["NUM_ENVS_SP"], 1)
-                        act_0, val_0, pi_0, new_conf_h = policy.get_action_value_policy(
+                        aux_obs = jnp.repeat(sp_one_hot_id, config["NUM_ENVS"], 1)
+                        act_0, val_0, pi_0, _ = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=obs_0.reshape(1, config["NUM_ENVS_SP"], -1),
-                            done=dones_0.reshape(1, config["NUM_ENVS_SP"]),
+                            obs=obs_0.reshape(1, config["NUM_ENVS"], -1),
+                            done=dones_0.reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_0),
                             hstate=None,
                             rng=conf_rng,
@@ -443,10 +357,10 @@ def train_comedi_partners(train_rng, env, config):
                         val_0 = val_0.squeeze()
 
                         # Agent 1 (best response) action
-                        act_1, val_1, pi_1, new_br_h = policy.get_action_value_policy(
+                        act_1, val_1, pi_1, _ = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=obs_1.reshape(1, config["NUM_ENVS_SP"], -1),
-                            done=dones_1.reshape(1, config["NUM_ENVS_SP"]),
+                            obs=obs_1.reshape(1, config["NUM_ENVS"], -1),
+                            done=dones_1.reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_1),
                             hstate=None,
                             rng=br_rng,
@@ -460,11 +374,11 @@ def train_comedi_partners(train_rng, env, config):
 
                         # Combine actions into the env format
                         combined_actions = jnp.concatenate([act_0, act_1], axis=0)  # shape (2*num_envs,)
-                        env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS_SP"], num_agents)
+                        env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS"], num_agents)
                         env_act = {k: v.flatten() for k, v in env_act.items()}
 
                         # Step env
-                        step_rngs = jax.random.split(step_rng, config["NUM_ENVS_SP"])
+                        step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
                         obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0,0,0))(
                             step_rngs, env_state, env_act
                         )
@@ -521,13 +435,13 @@ def train_comedi_partners(train_rng, env, config):
                         )
                         
                         # Agent_0 (confederate) action using policy interface
-                        aux_obs = jnp.repeat(xp_one_hot_id, config["NUM_ENVS_MP"], axis=1)
+                        aux_obs = jnp.repeat(xp_one_hot_id, config["NUM_ENVS"], axis=1)
 
                         # Agent_0 (confederate) action using policy interface
-                        act_0, val_0, pi_0, new_conf_h = policy.get_action_value_policy(
+                        act_0, val_0, pi_0, _ = policy.get_action_value_policy(
                             params=train_state_conf.params,
-                            obs=obs_0.reshape(1, config["NUM_ENVS_MP"], -1),
-                            done=last_dones["agent_0"].reshape(1, config["NUM_ENVS_MP"]),
+                            obs=obs_0.reshape(1, config["NUM_ENVS"], -1),
+                            done=last_dones["agent_0"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_0),
                             hstate=None,
                             rng=act_rng,
@@ -540,19 +454,19 @@ def train_comedi_partners(train_rng, env, config):
                         val_0 = val_0.squeeze()
 
                         ### Compute both the ego action and the best response action
-                        act_ego, _, _, new_ego_h = policy.get_action_value_policy(
+                        act_ego, _, _, _ = policy.get_action_value_policy(
                             params=ego_param,
-                            obs=obs_1.reshape(1, config["NUM_ENVS_MP"], -1),
-                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS_MP"]),
+                            obs=obs_1.reshape(1, config["NUM_ENVS"], -1),
+                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_1),
                             hstate=None,
                             rng=ego_act_rng,
                             aux_obs=aux_obs
                         )
-                        act_br, _, _, new_br_h = policy.get_action_value_policy(
+                        act_br, _, _, _ = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=obs_1.reshape(1, config["NUM_ENVS_MP"], -1),
-                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS_MP"]),
+                            obs=obs_1.reshape(1, config["NUM_ENVS"], -1),
+                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_1),
                             hstate=None,
                             rng=br_act_rng,
@@ -562,16 +476,16 @@ def train_comedi_partners(train_rng, env, config):
                         act_ego = act_ego.squeeze()
                         act_br = act_br.squeeze()
                         # Agent 1 (ego or best response) action - choose between ego and best response
-                        partner_choice = jax.random.randint(partner_choice_rng, shape=(config["NUM_ENVS_MP"],), minval=0, maxval=2)
+                        partner_choice = jax.random.randint(partner_choice_rng, shape=(config["NUM_ENVS"],), minval=0, maxval=2)
                         act_1 = jnp.where(partner_choice == 0, act_ego, act_br)
                         
                         # Combine actions into the env format
                         combined_actions = jnp.concatenate([act_0, act_1], axis=0)
-                        env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS_MP"], num_agents)
+                        env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS"], num_agents)
                         env_act = {k: v.flatten() for k, v in env_act.items()}
 
                         # Step env
-                        step_rngs = jax.random.split(step_rng, config["NUM_ENVS_MP"])
+                        step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
                         obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0,0,0))(
                             step_rngs, env_state, env_act
                         )
@@ -731,7 +645,6 @@ def train_comedi_partners(train_rng, env, config):
                                             traj_batch_mp, gae_mp, target_v_mp,
                                             traj_batch_mp2, gae_mp2, target_v_mp2):
                                 # get policy and value of confederate versus ego and best response agents respectively
-                                
                                 xp_one_hot_id = jnp.eye(config["POP_SIZE"])[xp_id]                    
                                 xp_one_hot_id = jnp.expand_dims(
                                     jnp.expand_dims(
@@ -840,9 +753,9 @@ def train_comedi_partners(train_rng, env, config):
                                 mp2_loss = mp2_pg_weight * pg_loss_mp2 + config["VF_COEF"] * value_loss_mp2 - config["ENT_COEF"] * entropy_mp2
 
                                 total_loss = sp_loss + sp2_loss + xp_loss + mp2_loss + mp_loss
-                                return total_loss, (value_loss_xp, value_loss_sp + value_loss_sp2, value_loss_mp2 + value_loss_mp, 
-                                                    pg_loss_xp, pg_loss_sp + pg_loss_sp2, pg_loss_mp2 + pg_loss_mp, 
-                                                    entropy_xp, entropy_sp + entropy_sp2, entropy_mp2 + entropy_mp)
+                                return total_loss, (value_loss_xp, value_loss_sp + value_loss_sp2, value_loss_mp + value_loss_mp2, 
+                                                    pg_loss_xp, pg_loss_sp + pg_loss_sp2, pg_loss_mp + pg_loss_mp2, 
+                                                    entropy_xp, entropy_sp + entropy_sp2, entropy_mp + entropy_mp2)
 
                             grad_fn = jax.value_and_grad(_loss_fn_conf, has_aux=True)
                             (loss_val, aux_vals), grads = grad_fn(
@@ -872,23 +785,23 @@ def train_comedi_partners(train_rng, env, config):
                         # Create minibatches for each agent and interaction type
                         minibatches_xp = _create_minibatches(
                             traj_batch_xp, advantages_xp_conf, targets_xp_conf, None,
-                            config["NUM_ENVS_XP"], config["NUM_MINIBATCHES"], perm_rng_xp
+                            config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_xp
                         )
                         minibatches_sp_conf = _create_minibatches(
                             traj_batch_sp_conf, advantages_sp_conf, targets_sp_conf, None, 
-                            config["NUM_ENVS_SP"], config["NUM_MINIBATCHES"], perm_rng_sp_conf
+                            config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_sp_conf
                         )
                         minibatches_sp_br = _create_minibatches(
                             traj_batch_sp_br, advantages_sp_br, targets_sp_br, None, 
-                            config["NUM_ENVS_SP"], config["NUM_MINIBATCHES"], perm_rng_sp_br
+                            config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_sp_br
                         )
                         minibatches_mp_conf = _create_minibatches(
                             traj_batch_mp_conf, advantages_mp_conf, targets_mp_conf, None,
-                            config["NUM_ENVS_MP"], config["NUM_MINIBATCHES"], perm_rng_mp2_conf
+                            config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_mp2_conf
                         )
                         minibatches_mp_br = _create_minibatches(
                             traj_batch_mp_br, advantages_mp_br, targets_mp_br, None,
-                            config["NUM_ENVS_MP"], config["NUM_MINIBATCHES"], perm_rng_mp2_br
+                            config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_mp2_br
                         )
 
                         # Update confederate
@@ -948,9 +861,9 @@ def train_comedi_partners(train_rng, env, config):
                     # Metrics
                     metric = traj_batch_xp.info
                     metric["update_steps"] = update_steps
-                    metric["value_loss_xp"] = conf_value_loss_xp
-                    metric["value_loss_sp"] = conf_value_loss_sp
-                    metric["value_loss_mp"] = conf_value_loss_mp
+                    metric["value_loss_conf_xp"] = conf_value_loss_xp
+                    metric["value_loss_conf_sp"] = conf_value_loss_sp
+                    metric["value_loss_conf_mp"] = conf_value_loss_mp
 
                     metric["pg_loss_conf_xp"] = conf_pg_loss_xp
                     metric["pg_loss_conf_sp"] = conf_pg_loss_sp
@@ -966,27 +879,25 @@ def train_comedi_partners(train_rng, env, config):
 
                     return (new_update_runner_state, checkpoint_array, ckpt_idx+1), metric
 
-                per_id_run_episode = lambda x: run_episodes(
-                    reset_rng_eval, train_state.params, 
-                    jax.tree_map(lambda x: jnp.squeeze(x, 0), gather_agent_params(pop_buffer, x * jnp.ones((1,), dtype=np.int32))),
-                    config["ROLLOUT_LENGTH"], config["NUM_EVAL_EPISODES"]
-                )
-
                 # XP eval against all policies in the buffer
-                xp_eval_returns = jax.vmap(per_id_run_episode)(jnp.arange(config["POP_SIZE"]))
+                xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                        train_state.params,jnp.arange(config["POP_SIZE"]))
 
                 # SP performance against itself
                 sp_eval_returns = run_episodes(
-                    reset_rng_eval, train_state.params, train_state.params,
-                    config["ROLLOUT_LENGTH"], config["NUM_EVAL_EPISODES"]
+                    eval_rng, env, 
+                    agent_0_param=train_state.params, agent_0_policy=policy,
+                    agent_1_param=train_state.params, agent_1_policy=policy,
+                    max_episode_steps=config["ROLLOUT_LENGTH"], 
+                    num_eps=config["NUM_EVAL_EPISODES"]
                 )
 
 
                 update_steps = 0
-                init_done_xp = {k: jnp.zeros((config["NUM_ENVS_XP"]), dtype=bool) for k in env.agents + ["__all__"]}
-                init_done_sp = {k: jnp.zeros((config["NUM_ENVS_SP"]), dtype=bool) for k in env.agents + ["__all__"]}
-                init_done_mp = {k: jnp.zeros((config["NUM_ENVS_MP"]), dtype=bool) for k in env.agents + ["__all__"]}
-                init_done_mp2 = {k: jnp.zeros((config["NUM_ENVS_MP"]), dtype=bool) for k in env.agents + ["__all__"]}
+                init_done_xp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
+                init_done_sp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
+                init_done_mp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
+                init_done_mp2 = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
                 update_runner_state = (
                     train_state, pop_buffer,
@@ -1008,7 +919,6 @@ def train_comedi_partners(train_rng, env, config):
                     
                     (update_runner_state, checkpoint_array, ckpt_idx, xp_eval_returns, sp_eval_returns) = state_with_ckpt
                     train_state = update_runner_state[0]
-                    pop_buffer = update_runner_state[1]
 
                     # Single PPO update
                     new_state_with_ckpt, metric = _update_step(
@@ -1030,20 +940,16 @@ def train_comedi_partners(train_rng, env, config):
                             ckpt_arr_conf, train_state.params
                         )
 
-                        # run eval episodes
-                        rng, eval_rng, = jax.random.split(rng)
-                        # conf vs other previously trained conf
-                        per_id_run_episode = lambda x: run_episodes(
-                            eval_rng, train_state.params, 
-                            jax.tree_map(lambda x: jnp.squeeze(x, 0), gather_agent_params(pop_buffer, x * jnp.ones((1,), dtype=np.int32))),
-                            config["ROLLOUT_LENGTH"], config["NUM_EVAL_EPISODES"]
-                        )
-
                         # Eval trained agent against all params in the pool
-                        xp_eval_returns = jax.vmap(per_id_run_episode)(jnp.arange(config["POP_SIZE"]))
+                        xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                            train_state.params, jnp.arange(config["POP_SIZE"]))
+                        # Eval trained agent against itself
                         sp_eval_returns = run_episodes(
-                            eval_rng, train_state.params, train_state.params,
-                            config["ROLLOUT_LENGTH"], config["NUM_EVAL_EPISODES"]
+                            eval_rng, env, 
+                            agent_0_param=train_state.params, agent_0_policy=policy,
+                            agent_1_param=train_state.params, agent_1_policy=policy,
+                            max_episode_steps=config["ROLLOUT_LENGTH"], 
+                            num_eps=config["NUM_EVAL_EPISODES"]
                         )
                         
                         return (new_ckpt_arr_conf, rng, cidx + 1, xp_eval_returns, sp_eval_returns)
@@ -1075,6 +981,9 @@ def train_comedi_partners(train_rng, env, config):
                 conf_checkpoints = new_checkpoint_array
                 return updated_pop_buffer, (conf_checkpoints, metric, xp_eval_returns, sp_eval_returns)
             
+            rngs = jax.random.split(rng, config["PARTNER_POP_SIZE"])
+            rng, add_conf_iter_rngs = rngs[0], rngs[1:]
+
             iter_ids = jnp.arange(1, config["PARTNER_POP_SIZE"])
             final_population_buffer, (conf_checkpoints, metric, xp_eval_returns, sp_eval_returns) = jax.lax.scan(
                 add_conf_policy, population_buffer, (iter_ids, add_conf_iter_rngs)
@@ -1169,9 +1078,9 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     ### Log evaluation metrics
     # we plot XP return curves separately from SP return curves 
     # shape (num_seeds, num_updates, pop_size,  num_eval_episodes, num_agents_per_game)
-    all_returns_sp = np.asarray(outs["last_ep_infos_sp"][0]["returned_episode_returns"])
+    all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
     # shape (num_seeds, num_updates, pop_size, pop_size, num_eval_episodes, num_agents_per_game)
-    all_returns_xp = np.asarray(outs["last_ep_infos_xp"][0]["returned_episode_returns"])
+    all_returns_xp = np.asarray(outs["last_ep_infos_xp"]["returned_episode_returns"])
     xs = list(range(num_updates))
     
     # Average over seeds, then over agent pairs, episodes and num_agents_per_game

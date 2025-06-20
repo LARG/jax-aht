@@ -1,3 +1,12 @@
+'''Implementation of the ROTATE algorithm (Wang et al. 2025)
+https://arxiv.org/abs/2505.23686
+
+Command to run ROTATE only on LBF: 
+python open_ended_training/run.py algorithm=rotate/lbf task=lbf label=test_rotate
+
+Suggested debug command: 
+python open_ended_training/run.py algorithm=rotate/lbf task=lbf label=test_rotate logger.mode=offline algorithm.NUM_OPEN_ENDED_ITERS=1 algorithm.TIMESTEPS_PER_ITER_PARTNER=1e5 algorithm.TIMESTEPS_PER_ITER_EGO=1e5
+'''
 import copy
 from functools import partial
 import logging

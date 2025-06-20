@@ -11,69 +11,82 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
                        max_episode_steps, agent_0_test_mode=False, agent_1_test_mode=False):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
-    obs, env_state = env.reset(reset_rng)
+    init_obs, init_env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
     init_act_onehot = {k: jnp.zeros((env.action_space(env.agents[i]).n)) for i, k in enumerate(env.agents)}
     
-    # Initialize hidden states
+    # Initialize hidden states. Agent id is passed as part of the hstate initialization to support heuristic agents.
     init_hstate_0 = agent_0_policy.init_hstate(1, aux_info={"agent_id": 0})
     init_hstate_1 = agent_1_policy.init_hstate(1, aux_info={"agent_id": 1})
 
-    # Get agent obses
-    obs_0 = obs["agent_0"]
-    obs_1 = obs["agent_1"]
-
     # Get available actions for agent 0 from environment state
-    avail_actions = env.get_avail_actions(env_state.env_state)
+    avail_actions = env.get_avail_actions(init_env_state.env_state)
     avail_actions = jax.lax.stop_gradient(avail_actions)
     avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
     avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
 
     # Do one step to get a dummy info structure
+<<<<<<< HEAD
     rng, act1_rng, act2_rng, step_rng = jax.random.split(rng, 4)
     
     # Reshape inputs
     obs_0_reshaped = obs_0.reshape(1, 1, -1)
     done_0_reshaped = init_done["agent_0"].reshape(1, 1)
     act_0_onehot_reshaped = init_act_onehot["agent_0"].reshape(1, 1, -1)
+=======
+    rng, act0_rng, act1_rng, step_rng = jax.random.split(rng, 4)
+>>>>>>> 7eb33226f555ad36b26f425b353e9a9e8c48b9f0
     
     # Get ego action
     act_0, hstate_0 = agent_0_policy.get_action(
         params=agent_0_param,
-        obs=obs_0_reshaped,
-        done=done_0_reshaped,
+        obs=init_obs["agent_0"].reshape(1, 1, -1),
+        done=init_done["agent_0"].reshape(1, 1),
         avail_actions=avail_actions_0,
         hstate=init_hstate_0,
+<<<<<<< HEAD
         rng=act1_rng,
         aux_obs=act_0_onehot_reshaped,
         env_state=env_state,
+=======
+        rng=act0_rng,
+        aux_obs=None,
+        env_state=init_env_state,
+>>>>>>> 7eb33226f555ad36b26f425b353e9a9e8c48b9f0
         test_mode=agent_0_test_mode
     )
     act_0 = act_0.squeeze()
 
     # Get partner action using the underlying policy class's get_action method directly
+<<<<<<< HEAD
     obs_1_reshaped = obs_1.reshape(1, 1, -1)
     done_1_reshaped = init_done["agent_1"].reshape(1, 1)
     act_1_onehot_reshaped = init_act_onehot["agent_1"].reshape(1, 1, -1)
 
+=======
+>>>>>>> 7eb33226f555ad36b26f425b353e9a9e8c48b9f0
     act_1, hstate_1 = agent_1_policy.get_action(
         params=agent_1_param, 
-        obs=obs_1_reshaped, 
-        done=done_1_reshaped,
+        obs=init_obs["agent_1"].reshape(1, 1, -1), 
+        done=init_done["agent_1"].reshape(1, 1),
         avail_actions=avail_actions_1,
         hstate=init_hstate_1,  # shape of entry 0 is (1, 1, 8)
-        rng=act2_rng,
+        rng=act1_rng,
         aux_obs=None,
-        env_state=env_state,
+        env_state=init_env_state,
         test_mode=agent_1_test_mode
     )
     act_1 = act_1.squeeze()
     
     both_actions = [act_0, act_1]
     env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
+<<<<<<< HEAD
     env_act_onehot = {k: jax.nn.one_hot(both_actions[i], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
     obs_next, env_state_next, _, done_next, dummy_info = env.step(step_rng, env_state, env_act)
 
+=======
+    obs, env_state, _, done, dummy_info = env.step(step_rng, init_env_state, env_act)
+>>>>>>> 7eb33226f555ad36b26f425b353e9a9e8c48b9f0
 
     # We'll use a scan to iterate steps until the episode is done.
     ep_ts = 1
@@ -86,6 +99,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
             avail_actions = jax.lax.stop_gradient(avail_actions)
             avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
             avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
+<<<<<<< HEAD
 
             # Get agent obses
             obs_0, obs_1 = obs["agent_0"], obs["agent_1"]
@@ -99,17 +113,23 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
             obs_1_reshaped = obs_1.reshape(1, 1, -1)
             done_1_reshaped = prev_done_1.reshape(1, 1)
             act_1_onehot_reshaped = act_1_onehot.reshape(1, 1, -1)
+=======
+>>>>>>> 7eb33226f555ad36b26f425b353e9a9e8c48b9f0
             
             # Get ego action
-            rng, act_rng, part_rng, step_rng = jax.random.split(rng, 4)
+            rng, act0_rng, act1_rng, step_rng = jax.random.split(rng, 4)
             act_0, hstate_0_next = agent_0_policy.get_action(
                 params=agent_0_param,
-                obs=obs_0_reshaped,
-                done=done_0_reshaped,
+                obs=obs["agent_0"].reshape(1, 1, -1),
+                done=done["agent_0"].reshape(1, 1),
                 avail_actions=avail_actions_0,
                 hstate=hstate_0,
+<<<<<<< HEAD
                 rng=act_rng,
                 aux_obs=act_0_onehot_reshaped,
+=======
+                rng=act0_rng,
+>>>>>>> 7eb33226f555ad36b26f425b353e9a9e8c48b9f0
                 env_state=env_state,
                 test_mode=agent_0_test_mode
             )
@@ -118,11 +138,11 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
             # Get partner action with proper hidden state tracking
             act_1, hstate_1_next = agent_1_policy.get_action(
                 params=agent_1_param, 
-                obs=obs_1_reshaped,
-                done=done_1_reshaped,
+                obs=obs["agent_1"].reshape(1, 1, -1),
+                done=done["agent_1"].reshape(1, 1),
                 avail_actions=avail_actions_1,
                 hstate=hstate_1,
-                rng=part_rng,
+                rng=act1_rng,
                 env_state=env_state,
                 test_mode=agent_1_test_mode
             )
@@ -138,7 +158,6 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
         ep_ts, env_state, obs, rng, done, act_onehot, hstate_0, hstate_1, last_info = carry
         new_carry = jax.lax.cond(
             done["__all__"],
-            # if done, execute true function(operand). else, execute false function(operand).
             lambda curr_carry: curr_carry, # True fn
             take_step, # False fn
             operand=carry

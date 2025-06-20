@@ -1,3 +1,4 @@
+'''Main entry point for running ego agent training algorithms against a fixed partner population.'''
 import hydra
 from omegaconf import OmegaConf
 

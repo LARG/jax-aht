@@ -4,10 +4,9 @@ ALG: lbrdiv
 TOTAL_TIMESTEPS: 4.5e7  # divided among each pair of BR and Conf agents
 NUM_CHECKPOINTS: 5
 PARTNER_POP_SIZE: 4
-NUM_ENVS_SP: 32
-NUM_ENVS_XP: 32
+NUM_ENVS: 64
 TOLERANCE_FACTOR: 0.1 # require that SP - XP > TOLERANCE_FACTOR
-LAGRANGE_LR: 0.1 # specific to L-BRDiv
+LAGRANGE_LR: 0.01 # specific to L-BRDiv
 LR: 1e-4
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 4

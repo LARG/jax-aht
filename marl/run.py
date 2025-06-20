@@ -1,3 +1,4 @@
+'''Main entry point for running MARL algorithms.'''
 import hydra
 from omegaconf import OmegaConf
 
