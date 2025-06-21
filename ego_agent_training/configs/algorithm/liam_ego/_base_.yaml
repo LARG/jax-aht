@@ -1,6 +1,7 @@
 # @package algorithm
 # ^ tells hydra to place these value directly under algorithm key
 ALG: liam_ego
+ENCODER_TYPE: lstm
 EGO_ACTOR_TYPE: mlp
 NUM_EGO_TRAIN_SEEDS: 1
 TOTAL_TIMESTEPS: 1e7
@@ -27,7 +28,7 @@ partner_agent: # partner config for liam_ego
   name: lbf
   path: results/lbf/fcp/default_label/2025-06-06_21-43-40/saved_train_run
   actor_type: mlp
-  custom_loader: 
+  custom_loader:
   #  name:  # if null, use default loader
   #  type:  # options: ego, partner
   ckpt_key: final_params

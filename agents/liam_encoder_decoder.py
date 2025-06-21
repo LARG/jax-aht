@@ -107,14 +107,14 @@ class DecoderNetwork(nn.Module):
         # prob3 = nn.Dense(self.ouput_dim2)(h2)
         # prob3 = nn.softmax(prob3, axis=-1)
         return out, prob1 #, prob2, prob3
-    
+
 class EncoderLSTM():
     """Model wrapper for EncoderLSTMNetwork."""
-    
+
     def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
         """
         Args:
-            action_dim: int, dimension of the action space  
+            action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             hidden_dim: int, dimension of the encoder hidden layers
             ouput_dim: int, dimension of the encoder output
@@ -130,13 +130,13 @@ class EncoderLSTM():
         hstate = (hstate[0].reshape(1, batch_size, self.lstm_hidden_dim),
                   hstate[1].reshape(1, batch_size, self.lstm_hidden_dim))
         return hstate
-    
+
     def init_params(self, rng):
         """Initialize parameters for the encoder model."""
         batch_size = 1
         # Initialize hidden state
         init_hstate = self.init_hstate(batch_size=batch_size)
-        
+
         # Create dummy inputs - add time dimension
         dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
         dummy_act = jnp.zeros((1, batch_size, self.action_dim))
@@ -145,10 +145,10 @@ class EncoderLSTM():
 
         init_hstate = (init_hstate[0].reshape(batch_size, -1),
                        init_hstate[1].reshape(batch_size, -1))
-        
+
         # Initialize model
         return self.model.init(rng, init_hstate, dummy_x)
-    
+
     @functools.partial(jax.jit, static_argnums=(0,))
     def compute_embedding(self, params, hstate, obs, done):
         """Embed observations using the encoder model."""
@@ -165,11 +165,11 @@ class EncoderLSTM():
 
 class EncoderRNN():
     """Model wrapper for EncoderRNNNetwork."""
-    
+
     def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
         """
         Args:
-            action_dim: int, dimension of the action space  
+            action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             hidden_dim: int, dimension of the encoder hidden layers
             ouput_dim: int, dimension of the encoder output
@@ -184,13 +184,13 @@ class EncoderRNN():
         hstate =  ScannedRNN.initialize_carry(batch_size, self.rnn_hidden_dim)
         hstate = hstate.reshape(1, batch_size, self.rnn_hidden_dim)
         return hstate
-    
+
     def init_params(self, rng):
         """Initialize parameters for the encoder model."""
         batch_size = 1
         # Initialize hidden state
         init_hstate = self.init_hstate(batch_size=batch_size)
-        
+
         # Create dummy inputs - add time dimension
         dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
         dummy_act = jnp.zeros((1, batch_size, self.action_dim))
@@ -198,10 +198,10 @@ class EncoderRNN():
         dummy_x = (jnp.concatenate((dummy_obs, dummy_act), axis=-1), dummy_done)
 
         init_hstate = init_hstate.reshape(batch_size, -1)
-        
+
         # Initialize model
         return self.model.init(rng, init_hstate, dummy_x)
-    
+
     @functools.partial(jax.jit, static_argnums=(0,))
     def compute_embedding(self, params, hstate, obs, done):
         """Embed observations using the encoder model."""
@@ -214,11 +214,11 @@ class EncoderRNN():
 # TODO: Fix S5 encoder
 class EncoderS5():
     """Model wrapper for EncoderS5Network."""
-    
+
     def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
         """
         Args:
-            action_dim: int, dimension of the action space  
+            action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             hidden_dim: int, dimension of the encoder hidden layers
             ouput_dim: int, dimension of the encoder output
@@ -232,22 +232,22 @@ class EncoderS5():
         """Initialize hidden state for the encoder S5."""
         hstate =  SequenceLayer.initialize_carry(batch_size, self.s5_hidden_dim)
         return hstate
-    
+
     def init_params(self, rng):
         """Initialize parameters for the encoder model."""
         batch_size = 1
         # Initialize hidden state
         init_hstate = self.init_hstate(batch_size=batch_size)
-        
+
         # Create dummy inputs - add time dimension
         dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
         dummy_act = jnp.zeros((1, batch_size, self.action_dim))
         dummy_done = jnp.zeros((1, batch_size))
         dummy_x = (jnp.concatenate((dummy_obs, dummy_act), axis=-1), dummy_done)
-        
+
         # Initialize model
         return self.model.init(rng, init_hstate, dummy_x)
-    
+
     @functools.partial(jax.jit, static_argnums=(0,))
     def compute_embedding(self, params, hstate, obs, done):
         """Embed observations using the encoder model."""
@@ -255,11 +255,11 @@ class EncoderS5():
 
 class Decoder():
     """Model wrapper for DecoderNetwork."""
-    
+
     def __init__(self, action_dim, obs_dim, embedding_dim, hidden_dim, ouput_dim1, ouput_dim2):
         """
         Args:
-            action_dim: int, dimension of the action space  
+            action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             embedding_dim: int, dimension of the embedding space
             hidden_dim: int, dimension of the decoder hidden layers
@@ -270,14 +270,14 @@ class Decoder():
         self.action_dim = action_dim
         self.obs_dim = obs_dim
         self.embedding_dim = embedding_dim
-    
+
     def init_params(self, rng):
         """Initialize parameters for the decoder model."""
         batch_size = 1
-        
+
         # Create dummy inputs - add time dimension
         dummy_x = jnp.zeros((1, batch_size, self.embedding_dim))
-        
+
         # Initialize model
         return self.model.init(rng, dummy_x)
 
@@ -291,24 +291,33 @@ class Decoder():
 
 def initialize_encoder_decoder(config, env, rng):
     """Initialize the Encoder and Decoder models with the given config.
-    
+
     Args:
         config: dict, config for the agent
         env: gymnasium environment
         rng: jax.random.PRNGKey, random key for initialization
-        
+
     Returns:
         encoder: Encoder, the model object
         decoder: Decoder, the model object
         params: dict, initial parameters for the encoder and decoder
     """
     # Create the RNN policy
-    encoder = EncoderLSTM(
-        action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=env.observation_space(env.agents[0]).shape[0],
-        hidden_dim=config.get("ENCODER_HIDDEN_DIM", 64),
-        ouput_dim=config.get("ENCODER_OUTPUT_DIM", 64)
-    )
+    encoder_type = config.get("ENCODER_TYPE", "lstm")
+    if encoder_type == "lstm":
+        encoder = EncoderLSTM(
+            action_dim=env.action_space(env.agents[0]).n,
+            obs_dim=env.observation_space(env.agents[0]).shape[0],
+            hidden_dim=config.get("ENCODER_HIDDEN_DIM", 64),
+            ouput_dim=config.get("ENCODER_OUTPUT_DIM", 64)
+        )
+    elif encoder_type == "rnn":
+        encoder = EncoderRNN(
+            action_dim=env.action_space(env.agents[0]).n,
+            obs_dim=env.observation_space(env.agents[0]).shape[0],
+            hidden_dim=config.get("ENCODER_HIDDEN_DIM", 64),
+            ouput_dim=config.get("ENCODER_OUTPUT_DIM", 64)
+        )
 
     decoder = Decoder(
         action_dim=env.action_space(env.agents[0]).n,
@@ -318,7 +327,7 @@ def initialize_encoder_decoder(config, env, rng):
         ouput_dim1=env.observation_space(env.agents[1]).shape[0],
         ouput_dim2=env.action_space(env.agents[1]).n
     )
-    
+
     rng, init_rng_encoder, init_rng_decoder  = jax.random.split(rng, 3)
     init_params_encoder = encoder.init_params(init_rng_encoder)
     init_params_decoder = decoder.init_params(init_rng_decoder)
