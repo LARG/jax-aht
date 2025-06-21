@@ -1,7 +1,23 @@
 '''
-Script for training a LIAM ego agent against a population of partner agents.
-Only suliamrts a population of homogeneous RL partner agents.
+Script for training a LIAM ego agent against a population of homogeneous partner agents.
+
+
+
+Only supports a population of homogeneous RL partner agents.
+
 Warning: modify with caution, as this script is used as the main script for ego training throughout the project.
+
+
+
+Command to run PPO ego training:
+
+python ego_agent_training/run.py algorithm=liam_ego/lbf task=lbf label=test_liam_ego
+
+
+
+Suggested debug command:
+
+python ego_agent_training/run.py algorithm=liam_ego/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
 '''
 import shutil
 import time
@@ -16,14 +32,14 @@ from flax.training.train_state import TrainState
 
 from agents.initialize_agents import initialize_liam_agent
 from agents.population_interface import AgentPopulation
-from marl.liam_utils import Transition
 from common.run_episodes import run_episodes
 from common.plot_utils import get_stats, get_metric_names
-from marl.ppo_utils import unbatchify, _create_minibatches
 from common.save_load_utils import save_train_run
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from evaluation.agent_loader_from_config import initialize_rl_agent_from_config
+from common.agent_loader_from_config import initialize_rl_agent_from_config
+from marl.ppo_utils import _create_minibatches, unbatchify
+from marl.liam_utils import Transition
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -103,6 +119,10 @@ def train_liam_ego_agent(config, env, train_rng,
                 tx=encoder_decoder_tx,
             )
 
+            #  Init ego and partner hstates
+            init_ego_hstate = ego_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            init_partner_hstate = partner_population.init_hstate(config["NUM_UNCONTROLLED_ACTORS"])
+
             def _env_step(runner_state, unused):
                 """
                 One step of the environment:
@@ -119,9 +139,21 @@ def train_liam_ego_agent(config, env, train_rng,
                 avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
                 avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
 
+                # Conditionally resample partners based on prev_done["__all__"]
+                needs_resample = prev_done["__all__"] # shape (NUM_ENVS,) bool
+                sampled_indices_all = partner_population.sample_agent_indices(config["NUM_CONTROLLED_ACTORS"], partner_rng)
+
+                # Determine final indices based on whether resampling was needed for each env
+                updated_partner_indices = jnp.where(
+                    needs_resample,         # Mask shape (NUM_ENVS,)
+                    sampled_indices_all,    # Use newly sampled index if True
+                    partner_indices         # Else, keep index from previous step
+                )
+                # Note that we do not need to reset the hiden states for both the ego and partner agents
+                # as the recurrent states are automatically reset when done is True, and the partner indices are only reset when done is True.
 
                 # Agent_0 (ego) action, value, log_prob
-                act_0, val_0, pi_0, ego_hstate = ego_policy.get_action_value_policy(
+                act_0, val_0, pi_0, new_ego_hstate = ego_policy.get_action_value_policy(
                     params={"encoder": encoder_decoder_train_state.params["encoder"],
                             "decoder": encoder_decoder_train_state.params["decoder"],
                             "policy": train_state.params},
@@ -139,17 +171,6 @@ def train_liam_ego_agent(config, env, train_rng,
                 val_0 = val_0.squeeze()
 
                 # Agent_1 (partner) action using the AgentPopulation interface
-                # Conditionally resample partners based on prev_done["__all__"]
-                needs_resample = prev_done["__all__"] # shape (NUM_ENVS,) bool
-                sampled_indices_all = partner_population.sample_agent_indices(config["NUM_CONTROLLED_ACTORS"], partner_rng)
-
-                # Determine final indices based on whether resampling was needed for each env
-                updated_partner_indices = jnp.where(
-                    needs_resample,         # Mask shape (NUM_ENVS,)
-                    sampled_indices_all,    # Use newly sampled index if True
-                    partner_indices         # Else, keep index from previous step
-                )
-
                 act_1, new_partner_hstate = partner_population.get_actions(
                     partner_params,
                     updated_partner_indices,
@@ -192,7 +213,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     partner_action_onehot=jax.nn.one_hot(act_1, env.action_space(env.agents[1]).n)
                 )
                 new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, env_act_onehot,
-                                    ego_hstate, new_partner_hstate, updated_partner_indices, rng)
+                                    new_ego_hstate, new_partner_hstate, updated_partner_indices, rng)
                 return new_runner_state, transition
 
             def _calculate_gae(traj_batch, last_val):
@@ -226,7 +247,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
 
 
-                    _, value, pi, recon_loss1, recon_loss2, _ = ego_policy.evalute(
+                    _, value, pi, recon_loss1, recon_loss2, _ = ego_policy.evaluate(
                         params={"encoder": encoder_decoder_params["encoder"],
                                 "decoder": encoder_decoder_params["decoder"],
                                 "policy": params},
@@ -309,10 +330,18 @@ def train_liam_ego_agent(config, env, train_rng,
                 2. Compute advantage
                 3. LIAM updates
                 """
-                (train_state, encoder_decoder_train_state, last_env_state, last_obs, last_done, last_act_onehot, last_ego_hstate, last_partner_hstate, last_partner_indices, rng, update_steps) = update_runner_state
+                (train_state, encoder_decoder_train_state, rng, update_steps) = update_runner_state
+
+                # Init envs & partner indices
+                rng, reset_rng, p_rng = jax.random.split(rng, 3)
+                reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
+                init_obs, init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
+                init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
+                new_partner_indices = partner_population.sample_agent_indices(config["NUM_UNCONTROLLED_ACTORS"], p_rng)
+                init_act_onehot = {k: jnp.zeros((config["NUM_ENVS"], env.action_space(env.agents[i]).n)) for i, k in enumerate(env.agents)}
 
                 # 1) rollout
-                runner_state = (train_state, encoder_decoder_train_state, last_env_state, last_obs, last_done, last_act_onehot, last_ego_hstate, last_partner_hstate, last_partner_indices, rng)
+                runner_state = (train_state, encoder_decoder_train_state, init_env_state, init_obs, init_done, init_act_onehot, init_ego_hstate, init_partner_hstate, new_partner_indices, rng)
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
                 (train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot, ego_hstate, partner_hstate, partner_indices, rng) = runner_state
@@ -331,13 +360,12 @@ def train_liam_ego_agent(config, env, train_rng,
                     avail_actions=jax.lax.stop_gradient(avail_actions_0),
                     hstate=ego_hstate,
                     rng=jax.random.PRNGKey(0),  # Dummy key since we're just extracting the value
-                    aux_obs=last_act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                    aux_obs=act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
                 )
                 last_val = last_val.squeeze()
                 advantages, targets = _calculate_gae(traj_batch, last_val)
 
                 # 3) LIAM update
-                init_ego_hstate = ego_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
                 update_state = (
                     train_state,
                     encoder_decoder_train_state,
@@ -362,9 +390,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 metric["avg_grad_norm"] = avg_grad_norm
                 metric["encoder_avg_grad_norm"] = encoder_avg_grad_norm
                 metric["decoder_avg_grad_norm"] = decoder_avg_grad_norm
-                new_runner_state = (train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot,
-                                    ego_hstate, partner_hstate, partner_indices,
-                                    rng, update_steps + 1)
+                new_runner_state = (train_state, encoder_decoder_train_state, rng, update_steps + 1)
                 return (new_runner_state, metric)
 
             # LIAM Update and Checkpoint saving
@@ -387,9 +413,8 @@ def train_liam_ego_agent(config, env, train_rng,
                     update_state,
                     None
                 )
-                (train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot,
-                 ego_hstate, partner_hstate, partner_indices,
-                 rng, update_steps) = new_update_state
+
+                (train_state, encoder_decoder_train_state, rng, update_steps) = new_update_state
 
                 # update steps is 1-indexed because it was incremented at the end of the update step
                 to_store = jnp.logical_or(jnp.equal(jnp.mod(update_steps-1, ckpt_and_eval_interval), 0),
@@ -427,25 +452,8 @@ def train_liam_ego_agent(config, env, train_rng,
                 )
 
                 metric["eval_ep_last_info"] = eval_last_infos
-                return ((train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot,
-                         ego_hstate, partner_hstate, partner_indices,
-                         rng, update_steps),
+                return ((train_state, encoder_decoder_train_state, rng, update_steps),
                          checkpoint_array, ckpt_idx, eval_last_infos), metric
-
-            # Init envs & partner indices
-            rng, reset_rng = jax.random.split(rng)
-            reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
-            init_obs, init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
-            init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
-            init_act_onehot = {k: jnp.zeros((config["NUM_ENVS"], env.action_space(env.agents[i]).n)) for i, k in enumerate(env.agents)}
-
-            # Each environment picks a partner index in [0, n_seeds*m_ckpts)
-            rng, partner_rng = jax.random.split(rng)
-            init_partner_indices = partner_population.sample_agent_indices(config["NUM_CONTROLLED_ACTORS"], partner_rng)
-
-            # Init ego and partner hstates
-            init_ego_hstate = ego_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
-            init_partner_hstate = partner_population.init_hstate(config["NUM_UNCONTROLLED_ACTORS"])
 
             checkpoint_array = init_ckpt_array(
                 {"encoder": encoder_decoder_train_state.params["encoder"],
@@ -472,19 +480,7 @@ def train_liam_ego_agent(config, env, train_rng,
             update_steps = 0
             rng_train, partner_rng = jax.random.split(rng_train)
 
-            update_runner_state = (
-                train_state,
-                encoder_decoder_train_state,
-                init_env_state,
-                init_obs,
-                init_done,
-                init_act_onehot,
-                init_ego_hstate,
-                init_partner_hstate,
-                init_partner_indices,
-                rng_train,
-                update_steps
-            )
+            update_runner_state = (train_state, encoder_decoder_train_state, rng_train, update_steps)
             state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos)
 
             state_with_ckpt, metrics = jax.lax.scan(

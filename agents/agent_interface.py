@@ -519,7 +519,7 @@ class LIAMPolicy(AgentPolicy):
         return action, val, pi, (new_encoder_hstate, new_policy_hstate)
 
     @partial(jax.jit, static_argnums=(0,))
-    def evalute(self, params, obs, done, avail_actions, hstate, rng,
+    def evaluate(self, params, obs, done, avail_actions, hstate, rng,
                 modelled_agent_obs, modelled_agent_act,
                 aux_obs=None, env_state=None):
         """Get actions, values, policy, and decoder reconstructions for the lIAM policy.
