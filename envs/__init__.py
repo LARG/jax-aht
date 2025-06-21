@@ -1,4 +1,5 @@
 import copy
+import numpy as np
 
 import jaxmarl
 import jumanji
@@ -9,7 +10,7 @@ from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
 from envs.reward_shaping_jumanji_jaxmarl_wrapper import RewardShapingJumanjiToJaxMARL
 from envs.overcooked.overcooked_wrapper import OvercookedWrapper
 from envs.overcooked.augmented_layouts import augmented_layouts
-
+from envs.hanabi import HanabiWrapper
 
 def process_default_args(env_kwargs: dict, default_args: dict):
     '''Helper function to process generator and viewer args for Jumanji environments. 
@@ -26,9 +27,14 @@ def process_default_args(env_kwargs: dict, default_args: dict):
 
 def make_env(env_name: str, env_kwargs: dict = {}):
     if env_name in ['lbf', 'lbf-reward-shaping']:
-        default_generator_args = {"grid_size": 7, "fov": 7, 
-                          "num_agents": 2, "num_food": 3, 
-                          "max_agent_level": 2, "force_coop": True}
+        default_generator_args = {
+            "grid_size": 7,
+            "fov": 7, 
+            "num_agents": 2,
+            "num_food": 3, 
+            "max_agent_level": 2,
+            "force_coop": True,
+        }
         default_viewer_args = {"highlight_agent_idx": 0} # None to disable highlighting
 
         generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args)
@@ -45,7 +51,11 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             env = JumanjiToJaxMARL(env, share_rewards=True)
         
     elif env_name == 'overcooked-v1':
-        default_env_kwargs = {"random_reset": True, "random_obj_state": False, "max_steps": 400}
+        default_env_kwargs = {
+            "random_reset": True,
+            "random_obj_state": False,
+            "max_steps": 400
+        }
         
         # preprocess env_kwargs to maintain compatibility with symmetric reward shaping
         if "reward_shaping_params" in env_kwargs:
@@ -70,6 +80,19 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         layout = augmented_layouts[env_kwargs['layout']]
         env_kwargs_copy["layout"] = layout
         env = OvercookedWrapper(**env_kwargs_copy)
+
+    elif env_name == 'hanabi':
+        default_env_kwargs = {
+            "num_agents": 2,
+            "num_colors": 5,
+            "num_ranks": 5,
+            "max_info_tokens": 8,
+            "max_life_tokens": 3,
+            "num_cards_of_rank": np.array([3, 2, 2, 2, 1]),
+        }
+        env_kwargs = default_env_kwargs
+        env = HanabiWrapper(**env_kwargs)
+
     else:
         env = jaxmarl.make(env_name, **env_kwargs)
     return env
