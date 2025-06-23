@@ -2,7 +2,7 @@ defaults:
   - liam_ego/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 3e6
+TOTAL_TIMESTEPS: 4e6
 LR: 3e-4
 ENCODER_DECODER_LR: 7e-4
 ENT_COEF: 0.001
