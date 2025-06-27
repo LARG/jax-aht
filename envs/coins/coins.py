@@ -1,18 +1,32 @@
 from jaxmarl.environments.coin_game.coin_game import CoinGame
 
 class CoinGameWrapper(CoinGame):
-    def __init__(self, num_agents=2, grid_size=7, max_steps=1000, **kwargs):
-        super().__init__(num_agents=num_agents, grid_size=grid_size, max_steps=max_steps, **kwargs)
-        self._name = "CoinGame"
-        self._num_agents = num_agents
-        self._grid_size = grid_size
-        self._max_steps = max_steps
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-    def reset(self, key=None):
-        return super().reset(key=key)
+    def get_avail_actions(self, env_state):
+        # TODO: Implement availability of actions based on the environment state.
+        return super().get_avail_actions(env_state)
 
-    def step(self, actions):
-        return super().step(actions)
+    def observation_space(self, agent: str):
+        """
+        Returns the observation space for the given agent.
+        If the observation space has an attribute 'n', it will be converted to a shape of (n,).
+        """
+        space = super().observation_space(agent)
+        if hasattr(space, "n"):
+            space.shape = (space.n,)
+        return space
 
-    def observation(self, state, agent_id):
-        return super().observation(state, agent_id)
+    def action_space(self, agent: str):
+        """
+        Returns the action space for the given agent.
+        If the action space has an attribute 'n', it will be converted to a shape of (n,).
+        """
+        space = super().action_space(agent)
+        if hasattr(space, "n"):
+            space.shape = (space.n,)
+        return space
+
+    def __getattr__(self, name):
+        return getattr(super(), name)
