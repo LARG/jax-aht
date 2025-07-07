@@ -18,15 +18,7 @@ MAX_GRAD_NORM: 1.0
 ANNEAL_LR: true
 partner_agent: # partner config for ppo_ego
   name: ippo
-  path: results/lbf/ippo/2025-05-30_14-01-43/saved_train_run/
+  path: null # Please set the path to a partner agent checkpoint. You will also need to set the actor_type, ckpt_key, and specify the partner idxs to load. 
   actor_type: mlp
   ckpt_key: final_params
   idx_list: [0]
-  # name: rotate # overcooked cramped room
-  # path: results/overcooked-v1/cramped_room/oe_persistent/paper-v0:1reg/2025-05-10_16-28-55/saved_train_run/
-  # actor_type: actor_with_double_critic
-  # custom_loader: 
-  #   name: open_ended # if null, use default loader
-  #   type: ego # options: ego, partner
-  # ckpt_key: final_buffer
-  # idx_list: [[0, -1]]
