@@ -66,6 +66,7 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         "path": str,
         "actor_type": str,
         "ckpt_key": str, # key to load from checkpoint. Default is "checkpoints".
+        "custom_loader": dict, # custom loader for the checkpoint. Default is None.
         "idx_list": list, # list of indices to load from checkpoint. If null, all checkpoints will be loaded.
         # and any other parameters needed to initialize the agent policy
     }

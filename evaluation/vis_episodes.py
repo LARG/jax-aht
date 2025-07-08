@@ -109,11 +109,6 @@ def run_episode_with_states(rng, env, agent_0_param, agent_0_policy,
         obs_1_reshaped = obs_1.reshape(1, 1, -1)
         done_1_reshaped = prev_done_1.reshape(1, 1)
 
-        # print("obs_0_reshaped shape:", obs_0_reshaped.shape)
-        # print("avail_actions_0 shape:", avail_actions_0.shape)
-        # print("obs_1_reshaped shape:", obs_1_reshaped.shape)
-        # print("avail_actions_1 shape:", avail_actions_1.shape)
-        
         # Get actions for both agents
         rng, act_rng, part_rng, step_rng = jax.random.split(rng, 4)
         
