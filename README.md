@@ -1,6 +1,8 @@
 # jax-aht
 
 Welcome to JaxAHT! This is a Jax-based benchmark repository for Ad Hoc Teamwork. 
+For a quick introduction to the benchmark, please see our [Colab tutorial notebook](docs/JaxAHT_Tutorial.ipynb). 
+
 If you find this repository useful for your research, please cite, 
 ```bibtex
 @misc{jaxaht2025,
@@ -64,7 +66,7 @@ Our modularization is restricted to environments, agents, and populations, which
 
 ## 🚀 Installation Guide
 
-Follow instructions at `install_instructions.md` to install the necessary libraries.
+Follow instructions at `docs/install_instructions.md` to install the necessary libraries.
 
 Evaluating trained agents against the heldout evaluation set (referred to as $\Pi^\text{eval}$ in the paper) requires downloading the evaluation agents.
 Reproducing the plots from the paper requires the computed best returns achieved against each evaluation agent, which are stated in the paper appendix.
@@ -80,7 +82,7 @@ Algorithms are sorted into four main directories in this codebase.
 - `open_ended_training/`: contains open-ended AHT algorithms
 - `teammate_generation/`: contains teammate generation algorithms.
 
-Each contains a `run.py`, that serves as an entry point 
+Each contains a `run.py`, that serves as an entry point. 
 We provide an `experiments.sh` for open-ended and teammate generation methods that runs the algorithm specified 
 at the top of the `experiments.sh`, on LBF and Overcooked tasks. 
 
