@@ -1,12 +1,17 @@
 from jaxmarl.environments.coin_game.coin_game import CoinGame
+import jax
+import jax.numpy as jnp
+from functools import partial
 
 class CoinGameWrapper(CoinGame):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_avail_actions(self, env_state):
-        # TODO: Implement availability of actions based on the environment state.
-        return super().get_avail_actions(env_state)
+    @partial(jax.jit, static_argnums=(0,))
+    def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
+        """Returns the available actions for each agent."""
+        num_actions = len(self.env.action_set)
+        return {agent: jnp.ones(num_actions) for agent in self.agents}
 
     def observation_space(self, agent: str):
         """

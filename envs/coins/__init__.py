@@ -1,1 +1,1 @@
-from .coins import CoinGameWrapper
+from .coins_wrapper import CoinGameWrapper

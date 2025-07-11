@@ -8,6 +8,7 @@ from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 from envs.lbf.lbf_wrapper import LBFWrapper
 from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
 from envs.overcooked.overcooked_wrapper import OvercookedWrapper
+from envs.coins.coins_wrapper import CoinGameWrapper
 from envs.overcooked.augmented_layouts import augmented_layouts
 
 
@@ -72,7 +73,6 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         env = OvercookedWrapper(**env_kwargs_copy)
 
     elif env_name == 'coin-game':
-        from envs.coins.coins import CoinGameWrapper
         default_env_kwargs = {"num_agents": 2, "grid_size": 7, "max_steps": 1000}
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         for key in default_env_kwargs:
