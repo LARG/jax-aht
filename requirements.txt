@@ -8,7 +8,7 @@ orbax-checkpoint==0.11.1
 orbax-export==0.0.6
 
 # others
-numpy<=1.26
+numpy
 gymnax
 distrax
 safetensors
