@@ -7,6 +7,7 @@ from common.wandb_visualizations import Logger
 from evaluation.heldout_eval import run_heldout_evaluation, log_heldout_metrics
 from ppo_ego import run_ego_training as run_ego_ppo_training
 from liam_ego import run_ego_training as run_ego_liam_training
+from lili_ego import run_ego_training as run_ego_lili_training
 from ego_agent_training.ppo_br import run_br_training
 
 
@@ -22,6 +23,8 @@ def run_training(cfg):
         ego_params, ego_policy, init_ego_params = run_br_training(cfg, wandb_logger)
     elif cfg["algorithm"]["ALG"] == "liam_ego":
         ego_params, ego_policy, init_ego_params = run_ego_liam_training(cfg, wandb_logger)
+    elif cfg["algorithm"]["ALG"] == "lili_ego":
+        ego_params, ego_policy, init_ego_params = run_ego_lili_training(cfg, wandb_logger)
 
     if cfg["run_heldout_eval"]:
         metric_names = get_metric_names(cfg["ENV_NAME"])

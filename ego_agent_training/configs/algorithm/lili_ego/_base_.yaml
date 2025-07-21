@@ -1,6 +1,6 @@
 # @package algorithm
 # ^ tells hydra to place these value directly under algorithm key
-ALG: liam_ego
+ALG: lili_ego
 ENCODER_TYPE: lstm
 EGO_ACTOR_TYPE: mlp
 NUM_EGO_TRAIN_SEEDS: 1
