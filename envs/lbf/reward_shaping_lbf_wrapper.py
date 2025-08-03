@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
+from envs.lbf.lbf_wrapper import LBFWrapper
 from jumanji.environments.routing.lbf.constants import LOAD
 from typing import Dict, Any
 from flax.struct import dataclass
@@ -34,7 +34,7 @@ REWARD_SHAPING_PARAMS = {
     "REWARD_SHAPING_COEF": 0.1,
 }    
 
-class RewardShapingJumanjiToJaxMARL(JumanjiToJaxMARL):
+class RewardShapingLBFWrapper(LBFWrapper):
     """
     A wrapper for Jumanji environments that implements reward shaping.
     This wrapper modifies the reward structure of the environment to encourage

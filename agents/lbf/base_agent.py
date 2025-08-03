@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 from flax import struct
 from jumanji.environments.routing.lbf.types import Agent, Food, State as LBFState
-from envs.jumanji_jaxmarl_wrapper import WrappedEnvState
+from envs.lbf.lbf_wrapper import WrappedEnvState
 
 
 @struct.dataclass

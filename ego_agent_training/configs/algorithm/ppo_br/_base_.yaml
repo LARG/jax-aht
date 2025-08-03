@@ -16,7 +16,7 @@ ENT_COEF: 0.01
 VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: true
-partner_agent: # partner config for ppo_br
+partner_agent: # This partner config trains a best response against the heuristic agent. 
   independent_agent_0.6:
     actor_type: independent_agent
     p_onion_on_counter: 0.6

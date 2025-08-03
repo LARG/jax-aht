@@ -3,11 +3,11 @@ import jumanji
 from jumanji.environments.routing.lbf.generator import RandomGenerator
 from envs.log_wrapper import LogWrapper
 
-from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
-from envs.reward_shaping_jumanji_jaxmarl_wrapper import RewardShapingJumanjiToJaxMARL
+from envs.lbf.lbf_wrapper import LBFWrapper
+from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
 
 """
-The purpose of this file is to test the JumanjiToJaxMARL wrapper for the LevelBasedForaging environment.
+The purpose of this file is to test the LBFWrapper wrapper for the LevelBasedForaging environment.
 """
 
 agent_reward_shaping_params = {
@@ -39,7 +39,7 @@ env = jumanji.make('LevelBasedForaging-v0',
                                             ),
                    time_limit=100, penalty=0.1)
 
-wrapper = RewardShapingJumanjiToJaxMARL(
+wrapper = RewardShapingLBFWrapper(
     env,
     reward_shaping_params=agent_reward_shaping_params,
 )

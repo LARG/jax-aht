@@ -16,12 +16,12 @@ class WrappedEnvState:
     avail_actions: jnp.ndarray
     step: jnp.array
     
-class JumanjiToJaxMARL(object):
-    """Use a Jumanji Environment within JaxMARL.
-    Warning: this wrapper has only been tested with LBF.
-    It also runs with RWare, but has not been tested. 
-
-    We add the option to share rewards between agents, since it is shared according to the agent level in the LBF environment. 
+class LBFWrapper(object):
+    """Use the LBF Jumanji Environment with JaxMARL environments.
+    Warning: this wrapper has only been tested with LBF. It also runs with RWare, but has not been tested. 
+    
+    We add the option to share rewards between agents, since it is 
+    shared according to the agent level in the LBF environment. 
     """
     def __init__(self, env: JumanjiEnv, share_rewards: bool = False):
         self.env = env

@@ -4,10 +4,10 @@ from jumanji.environments.routing.lbf.generator import RandomGenerator
 from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 from envs.log_wrapper import LogWrapper
 
-from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
+from envs.lbf.lbf_wrapper import LBFWrapper
 
 """
-The purpose of this file is to test the JumanjiToJaxMARL wrapper for the LevelBasedForaging environment.
+The purpose of this file is to test the LBFWrapper wrapper for the LevelBasedForaging environment.
 """
 # Instantiate custom viewer
 grid_size = 8
@@ -24,7 +24,7 @@ env = jumanji.make('LevelBasedForaging-v0',
                     time_limit=100, penalty=0.1,
                     viewer=viewer)
                     
-wrapper = JumanjiToJaxMARL(env)
+wrapper = LBFWrapper(env)
 wrapper = LogWrapper(wrapper)
 
 NUM_EPISODES = 2
