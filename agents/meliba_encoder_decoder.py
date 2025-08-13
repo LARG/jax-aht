@@ -230,15 +230,31 @@ class DecoderRNNNetwork(nn.Module):
                                              self.input_prev_state, self.input_action)((latent_sample, state, prev_state, actions))
 
         if self.reward_pred_type == 'bernoulli':
-            rew_pred = jax.nn.sigmoid(rew_pred)
+            reward_pred = jax.nn.sigmoid(reward_pred)
             rew_target = (reward == 1).astype(jnp.float32)
-            loss_rew = jnp.mean(optax.sigmoid_binary_cross_entropy(rew_pred, rew_target), dim=-1)
+            loss_rew = jnp.mean(optax.sigmoid_binary_cross_entropy(reward_pred, rew_target), dim=-1)
         elif self.reward_pred_type == 'deterministic':
-            loss_rew = jnp.mean(jnp.power(rew_pred - reward, 2), dim=-1)
+            loss_rew = jnp.mean(jnp.power(reward_pred - reward, 2), dim=-1)
         else:
             raise NotImplementedError
 
-        # TODO: Implement KL loss
+        # Compute KL divergence
+        gauss_dim = latent_mean.shape[-1]
+        # add the gaussian prior
+        all_means = jnp.concatenate((jnp.zeros(1, *latent_mean.shape[1:]), latent_mean))
+        all_logvars = jnp.concatenate((jnp.zeros(1, *latent_logvar.shape[1:]), latent_logvar))
+        # https://arxiv.org/pdf/1811.09975.pdf
+        # KL(N(mu,E)||N(m,S)) = 0.5 * (log(|S|/|E|) - K + tr(S^-1 E) + (m-mu)^T S^-1 (m-mu)))
+        mu = all_means[1:]
+        m = all_means[:-1]
+        logE = all_logvars[1:]
+        logS = all_logvars[:-1]
+        kl_loss = 0.5 * (jnp.sum(logS, dim=-1) - jnp.sum(logE, dim=-1) - gauss_dim + jnp.sum(
+            1 / jnp.exp(logS) * jnp.exp(logE), dim=-1) + ((m - mu) / jnp.exp(logS) * (m - mu)).sum(dim=-1))
+        kl_loss = kl_loss.sum(dim=0)
+        kl_loss = kl_loss.sum(dim=0).mean()
+
+        # MeLIBA decoder
         state_embed = FeatureExtractor(self.state_embed_dim, nn.relu)(state)
         agent_character_embed = FeatureExtractor(self.agent_character_embed_dim, nn.relu)(agent_character)
 
@@ -253,7 +269,7 @@ class DecoderRNNNetwork(nn.Module):
 
         prediction = nn.Dense(self.ouput_dim)(embedding)
 
-        return loss_state, loss_rew
+        return loss_state, loss_rew, kl_loss, prediction
 
 class VariationalEncoderLSTM():
     """Model wrapper for EncoderLSTMNetwork."""
