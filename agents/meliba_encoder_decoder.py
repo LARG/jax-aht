@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import flax.linen as nn
-import optax
+import distrax
 
 from agents.liam_encoder_decoder import ScannedLSTM
 from agents.rnn_actor_critic import ScannedRNN
@@ -123,122 +123,20 @@ class VariationalEncoderS5Network(nn.Module):
     def __call__(self, hidden, x):
         raise NotImplementedError
 
-class StateTransitionDecoderNetwork(nn.Module):
-    state_dim: int
-    state_embed_dim: int
-    action_embed_dim: int
-    layers: jnp.array
-    pred_type: str = 'deterministic'
-
-    @nn.compact
-    def __call__(self, x):
-        latent_state, states, actions = x
-
-        state_embed = FeatureExtractor(self.state_embed_dim, nn.relu)(states)
-        action_embed = FeatureExtractor(self.action_embed_dim, nn.relu)(actions)
-
-        def n_dense(x, hidden_dim):
-            x = nn.Dense(hidden_dim)(x)
-            x = nn.relu(x)
-            return x
-
-        embedding = jax.lax.scan(n_dense, jnp.concatenate((latent_state, state_embed, action_embed), axis=-1), self.layers)
-
-        if self.pred_type == 'gaussian':
-            prediction = nn.Dense(2 * self.state_dim)(embedding)
-        else:
-            prediction = nn.Dense(self.state_dim)(embedding)
-
-        return prediction
-
-class RewardDecoderNetwork(nn.Module):
-    state_dim: int
-    state_embed_dim: int
-    action_embed_dim: int
-    num_states: int
-    layers: jnp.array
-    pred_type: str = 'deterministic'
-    input_prev_state: bool = False
-    input_action: bool = False
-
-    @nn.compact
-    def __call__(self, x):
-        latent_state, next_state, prev_state, actions = x
-
-        state_encoder = FeatureExtractor(self.state_embed_dim, nn.relu)
-
-        state_embed = state_encoder(next_state)
-        h = jnp.concatenate((latent_state, state_embed), axis=-1)
-
-        if self.input_action:
-            action_embed = FeatureExtractor(self.action_embed_dim, nn.relu)(actions)
-            h = jnp.concatenate((h, action_embed), axis=-1)
-
-        if self.input_prev_state:
-            prev_state_embed = state_encoder(prev_state)
-            h = jnp.concatenate((h, prev_state_embed), axis=-1)
-
-        def n_dense(x, hidden_dim):
-            x = nn.Dense(hidden_dim)(x)
-            x = nn.relu(x)
-            return x
-
-        embedding = jax.lax.scan(n_dense, h, self.layers)
-
-        if self.pred_type == 'gaussian':
-            prediction = nn.Dense(2)(embedding)
-        else:
-            prediction = nn.Dense(1)(embedding)
-
-        return prediction
-
 class DecoderRNNNetwork(nn.Module):
     state_embed_dim: int
     agent_character_embed_dim: int
     hidden_dim: int
     ouput_dim: int
 
-    # Parameters for state transition decoder
-    state_dim: int
-    action_embed_dim: int
-    state_layers: jnp.array
-    state_pred_type: str = 'deterministic'
-
-    # Parameters for reward decoder
-    reward_layers: jnp.array
-    reward_pred_type: str = 'bernoulli'
-    input_prev_state: bool = False
-    input_action: bool = False
-
     @nn.compact
     def __call__(self, x):
-        state, prev_state, actions, reward, latent_sample, latent_mean, latent_logvar, agent_character, mental_state, dones = x
-        state_decode_input = (latent_state, state, actions)
-
-        # State decoder reconstruction loss
-        state_pred = StateTransitionDecoderNetwork(self.state_dim, self.state_embed_dim, self.action_embed_dim,
-                                                     self.state_layers, self.state_pred_type)((latent_sample, prev_state, actions))
-
-        if self.state_pred_type == 'deterministic':
-            loss_state = jnp.mean(jnp.power(state_pred - state, 2), dim=-1)
-        else:
-            raise NotImplementedError
-
-        # Reward decoder reconstruction loss
-        reward_pred = RewardDecoderNetwork(self.state_dim, self.state_embed_dim, self.action_embed_dim,
-                                             self.num_states, self.reward_layers, self.reward_pred_type,
-                                             self.input_prev_state, self.input_action)((latent_sample, state, prev_state, actions))
-
-        if self.reward_pred_type == 'bernoulli':
-            reward_pred = jax.nn.sigmoid(reward_pred)
-            rew_target = (reward == 1).astype(jnp.float32)
-            loss_rew = jnp.mean(optax.sigmoid_binary_cross_entropy(reward_pred, rew_target), dim=-1)
-        elif self.reward_pred_type == 'deterministic':
-            loss_rew = jnp.mean(jnp.power(reward_pred - reward, 2), dim=-1)
-        else:
-            raise NotImplementedError
+        state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t, agent_character, mental_state, dones, prng_key = x
 
         # Compute KL divergence
+        latent_mean = jnp.concatenate((latent_mean, latent_mean_t), axis=-1)
+        latent_logvar = jnp.concatenate((latent_logvar, latent_logvar_t), axis=-1)
+
         gauss_dim = latent_mean.shape[-1]
         # add the gaussian prior
         all_means = jnp.concatenate((jnp.zeros(1, *latent_mean.shape[1:]), latent_mean))
@@ -267,9 +165,18 @@ class DecoderRNNNetwork(nn.Module):
         rnn_in = (out, dones)
         hidden, embedding = ScannedRNN()(hidden, rnn_in)
 
-        prediction = nn.Dense(self.ouput_dim)(embedding)
+        out = nn.Dense(self.ouput_dim)(embedding)
 
-        return loss_state, loss_rew, kl_loss, prediction
+        # Sum product
+        # TODO: check if this is correct
+        pi = distrax.Categorical(logits=out)
+        prediction = pi.sample(seed=prng_key)
+        prediction = prediction.prod(axis=-1)
+
+        # Log likelihood
+        log_prob = pi.log_prob(prediction)
+
+        return kl_loss, log_prob
 
 class VariationalEncoderLSTM():
     """Model wrapper for EncoderLSTMNetwork."""
@@ -454,9 +361,8 @@ class VariationalEncoderS5():
 class Decoder():
     """Model wrapper for DecoderNetwork."""
 
-    def __init__(self, state_dim, state_embed_dim, action_dim, action_embed_dim, agent_character_embed_dim, hidden_dim, ouput_dim,
-                 state_decoder_layers, reward_decoder_layers, state_pred_type, rew_pred_type,
-                 input_prev_state, input_action):
+    def __init__(self, state_dim, state_embed_dim, agent_character_embed_dim, latent_mean_dim, latent_logvar_dim,
+                 latent_mean_t_dim, latent_logvar_t_dim, agent_character_dim, mental_state_dim, hidden_dim, ouput_dim):
         """
         Args:
             action_dim: int, dimension of the action space
@@ -466,52 +372,49 @@ class Decoder():
             ouput_dim1: int, dimension of the decoder output
             ouput_dim2: int, dimension of the decoder probs
         """
-        self.model = DecoderRNNNetwork(state_embed_dim, agent_character_embed_dim, hidden_dim, ouput_dim,
-                                       state_dim, action_embed_dim, state_decoder_layers, state_pred_type,
-                                       reward_decoder_layers, rew_pred_type, input_prev_state, input_action)
+        self.model = DecoderRNNNetwork(state_embed_dim, agent_character_embed_dim, hidden_dim, ouput_dim)
 
-        self.latent_state_dim = latent_state_dim
-        self.agent_character_dim = agent_character_dim
-        self.mental_state_dim = mental_state_dim
         self.state_dim = state_dim
         self.state_embed_dim = state_embed_dim
-        self.action_dim = action_dim
-        self.action_embed_dim = action_embed_dim
         self.agent_character_embed_dim = agent_character_embed_dim
+        self.latent_mean_dim = latent_mean_dim
+        self.latent_logvar_dim = latent_logvar_dim
+        self.latent_mean_t_dim = latent_mean_t_dim
+        self.latent_logvar_t_dim = latent_logvar_t_dim
+        self.agent_character_dim = agent_character_dim
+        self.mental_state_dim = mental_state_dim
         self.hidden_dim = hidden_dim
         self.ouput_dim = ouput_dim
 
     def init_params(self, rng):
         """Initialize parameters for the decoder model."""
         batch_size = 1
-        rng, rng_decoder, rng_state_decoder, rng_reward_decoder  = jax.random.split(rng, 4)
 
         # Create dummy inputs - add time dimension
-        dummy_latent_state = jnp.zeros((1, batch_size, self.latent_state_dim))
+        # TODO: Addtional dimensions needed to handle to trajectory of trajectories
         dummy_state = jnp.zeros((1, batch_size, self.state_dim))
-        dummy_action = jnp.zeros((1, batch_size, self.action_dim))
+        dummy_latent_mean = jnp.zeros((1, batch_size, self.latent_mean_dim))
+        dummy_latent_logvar = jnp.zeros((1, batch_size, self.latent_logvar_dim))
+        dummy_latent_mean_t = jnp.zeros((1, batch_size, self.latent_mean_t_dim))
+        dummy_latent_logvar_t = jnp.zeros((1, batch_size, self.latent_logvar_t_dim))
         dummy_agent_character = jnp.zeros((1, batch_size, self.agent_character_dim))
         dummy_mental_state = jnp.zeros((1, batch_size, self.mental_state_dim))
         dummy_done = jnp.zeros((1, batch_size))
 
-        dummy_state_decoder = (dummy_latent_state, dummy_state, dummy_action)
-        dummy_rew_decoder = (dummy_latent_state, dummy_state, dummy_state, dummy_action)
-        dummy_main_decoder = (dummy_state, dummy_agent_character, dummy_mental_state, dummy_done)
-
+        dummy_x = (dummy_state, dummy_latent_mean, dummy_latent_logvar, dummy_latent_mean_t,
+                   dummy_latent_logvar_t, dummy_agent_character, dummy_mental_state, dummy_done)
 
         # Initialize model
-        params = {'main_decoder': self.model.init(rng_decoder, dummy_main_decoder),
-                  'state_decoder': self.state_decoder.init(rng_state_decoder, dummy_state_decoder),
-                  'reward_decoder': self.reward_decoder.init(rng_reward_decoder, dummy_rew_decoder)}
-        return params
+        return self.model.init(rng, dummy_x)
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def evaluate(self, params, sample):
         """Evaluate the decoder model with given parameters and inputs."""
-        state_recon_loss =
-        rew_recon_loss =
-        kl_loss = self.model.apply(params, embedding)
-        return state_recon_loss, rew_recon_loss, kl_loss
+        kl_loss, log_prob_pred = self.model.apply(params, embedding)
+
+        elbo = (self.loss_coeff * log_prob_pred) - (self.kl_weight * kl_loss)
+
+        return elbo.mean()
 
 def initialize_encoder_decoder(config, env, rng):
     """Initialize the Encoder and Decoder models with the given config.
