@@ -205,7 +205,6 @@ class DecoderRNNNetwork(nn.Module):
     state_pred_type: str = 'deterministic'
 
     # Parameters for reward decoder
-    num_states: int
     reward_layers: jnp.array
     reward_pred_type: str = 'bernoulli'
     input_prev_state: bool = False
@@ -440,7 +439,7 @@ class Decoder():
     """Model wrapper for DecoderNetwork."""
 
     def __init__(self, state_dim, state_embed_dim, action_dim, action_embed_dim, agent_character_embed_dim, hidden_dim, ouput_dim,
-                 state_decoder_layers, reward_decoder_layers, state_pred_type, rew_pred_type, multihead_for_reward,
+                 state_decoder_layers, reward_decoder_layers, state_pred_type, rew_pred_type,
                  input_prev_state, input_action):
         """
         Args:
@@ -451,7 +450,9 @@ class Decoder():
             ouput_dim1: int, dimension of the decoder output
             ouput_dim2: int, dimension of the decoder probs
         """
-        self.model = DecoderRNNNetwork(state_embed_dim, agent_character_embed_dim, hidden_dim, ouput_dim)
+        self.model = DecoderRNNNetwork(state_embed_dim, agent_character_embed_dim, hidden_dim, ouput_dim,
+                                       state_dim, action_embed_dim, state_decoder_layers, state_pred_type,
+                                       reward_decoder_layers, rew_pred_type, input_prev_state, input_action)
 
         self.latent_state_dim = latent_state_dim
         self.agent_character_dim = agent_character_dim
