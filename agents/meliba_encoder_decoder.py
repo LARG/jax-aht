@@ -131,7 +131,7 @@ class DecoderRNNNetwork(nn.Module):
 
     @nn.compact
     def __call__(self, x):
-        state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t, agent_character, mental_state, dones, prng_key = x
+        state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t, agent_character, mental_state, partner_actions, dones, prng_key = x
 
         # Compute KL divergence
         latent_mean = jnp.concatenate((latent_mean, latent_mean_t), axis=-1)
@@ -162,6 +162,8 @@ class DecoderRNNNetwork(nn.Module):
         hidden = jnp.concatenate((agent_character_embed, mental_state), axis=-1)
         hidden = nn.Dense(self.hidden_dim)(hidden)
 
+        #TODO: Check vmap, scan, or fori
+
         rnn_in = (out, dones)
         hidden, embedding = ScannedRNN()(hidden, rnn_in)
 
@@ -170,11 +172,11 @@ class DecoderRNNNetwork(nn.Module):
         # Sum product
         # TODO: check if this is correct
         pi = distrax.Categorical(logits=out)
-        prediction = pi.sample(seed=prng_key)
-        prediction = prediction.prod(axis=-1)
 
         # Log likelihood
-        log_prob = pi.log_prob(prediction)
+        #TODO: Input the partner actions
+        log_prob = pi.log_prob(partner_actions)
+        log_prob = jnp.sum(log_prob, axis=-1)
 
         return kl_loss, log_prob
 
@@ -362,7 +364,8 @@ class Decoder():
     """Model wrapper for DecoderNetwork."""
 
     def __init__(self, state_dim, state_embed_dim, agent_character_embed_dim, latent_mean_dim, latent_logvar_dim,
-                 latent_mean_t_dim, latent_logvar_t_dim, agent_character_dim, mental_state_dim, hidden_dim, ouput_dim):
+                 latent_mean_t_dim, latent_logvar_t_dim, agent_character_dim, mental_state_dim, hidden_dim, ouput_dim,
+                 loss_coeff, kl_weight):
         """
         Args:
             action_dim: int, dimension of the action space
@@ -385,6 +388,8 @@ class Decoder():
         self.mental_state_dim = mental_state_dim
         self.hidden_dim = hidden_dim
         self.ouput_dim = ouput_dim
+        self.loss_coeff = loss_coeff
+        self.kl_weight = kl_weight
 
     def init_params(self, rng):
         """Initialize parameters for the decoder model."""
@@ -412,9 +417,10 @@ class Decoder():
         """Evaluate the decoder model with given parameters and inputs."""
         kl_loss, log_prob_pred = self.model.apply(params, embedding)
 
+        # TODO: Check sign of KL loss
         elbo = (self.loss_coeff * log_prob_pred) - (self.kl_weight * kl_loss)
 
-        return elbo.mean()
+        return log_prob_pred, kl_loss, elbo.mean()
 
 def initialize_encoder_decoder(config, env, rng):
     """Initialize the Encoder and Decoder models with the given config.
