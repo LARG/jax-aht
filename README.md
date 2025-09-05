@@ -3,13 +3,14 @@
 Welcome to JaxAHT! This is a Jax-based benchmark repository for Ad Hoc Teamwork. 
 For a quick introduction to the benchmark, please see our [Colab tutorial notebook](docs/JaxAHT_Tutorial.ipynb). 
 
+
 If you find this repository useful for your research, please cite, 
 ```bibtex
 @misc{jaxaht2025,
   author = {Learning Agents Research Group},
   title = {JaxAHT},
   year = {2025},
-  month = {June},
+  month = {September},
   note = {Version 0.1.0},
   url = {https://github.com/carolinewang01/jax-aht},
 }
@@ -39,6 +40,27 @@ On the other hand, to facilitate fast iteration, we take inspiration from the si
 Algorithms are largely implemented in a single-file format to enable researchers to easily understand and build upon existing methods. However, the agent interface is shared by all methods, to allow agents trained by one algorithm to easily be used by another algorithm---a common workflow for AHT research.
 
 Our modularization is restricted to environments, agents, and populations, which allows us to cleanly interface the algorithm types above, while placing most of the logic for any single algorithm within a single file.
+
+## Available Algorithms and Environments
+
+| Category | Algorithm | Description | Paper |
+|----------|-----------|-------------|-------|
+| **Ego Agent Training** | PPO Ego | Trains a PPO agent against a population of homogeneous partner agents | - |
+| **Teammate Generation** | FCP (Fictitious Co-Play) | Generates diverse teammates using fictitious play | [Strouse et al. NeurIPS 2021](https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html) |
+| | BRDiv | Generates diverse teammates using best response diversity | - |
+| | LBRDiv | Level-based version of BRDiv for hierarchical environments | - |
+| | CoMeDi | Generates diverse teammates using cooperative meta-diversity | - |
+| **MARL** | IPPO | Multi-agent reinforcement learning using independent PPO agents with parameter sharing | - |
+| **Open-Ended Training** | ROTATE | Open-ended training using regret maximization | [Wang et al. 2025](https://arxiv.org/abs/2505.23686) |
+| | PAIRED | Open-ended training using paired adversarial training | - |
+| | Open-Ended Minimax | Open-ended training using minimax optimization | - |
+
+### Supported Environments
+
+| Environment | Source | Description | Variants | Evaluation Teammates | 
+|-------------|--------|-------------|----------|----------------------|
+| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | 7x7 grid with full observability | :heavy_check_mark: |
+| **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | :heavy_check_mark: | 
 
 
 ##  Table of Contents

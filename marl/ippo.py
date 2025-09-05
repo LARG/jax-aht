@@ -371,18 +371,3 @@ def log_metrics(config, out, logger):
         # Cleanup locally logged out file
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)
-   
-    # # Generate matplotlib plots # TODO: remove this code after creating the demo notebook
-    # metric_names = get_metric_names(config.algorithm["ENV_NAME"])
-    # all_stats = get_stats(out["metrics"], metric_names)
-    # figures, _ = plot_train_metrics(all_stats, 
-    #                                 config.algorithm["ROLLOUT_LENGTH"], 
-    #                                 config.algorithm["NUM_ENVS"],
-    #                                 savedir=savedir if config["local_logger"]["save_figures"] else None,
-    #                                 savename="ippo_train_metrics",
-    #                                 show_plots=False
-    #                                 )
-    
-    # # Log plots to wandb
-    # for stat_name, fig in figures.items():
-    #     logger.log({f"train_metrics/{stat_name}": fig})
