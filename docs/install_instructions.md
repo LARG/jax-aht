@@ -29,13 +29,13 @@ You should see something like the following output:env--list
 If you instead see a warning message that a CPU-only version of Jax was installed, manually run: 
 ```pip install --upgrade "jax[cuda12]"```
 
-5. Download evaluation data (optional, required for reproducing paper results):
+5. Download evaluation data to get the evaluation agents:
 ```python download_eval_data.py```
 
 6. Test the installation by running our IPPO implementation: 
 ```python marl/run.py task=lbf algorithm=ippo/lbf```
 
-### Alternative Installation (Manual Method)
+### Alternative Manual Installation
 
 If you prefer the manual setup or encounter issues with the pip installation:
 
@@ -55,7 +55,3 @@ echo $PYTHONPATH
 
 *if for some reason you need to remove the conda env var, you can run 
 ```conda env config vars unset PYTHONPATH```
-
-6. Check if you can run our IPPO implementation: 
-```python marl/run.py task=lbf algorithm=ippo/lbf```
-
