@@ -14,6 +14,7 @@ Command to install in default conda env location:
 
 3. Navigate to the repository directory and install in development mode:
 ```
+conda env config vars set PYTHONPATH=/path/to/repository/directory
 cd /path/to/jax-aht
 pip install -e .
 ```
@@ -26,8 +27,16 @@ You should see something like the following output:env--list
 [CudaDevice(id=0)]
 ```
 
-If you instead see a warning message that a CPU-only version of Jax was installed, manually run: 
+*If you instead see a warning message that a CPU-only version of Jax was installed, manually run: 
 ```pip install --upgrade "jax[cuda12]"```
+
+*If you have cuda library installed elsewhere, check with `echo $LD_LIBRARY_PATH`. 
+if the output is not empty use
+```
+export LD_LIBRARY_PATH="" #so that it defaults to the pip installed cuda.
+conda env config vars set LD_LIBRARY_PATH= #so that it unset the LD_LIBRARY_PATH when conda env activated
+```
+
 
 5. Download evaluation data (optional, required for reproducing paper results):
 ```python download_eval_data.py```
