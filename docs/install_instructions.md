@@ -14,7 +14,6 @@ Command to install in default conda env location:
 
 3. Navigate to the repository directory and install in development mode:
 ```
-conda env config vars set PYTHONPATH=/path/to/repository/directory
 cd /path/to/jax-aht
 pip install -e .
 ```
@@ -31,10 +30,10 @@ You should see something like the following output:env--list
 ```pip install --upgrade "jax[cuda12]"```
 
 *If you have cuda library installed elsewhere, check with `echo $LD_LIBRARY_PATH`. 
-if the output is not empty use
+if the output is not empty, use
 ```
-export LD_LIBRARY_PATH="" #so that it defaults to the pip installed cuda.
-conda env config vars set LD_LIBRARY_PATH= #so that it unset the LD_LIBRARY_PATH when conda env activated
+export LD_LIBRARY_PATH="" #so that it defaults to the pip-installed CUDA.
+conda env config vars set LD_LIBRARY_PATH= #so that it unsets the LD_LIBRARY_PATH when the conda environment is activated.
 ```
 
 
