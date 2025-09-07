@@ -1,5 +1,5 @@
-### Instructions
-Instructions were tested on 9/4/25 with a fresh install w/Python 3.11 on a server with Nvidia A100 GPUs.
+# Instructions
+Instructions were tested on 9/4/25 with a fresh install w/Python 3.11.
 
 1. Create a conda environment: 
 
@@ -29,21 +29,14 @@ You should see something like the following output:env--list
 *If you instead see a warning message that a CPU-only version of Jax was installed, manually run: 
 ```pip install --upgrade "jax[cuda12]"```
 
-*If you have cuda library installed elsewhere, check with `echo $LD_LIBRARY_PATH`. 
-if the output is not empty, use
-```
-export LD_LIBRARY_PATH="" #so that it defaults to the pip-installed CUDA.
-conda env config vars set LD_LIBRARY_PATH= #so that it unsets the LD_LIBRARY_PATH when the conda environment is activated.
-```
-
-
-5. Download evaluation data (optional, required for reproducing paper results):
+5. Download evaluation data to get the evaluation agents:
 ```python download_eval_data.py```
 
 6. Test the installation by running our IPPO implementation: 
 ```python marl/run.py task=lbf algorithm=ippo/lbf```
 
-### Alternative Installation (Manual Method)
+
+# Alternative Manual Installation
 
 If you prefer the manual setup or encounter issues with the pip installation:
 
@@ -63,7 +56,17 @@ echo $PYTHONPATH
 
 *if for some reason you need to remove the conda env var, you can run 
 ```conda env config vars unset PYTHONPATH```
+4. Follow remaining installation steps from Step 4 onwards. 
 
-6. Check if you can run our IPPO implementation: 
-```python marl/run.py task=lbf algorithm=ippo/lbf```
+# Troubleshooting
 
+We provide some basic troubleshooting guidance.
+ 
+## If the installed CUDA library is not found: 
+
+You may have a CUDA library installed elsewhere, check with `echo $LD_LIBRARY_PATH`. 
+If the output is not empty, use:
+```
+export LD_LIBRARY_PATH="" #so that it defaults to the pip-installed CUDA.
+conda env config vars set LD_LIBRARY_PATH= #so that it unsets the LD_LIBRARY_PATH when the conda environment is activated.
+```
