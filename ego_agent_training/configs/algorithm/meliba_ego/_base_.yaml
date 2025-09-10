@@ -1,0 +1,47 @@
+# @package algorithm
+# ^ tells hydra to place these value directly under algorithm key
+ALG: meliba_ego
+EGO_ACTOR_TYPE: mlp
+NUM_EGO_TRAIN_SEEDS: 1
+TOTAL_TIMESTEPS: 1e7
+NUM_CHECKPOINTS: 5
+NUM_ENVS: 8
+LR: 7e-4 #3e-4
+ENCODER_DECODER_LR: 0.001 #7e-4
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 4
+GAMMA: 0.99
+GAE_LAMBDA: 0.9
+CLIP_EPS: 0.1
+ENT_COEF: 0.2
+VF_COEF: 0.5
+MAX_GRAD_NORM: 0.5
+ANNEAL_LR: false
+
+ENCODER_STATE_EMBED_DIM: 64
+ENCODER_ACTION_EMBED_DIM: 64
+ENCODER_REWARD_EMBED_DIM: 64
+ENCODER_RNN_HIDDEN_DIM: 64
+ENCODER_LAYERS_BEFORE_RNN: 64
+ENCODER_LAYERS_AFTER_RNN: 64
+ENCODER_LATENT_DIM: 64
+
+DECODER_STATE_EMBED_DIM: 64
+DECODER_AGENT_CHARACTER_EMBED_DIM: 32
+DECODER_HIDDEN_DIM: 64
+DECODER_OUTPUT_DIM: 32
+
+DECODER_LOSS_COEFF: 1.0
+DECODER_KL_WEIGHT: 0.05
+
+POLICY_INPUT_DIM: 256 # (Latent dim * 4) + observation dimension (obs dim added in the run script)
+
+partner_agent: # partner config
+  name: lbf
+  path: results/lbf/fcp/default_label/2025-06-06_21-43-40/saved_train_run
+  actor_type: mlp
+  custom_loader:
+  #  name:  # if null, use default loader
+  #  type:  # options: ego, partner
+  ckpt_key: final_params
+  idx_list: [[0, -1]]

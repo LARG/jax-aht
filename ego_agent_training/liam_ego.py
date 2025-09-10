@@ -210,7 +210,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     avail_actions=avail_actions_0,
                     prev_action_onehot=act_onehot["agent_0"],
                     partner_obs=prev_obs["agent_1"],
-                    partner_action_onehot=jax.nn.one_hot(act_1, env.action_space(env.agents[1]).n)
+                    partner_action_onehot=env_act_onehot["agent_1"],
                 )
                 new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, env_act_onehot,
                                     new_ego_hstate, new_partner_hstate, updated_partner_indices, rng)
@@ -245,7 +245,6 @@ def train_liam_ego_agent(config, env, train_rng,
                 train_state, encoder_decoder_train_state = init_state
                 init_ego_hstate, traj_batch, advantages, returns = batch_info
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
-
 
                     _, value, pi, recon_loss1, recon_loss2, _ = ego_policy.evaluate(
                         params={"encoder": encoder_decoder_params["encoder"],

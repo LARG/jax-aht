@@ -1,0 +1,6 @@
+defaults:
+  - meliba_ego/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 3e6
+UPDATE_EPOCHS: 5

@@ -534,6 +534,8 @@ class LIAMPolicy(AgentPolicy):
             done=done
         )
 
+        jax.debug.breakpoint()
+
         action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
             params=params['policy'],
             obs=jnp.concatenate((obs, jax.lax.stop_gradient(embbeding)), axis=-1),
@@ -598,12 +600,18 @@ class MeLIBAPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
+        act, reward = aux_obs
+
+        rng, policy_rng, sample_key  = jax.random.split(rng, 3)
 
         _, latent_mean, latent_logvar, _, latent_mean_t, latent_logvar_t, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=jnp.concatenate((obs, aux_obs), axis=-1),
-            done=done
+            state=obs,
+            act=act,
+            reward=reward,
+            done=done,
+            sample_key=sample_key
         )
 
         action, new_policy_hstate = self.policy.get_action(
@@ -612,7 +620,7 @@ class MeLIBAPolicy(AgentPolicy):
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
-            rng=rng,
+            rng=policy_rng,
             aux_obs=aux_obs,
             env_state=env_state,
             test_mode=test_mode
@@ -628,11 +636,18 @@ class MeLIBAPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
+        act, reward = aux_obs
+
+        rng, policy_rng, sample_key  = jax.random.split(rng, 3)
+
         _, latent_mean, latent_logvar, _, latent_mean_t, latent_logvar_t, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=jnp.concatenate((obs, aux_obs), axis=-1),
-            done=done
+            state=obs,
+            act=act,
+            reward=reward,
+            done=done,
+            sample_key=sample_key
         )
 
         action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
@@ -641,7 +656,7 @@ class MeLIBAPolicy(AgentPolicy):
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
-            rng=rng,
+            rng=policy_rng,
             aux_obs=aux_obs,
             env_state=env_state
         )
@@ -650,18 +665,24 @@ class MeLIBAPolicy(AgentPolicy):
 
     @partial(jax.jit, static_argnums=(0,))
     def evaluate(self, params, obs, done, avail_actions, hstate, rng,
-                modelled_agent_obs, modelled_agent_act,
-                aux_obs=None, env_state=None):
+                 partner_action, aux_obs=None, env_state=None):
         """Get actions, values, policy, and decoder reconstructions for the MeLIBA policy.
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
+        act, reward = aux_obs
+
+        rng, policy_rng, sample_key  = jax.random.split(rng, 3)
+
         latent_sample, latent_mean, latent_logvar, latent_sample_t, latent_mean_t, latent_logvar_t, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=jnp.concatenate((obs, aux_obs), axis=-1),
-            done=done
+            state=obs,
+            act=act,
+            reward=jnp.expand_dims(reward, axis=-1),
+            done=done,
+            sample_key=sample_key
         )
 
         action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
@@ -670,7 +691,7 @@ class MeLIBAPolicy(AgentPolicy):
             done=done,
             avail_actions=avail_actions,
             hstate=hstate[1],
-            rng=rng,
+            rng=policy_rng,
             aux_obs=aux_obs,
             env_state=env_state
         )
@@ -678,7 +699,8 @@ class MeLIBAPolicy(AgentPolicy):
         # Reconstruction Loss
         recon_loss1, recon_loss2 = self.decoder.evaluate(
             params=params['decoder'],
-            sample=(latent_sample, latent_sample_t)
+            sample=(latent_sample, latent_sample_t),
+            partner_action=partner_action
         )
 
         return action, val, pi, recon_loss1, recon_loss2, (new_encoder_hstate, new_policy_hstate)

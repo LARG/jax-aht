@@ -32,7 +32,7 @@ from flax.training.train_state import TrainState
 
 from agents.initialize_agents import initialize_meliba_agent
 from agents.population_interface import AgentPopulation
-from common.run_episodes import run_episodes
+from marl.meliba_utils import run_episodes
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 from envs import make_env
@@ -94,12 +94,14 @@ def train_meliba_ego_agent(config, env, train_rng,
             if config["ANNEAL_LR"]:
                 tx = optax.chain(
                     optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
-                    optax.adam(learning_rate=linear_schedule, eps=1e-5),
+                    # optax.adam(learning_rate=linear_schedule, eps=1e-5),
+                    optax.rmsprop(learning_rate=linear_schedule),
                 )
             else:
                 tx = optax.chain(
                     optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
-                    optax.adam(config["LR"], eps=1e-5),
+                    # optax.adam(config["LR"], eps=1e-5),
+                    optax.rmsprop(config["LR"]),
                 )
 
             train_state = TrainState.create(
@@ -130,7 +132,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                 2. Step environment using sampled actions
                 3. Return state, reward, ...
                 """
-                train_state, encoder_decoder_train_state, env_state, prev_obs, prev_done, act_onehot, ego_hstate, partner_hstate, partner_indices, rng = runner_state
+                train_state, encoder_decoder_train_state, env_state, prev_obs, prev_done, prev_reward, prev_act_onehot, ego_hstate, partner_hstate, partner_indices, rng = runner_state
                 rng, actor_rng, partner_rng, step_rng = jax.random.split(rng, 4)
 
                  # Get available actions for agent 0 from environment state
@@ -153,6 +155,8 @@ def train_meliba_ego_agent(config, env, train_rng,
                 # as the recurrent states are automatically reset when done is True, and the partner indices are only reset when done is True.
 
                 # Agent_0 (ego) action, value, log_prob
+                prev_joint_act_onehot = jnp.concatenate((prev_act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
+                                                         prev_act_onehot["agent_1"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)), axis=-1)
                 act_0, val_0, pi_0, new_ego_hstate = ego_policy.get_action_value_policy(
                     params={"encoder": encoder_decoder_train_state.params["encoder"],
                             "decoder": encoder_decoder_train_state.params["decoder"],
@@ -162,7 +166,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                     avail_actions=avail_actions_0,
                     hstate=ego_hstate,
                     rng=actor_rng,
-                    aux_obs=act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                    aux_obs=(prev_joint_act_onehot, prev_reward["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], 1)),
                 )
                 logp_0 = pi_0.log_prob(act_0)
 
@@ -208,11 +212,12 @@ def train_meliba_ego_agent(config, env, train_rng,
                     obs=prev_obs["agent_0"],
                     info=info_0,
                     avail_actions=avail_actions_0,
-                    prev_action_onehot=act_onehot["agent_0"],
-                    partner_obs=prev_obs["agent_1"],
-                    partner_action_onehot=jax.nn.one_hot(act_1, env.action_space(env.agents[1]).n)
+                    joint_act_onehot=jnp.concatenate((env_act_onehot["agent_0"], env_act_onehot["agent_1"]), axis=-1),
+                    prev_action_onehot=prev_act_onehot["agent_0"],
+                    partner_action=act_1,
+                    partner_action_onehot=env_act_onehot["agent_1"]
                 )
-                new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, env_act_onehot,
+                new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, reward, env_act_onehot,
                                     new_ego_hstate, new_partner_hstate, updated_partner_indices, rng)
                 return new_runner_state, transition
 
@@ -246,7 +251,6 @@ def train_meliba_ego_agent(config, env, train_rng,
                 init_ego_hstate, traj_batch, advantages, returns = batch_info
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
 
-
                     _, value, pi, recon_loss1, recon_loss2, _ = ego_policy.evaluate(
                         params={"encoder": encoder_decoder_params["encoder"],
                                 "decoder": encoder_decoder_params["decoder"],
@@ -256,9 +260,8 @@ def train_meliba_ego_agent(config, env, train_rng,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
                         rng=jax.random.PRNGKey(0), # only used for action sampling, which is unused here
-                        aux_obs=traj_batch.prev_action_onehot,
-                        modelled_agent_obs=traj_batch.partner_obs,
-                        modelled_agent_act=traj_batch.partner_action_onehot
+                        aux_obs=(traj_batch.joint_act_onehot, traj_batch.reward),
+                        partner_action=traj_batch.partner_action
                     )
                     log_prob = pi.log_prob(traj_batch.action)
                     recon_loss = (recon_loss1 + recon_loss2)
@@ -337,20 +340,23 @@ def train_meliba_ego_agent(config, env, train_rng,
                 reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
                 init_obs, init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
                 init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
+                init_reward = {k: jnp.zeros((config["NUM_ENVS"])) for i, k in enumerate(env.agents)}
                 new_partner_indices = partner_population.sample_agent_indices(config["NUM_UNCONTROLLED_ACTORS"], p_rng)
                 init_act_onehot = {k: jnp.zeros((config["NUM_ENVS"], env.action_space(env.agents[i]).n)) for i, k in enumerate(env.agents)}
 
                 # 1) rollout
-                runner_state = (train_state, encoder_decoder_train_state, init_env_state, init_obs, init_done, init_act_onehot, init_ego_hstate, init_partner_hstate, new_partner_indices, rng)
+                runner_state = (train_state, encoder_decoder_train_state, init_env_state, init_obs, init_done, init_reward, init_act_onehot, init_ego_hstate, init_partner_hstate, new_partner_indices, rng)
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
-                (train_state, encoder_decoder_train_state, env_state, obs, done, act_onehot, ego_hstate, partner_hstate, partner_indices, rng) = runner_state
+                (train_state, encoder_decoder_train_state, env_state, obs, done, reward, act_onehot, ego_hstate, partner_hstate, partner_indices, rng) = runner_state
 
                 # 2) advantage
                 # Get available actions for agent 0 from environment state
                 avail_actions_0 = jax.vmap(env.get_avail_actions)(env_state.env_state)["agent_0"].astype(jnp.float32)
 
                 # Get final value estimate for completed trajectory
+                joint_act_onehot = jnp.concatenate((act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
+                                                    act_onehot["agent_1"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)), axis=-1)
                 _, last_val, _, _ = ego_policy.get_action_value_policy(
                     params={"encoder": encoder_decoder_train_state.params["encoder"],
                             "decoder": encoder_decoder_train_state.params["decoder"],
@@ -360,7 +366,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                     avail_actions=jax.lax.stop_gradient(avail_actions_0),
                     hstate=ego_hstate,
                     rng=jax.random.PRNGKey(0),  # Dummy key since we're just extracting the value
-                    aux_obs=act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                    aux_obs=(joint_act_onehot, reward["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], 1))
                 )
                 last_val = last_val.squeeze()
                 advantages, targets = _calculate_gae(traj_batch, last_val)
