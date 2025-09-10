@@ -534,8 +534,6 @@ class LIAMPolicy(AgentPolicy):
             done=done
         )
 
-        jax.debug.breakpoint()
-
         action, val, pi, new_policy_hstate = self.policy.get_action_value_policy(
             params=params['policy'],
             obs=jnp.concatenate((obs, jax.lax.stop_gradient(embbeding)), axis=-1),
