@@ -108,32 +108,35 @@ class DecoderRNNNetwork(nn.Module):
         state_embed = FeatureExtractor(self.state_embed_dim, nn.relu)(state)
         agent_character_embed = FeatureExtractor(self.agent_character_embed_dim, nn.relu)(agent_character)
 
-        out = jnp.concatenate((state_embed, agent_character_embed), axis=-1)
-        out = nn.Dense(self.hidden_dim)(out)
+        state_agent_embed = jnp.concatenate((state_embed, agent_character_embed), axis=-1)
+        state_agent_embed = nn.Dense(self.hidden_dim)(state_agent_embed)
 
         hidden = jnp.concatenate((agent_character_embed, mental_state), axis=-1)
         hidden = nn.Dense(self.hidden_dim)(hidden)
 
-        jax.debug.breakpoint()
+        # jax.debug.breakpoint()
 
-        # #TODO: Check vmap, scan, or fori
-        # def handle_batch():
+        # TODO: might need to expand dims for dones
+        def handle_batch(state_agent_embed, hidden, dones):
+            jax.debug.breakpoint()
 
-        #     # Construct
+            # Construct trajectories
+            return hidden
 
-        #     # TODO: Might need to be a scan
-        #     def handle_k_timestep():
-        #         rnn_in = (out, dones)
-        #         hidden, embedding = ScannedRNN()(hidden.squeeze(0), rnn_in)
-        #         out = nn.Dense(self.ouput_dim)(embedding)
+            # def handle_k_trajectories():
+            #     rnn_in = (out, dones)
+            #     hidden, embedding = ScannedRNN()(hidden.squeeze(0), rnn_in)
+            #     out = nn.Dense(self.ouput_dim)(embedding)
 
-        #     vmap_handle_k_timestep = jax.vmap(handle_k_timestep, (0, 0), 0)
-        #     out = vmap_handle_k_timestep()
+            # vmap_handle_k_trajectories = jax.vmap(handle_k_trajectories, (0, 0), 0)
+            # out = vmap_handle_k_trajectories()
 
-        #     # Reduction
 
-        # vmap_handle_batch = jax.vmap(handle_batch, (0, 0), 0)
-        # out = vmap_handle_batch()
+
+            # Reduction
+
+        vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1), 1)
+        out = vmap_handle_batch(state_agent_embed, hidden, dones)
 
         # # Log likelihood
         # pi = distrax.Categorical(logits=out)
