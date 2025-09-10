@@ -251,7 +251,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                 init_ego_hstate, traj_batch, advantages, returns = batch_info
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
 
-                    _, value, pi, recon_loss1, recon_loss2, _ = ego_policy.evaluate(
+                    _, value, pi, log_prob_pred, kl_loss, elbo, _ = ego_policy.evaluate(
                         params={"encoder": encoder_decoder_params["encoder"],
                                 "decoder": encoder_decoder_params["decoder"],
                                 "policy": params},
@@ -264,7 +264,8 @@ def train_meliba_ego_agent(config, env, train_rng,
                         partner_action=traj_batch.partner_action
                     )
                     log_prob = pi.log_prob(traj_batch.action)
-                    recon_loss = (recon_loss1 + recon_loss2)
+                    # TODO: FIX
+                    recon_loss = 0.0
 
                     # Value loss
                     value_pred_clipped = traj_batch.value + (

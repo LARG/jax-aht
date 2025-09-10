@@ -83,15 +83,16 @@ class DecoderRNNNetwork(nn.Module):
     @nn.compact
     def __call__(self, x):
         state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t, agent_character, mental_state, partner_actions, dones = x
+        # Sizes are (time, batch, dim), except partner_actions and ones which are (time, batch)
 
         # Compute KL divergence
-        latent_mean = jnp.concatenate((latent_mean, latent_mean_t), axis=-1)
-        latent_logvar = jnp.concatenate((latent_logvar, latent_logvar_t), axis=-1)
+        latent_mean_all = jnp.concatenate((latent_mean, latent_mean_t), axis=-1)
+        latent_logvar_all = jnp.concatenate((latent_logvar, latent_logvar_t), axis=-1)
 
-        gauss_dim = latent_mean.shape[-1]
+        gauss_dim = latent_mean_all.shape[-1]
         # add the gaussian prior
-        all_means = jnp.concatenate((jnp.zeros((1, *latent_mean.shape[1:])), latent_mean))
-        all_logvars = jnp.concatenate((jnp.zeros((1, *latent_logvar.shape[1:])), latent_logvar))
+        all_means = jnp.concatenate((jnp.zeros((1, *latent_mean_all.shape[1:])), latent_mean_all))
+        all_logvars = jnp.concatenate((jnp.zeros((1, *latent_logvar_all.shape[1:])), latent_logvar_all))
         # https://arxiv.org/pdf/1811.09975.pdf
         # KL(N(mu,E)||N(m,S)) = 0.5 * (log(|S|/|E|) - K + tr(S^-1 E) + (m-mu)^T S^-1 (m-mu)))
         mu = all_means[1:]
@@ -113,7 +114,7 @@ class DecoderRNNNetwork(nn.Module):
         hidden = jnp.concatenate((agent_character_embed, mental_state), axis=-1)
         hidden = nn.Dense(self.hidden_dim)(hidden)
 
-        # jax.debug.breakpoint()
+        jax.debug.breakpoint()
 
         # #TODO: Check vmap, scan, or fori
         # def handle_batch():
@@ -123,7 +124,7 @@ class DecoderRNNNetwork(nn.Module):
         #     # TODO: Might need to be a scan
         #     def handle_k_timestep():
         #         rnn_in = (out, dones)
-        #         hidden, embedding = ScannedRNN()(hidden, rnn_in)
+        #         hidden, embedding = ScannedRNN()(hidden.squeeze(0), rnn_in)
         #         out = nn.Dense(self.ouput_dim)(embedding)
 
         #     vmap_handle_k_timestep = jax.vmap(handle_k_timestep, (0, 0), 0)
@@ -140,7 +141,7 @@ class DecoderRNNNetwork(nn.Module):
         # log_prob = jnp.sum(log_prob, axis=-1)
 
         # return kl_loss, log_prob
-        return 0, 0
+        return 0, jnp.array([0.0, 0.0])
 
 class VariationalEncoderRNN():
     """Model wrapper for EncoderRNNNetwork."""
@@ -268,10 +269,14 @@ class Decoder():
         return self.model.init(prng, dummy_x)
 
     @functools.partial(jax.jit, static_argnums=(0,))
-    def evaluate(self, params, latent_sample, latent_sample_t, partner_action):
+    def evaluate(self, params, state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t,
+                 agent_character, mental_state, partner_action, done):
 
         """Evaluate the decoder model with given parameters and inputs."""
-        kl_loss, log_prob_pred = self.model.apply(params, embedding)
+        kl_loss, log_prob_pred = self.model.apply(params, (state, latent_mean, latent_logvar,
+                                                           latent_mean_t, latent_logvar_t,
+                                                           agent_character, mental_state,
+                                                           partner_action, done))
 
         # TODO: Check sign of KL loss
         elbo = (self.loss_coeff * log_prob_pred) - (self.kl_weight * kl_loss)

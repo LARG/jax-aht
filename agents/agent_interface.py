@@ -695,10 +695,17 @@ class MeLIBAPolicy(AgentPolicy):
         )
 
         # Reconstruction Loss
-        recon_loss1, recon_loss2 = self.decoder.evaluate(
+        log_prob_pred, kl_loss, elbo = self.decoder.evaluate(
             params=params['decoder'],
-            sample=(latent_sample, latent_sample_t),
-            partner_action=partner_action
+            state=obs,
+            latent_mean=latent_mean,
+            latent_logvar=latent_logvar,
+            latent_mean_t=latent_mean_t,
+            latent_logvar_t=latent_logvar_t,
+            agent_character=latent_sample,
+            mental_state=latent_sample_t,
+            partner_action=partner_action,
+            done=done
         )
 
-        return action, val, pi, recon_loss1, recon_loss2, (new_encoder_hstate, new_policy_hstate)
+        return action, val, pi, log_prob_pred, kl_loss, elbo, (new_encoder_hstate, new_policy_hstate)
