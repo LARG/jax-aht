@@ -7,6 +7,7 @@ import flax.linen as nn
 import distrax
 
 from agents.rnn_actor_critic import ScannedRNN
+from marl.meliba_utils import transform_timestep_to_batch_vmap
 
 def sample_gaussian(mu, logvar, prng_key):
     std = jnp.exp(0.5 * logvar)
@@ -118,25 +119,26 @@ class DecoderRNNNetwork(nn.Module):
 
         # TODO: might need to expand dims for dones
         def handle_batch(state_agent_embed, hidden, dones):
+
+            # Construct k trajectories
+            k_state_agent_embed = transform_timestep_to_batch_vmap(state_agent_embed, pad_value=0.0)
+            k_hidden = transform_timestep_to_batch_vmap(hidden, pad_value=0.0)
+            k_dones = transform_timestep_to_batch_vmap(dones, pad_value=0.0)
+
             jax.debug.breakpoint()
 
-            # Construct trajectories
-            return hidden
-
-            # def handle_k_trajectories():
-            #     rnn_in = (out, dones)
+            # def handle_k_trajectories(state_agent_embed, hidden, done):
+            #     rnn_in = (state_agent_embed, dones)
             #     hidden, embedding = ScannedRNN()(hidden.squeeze(0), rnn_in)
             #     out = nn.Dense(self.ouput_dim)(embedding)
 
-            # vmap_handle_k_trajectories = jax.vmap(handle_k_trajectories, (0, 0), 0)
-            # out = vmap_handle_k_trajectories()
-
-
+            # vmap_handle_k_trajectories = jax.vmap(handle_k_trajectories, (0, 0, 0), 0)
+            # out = vmap_handle_k_trajectories(k_state_agent_embed, k_hidden, k_dones)
 
             # Reduction
 
         vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1), 1)
-        out = vmap_handle_batch(state_agent_embed, hidden, dones)
+        out = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1))
 
         # # Log likelihood
         # pi = distrax.Categorical(logits=out)
