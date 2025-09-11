@@ -7,7 +7,7 @@ import flax.linen as nn
 import distrax
 
 from agents.rnn_actor_critic import ScannedRNN
-from marl.meliba_utils import transform_timestep_to_batch_vmap
+from marl.meliba_utils import DecoderScannedRNN, transform_timestep_to_batch_vmap, shift_padding_to_front_vectorized
 
 def sample_gaussian(mu, logvar, prng_key):
     std = jnp.exp(0.5 * logvar)
@@ -117,36 +117,57 @@ class DecoderRNNNetwork(nn.Module):
 
         # jax.debug.breakpoint()
 
-        # TODO: might need to expand dims for dones
+        # The batch dimension is the second dimension, we want to vmap over that.
+        # The batch referes to the different env instances.
         def handle_batch(state_agent_embed, hidden, dones):
 
             # Construct k trajectories
-            k_state_agent_embed = transform_timestep_to_batch_vmap(state_agent_embed, pad_value=0.0)
-            k_hidden = transform_timestep_to_batch_vmap(hidden, pad_value=0.0)
-            k_dones = transform_timestep_to_batch_vmap(dones, pad_value=0.0)
+            k_state_agent_embed, valid_mask = transform_timestep_to_batch_vmap(state_agent_embed, pad_value=0.0, return_mask=True)
+            k_hidden = transform_timestep_to_batch_vmap(hidden, pad_value=0.0, return_mask=False)
+            k_dones = transform_timestep_to_batch_vmap(dones, pad_value=0.0, return_mask=False)
 
-            jax.debug.breakpoint()
+            # state_agent_embed expected as 3D for RNN (128, 64) -> (128, 1, 64)
+            # hidden expected as 2D for RNN (128, 64) -> hidden[0] (1, 64)
+            # dones (128, 1)
+            def handle_k_trajectories(state_agent_embed, hidden, dones):
+                rnn_in = (jnp.expand_dims(state_agent_embed, axis=1), hidden, dones)
+                _, embedding = DecoderScannedRNN()(jnp.expand_dims(hidden[0], axis=0), rnn_in)
 
-            # def handle_k_trajectories(state_agent_embed, hidden, done):
-            #     rnn_in = (state_agent_embed, dones)
-            #     hidden, embedding = ScannedRNN()(hidden.squeeze(0), rnn_in)
-            #     out = nn.Dense(self.ouput_dim)(embedding)
+                # Squeeze the batch dimension
+                # Shape: (128, 1, 32) -> (128, 32)
+                out = nn.Dense(self.ouput_dim)(embedding)
+                out = jnp.squeeze(out, axis=1)
 
-            # vmap_handle_k_trajectories = jax.vmap(handle_k_trajectories, (0, 0, 0), 0)
-            # out = vmap_handle_k_trajectories(k_state_agent_embed, k_hidden, k_dones)
+                return out
+
+            # Shape (127, 128, 32)
+            vmap_handle_k_trajectories = jax.vmap(handle_k_trajectories, (0, 0, 0), 0)
+            out = vmap_handle_k_trajectories(k_state_agent_embed, k_hidden, k_dones)
+
+            # Mask out to only consider valid elements
+            out = out * jnp.expand_dims(valid_mask, axis=-1)
+            out, _ = shift_padding_to_front_vectorized(out, valid_mask)
+
+            # Reduction: Sum over k trajectories
+            # Shape (128, 32)
+            out = jnp.sum(out, axis=0)
+
+            return out
 
             # Reduction
 
+        # Shape (128, 2, 32)
         vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1), 1)
         out = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1))
 
-        # # Log likelihood
-        # pi = distrax.Categorical(logits=out)
-        # log_prob = pi.log_prob(partner_actions)
-        # log_prob = jnp.sum(log_prob, axis=-1)
+        # Log likelihood
+        pi = distrax.Categorical(logits=out)
+        # Shape (128, 2)
+        log_prob = pi.log_prob(partner_actions)
+        # Shape (128,)
+        log_prob_sum = jnp.sum(log_prob, axis=-1)
 
-        # return kl_loss, log_prob
-        return 0, jnp.array([0.0, 0.0])
+        return kl_loss, log_prob_sum
 
 class VariationalEncoderRNN():
     """Model wrapper for EncoderRNNNetwork."""

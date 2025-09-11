@@ -1,7 +1,11 @@
+import functools
+import numpy as np
+
 from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
+import flax.linen as nn
 
 class Transition(NamedTuple):
     done: jnp.ndarray
@@ -16,6 +20,27 @@ class Transition(NamedTuple):
     prev_action_onehot: jnp.ndarray
     partner_action: jnp.ndarray
     partner_action_onehot: jnp.ndarray
+
+class DecoderScannedRNN(nn.Module):
+    @functools.partial(
+        nn.scan,
+        variable_broadcast="params",
+        in_axes=0,
+        out_axes=0,
+        split_rngs={"params": False},
+    )
+    @nn.compact
+    def __call__(self, carry, x):
+        """Applies the module."""
+        rnn_state = carry
+        ins, hiddens, dones = x
+        rnn_state = jnp.where(
+            dones[:, np.newaxis],
+            hiddens,
+            rnn_state,
+        )
+        new_rnn_state, y = nn.GRUCell(features=ins.shape[1])(rnn_state, ins)
+        return new_rnn_state, y
 
 def run_single_episode(rng, env, agent_0_param, agent_0_policy,
                        agent_1_param, agent_1_policy,
@@ -160,19 +185,18 @@ def run_episodes(rng, env, agent_0_param, agent_0_policy,
     all_outs = vmap_run_single_episode(ep_rngs)
     return all_outs  # each leaf has shape (num_eps, ...)
 
-def transform_timestep_to_batch_vmap(array, pad_value=0.0):
+def transform_timestep_to_batch_vmap(array, pad_value=0.0, return_mask=False):
     """
     Transform array from (timestep, feat) to (batch, k_timesteps, feat) using vmap
 
     Args:
         array: JAX array of shape (H+1, feat) where timesteps go from 0 to H
         pad_value: Value to use for padding shorter sequences (default: 0.0)
+        return_mask: If True, also return a mask indicating valid positions
 
     Returns:
-        JAX array of shape (H, H+1, feat) where:
-        - batch dimension has size H
-        - batch[k] contains timesteps k to H, padded to length H+1
-        - padding is applied at the end of shorter sequences
+        result: JAX array of shape (H, H+1, feat)
+        mask (optional): JAX array of shape (H, H+1) with True for valid positions, False for padding
     """
     H_plus_1, feat = array.shape
     H = H_plus_1 - 1
@@ -194,144 +218,65 @@ def transform_timestep_to_batch_vmap(array, pad_value=0.0):
         # Apply padding where mask is False
         result = jnp.where(valid_mask[:, None], gathered, pad_value)
 
-        return result
+        if return_mask:
+            return result, valid_mask
+        else:
+            return result
 
     # Create starting indices [0, 1, 2, ..., H-1]
     start_indices = jnp.arange(H)
 
     # Use vmap to apply the function to each starting index
-    result = jax.vmap(get_subsequence_for_start_idx)(start_indices)
+    if return_mask:
+        results, masks = jax.vmap(get_subsequence_for_start_idx)(start_indices)
+        return results, masks
+    else:
+        results = jax.vmap(get_subsequence_for_start_idx)(start_indices)
+        return results
 
-    return result
-
-def transform_timestep_to_batch_indexing(array, pad_value=0.0):
+def shift_padding_to_front_vectorized(data, mask):
     """
-    Transform using indexing (for comparison) - this is the previous working version
+    More efficient vectorized version that avoids loops
     """
-    H_plus_1, feat = array.shape
-    H = H_plus_1 - 1
-    batch_size = H
-    max_seq_length = H_plus_1
+    batch_size, seq_len, feat_dim = data.shape
 
-    # Create indices for gathering
-    batch_indices = jnp.arange(batch_size)[:, None]  # (H, 1)
-    seq_indices = jnp.arange(max_seq_length)[None, :]  # (1, H+1)
+    # Count valid elements per batch
+    valid_counts = jnp.sum(mask, axis=1)  # (batch_size,)
+    pad_counts = seq_len - valid_counts   # Number of padding positions per batch
 
-    # Actual timestep indices for each batch element
-    timestep_indices = seq_indices + batch_indices  # (H, H+1)
+    # Create indices for the new positions
+    batch_indices = jnp.arange(batch_size)[:, None]  # (batch, 1)
+    pos_indices = jnp.arange(seq_len)[None, :]        # (1, seq_len)
 
-    # Create mask for valid (non-padded) positions
-    valid_mask = timestep_indices < H_plus_1  # (H, H+1)
+    # Determine which positions should be padding vs valid data
+    is_padding_position = pos_indices < pad_counts[:, None]  # (batch, seq_len)
+    new_mask = ~is_padding_position
 
-    # Clamp indices to valid range for gathering
-    safe_indices = jnp.clip(timestep_indices, 0, H_plus_1 - 1)
+    # For valid data positions, determine which original valid position to use
+    valid_data_index = pos_indices - pad_counts[:, None]  # (batch, seq_len)
 
-    # Gather values and apply padding
-    gathered = array[safe_indices]  # (H, H+1, feat)
-    result = jnp.where(valid_mask[..., None], gathered, pad_value)
+    # Get the mapping from valid_data_index to actual array positions
+    # Use jnp.where to get positions of valid elements for each batch
+    def get_valid_positions(single_mask):
+        return jnp.where(single_mask, size=seq_len, fill_value=0)[0]
 
-    return result
+    valid_position_maps = jax.vmap(get_valid_positions)(mask)  # (batch, seq_len)
 
-# Example usage
-if __name__ == "__main__":
-    # Example: H=3, so timesteps 0,1,2,3 and we want batch size 3
-    H = 3
-    feat_dim = 2
+    # Create the source indices for gathering
+    # Clamp valid_data_index to valid range [0, seq_len-1]
+    safe_valid_indices = jnp.clip(valid_data_index, 0, seq_len - 1)
+    source_positions = jnp.take_along_axis(
+        valid_position_maps, safe_valid_indices, axis=1
+    )  # (batch, seq_len)
 
-    # Create sample data: (4, 2) array representing timesteps 0-3
-    array = jnp.array([
-        [1.0, 10.0],  # timestep 0
-        [2.0, 20.0],  # timestep 1
-        [3.0, 30.0],  # timestep 2
-        [4.0, 40.0],  # timestep 3
-    ])
+    # Gather the data
+    gathered_data = jnp.take_along_axis(
+        data, source_positions[..., None], axis=1
+    )  # (batch, seq_len, feat_dim)
 
-    print("Original array shape:", array.shape)
-    print("Original array:\n", array)
+    # Zero out padding positions
+    shifted_data = jnp.where(
+        new_mask[..., None], gathered_data, 0.0
+    )
 
-    # Transform using vmap
-    print("\n=== Using vmap approach ===")
-    result_vmap = transform_timestep_to_batch_vmap(array, pad_value=0.0)
-
-    print(f"Transformed array shape: {result_vmap.shape}")
-    print("Transformed array (with padding):")
-    for k in range(result_vmap.shape[0]):
-        valid_length = H + 1 - k
-        print(f"Batch {k} (timesteps {k} to {H}, padded): valid_length={valid_length}")
-        print(f"  Data: {result_vmap[k]}")
-        print()
-
-    # Transform using indexing for comparison
-    print("=== Using indexing approach ===")
-    result_indexing = transform_timestep_to_batch_indexing(array, pad_value=0.0)
-
-    # Verify both methods give the same result
-    print(f"Both methods give identical results: {jnp.allclose(result_vmap, result_indexing)}")
-
-    # Performance comparison (rough)
-    print("\n=== Performance comparison ===")
-    import time
-
-    # Warm up
-    for _ in range(10):
-        transform_timestep_to_batch_vmap(array)
-        transform_timestep_to_batch_indexing(array)
-
-    # Time vmap version
-    start = time.time()
-    for _ in range(1000):
-        result_vmap = transform_timestep_to_batch_vmap(array)
-    vmap_time = time.time() - start
-
-    # Time indexing version
-    start = time.time()
-    for _ in range(1000):
-        result_indexing = transform_timestep_to_batch_indexing(array)
-    indexing_time = time.time() - start
-
-    print(f"vmap version: {vmap_time:.4f}s")
-    print(f"indexing version: {indexing_time:.4f}s")
-    print(f"Speedup: {vmap_time/indexing_time:.2f}x ({'indexing faster' if indexing_time < vmap_time else 'vmap faster'})")
-
-
-# def create_full_sliding_window(input_jax_array, episode_ids):
-#     batch_size, sliding_window_size = input_jax_array.shape[0], input_jax_array.shape[1]
-
-#     # Assume that input_jax_array shape is (batch_size, sliding_window_size, feature_dim)
-#     # and episode_ids shape is (batch_size,sliding_window_size)
-
-#     # Pad extra rows of -1s to the end of the input array on the time dimension
-#     # to handle sliding windows that extend beyond the current episode
-#     # Similarly, pad episode_ids with -1s at the end of the time dimension
-
-#     padded_input = jnp.pad(input_jax_array, ((0, 0), (0, sliding_window_size - 1), (0, 0)), mode='constant', constant_values=-1)
-#     padded_episode_ids = jnp.pad(episode_ids, ((0, 0), (0, sliding_window_size - 1)), mode='constant', constant_values=-1)
-#     sliding_window_idxs = jnp.arange(sliding_window_size)[:, None] + jnp.arange(sliding_window_size)[None, :]
-
-#     def get_per_sliding_window_input(input_array):
-#         return input_array[sliding_window_idxs, :]
-
-#     def get_per_example_window_eps_id(episode_id_array):
-#         return episode_id_array[sliding_window_idxs]
-
-#     return jnp.stack(jax.vmap(get_per_sliding_window_input)(padded_input)), jnp.stack(jax.vmap(get_per_example_window_eps_id)(padded_episode_ids))
-
-# if __name__ == "__main__":
-#     a = jnp.arange(150).reshape([5, 10, 3])
-#     episode_ids = jnp.array([
-#         [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
-#         [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
-#         [0, 0, 1, 1, 1, 2, 2, 2, 2, 2],
-#         [0, 0, 1, 1, 1, 2, 2, 2, 3, 3],
-#         [0, 0, 1, 1, 2, 2, 2, 2, 2, 2],
-#     ])
-#     input_in_windows, eps_id_in_windows = create_full_sliding_window(a, episode_ids)
-
-#     # Within each sliding window, create a mask that indicates which
-#     # elements belong to the same episode as the first element in the window
-#     # This later can be used to mask out losses that come from invalid timesteps
-
-#     per_batch_and_timestep_valid_mask = (
-#         eps_id_in_windows == eps_id_in_windows[:, :, 0][:, :, None]
-#     )
-#     jax.debug.breakpoint()
+    return shifted_data, new_mask
