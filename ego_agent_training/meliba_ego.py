@@ -32,7 +32,7 @@ from flax.training.train_state import TrainState
 
 from agents.initialize_agents import initialize_meliba_agent
 from agents.population_interface import AgentPopulation
-from marl.meliba_utils import run_episodes
+from common.run_episodes import run_episodes
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 from envs import make_env
@@ -166,7 +166,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                     avail_actions=avail_actions_0,
                     hstate=ego_hstate,
                     rng=actor_rng,
-                    aux_obs=(prev_joint_act_onehot, prev_reward["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], 1)),
+                    aux_obs=(None, prev_joint_act_onehot, prev_reward["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], 1)),
                 )
                 logp_0 = pi_0.log_prob(act_0)
 
@@ -251,7 +251,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                 init_ego_hstate, traj_batch, advantages, returns = batch_info
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
 
-                    _, value, pi, log_prob_pred, kl_loss, elbo, _ = ego_policy.evaluate(
+                    _, value, pi, kl_loss, recon_loss, _ = ego_policy.evaluate(
                         params={"encoder": encoder_decoder_params["encoder"],
                                 "decoder": encoder_decoder_params["decoder"],
                                 "policy": params},
@@ -260,12 +260,12 @@ def train_meliba_ego_agent(config, env, train_rng,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
                         rng=jax.random.PRNGKey(0), # only used for action sampling, which is unused here
-                        aux_obs=(traj_batch.joint_act_onehot, traj_batch.reward),
+                        aux_obs=(None, traj_batch.joint_act_onehot, traj_batch.reward),
                         partner_action=traj_batch.partner_action
                     )
                     log_prob = pi.log_prob(traj_batch.action)
-                    # TODO: FIX
-                    recon_loss = 0.0
+
+                    # jax.debug.breakpoint()
 
                     # Value loss
                     value_pred_clipped = traj_batch.value + (
@@ -291,8 +291,11 @@ def train_meliba_ego_agent(config, env, train_rng,
                     # Entropy
                     entropy = jnp.mean(pi.entropy())
 
-                    total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy + recon_loss
-                    return total_loss, (value_loss, pg_loss, entropy, recon_loss)
+                    # ELBO
+                    elbo = (config["DECODER_KL_WEIGHT"] * kl_loss) + (config["DECODER_LOSS_COEFF"] * recon_loss)
+
+                    total_loss = pg_loss + (config["VF_COEF"] * value_loss) - (config["ENT_COEF"] * entropy) + elbo
+                    return total_loss, (value_loss, pg_loss, entropy, kl_loss, recon_loss, elbo)
 
                 grad_fn = jax.value_and_grad(_loss_fn, argnums=(0,1), has_aux=True)
                 (loss_val, aux_vals), (grads, encoder_decoder_grads) = grad_fn(
@@ -367,7 +370,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                     avail_actions=jax.lax.stop_gradient(avail_actions_0),
                     hstate=ego_hstate,
                     rng=jax.random.PRNGKey(0),  # Dummy key since we're just extracting the value
-                    aux_obs=(joint_act_onehot, reward["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], 1))
+                    aux_obs=(None, joint_act_onehot, reward["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], 1))
                 )
                 last_val = last_val.squeeze()
                 advantages, targets = _calculate_gae(traj_batch, last_val)
@@ -393,7 +396,9 @@ def train_meliba_ego_agent(config, env, train_rng,
                 metric["actor_loss"] = loss_terms[1]
                 metric["value_loss"] = loss_terms[0]
                 metric["entropy_loss"] = loss_terms[2]
-                metric["reconstruction_loss"] = loss_terms[3]
+                metric["kl_divergence_loss"] = loss_terms[3]
+                metric["reconstruction_loss"] = loss_terms[4]
+                metric["elbo_loss"] = loss_terms[5]
                 metric["avg_grad_norm"] = avg_grad_norm
                 metric["encoder_avg_grad_norm"] = encoder_avg_grad_norm
                 metric["decoder_avg_grad_norm"] = decoder_avg_grad_norm
@@ -591,7 +596,9 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     all_ego_value_losses = np.asarray(train_metrics["value_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
+    all_ego_kl_divergence_losses = np.asarray(train_metrics["kl_divergence_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_reconstruction_losses = np.asarray(train_metrics["reconstruction_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
+    all_ego_elbo_losses = np.asarray(train_metrics["elbo_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_grad_norms = np.asarray(train_metrics["avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_encoder_grad_norms = np.asarray(train_metrics["encoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     all_ego_decoder_grad_norms = np.asarray(train_metrics["decoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
@@ -605,7 +612,9 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     average_ego_value_losses = np.mean(all_ego_value_losses, axis=(0, 2, 3))
     average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=(0, 2, 3))
     average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=(0, 2, 3))
+    average_ego_kl_divergence_losses = np.mean(all_ego_kl_divergence_losses, axis=(0, 2, 3))
     average_ego_reconstruction_losses = np.mean(all_ego_reconstruction_losses, axis=(0, 2, 3))
+    average_ego_elbo_losses = np.mean(all_ego_elbo_losses, axis=(0, 2, 3))
     average_ego_grad_norms = np.mean(all_ego_grad_norms, axis=(0, 2, 3))
     average_ego_encoder_grad_norms = np.mean(all_ego_encoder_grad_norms, axis=(0, 2, 3))
     average_ego_decoder_grad_norms = np.mean(all_ego_decoder_grad_norms, axis=(0, 2, 3))
@@ -622,7 +631,9 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
         logger.log_item("Train/EgoValueLoss", average_ego_value_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoActorLoss", average_ego_actor_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
+        logger.log_item("Train/EgoKLDivergenceLoss", average_ego_kl_divergence_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoReconstructionLoss", average_ego_reconstruction_losses[step], train_step=step, commit=True)
+        logger.log_item("Train/EgoELBOLoss", average_ego_elbo_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoGradNorm", average_ego_grad_norms[step], train_step=step, commit=True)
         logger.log_item("Train/EgoEncoderGradNorm", average_ego_encoder_grad_norms[step], train_step=step, commit=True)
         logger.log_item("Train/EgoDecoderGradNorm", average_ego_decoder_grad_norms[step], train_step=step, commit=True)

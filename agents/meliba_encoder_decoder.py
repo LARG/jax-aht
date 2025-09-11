@@ -7,7 +7,8 @@ import flax.linen as nn
 import distrax
 
 from agents.rnn_actor_critic import ScannedRNN
-from marl.meliba_utils import DecoderScannedRNN, transform_timestep_to_batch_vmap, shift_padding_to_front_vectorized
+from marl.meliba_utils import DecoderScannedRNN, transform_timestep_to_batch_vmap
+from marl.meliba_utils import shift_padding_to_front_vectorized, fill_to_first_true
 
 def sample_gaussian(mu, logvar, prng_key):
     std = jnp.exp(0.5 * logvar)
@@ -115,20 +116,24 @@ class DecoderRNNNetwork(nn.Module):
         hidden = jnp.concatenate((agent_character_embed, mental_state), axis=-1)
         hidden = nn.Dense(self.hidden_dim)(hidden)
 
-        # jax.debug.breakpoint()
-
         # The batch dimension is the second dimension, we want to vmap over that.
-        # The batch referes to the different env instances.
-        def handle_batch(state_agent_embed, hidden, dones):
+        # The batch refers to the different env instances.
+        def handle_batch(state_agent_embed, hidden, dones, partner_actions):
 
             # Construct k trajectories
             k_state_agent_embed, valid_mask = transform_timestep_to_batch_vmap(state_agent_embed, pad_value=0.0, return_mask=True)
             k_hidden = transform_timestep_to_batch_vmap(hidden, pad_value=0.0, return_mask=False)
             k_dones = transform_timestep_to_batch_vmap(dones, pad_value=0.0, return_mask=False)
+            k_partner_actions = transform_timestep_to_batch_vmap(partner_actions, pad_value=0.0, return_mask=False)
+            k_partner_actions = jnp.squeeze(k_partner_actions, axis=-1)
+
+            # Mask to only consider elements before the first done
+            # Shape (127, 128)
+            episode_mask = fill_to_first_true(jnp.squeeze(k_dones, axis=-1))
 
             # state_agent_embed expected as 3D for RNN (128, 64) -> (128, 1, 64)
             # hidden expected as 2D for RNN (128, 64) -> hidden[0] (1, 64)
-            # dones (128, 1)
+            # dones expected as 2D for rnn (128, 1)
             def handle_k_trajectories(state_agent_embed, hidden, dones):
                 rnn_in = (jnp.expand_dims(state_agent_embed, axis=1), hidden, dones)
                 _, embedding = DecoderScannedRNN()(jnp.expand_dims(hidden[0], axis=0), rnn_in)
@@ -146,26 +151,28 @@ class DecoderRNNNetwork(nn.Module):
 
             # Mask out to only consider valid elements
             out = out * jnp.expand_dims(valid_mask, axis=-1)
-            out, _ = shift_padding_to_front_vectorized(out, valid_mask)
+            # out, _ = shift_padding_to_front_vectorized(out, valid_mask)
 
-            # Reduction: Sum over k trajectories
-            # Shape (128, 32)
-            out = jnp.sum(out, axis=0)
+            # Log likelihood
+            pi = distrax.Categorical(logits=out)
+            # Shape (127, 128)
+            log_prob = pi.log_prob(k_partner_actions)
 
-            return out
+            # Episode mask
+            # mask out everything after the first done
+            log_prob = log_prob * episode_mask
+
+            # Shape (128,)
+            log_prob_sum = jnp.sum(log_prob, axis=0)
+
+            return log_prob_sum
 
         # Shape (128, 2, 32)
-        vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1), 1)
-        out = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1))
+        vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1, 1), 1)
+        recon_loss = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1), jnp.expand_dims(partner_actions, axis=-1))
 
-        # Log likelihood
-        pi = distrax.Categorical(logits=out)
-        # Shape (128, 2)
-        log_prob = pi.log_prob(partner_actions)
-        # Shape (128,)
-        log_prob_sum = jnp.sum(log_prob, axis=-1)
-
-        return kl_loss, log_prob_sum
+        # kl_loss + and recon_loss -
+        return kl_loss, recon_loss
 
 class VariationalEncoderRNN():
     """Model wrapper for EncoderRNNNetwork."""
@@ -281,7 +288,7 @@ class Decoder():
         dummy_latent_logvar_t = jnp.zeros((1, batch_size, self.latent_logvar_t_dim))
         dummy_agent_character = jnp.zeros((1, batch_size, self.agent_character_dim))
         dummy_mental_state = jnp.zeros((1, batch_size, self.mental_state_dim))
-        dummy_partner_actions = jnp.zeros((1, batch_size, self.ouput_dim))
+        dummy_partner_actions = jnp.zeros((1, batch_size))
         dummy_done = jnp.zeros((1, batch_size))
 
         # TODO: Should be the state instead of obs
@@ -297,15 +304,12 @@ class Decoder():
                  agent_character, mental_state, partner_action, done):
 
         """Evaluate the decoder model with given parameters and inputs."""
-        kl_loss, log_prob_pred = self.model.apply(params, (state, latent_mean, latent_logvar,
+        kl_loss, recon_loss = self.model.apply(params, (state, latent_mean, latent_logvar,
                                                            latent_mean_t, latent_logvar_t,
                                                            agent_character, mental_state,
                                                            partner_action, done))
 
-        # TODO: Check sign of KL loss
-        elbo = (self.loss_coeff * log_prob_pred) - (self.kl_weight * kl_loss)
-
-        return log_prob_pred, kl_loss, elbo.mean()
+        return kl_loss, recon_loss.mean()
 
 def initialize_encoder_decoder(config, env, rng):
     """Initialize the Encoder and Decoder models with the given config.

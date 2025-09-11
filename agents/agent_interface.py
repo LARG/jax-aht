@@ -468,11 +468,12 @@ class LIAMPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
+        act, _, _ = aux_obs
 
         embbeding, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=jnp.concatenate((obs, aux_obs), axis=-1),
+            obs=jnp.concatenate((obs, act), axis=-1),
             done=done
         )
 
@@ -498,10 +499,12 @@ class LIAMPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
+        act, _, _ = aux_obs
+
         embbeding, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=jnp.concatenate((obs, aux_obs), axis=-1),
+            obs=jnp.concatenate((obs, act), axis=-1),
             done=done
         )
 
@@ -527,10 +530,12 @@ class LIAMPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
+        act, _, _ = aux_obs
+
         embbeding, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
             hstate=hstate[0],
-            obs=jnp.concatenate((obs, aux_obs), axis=-1),
+            obs=jnp.concatenate((obs, act), axis=-1),
             done=done
         )
 
@@ -598,7 +603,7 @@ class MeLIBAPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
-        act, reward = aux_obs
+        _, joint_act, reward = aux_obs
 
         rng, policy_rng, sample_key  = jax.random.split(rng, 3)
 
@@ -606,7 +611,7 @@ class MeLIBAPolicy(AgentPolicy):
             params=params['encoder'],
             hstate=hstate[0],
             state=obs,
-            act=act,
+            act=joint_act,
             reward=reward,
             done=done,
             sample_key=sample_key
@@ -634,7 +639,7 @@ class MeLIBAPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
-        act, reward = aux_obs
+        _, joint_act, reward = aux_obs
 
         rng, policy_rng, sample_key  = jax.random.split(rng, 3)
 
@@ -642,7 +647,7 @@ class MeLIBAPolicy(AgentPolicy):
             params=params['encoder'],
             hstate=hstate[0],
             state=obs,
-            act=act,
+            act=joint_act,
             reward=reward,
             done=done,
             sample_key=sample_key
@@ -669,7 +674,7 @@ class MeLIBAPolicy(AgentPolicy):
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
         """
-        act, reward = aux_obs
+        _, joint_act, reward = aux_obs
 
         rng, policy_rng, sample_key  = jax.random.split(rng, 3)
 
@@ -677,7 +682,7 @@ class MeLIBAPolicy(AgentPolicy):
             params=params['encoder'],
             hstate=hstate[0],
             state=obs,
-            act=act,
+            act=joint_act,
             reward=jnp.expand_dims(reward, axis=-1),
             done=done,
             sample_key=sample_key
@@ -695,7 +700,7 @@ class MeLIBAPolicy(AgentPolicy):
         )
 
         # Reconstruction Loss
-        log_prob_pred, kl_loss, elbo = self.decoder.evaluate(
+        kl_loss, recon_loss = self.decoder.evaluate(
             params=params['decoder'],
             state=obs,
             latent_mean=latent_mean,
@@ -708,4 +713,4 @@ class MeLIBAPolicy(AgentPolicy):
             done=done
         )
 
-        return action, val, pi, log_prob_pred, kl_loss, elbo, (new_encoder_hstate, new_policy_hstate)
+        return action, val, pi, kl_loss, recon_loss, (new_encoder_hstate, new_policy_hstate)

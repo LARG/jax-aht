@@ -162,7 +162,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     avail_actions=avail_actions_0,
                     hstate=ego_hstate,
                     rng=actor_rng,
-                    aux_obs=act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                    aux_obs=(act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1), None, None)
                 )
                 logp_0 = pi_0.log_prob(act_0)
 
@@ -255,7 +255,7 @@ def train_liam_ego_agent(config, env, train_rng,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
                         rng=jax.random.PRNGKey(0), # only used for action sampling, which is unused here
-                        aux_obs=traj_batch.prev_action_onehot,
+                        aux_obs=(traj_batch.prev_action_onehot, None, None),
                         modelled_agent_obs=traj_batch.partner_obs,
                         modelled_agent_act=traj_batch.partner_action_onehot
                     )
@@ -359,7 +359,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     avail_actions=jax.lax.stop_gradient(avail_actions_0),
                     hstate=ego_hstate,
                     rng=jax.random.PRNGKey(0),  # Dummy key since we're just extracting the value
-                    aux_obs=act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                    aux_obs=(act_onehot["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1), None, None)
                 )
                 last_val = last_val.squeeze()
                 advantages, targets = _calculate_gae(traj_batch, last_val)
