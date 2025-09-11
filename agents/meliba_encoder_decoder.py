@@ -154,8 +154,6 @@ class DecoderRNNNetwork(nn.Module):
 
             return out
 
-            # Reduction
-
         # Shape (128, 2, 32)
         vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1), 1)
         out = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1))
