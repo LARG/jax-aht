@@ -11,8 +11,8 @@ If you find this repository useful for your research, please cite,
   title = {JaxAHT},
   year = {2025},
   month = {September},
-  note = {Version 0.1.0},
-  url = {https://github.com/carolinewang01/jax-aht},
+  note = {Version 1.0.0},
+  url = {https://github.com/LARG/jax-aht},
 }
 ```
 
