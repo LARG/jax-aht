@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jax-aht"
-version = "0.1.0"
+version = "1.0.0"
 description = "JAX-based benchmark for Ad Hoc Teamwork research"
 authors = [{name = "Learning Agents Research Group"}]
 license = {text = "MIT"}
