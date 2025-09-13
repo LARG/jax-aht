@@ -149,21 +149,22 @@ class DecoderRNNNetwork(nn.Module):
             vmap_handle_k_trajectories = jax.vmap(handle_k_trajectories, (0, 0, 0), 0)
             out = vmap_handle_k_trajectories(k_state_agent_embed, k_hidden, k_dones)
 
-            # Mask out to only consider valid elements
-            out = out * jnp.expand_dims(valid_mask, axis=-1)
-            # out, _ = shift_padding_to_front_vectorized(out, valid_mask)
-
             # Log likelihood
             pi = distrax.Categorical(logits=out)
             # Shape (127, 128)
-            log_prob = pi.log_prob(k_partner_actions)
+            # Maximize the log prob of the partner actions
+            # so we minimize the negative log prob
+            log_prob = pi.log_prob(k_partner_actions) * -1
+
+            # Mask out to only consider valid elements
+            log_prob_pm = log_prob * valid_mask
 
             # Episode mask
             # mask out everything after the first done
-            log_prob = log_prob * episode_mask
+            log_prob_em = log_prob_pm * episode_mask
 
             # Shape (128,)
-            log_prob_sum = jnp.sum(log_prob, axis=0)
+            log_prob_sum = jnp.sum(log_prob_em, axis=0)
 
             return log_prob_sum
 
