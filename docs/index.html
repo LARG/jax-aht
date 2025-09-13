@@ -58,11 +58,11 @@
 	</style>
 </head>
 <body>
-	<header class="site">
+	<!-- <header class="site">
 		<div class="container inner">
 			<div class="brand">JaxAHT</div>
 		</div>
-	</header>
+	</header> -->
 
 	<main>
 		<section class="hero" id="overview">
@@ -83,19 +83,19 @@
 
 		<section class="section" id="abstract">
 			<div class="container">
-				<p>The development and systematic evaluation of Ad Hoc Teamwork (AHT) agents is often hampered by the lack of standardized AHT algorithm implementations and reproducible evaluation pipelines. Our benchmark solves this by providing standardized ready-to-use implementations of common teammate generation methods, RL-based ego agent training algorithms, and a diverse set of AHT environments within one benchmark tool. Built with JAX for speed, it makes training and evaluation of even computationally intensive AHT methods relying on multi-agent RL methods practical and scalable. With transparent evaluation protocols and strong baselines, researchers and practitioners can easily test new ideas, replicate prior work, and make fair comparisons. This benchmark lowers the barrier to entry, accelerates iteration, and provides a reliable foundation for advancing AHT research.</p>
-				<h3>Why should you refer to our AHT benchmark suite?</h3>
+				<p>The development and evaluation of ad hoc teamwork (AHT) agents are often hindered by the lack of standardized implementations and reproducible evaluation pipelines, making it difficult to compare methods or build upon prior work. Experimentation is also often slow due to the lengthy reinforcement learning training periods required for many parts of the AHT training workflow, such as teammate generation or ego agent training.</p>
+				<p>The <strong>JaxAHT</strong> library addresses these challenges by introducing:</p>
 				<ul>
-					<li>(Algorithm & Environments Implementation) There's a lack of open & standardized implementations of existing AHT algorithms & environments, which makes it challenging for people to develop new AHT algorithms and verify their effectiveness. We particularly populate our benchmark with the implementation of various types of teammate generation and RL-based ego agent training algorithms that users can compare against. We also provide implementation of wide range of AHT environments.</li>
-					<li>(Systematic Evaluation - Teammate Policy) The performance of AHT agents during evaluation depends on the teammates being encountered. Given that teammate policies used during evaluation may not be openly disclosed (i.e., sometimes only descriptions of their characteristics or training process are provided), exact replication of the evaluation protocol from one paper may not be possible.</li>
-					<li>(Systematic Evaluation - Human Data to design ego agents that can perform well against humans - Perhaps later if we actually want to include human data as part of the )</li>
-					<li>(Systematic Evaluation - Metric/Eval Protocol - Perhaps later if we propose a new metric/eval protocol that gives more insight that previous methods)</li>
-					<li>(Computational Efficiency for Training & Evaluation - JAX) Given that existing AHT methods often rely on computationally intensive model-free (multi-agent) RL training, which sometimes even train a large set of policies at once (e.g., teammate generation algorithms), we must use JAX to accelerate the intensive data collection and learning process undergone by existing algorithms during training & evaluation.</li>
+					<li><strong>A unified benchmark</strong> with transparent evaluation protocols and strong baselines for fair, replicable research.</li>
+					<li><strong>A Jax-based implementation of various AHT methods</strong>, which is significantly faster than previous PyTorch/Tensorflow implementations.</li>
+					<li><strong>A shared agent interface</strong> that allows agents trained by one algorithm to be seamlessly reused in other parts of the AHT workflow (i.e., teammate generation to ego agent training).</li>
+					<li><strong>A single-file implementation style</strong> inspired by JaxMARL and CleanRL, which makes it easier for users to understand and build upon the implemented AHT methods.</li>
 				</ul>
+				<p>These design choices lower the barrier to entry, enable faster iterations through the AHT agent development process (i.e., code implementation, training, and evaluation), and provide a reliable foundation for advancing AHT research.</p>
 			</div>
 		</section>
 
-		<section class="section" id="design">
+		<!-- <section class="section" id="design">
 			<div class="container grid">
 				<div class="card">
 					<h3>What this benchmark provides</h3>
@@ -131,13 +131,14 @@
 				<h2>Baselines</h2>
 				<p>Ships with strong baselines and clear evaluation recipes to ensure fair, apples-to-apples comparisons.</p>
 			</div>
-		</section>
+		</section> -->
 
 		<section class="section" id="resources">
 			<div class="container grid">
 				<div class="card">
 					<h3>Project Links</h3>
 					<ul>
+						<li><a href="https://github.com/LARG/jax-aht">Code (GitHub)</a></li>
 						<li><a href="#">Paper (arXiv)</a> — coming soon</li>
 						<li><a href="#citation">BibTeX</a></li>
 					</ul>
