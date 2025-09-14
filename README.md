@@ -73,8 +73,8 @@ Our modularization is restricted to environments, agents, and populations, which
   - [💡Algorithm Implementations](#-algorithm-implementations)
     - [Running an Algorithm on a Task](#running-an-algorithm-on-a-task)
     - [Logging](#-logging)
-  - [🤖Agents](#-agents)
-  - [🧑‍🤝‍🧑 MARL (IPPO)](#-marl-ippo)
+  - [🤖 Agents](#-agents)
+  - [🚶Loading Teammates](#-loading-teammates)
   - [🌳 Environments](#-environments)
     - [Level-Based-Foraging (LBF)](#lbf)
     - [Overcooked-v1](#overcooked-v1)
@@ -196,13 +196,16 @@ The `agents/` directory contains:
 You can test the Overcooked heuristic agents by running, `python tests/test_overcooked_agents.py`,
 and the LBF heuristic agents by running, `python tests/test_lbf_agents.py`.
 
-### 🧑‍🤝‍🧑 MARL (IPPO)
-The `marl/` directory stores our IPPO implementation.
-To run it with wandb logging and using the configs, run:
-```bash
-python marl/run.py task=lbf algorithm=ippo/lbf
-```
-Results are logged via wandb, but can also be viewed locally in the `results/` directory.
+### 🚶 Loading Teammates
+
+Certain workflows within this project (namely, ego agent training, heldout evaluation) require teammate policies as inputs. The user may provide these teammate policies by specifying a *partner config* that may point to heuristic or RL-based partner policies. 
+
+By default, the heldout evaluation workflow uses the downloaded evaluation teammates, and the corresponding partner config is specified at `evaluation/configs/global_heldout_settings.yaml` --- thus, no intervention from the user is necessary to perform heldout evaluations. 
+
+However, the ego agent training workflow **requires** the user to specify a partner agent config. 
+A quick example of how to run an ego agent training algorithm with particular partner config is provided in our tutorial notebook. 
+More details on how to specify the partner config are provided at the top of the ego agent training scripts.
+
 
 ### 🌳 Environments
 #### Level-Based Foraging (LBF)

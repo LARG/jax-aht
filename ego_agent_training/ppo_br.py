@@ -1,5 +1,9 @@
-'''Train an ego agent against a single partner agent.
-Supports both RL and heuristic partner agents.
+'''Train an ego agent against a *single* partner agent.
+Supports training against both RL and heuristic partner agents.
+
+If running the script directly, please specify a partner agent config at 
+`ego_agent_training/configs/algorithm/ppo_br/_base_.yaml`.
+
 '''
 from functools import partial
 import time

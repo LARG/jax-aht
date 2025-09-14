@@ -1,10 +1,10 @@
 '''
-Script for training a PPO ego agent against a population of homogeneous partner agents. 
+Script for training a PPO ego agent against a *population* of homogeneous, RL-based partner agents. 
+Does not support training against heuristic partner agents. 
+**Warning**: modify with caution, as this script is used as the main script for ego training throughout the project.
 
-Only supports training against a population of homogeneous RL partner agents.
-Warning: modify with caution, as this script is used as the main script for ego training throughout the project.
-
-If running the script directly, please specify the algorithm.partner_agent config argument (see README.md for more details).
+If running the script directly, please specify a partner agent config at 
+`ego_agent_training/configs/algorithm/ppo_ego/_base_.yaml`.
 
 Command to run PPO ego training:
 python ego_agent_training/run.py algorithm=ppo_ego/lbf task=lbf label=test_ppo_ego
