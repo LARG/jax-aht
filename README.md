@@ -1,7 +1,7 @@
 # jax-aht
 
 Welcome to JaxAHT! This is a Jax-based benchmark repository for Ad Hoc Teamwork. 
-For a quick introduction to the benchmark, please see our [Colab tutorial notebook](docs/JaxAHT_Tutorial.ipynb). 
+For a quick introduction to the benchmark, please see our [Colab tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb). 
 
 
 If you find this repository useful for your research, please cite, 
