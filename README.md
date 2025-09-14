@@ -86,8 +86,8 @@ Our modularization is restricted to environments, agents, and populations, which
 
 Follow instructions at [docs/install_instructions.md](docs/install_instructions.md) to install the necessary libraries.
 
-Evaluating trained agents against the heldout evaluation set (referred to as $\Pi^\text{eval}$ in the paper) requires downloading the evaluation agents.
-Reproducing the plots from the paper requires the computed best returns achieved against each evaluation agent, which are stated in the paper appendix.
+Evaluating trained agents against the heldout evaluation set requires downloading the evaluation agents. 
+We also provide the best returns achieved against each evaluation agent in our experiments. 
 Directories containing both data can be obtained by running the provided data download script:
 ```python
 python download_eval_data.py

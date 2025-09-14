@@ -1,8 +1,10 @@
 '''
 Script for training a PPO ego agent against a population of homogeneous partner agents. 
 
-Only supports a population of homogeneous RL partner agents.
+Only supports training against a population of homogeneous RL partner agents.
 Warning: modify with caution, as this script is used as the main script for ego training throughout the project.
+
+If running the script directly, please specify the algorithm.partner_agent config argument (see README.md for more details).
 
 Command to run PPO ego training:
 python ego_agent_training/run.py algorithm=ppo_ego/lbf task=lbf label=test_ppo_ego
@@ -450,8 +452,12 @@ def run_ego_training(config, wandb_logger):
     
 
     partner_agent_config = dict(algorithm_config["partner_agent"])
+    assert len(partner_agent_config) == 1, "Only supports training against one type of partner agent."
+    
+    partner0_name = list(partner_agent_config.keys())[0]
+    partner0_agent_config = list(partner_agent_config.values())[0]
     partner_policy, partner_params, init_partner_params, idx_labels = initialize_rl_agent_from_config(
-        partner_agent_config, partner_agent_config["name"], env, init_partner_rng)
+        partner0_agent_config, partner0_name, env, init_partner_rng)
 
     flattened_partner_params = jax.tree.map(lambda x, y: x.reshape((-1,) + y.shape), partner_params, init_partner_params)        
     pop_size = jax.tree.leaves(flattened_partner_params)[0].shape[0]
