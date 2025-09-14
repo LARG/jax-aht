@@ -29,7 +29,7 @@ matplotlib
 wandb
 omegaconf
 hydra-core
-gdown
+huggingface-hub
 
 jumanji==1.1.0
 jaxmarl==0.0.7

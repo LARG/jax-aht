@@ -42,7 +42,7 @@ dependencies = [
     "wandb",
     "omegaconf",
     "hydra-core",
-    "gdown",
+    "huggingface-hub",
     # Environment dependencies
     "jumanji==1.1.0",
     "jaxmarl==0.0.7",
