@@ -45,22 +45,22 @@ Our modularization is restricted to environments, agents, and populations, which
 
 | Category | Algorithm | Description | Paper |
 |----------|-----------|-------------|-------|
-| **Ego Agent Training** | PPO Ego | Trains a PPO agent against a population of homogeneous partner agents | - |
-| **Teammate Generation** | FCP (Fictitious Co-Play) | Generates diverse teammates using fictitious play | [Strouse et al. NeurIPS 2021](https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html) |
-| | BRDiv | Generates diverse teammates using best response diversity | - |
-| | LBRDiv | Level-based version of BRDiv for hierarchical environments | - |
-| | CoMeDi | Generates diverse teammates using cooperative meta-diversity | - |
-| **MARL** | IPPO | Multi-agent reinforcement learning using independent PPO agents with parameter sharing | - |
-| **Open-Ended Training** | ROTATE | Open-ended training using regret maximization | [Wang et al. 2025](https://arxiv.org/abs/2505.23686) |
-| | PAIRED | Open-ended training using paired adversarial training | - |
-| | Open-Ended Minimax | Open-ended training using minimax optimization | - |
+| **Ego Agent Training** | PPO Ego | Trains a PPO agent against a population of homogeneous partner agents. | - |
+| **Teammate Generation** | FCP (Fictitious Co-Play) | Generates diverse teammates using varying seeds and checkpoints of IPPO. | [Strouse et al. 2021](https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html) |
+| | BRDiv | Generates diverse teammates using best response diversity (BRDiv) metric. | [Rahman et al. 2022](https://arxiv.org/abs/2207.14138) |
+| | LBRDiv | Generates diverse teammates via emulating the minimum coverage set. | [Rahman et al. 2024](https://arxiv.org/abs/2308.09595) |
+| | CoMeDi | Generates diverse teammates by optimizing mixed-play. | [Sarkar et al. 2023](https://arxiv.org/pdf/2310.15414) |
+| **MARL** | IPPO | Multi-agent reinforcement learning using independent PPO agents with parameter sharing | [Yu et al. 2022](https://arxiv.org/abs/2103.01955) |
+| **Open-Ended Training** | ROTATE | Open-ended training using cooperative regret maximization | [Wang et al. 2025](https://arxiv.org/abs/2505.23686) |
+| | PAIRED | Open-ended training based on the PAIRED algorithm from the unsupervised environment design literature. | [Dennis et al. 2020](https://arxiv.org/abs/2012.02096) |
+| | Open-Ended Minimax | Open-ended training baseline using minimax return optimization. | - |
 
 ### Supported Environments
 
 | Environment | Source | Description | Variants | Evaluation Teammates | 
 |-------------|--------|-------------|----------|----------------------|
-| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | 7x7 grid with full observability | :heavy_check_mark: |
-| **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | :heavy_check_mark: | 
+| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | 7x7 grid with full observability | ✅ |
+| **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | ✅  | 
 
 
 ##  Table of Contents
