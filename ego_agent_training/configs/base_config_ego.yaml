@@ -27,13 +27,13 @@ name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.EGO_ACTOR_TYPE}/${label}
 
 # WandB Params
 logger:
-  project: aht-liam-test
-  entity: aht-project-test
+  project: aht-benchmark
+  entity: aht-project
   tags:
     - ${algorithm.ALG}
     - ${TASK_NAME}
     - ${label}
-  mode: online # options: online, offline, disabled
+  mode: offline # options: online, offline, disabled
   verbose: false
   log_train_out: true # whether to log the out dictionary
   log_eval_out: true # whether to log the eval metrics
