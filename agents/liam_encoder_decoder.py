@@ -9,6 +9,11 @@ from agents.rnn_actor_critic import ScannedRNN
 from agents.s5_actor_critic import SequenceLayer
 
 class ScannedLSTM(nn.Module):
+    """
+    A LSTM module that can be scanned over time.
+
+    It resets its state based on the `dones` signal
+    """
     @functools.partial(
         nn.scan,
         variable_broadcast="params",
@@ -28,7 +33,7 @@ class ScannedLSTM(nn.Module):
         )
         lstm_state_1 = jnp.where(
             dones[:, np.newaxis],
-            self.initialize_carry(*lstm_state[0].shape)[1],
+            self.initialize_carry(*lstm_state[1].shape)[1],
             lstm_state[1],
         )
         new_lstm_state, y = nn.OptimizedLSTMCell(features=ins.shape[1])((lstm_state_0, lstm_state_1), ins)
@@ -41,11 +46,31 @@ class ScannedLSTM(nn.Module):
         return cell.initialize_carry(jax.random.PRNGKey(0), (batch_size, hidden_size))
 
 class EncoderLSTMNetwork(nn.Module):
+    """
+    LSTM-based encoder network.
+
+    Args:
+        hidden_dim: int, dimension of the hidden layers
+        ouput_dim: int, dimension of the output embedding
+    """
     hidden_dim: int
     ouput_dim: int
 
     @nn.compact
     def __call__(self, hidden, x):
+        """
+        Forward pass of the LSTM-based encoder network.
+
+        Args:
+            hidden: tuple of (h, c) where each is jnp.array of shape (batch_size, hidden_dim)
+            x: tuple of (obs, dones) where
+                obs: jnp.array of shape (time, batch_size, obs_dim)
+                dones: jnp.array of shape (time, batch_size)
+
+        Returns:
+            new_hidden: tuple of (h, c) where each is jnp.array of shape (batch_size, hidden_dim)
+            embedding: jnp.array of shape (time, batch_size, ouput_dim)
+        """
         obs, dones = x
         lstm_in = (obs, dones)
         hidden, embedding = ScannedLSTM()(hidden, lstm_in)
@@ -55,11 +80,31 @@ class EncoderLSTMNetwork(nn.Module):
         return hidden, embedding
 
 class EncoderRNNNetwork(nn.Module):
+    """
+    RNN-based encoder network.
+
+    Args:
+        hidden_dim: int, dimension of the hidden layers
+        ouput_dim: int, dimension of the output embedding
+    """
     hidden_dim: int
     ouput_dim: int
 
     @nn.compact
     def __call__(self, hidden, x):
+        """
+        Forward pass of the RNN-based encoder network.
+
+        Args:
+            hidden: jnp.array of shape (batch_size, hidden_dim)
+            x: tuple of (obs, dones) where
+                obs: jnp.array of shape (time, batch_size, obs_dim)
+                dones: jnp.array of shape (time, batch_size)
+
+        Returns:
+            new_hidden: jnp.array of shape (batch_size, hidden_dim)
+            embedding: jnp.array of shape (time, batch_size, ouput_dim)
+        """
         obs, dones = x
         rnn_in = (obs, dones)
         hidden, embedding = ScannedRNN()(hidden, rnn_in)
@@ -68,27 +113,30 @@ class EncoderRNNNetwork(nn.Module):
         embedding = nn.Dense(self.ouput_dim)(embedding)
         return hidden, embedding
 
-class EncoderS5Network(nn.Module):
-    hidden_dim: int
-    ouput_dim: int
-
-    @nn.compact
-    def __call__(self, hidden, x):
-        obs, dones = x
-        # TODO: Fix S5 initialization
-        hidden, embedding = SequenceLayer()(hidden, obs, dones)
-        embedding = nn.Dense(self.hidden_dim)(embedding)
-        embedding = nn.relu(embedding)
-        embedding = nn.Dense(self.ouput_dim)(embedding)
-        return hidden, embedding
-
 class DecoderNetwork(nn.Module):
+    """
+    Decoder network.
+
+    Args:
+        hidden_dim: int, dimension of the hidden layers
+        ouput_dim1: int, dimension of the output for the reconstruction of observations
+        ouput_dim2: int, dimension of the output for the reconstruction of partner actions
+    """
     hidden_dim: int
     ouput_dim1: int
     ouput_dim2: int
 
     @nn.compact
     def __call__(self, x):
+        """
+        Forward pass of the decoder network.
+
+        Args:
+            x: jnp.array of shape (batch_size, embedding_dim)
+
+        Returns:
+            out: jnp.array of shape (batch_size, ouput_dim1)
+            prob1: jnp.array of shape (batch_size, ouput_dim2)"""
         h1 = nn.Dense(self.hidden_dim)(x)
         h1 = nn.relu(h1)
         h1 = nn.Dense(self.hidden_dim)(h1)
@@ -210,48 +258,6 @@ class EncoderRNN():
         new_hstate, embedding = self.model.apply(params, hstate.squeeze(0), (obs, done))
 
         return embedding, new_hstate.reshape(1, batch_size, -1)
-
-# TODO: Fix S5 encoder
-class EncoderS5():
-    """Model wrapper for EncoderS5Network."""
-
-    def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
-        """
-        Args:
-            action_dim: int, dimension of the action space
-            obs_dim: int, dimension of the observation space
-            hidden_dim: int, dimension of the encoder hidden layers
-            ouput_dim: int, dimension of the encoder output
-        """
-        self.model = EncoderS5Network(hidden_dim, ouput_dim)
-        self.action_dim = action_dim
-        self.obs_dim = obs_dim
-        self.s5_hidden_dim = hidden_dim
-
-    def init_hstate(self, batch_size=1, aux_info=None):
-        """Initialize hidden state for the encoder S5."""
-        hstate =  SequenceLayer.initialize_carry(batch_size, self.s5_hidden_dim)
-        return hstate
-
-    def init_params(self, rng):
-        """Initialize parameters for the encoder model."""
-        batch_size = 1
-        # Initialize hidden state
-        init_hstate = self.init_hstate(batch_size=batch_size)
-
-        # Create dummy inputs - add time dimension
-        dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
-        dummy_act = jnp.zeros((1, batch_size, self.action_dim))
-        dummy_done = jnp.zeros((1, batch_size))
-        dummy_x = (jnp.concatenate((dummy_obs, dummy_act), axis=-1), dummy_done)
-
-        # Initialize model
-        return self.model.init(rng, init_hstate, dummy_x)
-
-    @functools.partial(jax.jit, static_argnums=(0,))
-    def compute_embedding(self, params, hstate, obs, done):
-        """Embed observations using the encoder model."""
-        return self.model.apply(params, hstate, (obs, done))
 
 class Decoder():
     """Model wrapper for DecoderNetwork."""

@@ -7,21 +7,48 @@ import flax.linen as nn
 import distrax
 
 from agents.rnn_actor_critic import ScannedRNN
-from marl.meliba_utils import DecoderScannedRNN, transform_timestep_to_batch_vmap
-from marl.meliba_utils import shift_padding_to_front_vectorized, fill_to_first_true
+from marl.meliba_utils import DecoderScannedRNN, transform_timestep_to_k_batch
+from marl.meliba_utils import fill_to_first_true
 
 def sample_gaussian(mu, logvar, prng_key):
+    """
+    Reparameterization trick to sample from N(mu, var) from N(0,1).
+
+    Args:
+        mu: jnp.array, mean of the gaussian
+        logvar: jnp.array, log variance of the gaussian
+        prng_key: jax.random.PRNGKey, random key for sampling
+
+    Returns:
+        sample: jnp.array, sampled value
+    """
+    # Sample noise
     std = jnp.exp(0.5 * logvar)
     eps = jax.random.normal(prng_key, std.shape)
     return (eps * std) + mu
 
 class FeatureExtractor(nn.Module):
-    """ Used for extrating features for states/actions/rewards """
+    """
+    Used for extrating features for states/actions/rewards
+
+    Args:
+        output_size: int, size of the output features
+        activation_function: callable, activation function to use (default: None)
+    """
     output_size: int
     activation_function: callable = None
 
     @nn.compact
     def __call__(self, inputs):
+        """
+        Extract features from inputs.
+
+        Args:
+            inputs: jnp.array, input features
+
+        Returns:
+            features: jnp.array, extracted features
+        """
         if self.output_size != 0:
             features = nn.Dense(self.output_size)(inputs)
             if self.activation_function is not None:
@@ -31,6 +58,18 @@ class FeatureExtractor(nn.Module):
             return jnp.zeros(0, )
 
 class VariationalEncoderRNNNetwork(nn.Module):
+    """
+    Variational Encoder RNN Network for encoding states, actions, and rewards into a latent space
+    using an RNN.
+
+    Args:
+        state_embed_dim: int, dimension of the state embedding
+        action_embed_dim: int, dimension of the action embedding
+        reward_embed_dim: int, dimension of the reward embedding
+        layer_before_rnn: int, dimension of the layer before the RNN
+        layer_after_rnn: int, dimension of the layer after the RNN
+        latent_dim: int, dimension of the latent space
+    """
     state_embed_dim: int
     action_embed_dim: int
     reward_embed_dim: int
@@ -40,12 +79,35 @@ class VariationalEncoderRNNNetwork(nn.Module):
 
     @nn.compact
     def __call__(self, hidden, x):
+        """
+        Forward pass of the Variational Encoder RNN Network. Encodes the input sequences into a latent space.
+
+        Args:
+            hidden: jnp.array, hidden state of the RNN
+            x: tuple, containing states, actions, rewards, dones, and prng_key
+               - states: jnp.array, shape (time, batch, state_dim)
+               - actions: jnp.array, shape (time, batch, action_dim)
+               - rewards: jnp.array, shape (time, batch, 1)
+               - dones: jnp.array, shape (time, batch)
+               - prng_key: jax.random.PRNGKey, random key for sampling
+
+        Returns:
+            new_hidden: jnp.array, updated hidden state of the RNN
+            (latent_sample, latent_mean, latent_logvar, latent_sample_t, latent_mean_t, latent_logvar_t): tuple of jnp.array
+                - latent_sample: jnp.array, sampled latent variable for agent character
+                - latent_mean: jnp.array, mean of the latent variable for agent character
+                - latent_logvar: jnp.array, log variance of the latent variable for agent character
+                - latent_sample_t: jnp.array, sampled latent variable for mental state
+                - latent_mean_t: jnp.array, mean of the latent variable for mental state
+                - latent_logvar_t: jnp.array, log variance of the latent variable for mental state
+        """
         states, actions, rewards, dones, prng_key = x
 
+        # Embed inputs
+        # Shapes are (time, batch, dim)
         action_embed = FeatureExtractor(self.action_embed_dim, nn.relu)(actions)
         state_embed = FeatureExtractor(self.state_embed_dim, nn.relu)(states)
         reward_embed = FeatureExtractor(self.reward_embed_dim, nn.relu)(rewards)
-
         embedding = jnp.concatenate((action_embed, state_embed, reward_embed), axis=-1)
 
         # def n_dense(x, hidden_dim):
@@ -53,23 +115,29 @@ class VariationalEncoderRNNNetwork(nn.Module):
         #     x = nn.relu(x)
         #     return x
 
+        # Apply layers before RNN
         # embedding = jax.lax.scan(n_dense, embedding, self.layers_before_rnn)
         embedding = nn.Dense(self.layers_before_rnn)(embedding)
         embedding = nn.relu(embedding)
 
+        # RNN
         rnn_in = (embedding, dones)
         hidden, embedding = ScannedRNN()(hidden, rnn_in)
 
+        # Apply layers after RNN
         # embedding = jax.lax.scan(n_dense, embedding, self.layers_after_rnn)
         embedding = nn.Dense(self.layers_after_rnn)(embedding)
         embedding = nn.relu(embedding)
 
+        # Create separate keys for sampling
         prng_key, agent_character_key, mental_state_key = jax.random.split(prng_key, 3)
 
+        # Latent space for the agetn character
         latent_mean = nn.Dense(self.latent_dim)(embedding)
         latent_logvar = nn.Dense(self.latent_dim)(embedding)
         latent_sample = sample_gaussian(latent_mean, latent_logvar, agent_character_key)
 
+        # Latent space for the mental state
         latent_mean_t = nn.Dense(self.latent_dim)(embedding)
         latent_logvar_t = nn.Dense(self.latent_dim)(embedding)
         latent_sample_t = sample_gaussian(latent_mean_t, latent_logvar_t, mental_state_key)
@@ -77,6 +145,15 @@ class VariationalEncoderRNNNetwork(nn.Module):
         return hidden, (latent_sample, latent_mean, latent_logvar, latent_sample_t, latent_mean_t, latent_logvar_t)
 
 class DecoderRNNNetwork(nn.Module):
+    """
+    Decoder RNN Network for reconstructing partner actions from the latent representations and other inputs.
+
+    Args:
+        state_embed_dim: int, dimension of the state embedding
+        agent_character_embed_dim: int, dimension of the agent character embedding
+        hidden_dim: int, dimension of the hidden layers
+        ouput_dim: int, dimension of the output layer
+    """
     state_embed_dim: int
     agent_character_embed_dim: int
     hidden_dim: int
@@ -84,8 +161,29 @@ class DecoderRNNNetwork(nn.Module):
 
     @nn.compact
     def __call__(self, x):
+        """
+        Forward pass of the Decoder RNN Network. Reconstructs partner actions from the latent representations
+        and other inputs.
+
+        Args:
+            x: tuple, containing states, latent means and logvars, agent character, mental state,
+               partner actions, and dones
+               - states: jnp.array, shape (time, batch, state_dim)
+               - latent_mean: jnp.array, shape (time, batch, latent_dim)
+               - latent_logvar: jnp.array, shape (time, batch, latent_dim)
+               - latent_mean_t: jnp.array, shape (time, batch, latent_dim)
+               - latent_logvar_t: jnp.array, shape (time, batch, latent_dim)
+               - agent_character: jnp.array, shape (time, batch, agent_character_dim)
+               - mental_state: jnp.array, shape (time, batch, mental_state_dim)
+               - partner_actions: jnp.array, shape (time, batch)
+               - dones: jnp.array, shape (time, batch)
+
+        Returns:
+            kl_loss: jnp.array, KL divergence loss
+            recon_loss: jnp.array, reconstruction loss (negative log likelihood of partner actions)
+        """
+        # Shapes are (time, batch, dim), except partner_actions and dones which are (time, batch)
         state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t, agent_character, mental_state, partner_actions, dones = x
-        # Sizes are (time, batch, dim), except partner_actions and ones which are (time, batch)
 
         # Compute KL divergence
         latent_mean_all = jnp.concatenate((latent_mean, latent_mean_t), axis=-1)
@@ -107,34 +205,65 @@ class DecoderRNNNetwork(nn.Module):
         kl_loss = kl_loss.sum(axis=0).mean()
 
         # MeLIBA decoder
+        # Embed inputs
         state_embed = FeatureExtractor(self.state_embed_dim, nn.relu)(state)
         agent_character_embed = FeatureExtractor(self.agent_character_embed_dim, nn.relu)(agent_character)
 
+        # Contruct state_agent_embedding
+        # Combine state_embed and agent_character_embed
         state_agent_embed = jnp.concatenate((state_embed, agent_character_embed), axis=-1)
         state_agent_embed = nn.Dense(self.hidden_dim)(state_agent_embed)
 
+        # Construct initial hidden states for the RNN
+        # Combine agent_character_embedding and mental_state
         hidden = jnp.concatenate((agent_character_embed, mental_state), axis=-1)
         hidden = nn.Dense(self.hidden_dim)(hidden)
 
         # The batch dimension is the second dimension, we want to vmap over that.
         # The batch refers to the different env instances.
         def handle_batch(state_agent_embed, hidden, dones, partner_actions):
+            """
+            vmap over the batch dimension.
 
+            Handle a single batch (env instance) by constructing k trajectories and processing them.
+
+            Args:
+                state_agent_embed: jnp.array, shape (time, state_agent_embed_dim)
+                hidden: jnp.array, shape (time, hidden_dim,)
+                dones: jnp.array, shape (time, 1)
+                partner_actions: jnp.array, shape (time, 1)
+
+            Returns:
+                log_prob_sum: jnp.array, shape (1,), sum of negative log probabilities of partner actions
+            """
             # Construct k trajectories
-            k_state_agent_embed, valid_mask = transform_timestep_to_batch_vmap(state_agent_embed, pad_value=0.0, return_mask=True)
-            k_hidden = transform_timestep_to_batch_vmap(hidden, pad_value=0.0, return_mask=False)
-            k_dones = transform_timestep_to_batch_vmap(dones, pad_value=0.0, return_mask=False)
-            k_partner_actions = transform_timestep_to_batch_vmap(partner_actions, pad_value=0.0, return_mask=False)
+            k_state_agent_embed, valid_mask = transform_timestep_to_k_batch(state_agent_embed, pad_value=0.0, return_mask=True)
+            k_hidden = transform_timestep_to_k_batch(hidden, pad_value=0.0, return_mask=False)
+            k_dones = transform_timestep_to_k_batch(dones, pad_value=0.0, return_mask=False)
+            k_partner_actions = transform_timestep_to_k_batch(partner_actions, pad_value=0.0, return_mask=False)
             k_partner_actions = jnp.squeeze(k_partner_actions, axis=-1)
 
             # Mask to only consider elements before the first done
             # Shape (127, 128)
             episode_mask = fill_to_first_true(jnp.squeeze(k_dones, axis=-1))
 
-            # state_agent_embed expected as 3D for RNN (128, 64) -> (128, 1, 64)
-            # hidden expected as 2D for RNN (128, 64) -> hidden[0] (1, 64)
-            # dones expected as 2D for rnn (128, 1)
             def handle_k_trajectories(state_agent_embed, hidden, dones):
+                """
+                vmap over the k trajectories.
+
+                Handle a single trajectory by passing it through the RNN and outputting logits.
+
+                state_agent_embed expected as 3D for RNN (128, 64) -> (128, 1, 64)
+                hidden expected as 2D for RNN (128, 64) -> hidden[0] (1, 64)
+                dones expected as 2D for rnn (128, 1)
+
+                Args:
+                    state_agent_embed: jnp.array, shape (time, state_agent_embed_dim)
+                    hidden: jnp.array, shape (time, hidden_dim,)
+                    dones: jnp.array, shape (time, 1)
+
+                Returns:
+                    out: jnp.array, shape (time, ouput_dim), logits for partner actions"""
                 rnn_in = (jnp.expand_dims(state_agent_embed, axis=1), hidden, dones)
                 _, embedding = DecoderScannedRNN()(jnp.expand_dims(hidden[0], axis=0), rnn_in)
 
@@ -172,7 +301,6 @@ class DecoderRNNNetwork(nn.Module):
         vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1, 1), 1)
         recon_loss = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1), jnp.expand_dims(partner_actions, axis=-1))
 
-        # kl_loss + and recon_loss -
         return kl_loss, recon_loss
 
 class VariationalEncoderRNN():

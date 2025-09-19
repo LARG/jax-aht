@@ -432,8 +432,9 @@ class LIAMPolicy(AgentPolicy):
     def __init__(self, policy, encoder, decoder):
         """
         Args:
-            encoder: Encoder, the encoder model
-            decoder: Decoder, the decoder model
+            policy: the policy model
+            encoder: the LIAM encoder model
+            decoder: the LIAM decoder model
         """
         super().__init__(action_dim=policy.action_dim, obs_dim=policy.obs_dim)
         self.policy = policy
@@ -441,7 +442,14 @@ class LIAMPolicy(AgentPolicy):
         self.decoder = decoder
 
     def init_hstate(self, batch_size=1, aux_info=None):
-        """Initialize hidden state for the LIAM policy.
+        """
+        Initialize hidden state for the LIAM policy.
+
+        Args:
+            batch_size: int, the batch size of the hidden state
+            aux_info: any auxiliary information needed to initialize the hidden state at the
+            start of an episode
+
         Returns:
             hstate: tuple of (encoder_hstate, policy_hstate)
         """
@@ -450,7 +458,12 @@ class LIAMPolicy(AgentPolicy):
         return (encoder_hstate, policy_hstate)
 
     def init_params(self, rng):
-        """Initialize parameters for the LIAM policy.
+        """
+        Initialize parameters for the LIAM policy.
+
+        Args:
+            rng: jax.random.PRNGKey, random key for initialization
+
         Returns:
             params: dict, containing encoder and policy parameters
         """
@@ -463,10 +476,27 @@ class LIAMPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
                    aux_obs=None, env_state=None, test_mode=False):
-        """Get actions for the LIAM policy.
+        """
+        Get actions for the LIAM policy.
+
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
+
+        Args:
+            params: dict, containing encoder and policy parameters
+            obs: jnp.Array, the observation
+            done: jnp.Array, the done flag
+            avail_actions: jnp.Array, the available actions
+            hstate: tuple(jnp.Array, jnp.Array), the hidden state for the encoder and policy
+            rng: jax.random.PRNGKey, random key for action sampling
+            aux_obs: tuple of auxiliary observations i.e. (act, joint_act, reward)
+            env_state: jnp.Array, the environment state
+            test_mode: bool, whether to use deterministic action selection
+
+        Returns:
+            action: jnp.Array, the selected action
+            new_hstate: tuple(jnp.Array, jnp.Array), the new hidden state for the encoder and policy
         """
         act, _, _ = aux_obs
 
@@ -494,10 +524,28 @@ class LIAMPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng,
                                 aux_obs=None, env_state=None):
-        """Get actions, values, and policy for the lIAM policy.
+        """
+        Get actions, values, and policy for the lIAM policy.
+
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
+
+        Args:
+            params: dict, containing encoder and policy parameters
+            obs: jnp.Array, the observation
+            done: jnp.Array, the done flag
+            avail_actions: jnp.Array, the available actions
+            hstate: tuple(jnp.Array, jnp.Array), the hidden state for the encoder and policy
+            rng: jax.random.PRNGKey, random key for action sampling
+            aux_obs: tuple of auxiliary observations i.e. (act, joint_act, reward)
+            env_state: jnp.Array, the environment state
+
+        Returns:
+            action: jnp.Array, the selected action
+            val: jnp.Array, the value estimate
+            pi: jnp.Array, the policy distribution
+            new_hstate: tuple(jnp.Array, jnp.Array), the new hidden state for the encoder and policy
         """
         act, _, _ = aux_obs
 
@@ -525,10 +573,32 @@ class LIAMPolicy(AgentPolicy):
     def evaluate(self, params, obs, done, avail_actions, hstate, rng,
                 modelled_agent_obs, modelled_agent_act,
                 aux_obs=None, env_state=None):
-        """Get actions, values, policy, and decoder reconstructions for the lIAM policy.
+        """
+        Get actions, values, policy, and decoder reconstruction losses for the lIAM policy.
+
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
+
+        Args:
+            params: dict, containing encoder, decoder and policy parameters
+            obs: jnp.Array, the observation
+            done: jnp.Array, the done flag
+            avail_actions: jnp.Array, the available actions
+            hstate: tuple(jnp.Array, jnp.Array), the hidden state for the encoder and policy
+            rng: jax.random.PRNGKey, random key for action sampling
+            modelled_agent_obs: jnp.Array, the observations of the modeled agent for decoder loss
+            modelled_agent_act: jnp.Array, the actions of the modeled agent for decoder loss
+            aux_obs: tuple of auxiliary observations i.e. (act, joint_act, reward)
+            env_state: jnp.Array, the environment state
+
+        Returns:
+            action: jnp.Array, the selected action
+            val: jnp.Array, the value estimate
+            pi: jnp.Array, the policy distribution
+            recon_loss1: jnp.Array, the reconstruction loss from the decoder
+            recon_loss2: jnp.Array, the partner reconstruction loss from the decoder
+            new_hstate: tuple(jnp.Array, jnp.Array), the new hidden state for the encoder and policy
         """
         act, _, _ = aux_obs
 
@@ -566,8 +636,9 @@ class MeLIBAPolicy(AgentPolicy):
     def __init__(self, policy, encoder, decoder):
         """
         Args:
-            encoder: Encoder, the encoder model
-            decoder: Decoder, the decoder model
+            policy: the policy model
+            encoder: the LIAM encoder model
+            decoder: the LIAM decoder model
         """
         super().__init__(action_dim=policy.action_dim, obs_dim=policy.obs_dim)
         self.policy = policy
@@ -575,7 +646,14 @@ class MeLIBAPolicy(AgentPolicy):
         self.decoder = decoder
 
     def init_hstate(self, batch_size=1, aux_info=None):
-        """Initialize hidden state for the MeLIBA policy.
+        """
+        Initialize hidden state for the LIAM policy.
+
+        Args:
+            batch_size: int, the batch size of the hidden state
+            aux_info: any auxiliary information needed to initialize the hidden state at the
+            start of an episode
+
         Returns:
             hstate: tuple of (encoder_hstate, policy_hstate)
         """
@@ -584,7 +662,12 @@ class MeLIBAPolicy(AgentPolicy):
         return (encoder_hstate, policy_hstate)
 
     def init_params(self, rng):
-        """Initialize parameters for the MeLIBA policy.
+        """
+        Initialize parameters for the LIAM policy.
+
+        Args:
+            rng: jax.random.PRNGKey, random key for initialization
+
         Returns:
             params: dict, containing encoder and policy parameters
         """
@@ -597,11 +680,27 @@ class MeLIBAPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
                    aux_obs=None, env_state=None, test_mode=False):
-        """Get actions for the MeLIBA policy.
+        """
+        Get actions for the MeLIBA policy.
 
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
+
+        Args:
+            params: dict, containing encoder and policy parameters
+            obs: jnp.Array, the observation
+            done: jnp.Array, the done flag
+            avail_actions: jnp.Array, the available actions
+            hstate: tuple(jnp.Array, jnp.Array), the hidden state for the encoder and policy
+            rng: jax.random.PRNGKey, random key for action sampling
+            aux_obs: tuple of auxiliary observations i.e. (act, joint_act, reward)
+            env_state: jnp.Array, the environment state
+            test_mode: bool, whether to use deterministic action selection
+
+        Returns:
+            action: jnp.Array, the selected action
+            new_hstate: tuple(jnp.Array, jnp.Array), the new hidden state for the encoder and policy
         """
         _, joint_act, reward = aux_obs
 
@@ -634,10 +733,28 @@ class MeLIBAPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng,
                                 aux_obs=None, env_state=None):
-        """Get actions, values, and policy for the MeLIBA policy.
+        """
+        Get actions, values, and policy for the MeLIBA policy.
+
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
+
+        Args:
+            params: dict, containing encoder and policy parameters
+            obs: jnp.Array, the observation
+            done: jnp.Array, the done flag
+            avail_actions: jnp.Array, the available actions
+            hstate: tuple(jnp.Array, jnp.Array), the hidden state for the encoder and policy
+            rng: jax.random.PRNGKey, random key for action sampling
+            aux_obs: tuple of auxiliary observations i.e. (act, joint_act, reward)
+            env_state: jnp.Array, the environment state
+
+        Returns:
+            action: jnp.Array, the selected action
+            val: jnp.Array, the value estimate
+            pi: jnp.Array, the policy distribution
+            new_hstate: tuple(jnp.Array, jnp.Array), the new hidden state for the encoder and policy
         """
         _, joint_act, reward = aux_obs
 
@@ -669,10 +786,31 @@ class MeLIBAPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def evaluate(self, params, obs, done, avail_actions, hstate, rng,
                  partner_action, aux_obs=None, env_state=None):
-        """Get actions, values, policy, and decoder reconstructions for the MeLIBA policy.
+        """
+        Get actions, values, policy, and decoder reconstructions for the MeLIBA policy.
+
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
         compatibility with the learning codes.
+
+        Args:
+            params: dict, containing encoder, decoder and policy parameters
+            obs: jnp.Array, the observation
+            done: jnp.Array, the done flag
+            avail_actions: jnp.Array, the available actions
+            hstate: tuple(jnp.Array, jnp.Array), the hidden state for the encoder and policy
+            rng: jax.random.PRNGKey, random key for action sampling
+            partner_action: jnp.Array, the actions of the modeled agent for decoder loss
+            aux_obs: tuple of auxiliary observations i.e. (act, joint_act, reward)
+            env_state: jnp.Array, the environment state
+
+        Returns:
+            action: jnp.Array, the selected action
+            val: jnp.Array, the value estimate
+            pi: jnp.Array, the policy distribution
+            kl_loss: jnp.Array, the KL divergence loss from the decoder
+            recon_loss: jnp.Array, the reconstruction loss from the decoder
+            new_hstate: tuple(jnp.Array, jnp.Array), the new hidden state for the encoder and policy
         """
         _, joint_act, reward = aux_obs
 
