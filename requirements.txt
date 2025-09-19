@@ -1,3 +1,12 @@
+# This file is maintained for backward compatibility.
+# The canonical dependency specification is in pyproject.toml
+# 
+# To regenerate this file from pyproject.toml, run:
+# pip-compile pyproject.toml
+# 
+# Or install directly from pyproject.toml:
+# pip install -e .
+
 # from jax ai stack v2025.2.5
 jax[cuda12]==0.5.3
 chex==0.1.88
@@ -20,9 +29,7 @@ matplotlib
 wandb
 omegaconf
 hydra-core
-plotly
-kaleido
-gdown
+huggingface-hub
 
 jumanji==1.1.0
 jaxmarl==0.0.7

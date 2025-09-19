@@ -14,3 +14,10 @@ eval_teammates/*
 # pycache
 **/__pycache__/
 **/*.pyc
+
+# Python packaging artifacts
+*.egg-info/
+__pycache__/
+*.pyc
+dist/
+build/

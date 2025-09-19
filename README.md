@@ -1,7 +1,8 @@
 # jax-aht
 
 Welcome to JaxAHT! This is a Jax-based benchmark repository for Ad Hoc Teamwork. 
-For a quick introduction to the benchmark, please see our [Colab tutorial notebook](docs/JaxAHT_Tutorial.ipynb). 
+For a quick introduction to the benchmark, please see our [Colab tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb). 
+
 
 If you find this repository useful for your research, please cite, 
 ```bibtex
@@ -9,9 +10,9 @@ If you find this repository useful for your research, please cite,
   author = {Learning Agents Research Group},
   title = {JaxAHT},
   year = {2025},
-  month = {June},
-  note = {Version 0.1.0},
-  url = {https://github.com/carolinewang01/jax-aht},
+  month = {September},
+  note = {Version 1.0.0},
+  url = {https://github.com/LARG/jax-aht},
 }
 ```
 
@@ -40,6 +41,27 @@ Algorithms are largely implemented in a single-file format to enable researchers
 
 Our modularization is restricted to environments, agents, and populations, which allows us to cleanly interface the algorithm types above, while placing most of the logic for any single algorithm within a single file.
 
+## Available Algorithms and Environments
+
+| Category | Algorithm | Description | Paper |
+|----------|-----------|-------------|-------|
+| **Ego Agent Training** | PPO Ego | Trains a PPO agent against a population of homogeneous partner agents. | - |
+| **Teammate Generation** | FCP (Fictitious Co-Play) | Generates diverse teammates using varying seeds and checkpoints of IPPO. | [Strouse et al. 2021](https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html) |
+| | BRDiv | Generates diverse teammates using best response diversity (BRDiv) metric. | [Rahman et al. 2022](https://arxiv.org/abs/2207.14138) |
+| | LBRDiv | Generates diverse teammates via emulating the minimum coverage set. | [Rahman et al. 2024](https://arxiv.org/abs/2308.09595) |
+| | CoMeDi | Generates diverse teammates by optimizing mixed-play. | [Sarkar et al. 2023](https://arxiv.org/pdf/2310.15414) |
+| **MARL** | IPPO | Multi-agent reinforcement learning using independent PPO agents with parameter sharing | [Yu et al. 2022](https://arxiv.org/abs/2103.01955) |
+| **Open-Ended Training** | ROTATE | Open-ended training using cooperative regret maximization | [Wang et al. 2025](https://arxiv.org/abs/2505.23686) |
+| | PAIRED | Open-ended training based on the PAIRED algorithm from the unsupervised environment design literature. | [Dennis et al. 2020](https://arxiv.org/abs/2012.02096) |
+| | Open-Ended Minimax | Open-ended training baseline using minimax return optimization. | - |
+
+### Supported Environments
+
+| Environment | Source | Description | Variants | Evaluation Teammates | 
+|-------------|--------|-------------|----------|----------------------|
+| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | 7x7 grid with full observability | ✅ |
+| **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | ✅  | 
+
 
 ##  Table of Contents
 - [🚀 Installation Guide](#-installation-guide)
@@ -51,8 +73,8 @@ Our modularization is restricted to environments, agents, and populations, which
   - [💡Algorithm Implementations](#-algorithm-implementations)
     - [Running an Algorithm on a Task](#running-an-algorithm-on-a-task)
     - [Logging](#-logging)
-  - [🤖Agents](#-agents)
-  - [🧑‍🤝‍🧑 MARL (IPPO)](#-marl-ippo)
+  - [🤖 Agents](#-agents)
+  - [🚶Loading Teammates](#-loading-teammates)
   - [🌳 Environments](#-environments)
     - [Level-Based-Foraging (LBF)](#lbf)
     - [Overcooked-v1](#overcooked-v1)
@@ -62,10 +84,10 @@ Our modularization is restricted to environments, agents, and populations, which
 
 ## 🚀 Installation Guide
 
-Follow instructions at `docs/install_instructions.md` to install the necessary libraries.
+Follow instructions at [docs/install_instructions.md](docs/install_instructions.md) to install the necessary libraries.
 
-Evaluating trained agents against the heldout evaluation set (referred to as $\Pi^\text{eval}$ in the paper) requires downloading the evaluation agents.
-Reproducing the plots from the paper requires the computed best returns achieved against each evaluation agent, which are stated in the paper appendix.
+Evaluating trained agents against the heldout evaluation set requires downloading the evaluation agents. 
+We also provide the best returns achieved against each evaluation agent in our experiments. 
 Directories containing both data can be obtained by running the provided data download script:
 ```python
 python download_eval_data.py
@@ -174,13 +196,16 @@ The `agents/` directory contains:
 You can test the Overcooked heuristic agents by running, `python tests/test_overcooked_agents.py`,
 and the LBF heuristic agents by running, `python tests/test_lbf_agents.py`.
 
-### 🧑‍🤝‍🧑 MARL (IPPO)
-The `marl/` directory stores our IPPO implementation.
-To run it with wandb logging and using the configs, run:
-```bash
-python marl/run.py task=lbf algorithm=ippo/lbf
-```
-Results are logged via wandb, but can also be viewed locally in the `results/` directory.
+### 🚶 Loading Teammates
+
+Certain workflows within this project (namely, ego agent training, heldout evaluation) require teammate policies as inputs. The user may provide these teammate policies by specifying a *partner config* that may point to heuristic or RL-based partner policies. 
+
+By default, the heldout evaluation workflow uses the downloaded evaluation teammates, and the corresponding partner config is specified at `evaluation/configs/global_heldout_settings.yaml` --- thus, no intervention from the user is necessary to perform heldout evaluations. 
+
+However, the ego agent training workflow **requires** the user to specify a partner agent config. 
+A quick example of how to run an ego agent training algorithm with particular partner config is provided in our tutorial notebook. 
+More details on how to specify the partner config are provided at the top of the ego agent training scripts.
+
 
 ### 🌳 Environments
 #### Level-Based Foraging (LBF)

@@ -17,8 +17,9 @@ VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: true
 partner_agent: # partner config for ppo_ego
-  name: ippo
-  path: null # Please set the path to a partner agent checkpoint. You will also need to set the actor_type, ckpt_key, and specify the partner idxs to load.
-  actor_type: mlp
-  ckpt_key: final_params
-  idx_list: [0]
+  # Only specify ONE partner agent type. Must be RL-based.
+  ippo: # Name of the partner agent type. Can be arbitrary.
+    path: null # Please set the path to a partner agent checkpoint.
+    actor_type: mlp # e.g. s5, rnn, mlp
+    ckpt_key: final_params # Key to load from the checkpoint pytree.
+    idx_list: [0] # list of checkpoint indices to load from the checkpoint pytree. If null, all checkpoints will be loaded.

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>JaxAHT: A Unified Jax-based Benchmark for Ad Hoc Teamwork</title>
+	<meta name="description" content="Standardized, reproducible AHT benchmark: ready-to-use teammate generation, RL training algorithms, diverse environments, transparent protocols, and strong baselines. Built with JAX for speed.">
+	<style>
+		:root {
+			--bg: #f7f9fc;
+			--panel: #ffffff;
+			--text: #1a1f2e;
+			--muted: #5a6475;
+			--brand: #1e66f5;
+			--brand-2: #0ea5e9;
+			--border: #e6eaf2;
+		}
+		* { box-sizing: border-box; }
+		html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+		a { color: var(--brand); text-decoration: none; }
+		a:hover { text-decoration: underline; }
+		.container { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+		header.site { position: sticky; top: 0; z-index: 20; backdrop-filter: saturate(180%) blur(10px); background: rgba(255,255,255,0.85); border-bottom: 1px solid var(--border); }
+		header .inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+		.brand { font-weight: 700; letter-spacing: 0.2px; }
+		.brand small { color: var(--muted); font-weight: 500; }
+		nav a { margin-left: 16px; color: var(--muted); font-weight: 500; }
+		nav a:hover { color: var(--text); }
+
+		.hero { padding: 64px 0 24px; border-bottom: 1px solid var(--border); background: radial-gradient(900px 350px at 10% -10%, rgba(30,102,245,0.10), transparent), radial-gradient(900px 400px at 90% -20%, rgba(14,165,233,0.10), transparent); }
+		.hero h1 { font-size: 40px; line-height: 1.15; margin: 0 0 12px; }
+		.hero p.kicker { color: var(--brand-2); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; font-size: 12px; margin: 0 0 10px; }
+		.hero p.sub { color: var(--muted); font-size: 18px; margin: 0; }
+		.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+		.button { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: #ffffff; color: var(--text); font-weight: 600; }
+		.button.primary { background: linear-gradient(180deg, #3b82f6, #2563eb); color: #ffffff; border-color: #2563eb; }
+		.button:hover { filter: brightness(1.08); text-decoration: none; }
+
+		.figure { margin: 32px auto 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--panel); max-width: 700px; }
+		.figure img { display: block; width: 100%; height: auto; background: #0e1016; }
+		.figure figcaption { padding: 10px 14px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+		.section { padding: 48px 0; border-bottom: 1px solid var(--border); }
+		.section h2 { margin: 0 0 12px; font-size: 26px; }
+		.section p, .section li { color: var(--text); }
+		.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+		.card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 18px; }
+		.card h3 { margin-top: 0; }
+
+		footer { padding: 24px 0 48px; color: var(--muted); text-align: center; }
+		.badge { display: inline-block; padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 12px; }
+
+		@media (max-width: 880px) {
+			.grid { grid-template-columns: 1fr; }
+			.hero h1 { font-size: 32px; }
+			nav { display: none; }
+		}
+	</style>
+</head>
+<body>
+	<!-- <header class="site">
+		<div class="container inner">
+			<div class="brand">JaxAHT</div>
+		</div>
+	</header> -->
+
+	<main>
+		<section class="hero" id="overview">
+			<div class="container">
+				<h1>JaxAHT: A Unified Jax-based Benchmark for Ad Hoc Teamwork</h1>
+				<p class="sub">A unified toolkit for fast iteration on AHT algorithms and evaluation.</p>
+				<div class="cta">
+					<a class="button primary" href="https://github.com/LARG/jax-aht">Code (GitHub)</a>
+					<a class="button" href="#citation">Cite This Benchmark</a>
+				</div>
+
+				<figure class="figure">
+					<img src="resources/jaxaht_workflow.png" alt="AHT benchmark workflow diagram showing teammate generation, RL training, evaluation, and analysis" />
+					<figcaption>The Jax AHT benchmark aims to provide a Jax-accelerated and unified framework for the advancement of ad hoc teamwork research. The figure demonstrates three key components of ad hoc teamwork research, all of which are included in the benchmark suite: 1) Teammate generation algorithms, where the goal is to generate diverse policies to be used as partners for ego agent training. 2) Ego agent training algorithms, where the goal is to create a generalizable ego agent that performs well with whichever teammate it is matched up with. 3) Evaluation, where the ego agent is partnered with evaluation teammate policies that are unavailable during the ego agent training phase.</figcaption>
+				</figure>
+			</div>
+		</section>
+
+		<section class="section" id="abstract">
+			<div class="container">
+				<p>The development and evaluation of ad hoc teamwork (AHT) agents are often hindered by the lack of standardized implementations and reproducible evaluation pipelines, making it difficult to compare methods or build upon prior work. Experimentation is also often slow due to the lengthy reinforcement learning training periods required for many parts of the AHT training workflow, such as teammate generation or ego agent training.</p>
+				<p>The <strong>JaxAHT</strong> library addresses these challenges by introducing:</p>
+				<ul>
+					<li><strong>A unified benchmark</strong> with transparent evaluation protocols and strong baselines for fair, replicable research.</li>
+					<li><strong>A Jax-based implementation of various AHT methods</strong>, which is significantly faster than previous PyTorch/Tensorflow implementations.</li>
+					<li><strong>A shared agent interface</strong> that allows agents trained by one algorithm to be seamlessly reused in other parts of the AHT workflow (i.e., teammate generation to ego agent training).</li>
+					<li><strong>A single-file implementation style</strong> inspired by JaxMARL and CleanRL, which makes it easier for users to understand and build upon the implemented AHT methods.</li>
+				</ul>
+				<p>These design choices lower the barrier to entry, enable faster iterations through the AHT agent development process (i.e., code implementation, training, and evaluation), and provide a reliable foundation for advancing AHT research.</p>
+			</div>
+		</section>
+
+		<!-- <section class="section" id="design">
+			<div class="container grid">
+				<div class="card">
+					<h3>What this benchmark provides</h3>
+					<ul>
+						<li>Ready-to-use teammate generation methods</li>
+						<li>RL-based ego agent training algorithms</li>
+						<li>Diverse AHT environments in one toolkit</li>
+						<li>Transparent evaluation protocols</li>
+						<li>Strong baselines for fair comparison</li>
+					</ul>
+				</div>
+				<div class="card">
+					<h3>Why JAX</h3>
+					<ul>
+						<li>High-throughput training and batched evaluation</li>
+						<li>Composable function transformations (jit, vmap, pmap)</li>
+						<li>Scales to multi-agent RL workloads</li>
+						<li>Reproducible, deterministic pipelines</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+
+		<section class="section" id="environments">
+			<div class="container">
+				<h2>Environments</h2>
+				<p>Includes a diverse set of AHT settings covering coordination, communication, and adaptation challenges. Customize tasks and teammates to probe generalization.</p>
+			</div>
+		</section>
+
+		<section class="section" id="baselines">
+			<div class="container">
+				<h2>Baselines</h2>
+				<p>Ships with strong baselines and clear evaluation recipes to ensure fair, apples-to-apples comparisons.</p>
+			</div>
+		</section> -->
+
+		<!-- <section class="section" id="resources">
+			<div class="container grid">
+				<div class="card">
+					<h3>Project Links</h3>
+					<ul>
+						<li><a href="https://github.com/LARG/jax-aht">Code (GitHub)</a></li>
+						<li><a href="#">Paper (arXiv)</a> — coming soon</li>
+						<li><a href="#citation">BibTeX</a></li>
+					</ul>
+				</div>
+			</div>
+		</section> -->
+
+		<section class="section" id="citation">
+			<div class="container">
+				<h2>Citation</h2>
+				<p>If you use this benchmark in your research, please cite:</p>
+				<pre class="card" style="overflow:auto; white-space: pre; padding: 14px;"><code>@misc{jaxaht2025,
+  author = {Learning Agents Research Group},
+  title = {JaxAHT},
+  year = {2025},
+  month = {September},
+  note = {Version 1.0.0},
+  url = {https://github.com/LARG/jax-aht},
+}</code></pre>
+			</div>
+		</section>
+	</main>
+
+	<footer>
+		<div class="container">
+			<p>©Learning Agents Research Group. Released under MIT License.</p>
+		</div>
+	</footer>
+
+	<script>
+		// set year
+		document.getElementById('y').textContent = new Date().getFullYear();
+	</script>
+</body>
+</html>

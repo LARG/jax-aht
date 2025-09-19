@@ -16,8 +16,11 @@ ENT_COEF: 0.01
 VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: true
-partner_agent: # This partner config trains a best response against the heuristic agent. 
-  independent_agent_0.6:
+partner_agent: # # partner config for ppo_br
+# This partner config trains a best response against a SINGLE
+# heuristic agent or RL-based partner agent. 
+# We show an example of a heuristic agent for Overcooked below.
+  independent_agent_0.6: # Name of the partner agent type. Can be arbitrary.
     actor_type: independent_agent
-    p_onion_on_counter: 0.6
-    p_plate_on_counter: 0.6
+    p_onion_on_counter: 0.6 # Heuristic-specific keys
+    p_plate_on_counter: 0.6 # Heuristic-specific keys
