@@ -402,14 +402,7 @@ class Decoder():
         """Initialize parameters for the decoder model."""
         batch_size = 1
 
-        # state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t,
-        # agent_character, mental_state, partner_actions, dones, prng_key = x
-
-        # Split the random key for sampling
-        # prng, init_key, sample_key = jax.random.split(rng, 3)
-
         # Create dummy inputs - add time dimension
-        # TODO: Addtional dimensions needed to handle to trajectory of trajectories
         dummy_state = jnp.zeros((1, batch_size, self.state_dim))
         dummy_latent_mean = jnp.zeros((1, batch_size, self.latent_mean_dim))
         dummy_latent_logvar = jnp.zeros((1, batch_size, self.latent_logvar_dim))
