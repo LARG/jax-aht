@@ -131,7 +131,7 @@ The project structure is described here. Additional notes about some folders are
 - `common/`: Shared utilities and common code.
 - `envs/`: Environment implementations and wrappers.
 - `evaluation/`: Evaluation and visualization scripts.
-- `ego_agent_training/`: All ego agent learning implementations. Currently only supports PPO.
+- `ego_agent_training/`: All ego agent learning implementations (PPO, LIAM, and MeLIBA).
 - `marl/`: MARL algorithm implementations. Currently only supports IPPO.
 - `open_ended_training/`: Open-ended learning methods (ROTATE, PAIRED, Minimax Return).
 - `teammate_generation/`: Teammate generation algorithms (BRDiv, FCP, CoMeDi).
