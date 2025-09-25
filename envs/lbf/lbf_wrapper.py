@@ -1,6 +1,7 @@
 from functools import partial
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple, Optional
 
+import chex
 from flax.struct import dataclass
 import jax
 import jax.numpy as jnp
@@ -21,14 +22,23 @@ class LBFWrapper(object):
     Warning: this wrapper has only been tested with LBF. It also runs with RWare, but has not been tested. 
     
     We add the option to share rewards between agents, since it is 
-    shared according to the agent level in the LBF environment. 
+    shared according to the agent level in the LBF environment.
+
+    Args:
+        *args: Positional arguments. First argument must be the JumanjiEnv.
+        **kwargs: Keyword arguments.
+            share_rewards (bool): Whether to share rewards between agents. Defaults to False.
     """
-    def __init__(self, env: JumanjiEnv, share_rewards: bool = False):
-        self.env = env
-        self.num_agents = env.num_agents
-        self.name = env.__class__.__name__
+    def __init__(self, *args, **kwargs):
+        if not args or not isinstance(args[0], JumanjiEnv):
+            raise ValueError("First argument must be a JumanjiEnv instance")
+        
+        self.env = args[0]
+        self.share_rewards = kwargs.get('share_rewards', False)
+        
+        self.num_agents = self.env.num_agents
+        self.name = self.env.__class__.__name__
         self.agents = [f"agent_{i}" for i in range(self.num_agents)]
-        self.share_rewards = share_rewards
         # warning: this wrapper currently only supports homogeneous agent envs
         self.observation_spaces = {
             agent: self._convert_jumanji_obs_spec_to_jaxmarl_space(env.observation_spec, agent_idx)
@@ -41,7 +51,7 @@ class LBFWrapper(object):
         }
 
     @partial(jax.jit, static_argnums=(0,))
-    def reset(self, key, params=None):
+    def reset(self, key: chex.PRNGKey):
         env_state, timestep = self.env.reset(key)
         obs = self._extract_observations(timestep.observation)
         state = WrappedEnvState(env_state, 
@@ -50,7 +60,13 @@ class LBFWrapper(object):
         return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
-    def step(self, key, state: WrappedEnvState, actions, params=None):
+    def step(
+        self,
+        key: chex.PRNGKey,
+        state: WrappedEnvState,
+        actions: Dict[str, chex.Array],
+        reset_state: Optional[WrappedEnvState] = None,
+    ) -> Tuple[Dict[str, chex.Array], WrappedEnvState, Dict[str, float], Dict[str, bool], Dict]:
         '''Performs step transitions in the environment. 
         In compliance with JaxMARL MultiAgentEnv interface, auto-resets the environment if done.
         '''
