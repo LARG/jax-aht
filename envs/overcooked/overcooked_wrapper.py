@@ -44,7 +44,7 @@ class OvercookedWrapper():
     def action_space(self, agent: str):
         return self.env.action_space()
     
-    def reset(self, key: chex.PRNGKey, ) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
+    def reset(self, key: chex.PRNGKey) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
         obs, env_state = self.env.reset(key)
         flat_obs = {agent: obs[agent].flatten() for agent in self.agents} # flatten obs
         return flat_obs, WrappedEnvState(env_state, jnp.zeros(self.num_agents))

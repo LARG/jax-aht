@@ -54,3 +54,9 @@ class EnvWrapper:
     def get_step_count(self, state: WrappedEnvState) -> jnp.array:
         """Returns the step count of the environment."""
         return self.env.get_step_count(state)
+    
+    def observation_space(self, agent: str):
+        return self.env.observation_space()
+
+    def action_space(self, agent: str):
+        return self.env.action_space()
