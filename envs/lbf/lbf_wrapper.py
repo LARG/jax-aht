@@ -50,6 +50,7 @@ class LBFWrapper(EnvWrapper):
         env_state, timestep = self.env.reset(key)
         obs = self._extract_observations(timestep.observation)
         state = WrappedEnvState(env_state, 
+                                jnp.zeros(self.num_agents),
                                 self._extract_avail_actions(timestep),
                                 timestep.observation.step_count)
         return obs, state

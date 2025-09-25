@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Dict, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional
 
 import chex
 import jax
