@@ -9,15 +9,10 @@ from jumanji.env import Environment as JumanjiEnv
 from jumanji import specs as jumanji_specs
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
-@dataclass
-class WrappedEnvState:
-    """Wraps Jumanji state plus any extra information
-    we want to carry."""
-    env_state: Any # a jumanji state
-    avail_actions: jnp.ndarray
-    step: jnp.array
+from ..env_wrapper import EnvWrapper
+from ..env_wrapper import WrappedEnvState
     
-class LBFWrapper(object):
+class LBFWrapper(EnvWrapper):
     """Use the LBF Jumanji Environment with JaxMARL environments.
     Warning: this wrapper has only been tested with LBF. It also runs with RWare, but has not been tested. 
     
