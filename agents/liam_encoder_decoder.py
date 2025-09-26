@@ -150,10 +150,15 @@ class DecoderNetwork(nn.Module):
         h2 = nn.relu(h2)
         prob1 = nn.Dense(self.output_dim2)(h2)
         prob1 = nn.softmax(prob1, axis=-1)
+
+        # To handle more than 1 partner we will have to add more output heads
+        # Should find a dynamic way to do this once we extend to more than 1 partner
+        # This shows how it would look like for 3 partners
         # prob2 = nn.Dense(self.output_dim2)(h2)
         # prob2 = nn.softmax(prob2, axis=-1)
         # prob3 = nn.Dense(self.output_dim2)(h2)
         # prob3 = nn.softmax(prob3, axis=-1)
+
         return out, prob1 #, prob2, prob3
 
 class EncoderLSTM():

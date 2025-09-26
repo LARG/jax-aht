@@ -149,7 +149,7 @@ def train_liam_ego_agent(config, env, train_rng,
                     sampled_indices_all,    # Use newly sampled index if True
                     partner_indices         # Else, keep index from previous step
                 )
-                # Note that we do not need to reset the hiden states for both the ego and partner agents
+                # Note that we do not need to reset the hidden states for both the ego and partner agents
                 # as the recurrent states are automatically reset when done is True, and the partner indices are only reset when done is True.
 
                 # Agent_0 (ego) action, value, log_prob
