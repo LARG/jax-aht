@@ -51,10 +51,10 @@ class EncoderLSTMNetwork(nn.Module):
 
     Args:
         hidden_dim: int, dimension of the hidden layers
-        ouput_dim: int, dimension of the output embedding
+        output_dim: int, dimension of the output embedding
     """
     hidden_dim: int
-    ouput_dim: int
+    output_dim: int
 
     @nn.compact
     def __call__(self, hidden, x):
@@ -69,14 +69,14 @@ class EncoderLSTMNetwork(nn.Module):
 
         Returns:
             new_hidden: tuple of (h, c) where each is jnp.array of shape (batch_size, hidden_dim)
-            embedding: jnp.array of shape (time, batch_size, ouput_dim)
+            embedding: jnp.array of shape (time, batch_size, output_dim)
         """
         obs, dones = x
         lstm_in = (obs, dones)
         hidden, embedding = ScannedLSTM()(hidden, lstm_in)
         embedding = nn.Dense(self.hidden_dim)(embedding)
         embedding = nn.relu(embedding)
-        embedding = nn.Dense(self.ouput_dim)(embedding)
+        embedding = nn.Dense(self.output_dim)(embedding)
         return hidden, embedding
 
 class EncoderRNNNetwork(nn.Module):
@@ -85,10 +85,10 @@ class EncoderRNNNetwork(nn.Module):
 
     Args:
         hidden_dim: int, dimension of the hidden layers
-        ouput_dim: int, dimension of the output embedding
+        output_dim: int, dimension of the output embedding
     """
     hidden_dim: int
-    ouput_dim: int
+    output_dim: int
 
     @nn.compact
     def __call__(self, hidden, x):
@@ -103,14 +103,14 @@ class EncoderRNNNetwork(nn.Module):
 
         Returns:
             new_hidden: jnp.array of shape (batch_size, hidden_dim)
-            embedding: jnp.array of shape (time, batch_size, ouput_dim)
+            embedding: jnp.array of shape (time, batch_size, output_dim)
         """
         obs, dones = x
         rnn_in = (obs, dones)
         hidden, embedding = ScannedRNN()(hidden, rnn_in)
         embedding = nn.Dense(self.hidden_dim)(embedding)
         embedding = nn.relu(embedding)
-        embedding = nn.Dense(self.ouput_dim)(embedding)
+        embedding = nn.Dense(self.output_dim)(embedding)
         return hidden, embedding
 
 class DecoderNetwork(nn.Module):
@@ -119,12 +119,12 @@ class DecoderNetwork(nn.Module):
 
     Args:
         hidden_dim: int, dimension of the hidden layers
-        ouput_dim1: int, dimension of the output for the reconstruction of observations
-        ouput_dim2: int, dimension of the output for the reconstruction of partner actions
+        output_dim1: int, dimension of the output for the reconstruction of observations
+        output_dim2: int, dimension of the output for the reconstruction of partner actions
     """
     hidden_dim: int
-    ouput_dim1: int
-    ouput_dim2: int
+    output_dim1: int
+    output_dim2: int
 
     @nn.compact
     def __call__(self, x):
@@ -135,39 +135,39 @@ class DecoderNetwork(nn.Module):
             x: jnp.array of shape (batch_size, embedding_dim)
 
         Returns:
-            out: jnp.array of shape (batch_size, ouput_dim1)
-            prob1: jnp.array of shape (batch_size, ouput_dim2)"""
+            out: jnp.array of shape (batch_size, output_dim1)
+            prob1: jnp.array of shape (batch_size, output_dim2)"""
         h1 = nn.Dense(self.hidden_dim)(x)
         h1 = nn.relu(h1)
         h1 = nn.Dense(self.hidden_dim)(h1)
         h1 = nn.relu(h1)
-        out = nn.Dense(self.ouput_dim1)(h1)
+        out = nn.Dense(self.output_dim1)(h1)
 
         # TODO: Handle more than 1 partner
         h2 = nn.Dense(self.hidden_dim)(x)
         h2 = nn.relu(h2)
         h2 = nn.Dense(self.hidden_dim)(h2)
         h2 = nn.relu(h2)
-        prob1 = nn.Dense(self.ouput_dim2)(h2)
+        prob1 = nn.Dense(self.output_dim2)(h2)
         prob1 = nn.softmax(prob1, axis=-1)
-        # prob2 = nn.Dense(self.ouput_dim2)(h2)
+        # prob2 = nn.Dense(self.output_dim2)(h2)
         # prob2 = nn.softmax(prob2, axis=-1)
-        # prob3 = nn.Dense(self.ouput_dim2)(h2)
+        # prob3 = nn.Dense(self.output_dim2)(h2)
         # prob3 = nn.softmax(prob3, axis=-1)
         return out, prob1 #, prob2, prob3
 
 class EncoderLSTM():
     """Model wrapper for EncoderLSTMNetwork."""
 
-    def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
+    def __init__(self, action_dim, obs_dim, hidden_dim, output_dim):
         """
         Args:
             action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             hidden_dim: int, dimension of the encoder hidden layers
-            ouput_dim: int, dimension of the encoder output
+            output_dim: int, dimension of the encoder output
         """
-        self.model = EncoderLSTMNetwork(hidden_dim, ouput_dim)
+        self.model = EncoderLSTMNetwork(hidden_dim, output_dim)
         self.action_dim = action_dim
         self.obs_dim = obs_dim
         self.lstm_hidden_dim = hidden_dim
@@ -214,15 +214,15 @@ class EncoderLSTM():
 class EncoderRNN():
     """Model wrapper for EncoderRNNNetwork."""
 
-    def __init__(self, action_dim, obs_dim, hidden_dim, ouput_dim):
+    def __init__(self, action_dim, obs_dim, hidden_dim, output_dim):
         """
         Args:
             action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             hidden_dim: int, dimension of the encoder hidden layers
-            ouput_dim: int, dimension of the encoder output
+            output_dim: int, dimension of the encoder output
         """
-        self.model = EncoderRNNNetwork(hidden_dim, ouput_dim)
+        self.model = EncoderRNNNetwork(hidden_dim, output_dim)
         self.action_dim = action_dim
         self.obs_dim = obs_dim
         self.rnn_hidden_dim = hidden_dim
@@ -262,17 +262,17 @@ class EncoderRNN():
 class Decoder():
     """Model wrapper for DecoderNetwork."""
 
-    def __init__(self, action_dim, obs_dim, embedding_dim, hidden_dim, ouput_dim1, ouput_dim2):
+    def __init__(self, action_dim, obs_dim, embedding_dim, hidden_dim, output_dim1, output_dim2):
         """
         Args:
             action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             embedding_dim: int, dimension of the embedding space
             hidden_dim: int, dimension of the decoder hidden layers
-            ouput_dim1: int, dimension of the decoder output
-            ouput_dim2: int, dimension of the decoder probs
+            output_dim1: int, dimension of the decoder output
+            output_dim2: int, dimension of the decoder probs
         """
-        self.model = DecoderNetwork(hidden_dim, ouput_dim1, ouput_dim2)
+        self.model = DecoderNetwork(hidden_dim, output_dim1, output_dim2)
         self.action_dim = action_dim
         self.obs_dim = obs_dim
         self.embedding_dim = embedding_dim
@@ -315,14 +315,14 @@ def initialize_encoder_decoder(config, env, rng):
             action_dim=env.action_space(env.agents[0]).n,
             obs_dim=env.observation_space(env.agents[0]).shape[0],
             hidden_dim=config.get("ENCODER_HIDDEN_DIM", 64),
-            ouput_dim=config.get("ENCODER_OUTPUT_DIM", 64)
+            output_dim=config.get("ENCODER_OUTPUT_DIM", 64)
         )
     elif encoder_type == "rnn":
         encoder = EncoderRNN(
             action_dim=env.action_space(env.agents[0]).n,
             obs_dim=env.observation_space(env.agents[0]).shape[0],
             hidden_dim=config.get("ENCODER_HIDDEN_DIM", 64),
-            ouput_dim=config.get("ENCODER_OUTPUT_DIM", 64)
+            output_dim=config.get("ENCODER_OUTPUT_DIM", 64)
         )
 
     decoder = Decoder(
@@ -330,8 +330,8 @@ def initialize_encoder_decoder(config, env, rng):
         obs_dim=env.observation_space(env.agents[0]).shape[0],
         embedding_dim=config.get("ENCODER_OUTPUT_DIM", 64),
         hidden_dim=config.get("DECODER_HIDDEN_DIM", 64),
-        ouput_dim1=env.observation_space(env.agents[1]).shape[0],
-        ouput_dim2=env.action_space(env.agents[1]).n
+        output_dim1=env.observation_space(env.agents[1]).shape[0],
+        output_dim2=env.action_space(env.agents[1]).n
     )
 
     rng, init_rng_encoder, init_rng_decoder  = jax.random.split(rng, 3)

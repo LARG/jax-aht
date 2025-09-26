@@ -132,7 +132,7 @@ class VariationalEncoderRNNNetwork(nn.Module):
         # Create separate keys for sampling
         prng_key, agent_character_key, mental_state_key = jax.random.split(prng_key, 3)
 
-        # Latent space for the agetn character
+        # Latent space for the agent character
         latent_mean = nn.Dense(self.latent_dim)(embedding)
         latent_logvar = nn.Dense(self.latent_dim)(embedding)
         latent_sample = sample_gaussian(latent_mean, latent_logvar, agent_character_key)
@@ -152,12 +152,12 @@ class DecoderRNNNetwork(nn.Module):
         state_embed_dim: int, dimension of the state embedding
         agent_character_embed_dim: int, dimension of the agent character embedding
         hidden_dim: int, dimension of the hidden layers
-        ouput_dim: int, dimension of the output layer
+        output_dim: int, dimension of the output layer
     """
     state_embed_dim: int
     agent_character_embed_dim: int
     hidden_dim: int
-    ouput_dim: int
+    output_dim: int
 
     @nn.compact
     def __call__(self, x):
@@ -263,13 +263,13 @@ class DecoderRNNNetwork(nn.Module):
                     dones: jnp.array, shape (time, 1)
 
                 Returns:
-                    out: jnp.array, shape (time, ouput_dim), logits for partner actions"""
+                    out: jnp.array, shape (time, output_dim), logits for partner actions"""
                 rnn_in = (jnp.expand_dims(state_agent_embed, axis=1), hidden, dones)
                 _, embedding = DecoderScannedRNN()(jnp.expand_dims(hidden[0], axis=0), rnn_in)
 
                 # Squeeze the batch dimension
                 # Shape: (128, 1, 32) -> (128, 32)
-                out = nn.Dense(self.ouput_dim)(embedding)
+                out = nn.Dense(self.output_dim)(embedding)
                 out = jnp.squeeze(out, axis=1)
 
                 return out
@@ -370,7 +370,7 @@ class Decoder():
 
     def __init__(self, state_dim, state_embed_dim, agent_character_embed_dim, latent_mean_dim, latent_logvar_dim,
                  latent_mean_t_dim, latent_logvar_t_dim, agent_character_dim, mental_state_dim, partner_action_dim,
-                 hidden_dim, ouput_dim, loss_coeff, kl_weight):
+                 hidden_dim, output_dim, loss_coeff, kl_weight):
         """
         Args:
             obs_dim: int, dimension of the observation space
@@ -378,10 +378,10 @@ class Decoder():
             obs_dim: int, dimension of the observation space
             embedding_dim: int, dimension of the embedding space
             hidden_dim: int, dimension of the decoder hidden layers
-            ouput_dim1: int, dimension of the decoder output
-            ouput_dim2: int, dimension of the decoder probs
+            output_dim1: int, dimension of the decoder output
+            output_dim2: int, dimension of the decoder probs
         """
-        self.model = DecoderRNNNetwork(state_embed_dim, agent_character_embed_dim, hidden_dim, ouput_dim)
+        self.model = DecoderRNNNetwork(state_embed_dim, agent_character_embed_dim, hidden_dim, output_dim)
 
         self.state_dim = state_dim
         self.state_embed_dim = state_embed_dim
@@ -394,7 +394,7 @@ class Decoder():
         self.mental_state_dim = mental_state_dim
         self.partner_action_dim = partner_action_dim
         self.hidden_dim = hidden_dim
-        self.ouput_dim = ouput_dim
+        self.output_dim = output_dim
         self.loss_coeff = loss_coeff
         self.kl_weight = kl_weight
 
@@ -472,7 +472,7 @@ def initialize_encoder_decoder(config, env, rng):
         mental_state_dim=config.get("ENCODER_LATENT_DIM", 64),
         partner_action_dim=env.action_space(env.agents[1]).n,
         hidden_dim=config.get("DECODER_HIDDEN_DIM", 64),
-        ouput_dim=config.get("DECODER_OUTPUT_DIM", 64),
+        output_dim=config.get("DECODER_OUTPUT_DIM", 64),
         loss_coeff=config.get("DECODER_LOSS_COEFF", 1.0),
         kl_weight=config.get("DECODER_KL_WEIGHT", 0.05)
     )
