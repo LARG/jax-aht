@@ -9,7 +9,7 @@ Warning: modify with caution, as this script is used as the main script for ego 
 
 
 
-Command to run PPO ego training:
+Command to run MeLIBA ego training:
 
 python ego_agent_training/run.py algorithm=meliba_ego/lbf task=lbf label=test_meliba_ego
 

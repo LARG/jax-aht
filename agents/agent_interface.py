@@ -525,7 +525,7 @@ class LIAMPolicy(AgentPolicy):
     def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng,
                                 aux_obs=None, env_state=None):
         """
-        Get actions, values, and policy for the lIAM policy.
+        Get actions, values, and policy for the LIAM policy.
 
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
@@ -574,7 +574,7 @@ class LIAMPolicy(AgentPolicy):
                 modelled_agent_obs, modelled_agent_act,
                 aux_obs=None, env_state=None):
         """
-        Get actions, values, policy, and decoder reconstruction losses for the lIAM policy.
+        Get actions, values, policy, and decoder reconstruction losses for the LIAM policy.
 
         Shape of obs, done, avail_actions should correspond to (seq_len, batch_size, ...)
         Shape of hstate should correspond to (1, batch_size, -1). We maintain the extra first dimension for
@@ -647,7 +647,7 @@ class MeLIBAPolicy(AgentPolicy):
 
     def init_hstate(self, batch_size=1, aux_info=None):
         """
-        Initialize hidden state for the LIAM policy.
+        Initialize hidden state for the MeLIBA policy.
 
         Args:
             batch_size: int, the batch size of the hidden state
@@ -663,7 +663,7 @@ class MeLIBAPolicy(AgentPolicy):
 
     def init_params(self, rng):
         """
-        Initialize parameters for the LIAM policy.
+        Initialize parameters for the MeLIBA policy.
 
         Args:
             rng: jax.random.PRNGKey, random key for initialization

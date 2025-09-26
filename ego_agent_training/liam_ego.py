@@ -9,7 +9,7 @@ Warning: modify with caution, as this script is used as the main script for ego 
 
 
 
-Command to run PPO ego training:
+Command to run LIAM ego training:
 
 python ego_agent_training/run.py algorithm=liam_ego/lbf task=lbf label=test_liam_ego
 
