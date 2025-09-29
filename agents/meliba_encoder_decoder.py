@@ -413,7 +413,6 @@ class Decoder():
         dummy_partner_actions = jnp.zeros((1, batch_size))
         dummy_done = jnp.zeros((1, batch_size))
 
-        # TODO: Should be the state instead of obs
         dummy_x = (dummy_state, dummy_latent_mean, dummy_latent_logvar, dummy_latent_mean_t,
                    dummy_latent_logvar_t, dummy_agent_character, dummy_mental_state,
                    dummy_partner_actions, dummy_done)
