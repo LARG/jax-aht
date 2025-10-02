@@ -36,12 +36,12 @@ class LBFWrapper(EnvWrapper):
         self.agents = [f"agent_{i}" for i in range(self.num_agents)]
         # warning: this wrapper currently only supports homogeneous agent envs
         self.observation_spaces = {
-            agent: self._convert_jumanji_obs_spec_to_jaxmarl_space(env.observation_spec, agent_idx)
+            agent: self._convert_jumanji_obs_spec_to_jaxmarl_space(self.env.observation_spec, agent_idx)
             for agent_idx, agent in enumerate(self.agents)
         }
 
         self.action_spaces = {
-            agent: self._convert_jumanji_action_spec_to_jaxmarl_space(env.action_spec, agent_idx)
+            agent: self._convert_jumanji_action_spec_to_jaxmarl_space(self.env.action_spec, agent_idx)
             for agent_idx, agent in enumerate(self.agents)
         }
 
@@ -72,7 +72,7 @@ class LBFWrapper(EnvWrapper):
         env_state, timestep = self.env.step(state.env_state, actions_array)
         avail_actions = self._extract_avail_actions(timestep)
 
-        state_st = WrappedEnvState(env_state, avail_actions, timestep.observation.step_count)
+        state_st = WrappedEnvState(env_state, jnp.zeros(self.num_agents), avail_actions, timestep.observation.step_count)
         obs_st = self._extract_observations(timestep.observation)
         reward = self._extract_rewards(timestep.reward)
         done = self._extract_dones(timestep)
