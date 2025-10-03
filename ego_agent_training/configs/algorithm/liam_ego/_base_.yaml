@@ -13,9 +13,10 @@ UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 4
 GAMMA: 0.99
 GAE_LAMBDA: 0.95
-CLIP_EPS: 0.05         # Do we keep this for LIAM?
+CLIP_EPS: 0.05
 ENT_COEF: 0.01
 VF_COEF: 0.5
+RECON_COEF: 1.0
 MAX_GRAD_NORM: 0.5
 ANNEAL_LR: false
 
@@ -31,4 +32,3 @@ partner_agent: # partner config for ppo_ego
     actor_type: mlp # e.g. s5, rnn, mlp
     ckpt_key: final_params # Key to load from the checkpoint pytree.
     idx_list: [0] # list of checkpoint indices to load from the checkpoint pytree. If null, all checkpoints will be loaded.
-

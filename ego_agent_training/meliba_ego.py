@@ -5,8 +5,6 @@ Script for training a MeLIBA ego agent against a population of homogeneous partn
 
 Only supports a population of homogeneous RL partner agents.
 
-Warning: modify with caution, as this script is used as the main script for ego training throughout the project.
-
 
 
 Command to run MeLIBA ego training:
@@ -39,7 +37,7 @@ from envs import make_env
 from envs.log_wrapper import LogWrapper
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from marl.ppo_utils import _create_minibatches, unbatchify
-from marl.meliba_utils import Transition
+from ego_agent_training.meliba_utils import Transition
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -60,8 +58,6 @@ def train_meliba_ego_agent(config, env, train_rng,
         ego_policy: AgentPolicy, policy for the ego agent
         init_ego_params: dict, initial parameters for the ego agent
         n_ego_train_seeds: int, number of ego training seeds
-        encoder: Encoder, the encoder model
-        decoder: Decoder, the decoder model
         init_encoder_decoder_params: dict, initial parameters for the encoder and decoder
         partner_population: AgentPopulation, population of partner agents
         partner_params: pytree of parameters for the population of agents of shape (pop_size, ...).
@@ -251,6 +247,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                 init_ego_hstate, traj_batch, advantages, returns = batch_info
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
 
+                    # MeLIBA KL loss and reconstruction loss
                     _, value, pi, kl_loss, recon_loss, _ = ego_policy.evaluate(
                         params={"encoder": encoder_decoder_params["encoder"],
                                 "decoder": encoder_decoder_params["decoder"],
@@ -291,7 +288,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                     # Entropy
                     entropy = jnp.mean(pi.entropy())
 
-                    # ELBO
+                    # MeLIBA ELBO
                     elbo = (config["DECODER_KL_WEIGHT"] * kl_loss) + (config["DECODER_LOSS_COEFF"] * recon_loss)
 
                     total_loss = pg_loss + (config["VF_COEF"] * value_loss) - (config["ENT_COEF"] * entropy) + elbo
@@ -539,8 +536,12 @@ def run_ego_training(config, wandb_logger):
 
 
     partner_agent_config = dict(algorithm_config["partner_agent"])
+    assert len(partner_agent_config) == 1, "Only supports training against one type of partner agent."
+
+    partner0_name = list(partner_agent_config.keys())[0]
+    partner0_agent_config = list(partner_agent_config.values())[0]
     partner_policy, partner_params, init_partner_params, idx_labels = initialize_rl_agent_from_config(
-        partner_agent_config, partner_agent_config["name"], env, init_partner_rng)
+        partner0_agent_config, partner0_name, env, init_partner_rng)
 
     flattened_partner_params = jax.tree.map(lambda x, y: x.reshape((-1,) + y.shape), partner_params, init_partner_params)
     pop_size = jax.tree.leaves(flattened_partner_params)[0].shape[0]

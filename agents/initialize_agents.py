@@ -2,10 +2,10 @@ import jax
 from agents.agent_interface import S5ActorCriticPolicy, \
     MLPActorCriticPolicy, RNNActorCriticPolicy, ActorWithDoubleCriticPolicy, \
     ActorWithConditionalCriticPolicy, PseudoActorWithDoubleCriticPolicy, \
-    PseudoActorWithConditionalCriticPolicy, LIAMPolicy, MeLIBAPolicy
+    PseudoActorWithConditionalCriticPolicy
 
-from agents.liam_encoder_decoder import initialize_encoder_decoder as initialize_liam_encoder_decoder
-from agents.meliba_encoder_decoder import initialize_encoder_decoder as initialize_meliba_encoder_decoder
+from agents.liam_agent import LIAMPolicy, initialize_liam_encoder_decoder
+from agents.meliba_agent import MeLIBAPolicy, initialize_meliba_encoder_decoder
 
 def initialize_s5_agent(config, env, rng):
     """Initialize an S5 agent with the given config.
