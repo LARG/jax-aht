@@ -23,7 +23,6 @@ ANNEAL_LR: false
 ENCODER_HIDDEN_DIM: 64
 ENCODER_OUTPUT_DIM: 20 # Embedding dimension
 DECODER_HIDDEN_DIM: 64
-POLICY_INPUT_DIM: 20 # Embedding dimension + observation dimension (obs dim added in the run script)
 
 partner_agent: # partner config for ppo_ego
   # Only specify ONE partner agent type. Must be RL-based.

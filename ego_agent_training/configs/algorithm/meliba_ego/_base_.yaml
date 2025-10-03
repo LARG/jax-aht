@@ -24,7 +24,7 @@ ENCODER_REWARD_EMBED_DIM: 64
 ENCODER_RNN_HIDDEN_DIM: 64
 ENCODER_LAYERS_BEFORE_RNN: 64
 ENCODER_LAYERS_AFTER_RNN: 64
-ENCODER_LATENT_DIM: 64
+ENCODER_LATENT_DIM: 64 # Latent dimension
 
 DECODER_STATE_EMBED_DIM: 64
 DECODER_AGENT_CHARACTER_EMBED_DIM: 32
@@ -33,8 +33,6 @@ DECODER_OUTPUT_DIM: 32
 
 DECODER_LOSS_COEFF: 1.0
 DECODER_KL_WEIGHT: 0.05
-
-POLICY_INPUT_DIM: 256 # (Latent dim * 4) + observation dimension (obs dim added in the run script)
 
 partner_agent: # partner config for ppo_ego
   # Only specify ONE partner agent type. Must be RL-based.
