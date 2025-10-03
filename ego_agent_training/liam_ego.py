@@ -243,7 +243,7 @@ def train_liam_ego_agent(config, env, train_rng,
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
 
                     # LIAM reconstruction losses
-                    _, value, pi, recon_loss1, recon_loss2, _ = ego_policy.evaluate(
+                    _, value, pi, recon_loss1, recon_loss2, _ = ego_policy.compute_decoder_losses(
                         params={"encoder": encoder_decoder_params["encoder"],
                                 "decoder": encoder_decoder_params["decoder"],
                                 "policy": params},
@@ -516,7 +516,9 @@ def run_ego_training(config, wandb_logger):
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
     env = LogWrapper(env)
 
-    algorithm_config['POLICY_INPUT_DIM'] = algorithm_config['POLICY_INPUT_DIM'] + env.observation_space(env.agents[0]).shape[0]
+    # Set the policy input dimension for the LIAM policy
+    # Embedding dimension + observation dimension
+    algorithm_config['POLICY_INPUT_DIM'] = algorithm_config['ENCODER_OUTPUT_DIM'] + env.observation_space(env.agents[0]).shape[0]
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rng, init_partner_rng, init_ego_rng, train_rng = jax.random.split(rng, 4)

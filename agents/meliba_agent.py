@@ -423,8 +423,8 @@ class Decoder():
         return self.model.init(prng, dummy_x)
 
     @functools.partial(jax.jit, static_argnums=(0,))
-    def evaluate(self, params, state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t,
-                 agent_character, mental_state, partner_action, done):
+    def compute_losses(self, params, state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t,
+                       agent_character, mental_state, partner_action, done):
 
         """Evaluate the decoder model with given parameters and inputs."""
         kl_loss, recon_loss = self.model.apply(params, (state, latent_mean, latent_logvar,
@@ -638,8 +638,8 @@ class MeLIBAPolicy(AgentPolicy):
         return action, val, pi, (new_encoder_hstate, new_policy_hstate)
 
     @partial(jax.jit, static_argnums=(0,))
-    def evaluate(self, params, obs, done, avail_actions, hstate, rng,
-                 partner_action, aux_obs=None, env_state=None):
+    def compute_decoder_losses(self, params, obs, done, avail_actions, hstate, rng,
+                               partner_action, aux_obs=None, env_state=None):
         """
         Get actions, values, policy, and decoder reconstructions for the MeLIBA policy.
 
@@ -692,7 +692,7 @@ class MeLIBAPolicy(AgentPolicy):
         )
 
         # Reconstruction Loss
-        kl_loss, recon_loss = self.decoder.evaluate(
+        kl_loss, recon_loss = self.decoder.compute_losses(
             params=params['decoder'],
             state=obs,
             latent_mean=latent_mean,

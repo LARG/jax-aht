@@ -296,7 +296,7 @@ class Decoder():
         return self.model.init(rng, dummy_x)
 
     @functools.partial(jax.jit, static_argnums=(0,))
-    def evaluate(self, params, embedding, modelled_agent_obs, modelled_agent_act):
+    def compute_losses(self, params, embedding, modelled_agent_obs, modelled_agent_act):
         """Evaluate the decoder model with given parameters and inputs."""
         mean, prob1 = self.model.apply(params, embedding)
         recon_loss_1 = 0.5 * ((modelled_agent_obs - mean) ** 2).sum(-1)
@@ -492,9 +492,9 @@ class LIAMPolicy(AgentPolicy):
         return action, val, pi, (new_encoder_hstate, new_policy_hstate)
 
     @partial(jax.jit, static_argnums=(0,))
-    def evaluate(self, params, obs, done, avail_actions, hstate, rng,
-                modelled_agent_obs, modelled_agent_act,
-                aux_obs=None, env_state=None):
+    def compute_decoder_losses(self, params, obs, done, avail_actions, hstate, rng,
+                               modelled_agent_obs, modelled_agent_act,
+                               aux_obs=None, env_state=None):
         """
         Get actions, values, policy, and decoder reconstruction losses for the LIAM policy.
 
@@ -543,7 +543,7 @@ class LIAMPolicy(AgentPolicy):
         )
 
         # Reconstruction Loss
-        recon_loss1, recon_loss2 = self.decoder.evaluate(
+        recon_loss1, recon_loss2 = self.decoder.compute_losses(
             params=params['decoder'],
             embedding=embedding,
             modelled_agent_obs=modelled_agent_obs,
