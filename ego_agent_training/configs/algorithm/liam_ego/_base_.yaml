@@ -1,12 +1,14 @@
 # @package algorithm
 # ^ tells hydra to place these value directly under algorithm key
-ALG: ppo_ego
-EGO_ACTOR_TYPE: s5
+ALG: liam_ego
+ENCODER_TYPE: lstm
+EGO_ACTOR_TYPE: mlp
 NUM_EGO_TRAIN_SEEDS: 1
 TOTAL_TIMESTEPS: 1e7
 NUM_CHECKPOINTS: 5
 NUM_ENVS: 8
-LR: 1.e-4
+LR: 3e-4
+ENCODER_DECODER_LR: 7e-4
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 4
 GAMMA: 0.99
@@ -14,8 +16,14 @@ GAE_LAMBDA: 0.95
 CLIP_EPS: 0.05
 ENT_COEF: 0.01
 VF_COEF: 0.5
-MAX_GRAD_NORM: 1.0
-ANNEAL_LR: true
+RECON_COEF: 1.0
+MAX_GRAD_NORM: 0.5
+ANNEAL_LR: false
+
+ENCODER_HIDDEN_DIM: 64
+ENCODER_OUTPUT_DIM: 20 # Embedding dimension
+DECODER_HIDDEN_DIM: 64
+
 partner_agent: # partner config for ppo_ego
   # Only specify ONE partner agent type. Must be RL-based.
   ippo: # Name of the partner agent type. Can be arbitrary.

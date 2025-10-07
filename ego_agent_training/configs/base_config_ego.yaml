@@ -26,10 +26,10 @@ label: "default_label"
 name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.EGO_ACTOR_TYPE}/${label}
 
 # WandB Params
-logger: 
+logger:
   project: aht-benchmark
   entity: aht-project
-  tags: 
+  tags:
     - ${algorithm.ALG}
     - ${TASK_NAME}
     - ${label}

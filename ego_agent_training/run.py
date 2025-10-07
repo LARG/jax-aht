@@ -5,7 +5,9 @@ from omegaconf import OmegaConf
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
 from evaluation.heldout_eval import run_heldout_evaluation, log_heldout_metrics
-from ppo_ego import run_ego_training
+from ppo_ego import run_ego_training as run_ego_ppo_training
+from liam_ego import run_ego_training as run_ego_liam_training
+from meliba_ego import run_ego_training as run_ego_meliba_training
 from ego_agent_training.ppo_br import run_br_training
 
 
@@ -16,9 +18,13 @@ def run_training(cfg):
     wandb_logger = Logger(cfg)
 
     if cfg["algorithm"]["ALG"] == "ppo_ego":
-        ego_params, ego_policy, init_ego_params = run_ego_training(cfg, wandb_logger)
+        ego_params, ego_policy, init_ego_params = run_ego_ppo_training(cfg, wandb_logger)
     elif cfg["algorithm"]["ALG"] == "ppo_br":
         ego_params, ego_policy, init_ego_params = run_br_training(cfg, wandb_logger)
+    elif cfg["algorithm"]["ALG"] == "liam_ego":
+        ego_params, ego_policy, init_ego_params = run_ego_liam_training(cfg, wandb_logger)
+    elif cfg["algorithm"]["ALG"] == "meliba_ego":
+        ego_params, ego_policy, init_ego_params = run_ego_meliba_training(cfg, wandb_logger)
 
     if cfg["run_heldout_eval"]:
         metric_names = get_metric_names(cfg["ENV_NAME"])
