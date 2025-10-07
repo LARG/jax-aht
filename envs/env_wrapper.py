@@ -1,40 +1,37 @@
 from functools import partial
 from typing import Dict, Any, Tuple, Optional
-
+from abc import ABC, abstractmethod
 import chex
 import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
 
-# TODO: Add type hints for env_state in WrappedEnvState
+
 @dataclass
 class WrappedEnvState:
-    env_state: Any # Currently can be OvercookedState or an LBF state
-    base_return_so_far: jnp.ndarray # records the original return w/o reward shaping terms
+    env_state: Any  # Currently can be OvercookedState or an LBF state
+    base_return_so_far: jnp.ndarray  # records the original return w/o reward shaping terms
     avail_actions: jnp.ndarray
     step: jnp.array
 
-class EnvWrapper:
-    def __init__(self, env_type, *args, **kwargs):
-        if env_type == 'lbf':
-            from envs.lbf.lbf_wrapper import LBFWrapper
-            self.env = LBFWrapper(*args, **kwargs)
-        elif env_type == 'overcooked':
-            from envs.overcooked.overcooked_wrapper import OvercookedWrapper
-            self.env = OvercookedWrapper(*args, **kwargs)
-        else:
-            raise ValueError(f"Unsupported environment type: {env_type}")
-        
-        self.agents = self.env.agents
-        self.num_agents = self.env.num_agents
-        self.observation_spaces = self.env.observation_spaces
-        self.action_spaces = self.env.action_spaces
-        self.name = getattr(self.env, 'name', 'CustomEnv')
 
+class BaseEnv(ABC):
+    """Abstract base class for multi-agent environments."""
+    
+    def __init__(self, *args, **kwargs):
+        self.agents = None
+        self.num_agents = None
+        self.observation_spaces = None
+        self.action_spaces = None
+        self.name = 'BaseEnv'
+    
+    @abstractmethod
     @partial(jax.jit, static_argnums=(0,))
-    def reset(self, key: chex.PRNGKey, ) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
-        return self.env.reset(key)
-
+    def reset(self, key: chex.PRNGKey) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
+        """Reset the environment and return initial observations and state."""
+        pass
+    
+    @abstractmethod
     @partial(jax.jit, static_argnums=(0,))
     def step(
         self,
@@ -43,20 +40,39 @@ class EnvWrapper:
         actions: Dict[str, chex.Array],
         reset_state: Optional[WrappedEnvState] = None,
     ) -> Tuple[Dict[str, chex.Array], WrappedEnvState, Dict[str, float], Dict[str, bool], Dict]:
-        return self.env.step(key, state, actions, reset_state)
+        """Execute one step in the environment."""
+        pass
     
+    @abstractmethod
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
         """Returns the available actions for each agent."""
-        return self.env.get_avail_actions(state)
-
+        pass
+    
+    @abstractmethod
     @partial(jax.jit, static_argnums=(0,))
     def get_step_count(self, state: WrappedEnvState) -> jnp.array:
         """Returns the step count of the environment."""
-        return self.env.get_step_count(state)
+        pass
     
+    @abstractmethod
     def observation_space(self, agent: str):
-        return self.env.observation_space()
-
+        """Returns the observation space for the given agent."""
+        pass
+    
+    @abstractmethod
     def action_space(self, agent: str):
-        return self.env.action_space()
+        """Returns the action space for the given agent."""
+        pass
+
+
+def create_env(env_type: str, *args, **kwargs) -> BaseEnv:
+    """Factory function to create environment instances."""
+    if env_type == 'lbf':
+        from envs.lbf.lbf_wrapper import LBFWrapper
+        return LBFWrapper(*args, **kwargs)
+    elif env_type == 'overcooked':
+        from envs.overcooked.overcooked_wrapper import OvercookedWrapper
+        return OvercookedWrapper(*args, **kwargs)
+    else:
+        raise ValueError(f"Unsupported environment type: {env_type}")
