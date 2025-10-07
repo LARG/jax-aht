@@ -9,10 +9,10 @@ from jumanji.env import Environment as JumanjiEnv
 from jumanji import specs as jumanji_specs
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
-from ..env_wrapper import EnvWrapper
+from ..env_wrapper import BaseEnv
 from ..env_wrapper import WrappedEnvState
     
-class LBFWrapper(EnvWrapper):
+class LBFWrapper(BaseEnv):
     """Use the LBF Jumanji Environment with JaxMARL environments.
     Warning: this wrapper has only been tested with LBF. It also runs with RWare, but has not been tested. 
     
