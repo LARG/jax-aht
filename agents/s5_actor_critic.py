@@ -327,28 +327,28 @@ class S5SSM(nn.Module):
             Lambda_im_init (complex64): Imag part of init diag state matrix  (P,)
             V           (complex64): Eigenvectors used for init           (P,P)
             Vinv        (complex64): Inverse eigenvectors used for init   (P,P)
-            H           (int32):     Number of features of input seq 
+            H           (int32):     Number of features of input seq
             P           (int32):     state size
             C_init      (string):    Specifies How C is initialized
-                         Options: [trunc_standard_normal: sample from truncated standard normal 
+                         Options: [trunc_standard_normal: sample from truncated standard normal
                                                         and then multiply by V, i.e. C_tilde=CV.
                                    lecun_normal: sample from Lecun_normal and then multiply by V.
-                                   complex_normal: directly sample a complex valued output matrix 
+                                   complex_normal: directly sample a complex valued output matrix
                                                     from standard normal, does not multiply by V]
             conj_sym    (bool):    Whether conjugate symmetry is enforced
             clip_eigs   (bool):    Whether to enforce left-half plane condition, i.e.
-                                   constrain real part of eigenvalues to be negative. 
+                                   constrain real part of eigenvalues to be negative.
                                    True recommended for autoregressive task/unbounded sequence lengths
                                    Discussed in https://arxiv.org/pdf/2206.11893.pdf.
             bidirectional (bool):  Whether model is bidirectional, if True, uses two C matrices
-            discretization: (string) Specifies discretization method 
+            discretization: (string) Specifies discretization method
                              options: [zoh: zero-order hold method,
                                        bilinear: bilinear transform]
-            dt_min:      (float32): minimum value to draw timescale values from when 
+            dt_min:      (float32): minimum value to draw timescale values from when
                                     initializing log_step
-            dt_max:      (float32): maximum value to draw timescale values from when 
+            dt_max:      (float32): maximum value to draw timescale values from when
                                     initializing log_step
-            step_rescale:  (float32): allows for uniformly changing the timescale parameter, e.g. after training 
+            step_rescale:  (float32): allows for uniformly changing the timescale parameter, e.g. after training
                                     on a different resolution for the speech commands benchmark
     """
 
@@ -606,7 +606,7 @@ class StackedEncoderModel(nn.Module):
         for i, layer in enumerate(self.layers):
             new_h, x = layer(hidden[i], x, d)
             new_hiddens.append(new_h)
-    
+
         return new_hiddens, x
 
     @staticmethod
@@ -631,7 +631,7 @@ class S5ActorCritic(nn.Module):
     def setup(self):
         self.encoder_0 = nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
         self.encoder_1 = nn.Dense(self.ssm_hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
-    
+
         self.action_body_layers = [
             nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
             for _ in range(self.fc_n_layers)

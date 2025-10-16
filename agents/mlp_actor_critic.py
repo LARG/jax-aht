@@ -4,6 +4,7 @@ from typing import Sequence
 import distrax
 import flax.linen as nn
 from flax.linen.initializers import constant, orthogonal
+import jax
 import jax.numpy as jnp
 
 
@@ -31,11 +32,11 @@ class ActorCritic(nn.Module):
         actor_mean = nn.Dense(
             self.action_dim, kernel_init=orthogonal(0.01), bias_init=constant(0.0)
         )(actor_mean)
-        
+
         # Mask unavailable actions if avail_actions is provided
         unavail_actions = 1 - avail_actions
         actor_mean = actor_mean - (unavail_actions * 1e10)
-            
+
         pi = distrax.Categorical(logits=actor_mean)
 
         critic = nn.Dense(
@@ -76,11 +77,11 @@ class ActorWithDoubleCritic(nn.Module):
         actor_mean = nn.Dense(
             self.action_dim, kernel_init=orthogonal(0.01), bias_init=constant(0.0)
         )(actor_mean)
-        
+
         # Mask unavailable actions if avail_actions is provided
         unavail_actions = 1 - avail_actions
         actor_mean = actor_mean - (unavail_actions * 1e10)
-            
+
         pi = distrax.Categorical(logits=actor_mean)
 
         critic = nn.Dense(
@@ -134,11 +135,11 @@ class ActorWithConditionalCritic(nn.Module):
         actor_mean = nn.Dense(
             self.action_dim, kernel_init=orthogonal(0.01), bias_init=constant(0.0)
         )(actor_mean)
-        
+
         # Mask unavailable actions if avail_actions is provided
         unavail_actions = 1 - avail_actions
         actor_mean = actor_mean - (unavail_actions * 1e10)
-            
+
         pi = distrax.Categorical(logits=actor_mean)
 
         critic = nn.Dense(
