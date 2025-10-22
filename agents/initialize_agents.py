@@ -1,9 +1,10 @@
 import jax
-from agents.agent_interface import S5ActorCriticPolicy, \
-    MLPActorCriticPolicy, RNNActorCriticPolicy, ActorWithDoubleCriticPolicy, \
+
+from agents.mlp_actor_critic_agent import MLPActorCriticPolicy, ActorWithDoubleCriticPolicy, \
     ActorWithConditionalCriticPolicy, PseudoActorWithDoubleCriticPolicy, \
     PseudoActorWithConditionalCriticPolicy
-
+from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
+from agents.s5_actor_critic_agent import S5ActorCriticPolicy
 from agents.liam_agent import LIAMPolicy, initialize_liam_encoder_decoder
 from agents.meliba_agent import MeLIBAPolicy, initialize_meliba_encoder_decoder
 

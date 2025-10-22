@@ -10,7 +10,7 @@ import optax
 from flax.training.train_state import TrainState
 from functools import partial
 
-from agents.agent_interface import MLPActorCriticPolicy
+from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.population_interface import AgentPopulation
 from agents.initialize_agents import initialize_s5_agent
 from common.plot_utils import get_stats, get_metric_names
@@ -27,8 +27,8 @@ logging.basicConfig(level=logging.INFO)
 
 def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
     '''
-    Train confederate that minimizes the given ego agent using IPPO. 
-    Return model checkpoints and metrics. 
+    Train confederate that minimizes the given ego agent using IPPO.
+    Return model checkpoints and metrics.
     '''
     def make_minimax_partner_train(config):
         num_agents = env.num_agents
@@ -53,16 +53,16 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                 action_dim=env.action_space(env.agents[0]).n,
                 obs_dim=env.observation_space(env.agents[0]).shape[0]
             )
-            
+
             rng, init_conf_rng = jax.random.split(rng, 2)
-            
+
             # Initialize parameters using the policy interfaces
             init_params_conf = confederate_policy.init_params(init_conf_rng)
 
             # Define optimizers for both confederate and BR policy
             tx = optax.chain(
                 optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
-                optax.adam(learning_rate=linear_schedule if config["ANNEAL_LR"] else config["LR"], 
+                optax.adam(learning_rate=linear_schedule if config["ANNEAL_LR"] else config["LR"],
                 eps=1e-5),
             )
             train_state_conf = TrainState.create(
@@ -149,7 +149,7 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                 )
                 new_runner_state = (train_state_conf, env_state_next, obs_next, done, new_conf_h, new_ego_h, rng)
                 return new_runner_state, transition
-            
+
             def _calculate_gae(traj_batch, last_val):
                 def _get_advantages(gae_and_next_value, transition):
                     gae, next_value = gae_and_next_value
@@ -182,12 +182,12 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
 
                     def _loss_fn(params, traj_batch_ego, gae_ego, target_v_ego):
                         _, value_ego, pi_ego, _ = confederate_policy.get_action_value_policy(
-                            params=params, 
-                            obs=traj_batch_ego.obs, 
+                            params=params,
+                            obs=traj_batch_ego.obs,
                             done=traj_batch_ego.done,
                             avail_actions=traj_batch_ego.avail_actions,
                             hstate=init_conf_hstate,
-                            rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here 
+                            rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
                         )
                         log_prob_ego = pi_ego.log_prob(traj_batch_ego.action)
 
@@ -205,8 +205,8 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                         gae_norm_ego = (gae_ego - gae_ego.mean()) / (gae_ego.std() + 1e-8)
                         pg_loss_1_ego = ratio_ego * gae_norm_ego
                         pg_loss_2_ego = jnp.clip(
-                            ratio_ego, 
-                            1.0 - config["CLIP_EPS"], 
+                            ratio_ego,
+                            1.0 - config["CLIP_EPS"],
                             1.0 + config["CLIP_EPS"]) * gae_norm_ego
                         pg_loss_ego = -jnp.mean(jnp.minimum(pg_loss_1_ego, pg_loss_2_ego))
 
@@ -219,31 +219,31 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
 
                     grad_fn = jax.value_and_grad(_loss_fn, has_aux=True)
                     (loss_val, aux_vals), grads = grad_fn(
-                        train_state_conf.params, 
+                        train_state_conf.params,
                         traj_batch_ego, advantages_ego, returns_ego)
                     train_state_conf = train_state_conf.apply_gradients(grads=grads)
                     return train_state_conf, (loss_val, aux_vals)
-                
+
 
                 (
-                    train_state_conf, 
-                    traj_batch_ego, 
-                    advantages_conf_ego, 
-                    targets_conf_ego, 
+                    train_state_conf,
+                    traj_batch_ego,
+                    advantages_conf_ego,
+                    targets_conf_ego,
                     rng_ego
                 ) = update_state
 
                 rng_ego, perm_rng_ego = jax.random.split(rng_ego, 2)
 
                 # Divide batch size by TWO because we are only training on data of agent_0
-                batch_size_ego = config["MINIBATCH_SIZE"] * config["NUM_MINIBATCHES"] // 2 
+                batch_size_ego = config["MINIBATCH_SIZE"] * config["NUM_MINIBATCHES"] // 2
                 assert (
                     batch_size_ego == config["ROLLOUT_LENGTH"] * config["NUM_ACTORS"] // 2
                 ), "batch size must be equal to number of steps * number of actors"
 
                 permutation_ego = jax.random.permutation(perm_rng_ego, batch_size_ego)
                 batch_ego = (traj_batch_ego, advantages_conf_ego, targets_conf_ego)
-                
+
                 batch_ego_reshaped = jax.tree.map(
                     lambda x: x.reshape((batch_size_ego,) + x.shape[2:]), batch_ego
                 )
@@ -264,10 +264,10 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                     _update_minbatch, train_state_conf, minibatches_ego
                 )
 
-                update_state = (train_state_conf, 
-                    traj_batch_ego, 
-                    advantages_conf_ego, 
-                    targets_conf_ego, 
+                update_state = (train_state_conf,
+                    traj_batch_ego,
+                    advantages_conf_ego,
+                    targets_conf_ego,
                     rng_ego)
                 return update_state, (total_loss, aux_vals)
 
@@ -278,30 +278,30 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                 3. PPO updates for confederate policy.
                 """
                 (
-                    train_state_conf, 
+                    train_state_conf,
                     env_state_ego,
-                    last_obs_ego, last_dones_ego, 
-                    conf_hstate_ego, ego_hstate, 
+                    last_obs_ego, last_dones_ego,
+                    conf_hstate_ego, ego_hstate,
                     rng_ego, update_steps
                 ) = update_runner_state
 
                 # 1) rollout for interactions against ego agent
-                runner_state_ego = (train_state_conf, env_state_ego, last_obs_ego, last_dones_ego, 
+                runner_state_ego = (train_state_conf, env_state_ego, last_obs_ego, last_dones_ego,
                                     conf_hstate_ego, ego_hstate, rng_ego)
                 runner_state_ego, traj_batch_ego = jax.lax.scan(
                     _env_step, runner_state_ego, None, config["ROLLOUT_LENGTH"])
-                (train_state_conf, env_state_ego, last_obs_ego, last_dones_ego, 
+                (train_state_conf, env_state_ego, last_obs_ego, last_dones_ego,
                  conf_hstate_ego, ego_hstate, rng_ego) = runner_state_ego
 
                 # 2) compute advantage for confederate agent from interaction with ego agent
 
                 # Get available actions for agent 0 from environment state
                 avail_actions_0_ego = jax.vmap(env.get_avail_actions)(env_state_ego.env_state)["agent_0"].astype(jnp.float32)
-                
+
                 # Get last value
                 _, last_val_0_ego, _, _ = confederate_policy.get_action_value_policy(
                     params=train_state_conf.params,
-                    obs=last_obs_ego["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1), 
+                    obs=last_obs_ego["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
                     done=last_dones_ego["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=jax.lax.stop_gradient(avail_actions_0_ego),
                     hstate=conf_hstate_ego,
@@ -312,10 +312,10 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
 
                 # 3) PPO update
                 update_state = (
-                    train_state_conf, 
-                    traj_batch_ego, 
-                    advantages_conf_ego, 
-                    targets_conf_ego, 
+                    train_state_conf,
+                    traj_batch_ego,
+                    advantages_conf_ego,
+                    targets_conf_ego,
                     rng_ego
                 )
                 update_state, (total_loss, aux_vals) = jax.lax.scan(
@@ -332,9 +332,9 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                 metric["average_rewards_ego"] = jnp.mean(traj_batch_ego.reward)
 
                 new_runner_state = (
-                    train_state_conf, env_state_ego, 
-                    last_obs_ego, last_dones_ego, 
-                    conf_hstate_ego, ego_hstate,  
+                    train_state_conf, env_state_ego,
+                    last_obs_ego, last_dones_ego,
+                    conf_hstate_ego, ego_hstate,
                     rng_ego, update_steps + 1
                 )
                 return (new_runner_state, metric)
@@ -348,31 +348,31 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
             # Build a PyTree that holds parameters for all conf agent checkpoints
             def init_ckpt_array(params_pytree):
                 return jax.tree.map(
-                    lambda x: jnp.zeros((num_ckpts,) + x.shape, x.dtype), 
+                    lambda x: jnp.zeros((num_ckpts,) + x.shape, x.dtype),
                     params_pytree)
-        
+
             def _update_step_with_ckpt(state_with_ckpt, unused):
                 ((
-                    train_state_conf, env_state_ego, 
-                    last_obs_ego, last_dones_ego, 
-                    conf_hstate_ego, ego_hstate, 
+                    train_state_conf, env_state_ego,
+                    last_obs_ego, last_dones_ego,
+                    conf_hstate_ego, ego_hstate,
                     rng_ego, update_steps
-                ), checkpoint_array_conf, ckpt_idx, 
+                ), checkpoint_array_conf, ckpt_idx,
                     eval_info_ego) = state_with_ckpt
 
                 # Single PPO update
                 (new_runner_state, metric) = _update_step(
-                    (train_state_conf, env_state_ego, 
-                    last_obs_ego, last_dones_ego, 
-                    conf_hstate_ego, ego_hstate, 
+                    (train_state_conf, env_state_ego,
+                    last_obs_ego, last_dones_ego,
+                    conf_hstate_ego, ego_hstate,
                     rng_ego, update_steps),
                     None
                 )
 
                 (
                     train_state_conf, env_state_ego,
-                    last_obs_ego, last_dones_ego, 
-                    conf_hstate_ego, ego_hstate, 
+                    last_obs_ego, last_dones_ego,
+                    conf_hstate_ego, ego_hstate,
                     rng_ego, update_steps
                 ) = new_runner_state
 
@@ -380,7 +380,7 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                 # update steps is 1-indexed because it was incremented at the end of the update step
                 to_store = jnp.logical_or(jnp.equal(jnp.mod(update_steps-1, ckpt_and_eval_interval), 0),
                                         jnp.equal(update_steps, config["NUM_UPDATES"]))
-                           
+
                 def store_and_eval_ckpt(args):
                     ckpt_arr_and_ep_infos, rng, cidx = args
                     ckpt_arr_conf, prev_ep_infos_ego = ckpt_arr_and_ep_infos
@@ -391,9 +391,9 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                     # run eval episodes
                     rng, eval_rng, = jax.random.split(rng)
                     # conf vs ego
-                    last_ep_info_with_ego = run_episodes(eval_rng, env, 
+                    last_ep_info_with_ego = run_episodes(eval_rng, env,
                         agent_0_param=train_state_conf.params, agent_0_policy=confederate_policy,
-                        agent_1_param=ego_params, agent_1_policy=ego_policy, 
+                        agent_1_param=ego_params, agent_1_policy=ego_policy,
                         max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]
                     )
 
@@ -403,20 +403,20 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                     return args
 
                 (checkpoint_array_and_infos, rng_ego, ckpt_idx) = jax.lax.cond(
-                    to_store, 
-                    store_and_eval_ckpt, 
-                    skip_ckpt, 
+                    to_store,
+                    store_and_eval_ckpt,
+                    skip_ckpt,
                     ((checkpoint_array_conf, eval_info_ego), rng_ego, ckpt_idx)
                 )
                 checkpoint_array_conf, ep_info_ego = checkpoint_array_and_infos
-                
+
                 metric["eval_ep_last_info_ego"] = ep_info_ego
 
-                return ((train_state_conf, env_state_ego, 
-                         last_obs_ego, last_dones_ego, 
-                         conf_hstate_ego, ego_hstate, 
+                return ((train_state_conf, env_state_ego,
+                         last_obs_ego, last_dones_ego,
+                         conf_hstate_ego, ego_hstate,
                          rng_ego, update_steps),
-                         checkpoint_array_conf, ckpt_idx, 
+                         checkpoint_array_conf, ckpt_idx,
                          ep_info_ego), metric
 
             # init checkpoint array
@@ -426,9 +426,9 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
             # initial state for scan over _update_step_with_ckpt
             update_steps = 0
             rng, rng_eval_ego = jax.random.split(rng, 2)
-            ep_infos_ego = run_episodes(rng_eval_ego, env, 
+            ep_infos_ego = run_episodes(rng_eval_ego, env,
                 agent_0_param=train_state_conf.params, agent_0_policy=confederate_policy,
-                agent_1_param=ego_params, agent_1_policy=ego_policy, 
+                agent_1_param=ego_params, agent_1_policy=ego_policy,
                 max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]
             )
 
@@ -441,13 +441,13 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
 
             rng, rng_ego = jax.random.split(rng, 2)
             update_runner_state = (
-                train_state_conf, env_state_ego, 
-                obsv_ego, init_dones_ego, 
-                init_conf_hstate_ego, init_ego_hstate, 
+                train_state_conf, env_state_ego,
+                obsv_ego, init_dones_ego,
+                init_conf_hstate_ego, init_ego_hstate,
                 rng_ego, update_steps
             )
             state_with_ckpt = (
-                update_runner_state, checkpoint_array_conf, 
+                update_runner_state, checkpoint_array_conf,
                 ckpt_idx, ep_infos_ego
             )
             # run training
@@ -458,7 +458,7 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                 length=config["NUM_UPDATES"]
             )
             (
-                final_runner_state, checkpoint_array_conf, 
+                final_runner_state, checkpoint_array_conf,
                 final_ckpt_idx, last_ep_infos_ego
             ) = state_with_ckpt
 
@@ -480,15 +480,15 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
 
 def open_ended_training_step(carry, ego_policy, partner_population, config, env):
     '''
-    Train the ego agent against the adversarial partner. 
+    Train the ego agent against the adversarial partner.
     '''
     prev_ego_params, rng = carry
     rng, partner_rng, ego_rng = jax.random.split(rng, 3)
-    
+
     # Train partner agents with ego_policy
     train_out = train_minimax_partners(config, prev_ego_params, ego_policy, env, partner_rng)
     train_partner_params = train_out["final_params"]
-    
+
     # Train ego agent using train_ppo_ego_agent
     config["TOTAL_TIMESTEPS"] = config["TIMESTEPS_PER_ITER_EGO"]
     ego_out = train_ppo_ego_agent(
@@ -501,7 +501,7 @@ def open_ended_training_step(carry, ego_policy, partner_population, config, env)
         partner_population=partner_population,
         partner_params=train_partner_params
     )
-    
+
     updated_ego_parameters = ego_out["final_params"]
     # remove initial dimension of 1, to ensure that input and output carry have the same dimension
     updated_ego_parameters = jax.tree.map(lambda x: x.squeeze(axis=0), updated_ego_parameters)
@@ -511,40 +511,40 @@ def open_ended_training_step(carry, ego_policy, partner_population, config, env)
 
 def train_minimax(rng, env, algorithm_config, partner_population, ego_config):
     rng, init_rng, train_rng = jax.random.split(rng, 3)
-    
+
     # Initialize ego agent
     ego_policy, init_ego_params = initialize_s5_agent(ego_config, env, init_rng)
-    
+
     @jax.jit
     def open_ended_step_fn(carry, unused):
         return open_ended_training_step(carry, ego_policy, partner_population, algorithm_config, env)
-    
+
     init_carry = (init_ego_params, train_rng)
     final_carry, outs = jax.lax.scan(
-        open_ended_step_fn, 
-        init_carry, 
+        open_ended_step_fn,
+        init_carry,
         xs=None,
         length=algorithm_config["NUM_OPEN_ENDED_ITERS"]
     )
     return outs
-        
+
 def run_minimax(config, wandb_logger):
     algorithm_config = dict(config["algorithm"])
 
     # Create only one environment instance
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
     env = LogWrapper(env)
-    
+
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rng, init_ego_rng = jax.random.split(rng)
     rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
-    
+
     # Initialize partner policy once - reused for all iterations
     partner_policy = MLPActorCriticPolicy(
         action_dim=env.action_space(env.agents[1]).n,
         obs_dim=env.observation_space(env.agents[1]).shape[0]
     )
-    
+
     # Create partner population
     partner_population = AgentPopulation(
         pop_size=algorithm_config["PARTNER_POP_SIZE"],
@@ -562,15 +562,15 @@ def run_minimax(config, wandb_logger):
 
     DEBUG = False
     with jax.disable_jit(DEBUG):
-        train_fn = jax.jit(jax.vmap(partial(train_minimax, 
-                env=env, algorithm_config=algorithm_config, 
+        train_fn = jax.jit(jax.vmap(partial(train_minimax,
+                env=env, algorithm_config=algorithm_config,
                 partner_population=partner_population,
                 ego_config=ego_config
                 )
             )
         )
         outs = train_fn(rngs)
-    
+
     end_time = time.time()
     log.info(f"Open-ended minimax training completed in {end_time - start_time} seconds.")
 
@@ -586,7 +586,7 @@ def run_minimax(config, wandb_logger):
 
 def log_metrics(config, logger, outs, metric_names: tuple):
     """Process training metrics and log them using the provided logger.
-    
+
     Args:
         config: dict, the configuration
         outs: tuple, contains (teammate_outs, ego_outs) for each iteration
@@ -594,7 +594,7 @@ def log_metrics(config, logger, outs, metric_names: tuple):
         metric_names: tuple, names of metrics to extract from training logs
     """
     teammate_outs, ego_outs = outs
-    teammate_metrics = teammate_outs["metrics"] # conf vs ego 
+    teammate_metrics = teammate_outs["metrics"] # conf vs ego
     ego_metrics = ego_outs["metrics"]
 
     num_seeds = teammate_metrics["returned_episode_returns"].shape[0]
@@ -611,19 +611,19 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     ego_stats = get_stats(ego_metrics, metric_names) # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates, 2)
     ego_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 2))[..., 0], ego_stats) # shape (num_open_ended_iters, num_ego_updates)
 
-    # Process/extract minimax-specific losses    
+    # Process/extract minimax-specific losses
     # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates, num_eval_episodes, num_agents_per_env)
     avg_teammate_xp_returns = np.asarray(teammate_metrics["eval_ep_last_info_ego"]["returned_episode_returns"]).mean(axis=(0, 2, 4, 5))
 
     # Conf vs ego losses
     #  shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates, update_epochs, num_minibatches)
     avg_value_losses_teammate_against_ego = np.asarray(teammate_metrics["value_loss_conf_against_ego"]).mean(axis=(0, 2, 4, 5))
-    avg_actor_losses_teammate_against_ego = np.asarray(teammate_metrics["pg_loss_conf_against_ego"]).mean(axis=(0, 2, 4, 5)) 
+    avg_actor_losses_teammate_against_ego = np.asarray(teammate_metrics["pg_loss_conf_against_ego"]).mean(axis=(0, 2, 4, 5))
     avg_entropy_losses_teammate_against_ego = np.asarray(teammate_metrics["entropy_conf_against_ego"]).mean(axis=(0, 2, 4, 5))
-    
+
     # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates)
     avg_rewards_teammate_against_ego = np.asarray(teammate_metrics["average_rewards_ego"]).mean(axis=(0, 2))
-    
+
     # Process ego-specific metrics
     # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_updates, num_partners, num_eval_episodes, num_agents_per_env)
     avg_ego_returns = np.asarray(ego_metrics["eval_ep_last_info"]["returned_episode_returns"]).mean(axis=(0, 2, 4, 5, 6))
@@ -633,23 +633,23 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     avg_ego_actor_losses = np.asarray(ego_metrics["actor_loss"]).mean(axis=(0, 2, 4, 5))
     avg_ego_entropy_losses = np.asarray(ego_metrics["entropy_loss"]).mean(axis=(0, 2, 4, 5))
     avg_ego_grad_norms = np.asarray(ego_metrics["avg_grad_norm"]).mean(axis=(0, 2, 4, 5))
-    for iter_idx in range(num_open_ended_iters):        
+    for iter_idx in range(num_open_ended_iters):
         # Log all partner metrics
         for step in range(num_partner_updates):
             global_step = iter_idx * num_partner_updates + step
-            
+
             # Log standard partner stats from get_stats
             for stat_name, stat_data in teammate_stat_means.items():
                 logger.log_item(f"Train/Conf-Against-Ego_{stat_name}", stat_data[iter_idx, step], train_step=global_step)
-            
+
             # Minimax partner eval metrics
             logger.log_item("Eval/ConfReturn-Against-Ego", avg_teammate_xp_returns[iter_idx][step], train_step=global_step)
-            
+
             # Confederate losses
             logger.log_item("Losses/ConfValLoss-Against-Ego", avg_value_losses_teammate_against_ego[iter_idx][step], train_step=global_step)
             logger.log_item("Losses/ConfActorLoss-Against-Ego", avg_actor_losses_teammate_against_ego[iter_idx][step], train_step=global_step)
             logger.log_item("Losses/ConfEntropy-Against-Ego", avg_entropy_losses_teammate_against_ego[iter_idx][step], train_step=global_step)
-                                
+
             # Rewards
             logger.log_item("Losses/AvgConfEgoRewards", avg_rewards_teammate_against_ego[iter_idx][step], train_step=global_step)
 
@@ -674,7 +674,7 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     out_savepath = save_train_run(outs, savedir, savename="saved_train_run")
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
-    
+
     # Cleanup locally logged out file
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)
