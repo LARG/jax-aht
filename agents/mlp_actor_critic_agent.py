@@ -20,7 +20,6 @@ class MLPActorCriticPolicy(AgentPolicy):
             activation: str, activation function to use
         """
         super().__init__(action_dim, obs_dim)
-        # self.activation = activation
         self.network = ActorCritic(action_dim, activation=activation)
 
     @partial(jax.jit, static_argnums=(0,))
