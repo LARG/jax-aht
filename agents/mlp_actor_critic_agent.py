@@ -111,7 +111,6 @@ class ActorWithConditionalCriticPolicy(AgentPolicy):
             activation: str, activation function to use
         """
         super().__init__(action_dim, obs_dim)
-        # self.activation = activation
         self.pop_size = pop_size
         self.network = ActorWithConditionalCritic(action_dim, activation=activation)
 
