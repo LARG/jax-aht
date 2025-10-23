@@ -8,9 +8,7 @@ from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGen
 from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
 from envs.reward_shaping_jumanji_jaxmarl_wrapper import RewardShapingJumanjiToJaxMARL
-from envs.overcooked.overcooked_wrapper import OvercookedWrapper
-from envs.overcooked.augmented_layouts import augmented_layouts
-from envs.hanabi import HanabiWrapper
+from envs.jaxmarl_wrapper import JaxMARLWrapper
 
 def process_default_args(env_kwargs: dict, default_args: dict):
     '''Helper function to process generator and viewer args for Jumanji environments. 
@@ -77,9 +75,12 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             if key not in env_kwargs:
                 env_kwargs_copy[key] = default_env_kwargs[key]
 
+        from envs.overcooked.augmented_layouts import augmented_layouts
+        from envs.overcooked.overcooked_v1 import OvercookedV1
+
         layout = augmented_layouts[env_kwargs['layout']]
         env_kwargs_copy["layout"] = layout
-        env = OvercookedWrapper(**env_kwargs_copy)
+        env = JaxMARLWrapper(OvercookedV1, **env_kwargs_copy)
 
     elif env_name == 'hanabi':
         default_env_kwargs = {
@@ -90,8 +91,11 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "max_life_tokens": 3,
             "num_cards_of_rank": np.array([3, 2, 2, 2, 1]),
         }
+
+        from jaxmarl.environments.hanabi.hanabi import HanabiEnv
+
         env_kwargs = default_env_kwargs
-        env = HanabiWrapper(**env_kwargs)
+        env = JaxMARLWrapper(HanabiEnv, **env_kwargs)
 
     else:
         env = jaxmarl.make(env_name, **env_kwargs)

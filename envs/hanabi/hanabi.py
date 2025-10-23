@@ -1,6 +1,6 @@
 from jaxmarl.environments.hanabi.hanabi import HanabiEnv
 
-class HanabiWrapper(HanabiEnv):
+class HanabiWrapperOld(HanabiEnv):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

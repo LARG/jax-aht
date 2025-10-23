@@ -1,1 +1,2 @@
-from .hanabi import HanabiWrapper
+from .hanabi import HanabiWrapperOld
+from .hanabi_wrapper import HanabiWrapper
