@@ -7,14 +7,14 @@ import jax
 import jax.numpy as jnp
 from flax.struct import dataclass
 from jaxmarl.environments import spaces
-
+from envs.base_env import BaseEnv
 
 @dataclass
 class WrappedEnvState:
     env_state: Any  # The underlying JaxMARL environment state
     base_return_so_far: jnp.ndarray  # records the original return w/o reward shaping terms
 
-class JaxMARLWrapper:
+class JaxMARLWrapper(BaseEnv):
     # Generic wrapper for JaxMARL environments to ensure a common interface.
 
     def __init__(self, env_class, *args, **kwargs):
