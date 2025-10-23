@@ -1,16 +1,16 @@
 import jax
 from envs.log_wrapper import LogWrapper
 from jaxmarl.environments.overcooked import overcooked_layouts
-
-from envs.overcooked.overcooked_wrapper import OvercookedWrapper
-
+from envs.jaxmarl_wrapper import JaxMARLWrapper
+from envs.overcooked.overcooked_v1 import OvercookedV1
 
 """
-The purpose of this file is to test the OvercookedWrapper for the Overcooked environment.
+The purpose of this file is to test the JaxMARLWrapper for the Overcooked environment.
 """
 
-# Instantiate the Overcooked environment
-env = OvercookedWrapper(
+# Instantiate the Overcooked environment with JaxMARLWrapper
+env = JaxMARLWrapper(
+    OvercookedV1,
     layout=overcooked_layouts["cramped_room"],
     random_reset=True,
     max_steps=400,

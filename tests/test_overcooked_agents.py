@@ -3,7 +3,8 @@ from typing import Dict, Tuple
 
 import jax
 from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
-from envs.overcooked.overcooked_wrapper import OvercookedWrapper
+from envs.jaxmarl_wrapper import JaxMARLWrapper
+from envs.overcooked.overcooked_v1 import OvercookedV1
 from envs.overcooked.augmented_layouts import augmented_layouts
 from envs import make_env
 from agents.overcooked import OnionAgent, PlateAgent, IndependentAgent, StaticAgent, RandomAgent
@@ -87,7 +88,8 @@ def main(num_episodes,
     print("Initializing environment...")
     layout = augmented_layouts[layout_name]
     # directly initialize the env
-    env = OvercookedWrapper(
+    env = JaxMARLWrapper(
+        OvercookedV1,
         layout=layout,
         random_reset=random_reset,
         random_obj_state=random_obj_state,
