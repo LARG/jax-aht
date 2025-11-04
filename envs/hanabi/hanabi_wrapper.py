@@ -9,12 +9,10 @@ from jaxmarl.environments.hanabi.hanabi import HanabiEnv
 from jaxmarl.environments.hanabi.hanabi import State as HanabiState
 from jaxmarl.environments import spaces
 
-@dataclass
-class WrappedEnvState:
-    env_state: HanabiState
-    base_return_so_far: jnp.ndarray # records the original return w/o reward shaping terms
+from ..env_wrapper import BaseEnv
+from ..env_wrapper import WrappedEnvState
 
-class HanabiWrapper():
+class HanabiWrapper(BaseEnv):
     '''Wrapper for the Hanabi environment to ensure that it follows a common interface 
     with other environments provided in this library.
     
@@ -45,7 +43,13 @@ class HanabiWrapper():
     
     def reset(self, key: chex.PRNGKey, ) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
         obs, env_state = self.env.reset(key)
-        return obs, WrappedEnvState(env_state, jnp.zeros(self.num_agents))
+        # compute avail_actions from the raw env_state
+        avail_actions = self.env.get_legal_moves(env_state)
+        step = env_state.turn
+        return obs, WrappedEnvState(env_state=env_state,
+                                     base_return_so_far=jnp.zeros(self.num_agents),
+                                     avail_actions=avail_actions,
+                                     step=step)
 
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
@@ -55,7 +59,7 @@ class HanabiWrapper():
     @partial(jax.jit, static_argnums=(0,))
     def get_step_count(self, state: WrappedEnvState) -> jnp.array:
         """Returns the step count for the environment."""
-        return state.env_state.step_count
+        return state.env_state.turn
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
@@ -80,5 +84,11 @@ class HanabiWrapper():
         
         # handle auto-resetting the base return upon episode termination
         base_return_so_far = jax.lax.select(dones['__all__'], jnp.zeros(self.num_agents), base_return_so_far)
-        new_state = WrappedEnvState(env_state=env_state, base_return_so_far=base_return_so_far)
+        # compute new avail_actions and step
+        avail_actions = self.env.get_legal_moves(env_state)
+        step = env_state.turn
+        new_state = WrappedEnvState(env_state=env_state,
+                                    base_return_so_far=base_return_so_far,
+                                    avail_actions=avail_actions,
+                                    step=step)
         return obs, new_state, rewards, dones, new_info

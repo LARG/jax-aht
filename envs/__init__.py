@@ -5,15 +5,6 @@ import jaxmarl
 import jumanji
 from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
 
-from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
-
-# TODO: merge this from hanabi PR as well
-# from envs.jumanji_jaxmarl_wrapper import JumanjiToJaxMARL
-# from envs.reward_shaping_jumanji_jaxmarl_wrapper import RewardShapingJumanjiToJaxMARL
-
-from envs.lbf.lbf_wrapper import LBFWrapper
-from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
-
 def process_default_args(env_kwargs: dict, default_args: dict):
     '''Helper function to process generator and viewer args for Jumanji environments. 
     If env_args and default_args have any key overlap, overwrite 
@@ -38,6 +29,10 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "force_coop": True,
         }
         default_viewer_args = {"highlight_agent_idx": 0} # None to disable highlighting
+
+        from envs.lbf.lbf_wrapper import LBFWrapper
+        from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
+        from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 
         generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args)
         viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args)

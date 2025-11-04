@@ -8,9 +8,10 @@ from flax.struct import dataclass
 from jaxmarl.environments.overcooked.overcooked import State as OvercookedState
 from jaxmarl.environments import spaces
 
+from envs.overcooked.overcooked_v1 import OvercookedV1
+
 from ..env_wrapper import BaseEnv
 from ..env_wrapper import WrappedEnvState
-from envs.overcooked.overcooked_v1 import OvercookedV1
 
 class OvercookedWrapper(BaseEnv):
     '''Wrapper for the Overcooked-v1 environment to ensure that it follows a common interface 
