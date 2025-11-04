@@ -1,20 +1,14 @@
 import jax
 from envs.log_wrapper import LogWrapper
 from jaxmarl.environments.overcooked import overcooked_layouts
+from envs import make_env
 
-from envs.overcooked.overcooked_wrapper import OvercookedWrapper
-
-
-"""
-The purpose of this file is to test the OvercookedWrapper for the Overcooked environment.
-"""
-
-# Instantiate the Overcooked environment
-env = OvercookedWrapper(
-    layout=overcooked_layouts["cramped_room"],
-    random_reset=True,
-    max_steps=400,
-    )
+# Instantiate the Overcooked environment via factory
+env = make_env(env_name='overcooked-v1', env_kwargs={
+    'layout': 'cramped_room',
+    'random_reset': True,
+    'max_steps': 400,
+})
 wrapper = LogWrapper(env)
 
 NUM_EPISODES = 2
