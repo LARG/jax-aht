@@ -87,18 +87,15 @@ def main(num_episodes,
     # Initialize environment
     print("Initializing environment...")
     layout = augmented_layouts[layout_name]
-    # directly initialize the env
-    env = JaxMARLWrapper(
-        OvercookedV1,
-        layout=layout,
-        random_reset=random_reset,
-        random_obj_state=random_obj_state,
-        max_steps=max_steps,
-        do_reward_shaping=do_reward_shaping,
-        reward_shaping_params=reward_shaping_params
-    )
-    # use the make_env function to initialize the env
-    # env = make_env(env_name="overcooked-v1", env_kwargs={"layout": layout_name})
+    # Initialize the environment via factory to keep consistent instantiation
+    env = make_env(env_name="overcooked-v1", env_kwargs={
+        "layout": layout_name,
+        "random_reset": random_reset,
+        "random_obj_state": random_obj_state,
+        "max_steps": max_steps,
+        "do_reward_shaping": do_reward_shaping,
+        "reward_shaping_params": reward_shaping_params,
+    })
     print("Environment initialized")
     
     # Initialize agents

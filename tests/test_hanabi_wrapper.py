@@ -1,25 +1,21 @@
 import jax
 import jax.numpy as jnp
-from envs.hanabi.hanabi_wrapper import HanabiWrapper
-from jaxmarl.environments.hanabi.hanabi import HanabiEnv
-
-"""
-The purpose of this file is to test the JaxMARLWrapper for the Hanabi environment.
-Note: JIT is disabled because JaxMARL's Hanabi has concretization issues in reset.
-"""
+from envs import make_env
 
 # Disable JIT for Hanabi testing due to JaxMARL bugs
 # TODO: look into this
 jax.config.update('jax_disable_jit', True)
 
-# Instantiate the Hanabi environment with JaxMARLWrapper
-env = HanabiWrapper(
-    num_agents=2,
-    num_colors=5,
-    num_ranks=5,
-    max_info_tokens=8,
-    max_life_tokens=3,
-    num_cards_of_rank=jnp.array([3, 2, 2, 2, 1]),
+env = make_env(
+    env_name='hanabi',
+    env_kwargs={
+        'num_agents': 2,
+        'num_colors': 5,
+        'num_ranks': 5,
+        'max_info_tokens': 8,
+        'max_life_tokens': 3,
+        'num_cards_of_rank': jnp.array([3, 2, 2, 2, 1]),
+    }
 )
 
 NUM_EPISODES = 2
