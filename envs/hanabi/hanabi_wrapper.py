@@ -23,9 +23,7 @@ class HanabiWrapper():
     - Flattened observations
     - Base return tracking
     '''
-    def __init__(self, *args, **kwargs):
-        print("this is the new hanabi wrapper")
-       
+    def __init__(self, *args, **kwargs):       
         self.env = HanabiEnv(*args, **kwargs)
         self.agents = self.env.agents
         self.num_agents = len(self.agents)
