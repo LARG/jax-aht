@@ -3,10 +3,6 @@ from envs.log_wrapper import LogWrapper
 from jaxmarl.environments.overcooked import overcooked_layouts
 from envs import make_env
 
-"""
-The purpose of this file is to test the JaxMARLWrapper for the Overcooked environment.
-"""
-
 # Instantiate the Overcooked environment via factory
 env = make_env(env_name='overcooked-v1', env_kwargs={
     'layout': 'cramped_room',

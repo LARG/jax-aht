@@ -3,7 +3,6 @@ from typing import Dict, Tuple
 
 import jax
 from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
-from envs.jaxmarl_wrapper import JaxMARLWrapper
 from envs.overcooked.overcooked_v1 import OvercookedV1
 from envs.overcooked.augmented_layouts import augmented_layouts
 from envs import make_env
