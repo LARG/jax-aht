@@ -283,12 +283,11 @@
                 <div class="canvas-wrapper">
                     <canvas id="gameCanvas" width="600" height="600"></canvas>
                     <div id="gameOverlay" class="overlay" aria-hidden="true">
-                        <div class="overlay-text">🎮 Episode Complete — Click Reset to play again</div>
+                        <div class="overlay-text">🎮 Episode Complete — Click the button below to play again</div>
                     </div>
                 </div>
                 <div class="button-group">
-                    <button id="newGameBtn" onclick="startNewGame()">New Game</button>
-                    <button id="resetBtn" onclick="resetGame()">Reset</button>
+                    <button id="mainActionBtn" onclick="mainAction()">New Game</button>
                 </div>
                 <p style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9em;">
                     📝 Episodes are automatically saved when completed
@@ -448,6 +447,9 @@
                     gameState = data.state;
                     updateDisplay();
                     showMessage('New game started! Good luck!', 'success');
+                    // Update main action button label to 'Reset' since a session now exists
+                    const mainBtn = document.getElementById('mainActionBtn');
+                    if (mainBtn) mainBtn.textContent = 'Reset';
                 }
             } catch (error) {
                 console.error('Error starting new game:', error);
@@ -469,6 +471,9 @@
                     gameState = data.state;
                     updateDisplay();
                     showMessage('Game reset!', 'info');
+                    // Ensure main action button remains labeled 'Reset'
+                    const mainBtn = document.getElementById('mainActionBtn');
+                    if (mainBtn) mainBtn.textContent = 'Reset';
                 }
             } catch (error) {
                 console.error('Error resetting game:', error);
@@ -502,6 +507,25 @@
                 console.error('Error executing action:', error);
                 showMessage('Error executing action. Please try again.', 'warning');
             }
+        }
+
+        // Unified button handler: start a new game if no session or the episode is done,
+        // otherwise reset the existing session. No saving is triggered by this button.
+        async function mainAction() {
+            // If there is no active session, start a new one
+            if (!sessionId) {
+                await startNewGame();
+                return;
+            }
+
+            // If the episode is complete, start a fresh session (new game)
+            if (gameState && gameState.done) {
+                await startNewGame();
+                return;
+            }
+
+            // Otherwise, reset the current session
+            await resetGame();
         }
 
         function updateDisplay() {
