@@ -233,6 +233,42 @@
                 width: 100%;
             }
         }
+        /* Overlay shown when episode is complete to visually disable the game canvas */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 10px;
+            z-index: 50;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.show {
+            display: flex;
+        }
+
+        .overlay-text {
+            font-size: 1.4em;
+            color: #333;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        /* Keep the overlay tightly bound to the canvas by wrapping the canvas
+           in a positioned element. We intentionally don't hardcode sizes so
+           the overlay follows the canvas' natural layout/scaling. */
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block; /* shrinkwrap to the canvas size */
+        }
     </style>
 </head>
 <body>
@@ -244,7 +280,12 @@
 
         <div class="game-area">
             <div class="canvas-container">
-                <canvas id="gameCanvas" width="600" height="600"></canvas>
+                <div class="canvas-wrapper">
+                    <canvas id="gameCanvas" width="600" height="600"></canvas>
+                    <div id="gameOverlay" class="overlay" aria-hidden="true">
+                        <div class="overlay-text">🎮 Episode Complete — Click Reset to play again</div>
+                    </div>
+                </div>
                 <div class="button-group">
                     <button id="newGameBtn" onclick="startNewGame()">New Game</button>
                     <button id="resetBtn" onclick="resetGame()">Reset</button>
@@ -478,6 +519,9 @@
             
             // Draw game state
             drawGame();
+
+            // Show/hide the game-over overlay so the player knows to click Reset
+            setGameOverOverlay(Boolean(gameState.done));
         }
 
         function drawGame() {
@@ -555,6 +599,25 @@
                 
                 ctx.font = 'bold 16px Arial';
                 ctx.fillText(`Lv${level}`, (col + 0.5) * cellSize, (row + 0.65) * cellSize);
+            }
+        }
+
+        // Toggle the overlay that visually disables the canvas when an episode ends
+        function setGameOverOverlay(show) {
+            const overlay = document.getElementById('gameOverlay');
+            if (!overlay || !canvas) return;
+
+            if (show) {
+                overlay.classList.add('show');
+                overlay.setAttribute('aria-hidden', 'false');
+                // slightly dim the canvas for better contrast (optional)
+                canvas.style.filter = 'grayscale(0.2) blur(1px)';
+                canvas.style.pointerEvents = 'none';
+            } else {
+                overlay.classList.remove('show');
+                overlay.setAttribute('aria-hidden', 'true');
+                canvas.style.filter = '';
+                canvas.style.pointerEvents = '';
             }
         }
     </script>
