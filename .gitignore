@@ -21,6 +21,3 @@ __pycache__/
 *.pyc
 dist/
 build/
-
-# pretrained model weights
-obl-r2d2-flax/
