@@ -1,4 +1,0 @@
-ENV_NAME: hanabi
-ROLLOUT_LENGTH: 128
-ENV_KWARGS: {}
-TASK_NAME: hanabi
