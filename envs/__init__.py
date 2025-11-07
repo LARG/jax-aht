@@ -1,15 +1,9 @@
 import copy
+import numpy as np
 
 import jaxmarl
 import jumanji
 from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
-
-from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
-from envs.lbf.lbf_wrapper import LBFWrapper
-from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
-from envs.overcooked.overcooked_wrapper import OvercookedWrapper
-from envs.overcooked.augmented_layouts import augmented_layouts
-
 
 def process_default_args(env_kwargs: dict, default_args: dict):
     '''Helper function to process generator and viewer args for Jumanji environments. 
@@ -26,10 +20,19 @@ def process_default_args(env_kwargs: dict, default_args: dict):
 
 def make_env(env_name: str, env_kwargs: dict = {}):
     if env_name in ['lbf', 'lbf-reward-shaping']:
-        default_generator_args = {"grid_size": 7, "fov": 7, 
-                          "num_agents": 2, "num_food": 3, 
-                          "max_agent_level": 2, "force_coop": True}
+        default_generator_args = {
+            "grid_size": 7,
+            "fov": 7, 
+            "num_agents": 2,
+            "num_food": 3, 
+            "max_agent_level": 2,
+            "force_coop": True,
+        }
         default_viewer_args = {"highlight_agent_idx": 0} # None to disable highlighting
+
+        from envs.lbf.lbf_wrapper import LBFWrapper
+        from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
+        from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 
         generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args)
         viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args)
@@ -45,7 +48,11 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             env = LBFWrapper(env, share_rewards=True)
         
     elif env_name == 'overcooked-v1':
-        default_env_kwargs = {"random_reset": True, "random_obj_state": False, "max_steps": 400}
+        default_env_kwargs = {
+            "random_reset": True,
+            "random_obj_state": False,
+            "max_steps": 400
+        }
         
         # preprocess env_kwargs to maintain compatibility with symmetric reward shaping
         if "reward_shaping_params" in env_kwargs:
@@ -67,9 +74,37 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             if key not in env_kwargs:
                 env_kwargs_copy[key] = default_env_kwargs[key]
 
+        from envs.overcooked.augmented_layouts import augmented_layouts
+        from envs.overcooked.overcooked_wrapper import OvercookedWrapper
+
         layout = augmented_layouts[env_kwargs['layout']]
         env_kwargs_copy["layout"] = layout
         env = OvercookedWrapper(**env_kwargs_copy)
+
+    elif env_name == 'hanabi':
+        default_env_kwargs = {
+            "num_agents": 2,
+            "num_colors": 5,
+            "num_ranks": 5,
+            "max_info_tokens": 8,
+            "max_life_tokens": 3,
+            "num_cards_of_rank": np.array([3, 2, 2, 2, 1]),
+        }
+
+        from envs.hanabi.hanabi_wrapper import HanabiWrapper
+
+        env_kwargs = default_env_kwargs
+        env = HanabiWrapper(**env_kwargs)
+
     else:
         env = jaxmarl.make(env_name, **env_kwargs)
     return env
+
+if __name__ == "__main__":
+    # sanity check: test environment creation
+    env = make_env('lbf-reward-shaping', {'num_agents': 3, 'grid_size': 9})
+    print(env)
+    env = make_env('overcooked-v1', {'layout': 'cramped_room'})
+    print(env)
+    env = make_env('hanabi', {'num_agents': 3})
+    print(env)
