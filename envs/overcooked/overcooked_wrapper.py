@@ -10,8 +10,8 @@ from jaxmarl.environments import spaces
 
 from envs.overcooked.overcooked_v1 import OvercookedV1
 
-from ..env_wrapper import BaseEnv
-from ..env_wrapper import WrappedEnvState
+from ..base_env import BaseEnv
+from ..base_env import WrappedEnvState
 
 class OvercookedWrapper(BaseEnv):
     '''Wrapper for the Overcooked-v1 environment to ensure that it follows a common interface 
