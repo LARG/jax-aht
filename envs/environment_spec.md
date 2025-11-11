@@ -54,10 +54,9 @@ Other recommended helpers
 
 Design patterns used in this repo
 ---------------------------------
-- JAX-friendly APIs: wrappers often use `@jax.jit` where sensible, and accept PRNG keys rather than relying on global RNG state.
 - Dict-of-agents: observations/rewards/avail_actions/actions are represented as dictionaries keyed by agent ids (e.g., `'agent_0'`, `'agent_1'`). Wrappers typically expose `self.agents` (list of str) and `self.num_agents`.
 - Flatten observations (optional): many wrappers flatten or concatenate observation components into a single 1D array per agent. This simplifies downstream models that expect vector inputs.
-- Auto-reset: wrappers can implement auto-reset semantics (see `LBFWrapper.step()`), returning reset observations/state when `done` is True. This is useful for batching and functional-style loops.
+- Auto-reset: wrappers are required to implement auto-reset semantics (see `LBFWrapper.step()`), returning reset observations/state when `done` is True.
 - JIT and static args: use `@partial(jax.jit, static_argnums=(0,))` for instance methods where the `self` object should be treated as static.
 
 Dones and episode termination
@@ -69,11 +68,6 @@ Infos and additional fields
 ---------------------------
 - The `infos` return can carry environment-specific diagnostics. Example: `overcooked_wrapper` includes a `base_reward` field and writes a `base_return` into new_info.
 - Use `infos` to surface non-essential telemetry (debugging, reward shaping diagnostics) but keep the core contract in `obs/state/rewards/dones`.
-
-Type hints and array libraries
------------------------------
-- The project uses `jax`, `jax.numpy` (aliased `jnp`), and `chex` types for PRNGKey typing.
-- Wrappers should return JAX arrays (`jnp.ndarray`) wherever possible for compatibility with JIT and downstream JAX code.
 
 Example minimal wrapper template
 --------------------------------
@@ -105,13 +99,6 @@ class MyEnvWrapper(BaseEnv):
         # build WrappedEnvState and return
         return obs, new_state, rewards, dones, infos
 ```
-
-Best practices and recommendations
-----------------------------------
-- Keep the wrapper thin: translate between the underlying env format and the common interface. Avoid embedding heavy logic in the wrapper itself.
-- Use `jnp` arrays for all numeric returns to keep JIT compatibility.
-- Populate `infos` for diagnostic values rather than changing the core return structure.
-- If the environment requires expensive initialization (JAX compilation, asset loading), prefer lazy initialization triggered by an explicit `init` call (instead of on module import) or do it on-demand when the web server is ready.
 
 Notes about current wrappers
 ---------------------------
