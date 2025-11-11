@@ -1,31 +1,24 @@
 import jax
-import jumanji
-from jumanji.environments.routing.lbf.generator import RandomGenerator
-from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 from envs.log_wrapper import LogWrapper
-
-from envs.lbf.lbf_wrapper import LBFWrapper
+from envs import make_env
+from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 
 """
 The purpose of this file is to test the LBFWrapper wrapper for the LevelBasedForaging environment.
 """
-# Instantiate custom viewer
 grid_size = 8
-viewer = AdHocLBFViewer(grid_size=grid_size, highlight_agent_idx=1)
 
-# Instantiate a Jumanji environment
-env = jumanji.make('LevelBasedForaging-v0', 
-                    generator=RandomGenerator(grid_size=grid_size,
-                                         fov=grid_size,
-                                         num_agents=3,
-                                         num_food=3,
-                                         force_coop=True,
-                                         ),
-                    time_limit=100, penalty=0.1,
-                    viewer=viewer)
-                    
-wrapper = LBFWrapper(env)
-wrapper = LogWrapper(wrapper)
+# Instantiate environment via factory to keep behaviour consistent with other tests
+env = make_env('lbf', env_kwargs={
+    'grid_size': grid_size,
+    'num_agents': 3,
+    'num_food': 3,
+    'time_limit': 100,
+    'penalty': 0.1,
+})
+
+# env returned by make_env is already wrapped (LBFWrapper). Add logging wrapper.
+wrapper = LogWrapper(env)
 
 NUM_EPISODES = 2
 key = jax.random.PRNGKey(20394)
@@ -66,7 +59,6 @@ for episode in range(NUM_EPISODES):
             print("avail actions are ", wrapper.get_avail_actions(state.env_state)[agent])
 
         print("info", info, "type", type(info))
-        env.render(state.env_state.env_state)
         num_steps += 1
 
     print(f"Episode {episode} finished. Total rewards: {total_rewards}. Num steps: {num_steps}")
