@@ -11,8 +11,8 @@ ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
 TASK_NAME: ${task.TASK_NAME}
 
 # training settings
-train_ego: true # whether to train the ego agent
-run_heldout_eval: true # whether to run a heldout evaluation of the ego agent
+train_ego: false # whether to train the ego agent
+run_heldout_eval: false # whether to run a heldout evaluation of the ego agent
 
 # teammate generation settings
 algorithm:
@@ -35,15 +35,15 @@ label: "default_label"
 name: ${TASK_NAME}/${algorithm.ALG}/${label}
 
 # wandb settings
-logger: 
-  project: aht-benchmark
+logger:
+  project: aht-parameter-sweep
   entity: aht-project
-  tags: 
+  tags:
     - ${algorithm.ALG}
     - ${TASK_NAME}
     - seed=${algorithm.TRAIN_SEED}
     - ${label}
-  mode: offline # options: online, offline, disabled
+  mode: online # options: online, offline, disabled
   verbose: false
   log_train_out: true # whether to log the out dictionary
   log_eval_out: true # whether to log the eval metrics
