@@ -32,6 +32,3 @@ command:
   - task=lbf
   - algorithm=fcp/lbf
   - ${args_no_hyphens}
-
-# PYTHONPATH=/home/rolando/GitHub/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb sweep teammate_generation/param_sweep.yml
-# PYTHONPATH=/home/rolando/GitHub/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb agent fernandezr-the-university-of-texas-at-austin/PARAM_SWEEP-teammate_generation/8frmov0u
