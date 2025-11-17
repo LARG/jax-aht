@@ -1,0 +1,34 @@
+program: teammate_generation/run.py
+name: fcp-overcooked-v1-asymm_advantages
+method: bayes
+entity: aht-project
+project: aht-parameter-sweep
+metric:
+  goal: maximize
+  name: Train/Partner_returned_episode_returns
+
+parameters:
+  algorithm.PARTNER_POP_SIZE:
+    values: [10, 20, 30]
+  algorithm.LR:
+    values: [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
+  algorithm.UPDATE_EPOCHS:
+    values: [10, 15, 20]
+  algorithm.NUM_MINIBATCHES:
+    values: [4, 8]
+  algorithm.GAMMA:
+    values: [0.95, 0.99]
+  algorithm.GAE_LAMBDA:
+    values: [0.9, 0.95, 0.98]
+  algorithm.CLIP_EPS:
+    values: [0.5, 0.3, 0.2, 0.1, 0.01, 0.02, 0.03, 0.04, 0.05]
+  algorithm.ENT_COEF:
+    values: [0.05, 0.04, 0.03, 0.02, 0.01]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=overcooked-v1/asymm_advantages
+  - algorithm=fcp/overcooked-v1/asymm_advantages
+  - ${args_no_hyphens}
