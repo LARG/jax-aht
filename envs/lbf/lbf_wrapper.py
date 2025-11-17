@@ -1,6 +1,7 @@
 from functools import partial
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple, Optional
 
+import chex
 from flax.struct import dataclass
 import jax
 import jax.numpy as jnp
@@ -8,49 +9,60 @@ from jumanji.env import Environment as JumanjiEnv
 from jumanji import specs as jumanji_specs
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
-@dataclass
-class WrappedEnvState:
-    """Wraps Jumanji state plus any extra information
-    we want to carry."""
-    env_state: Any # a jumanji state
-    avail_actions: jnp.ndarray
-    step: jnp.array
+from ..base_env import BaseEnv
+from ..base_env import WrappedEnvState
     
-class LBFWrapper(object):
+class LBFWrapper(BaseEnv):
     """Use the LBF Jumanji Environment with JaxMARL environments.
     Warning: this wrapper has only been tested with LBF. It also runs with RWare, but has not been tested. 
     
     We add the option to share rewards between agents, since it is 
-    shared according to the agent level in the LBF environment. 
+    shared according to the agent level in the LBF environment.
+
+    Args:
+        *args: Positional arguments. First argument must be the JumanjiEnv.
+        **kwargs: Keyword arguments.
+            share_rewards (bool): Whether to share rewards between agents. Defaults to False.
     """
-    def __init__(self, env: JumanjiEnv, share_rewards: bool = False):
-        self.env = env
-        self.num_agents = env.num_agents
-        self.name = env.__class__.__name__
+    def __init__(self, *args, **kwargs):
+        if not args or not isinstance(args[0], JumanjiEnv):
+            raise ValueError("First argument must be a JumanjiEnv instance")
+        
+        self.env = args[0]
+        self.share_rewards = kwargs.get('share_rewards', False)
+        
+        self.num_agents = self.env.num_agents
+        self.name = self.env.__class__.__name__
         self.agents = [f"agent_{i}" for i in range(self.num_agents)]
-        self.share_rewards = share_rewards
         # warning: this wrapper currently only supports homogeneous agent envs
         self.observation_spaces = {
-            agent: self._convert_jumanji_obs_spec_to_jaxmarl_space(env.observation_spec, agent_idx)
+            agent: self._convert_jumanji_obs_spec_to_jaxmarl_space(self.env.observation_spec, agent_idx)
             for agent_idx, agent in enumerate(self.agents)
         }
 
         self.action_spaces = {
-            agent: self._convert_jumanji_action_spec_to_jaxmarl_space(env.action_spec, agent_idx)
+            agent: self._convert_jumanji_action_spec_to_jaxmarl_space(self.env.action_spec, agent_idx)
             for agent_idx, agent in enumerate(self.agents)
         }
 
     @partial(jax.jit, static_argnums=(0,))
-    def reset(self, key, params=None):
+    def reset(self, key: chex.PRNGKey):
         env_state, timestep = self.env.reset(key)
         obs = self._extract_observations(timestep.observation)
         state = WrappedEnvState(env_state, 
+                                jnp.zeros(self.num_agents),
                                 self._extract_avail_actions(timestep),
                                 timestep.observation.step_count)
         return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
-    def step(self, key, state: WrappedEnvState, actions, params=None):
+    def step(
+        self,
+        key: chex.PRNGKey,
+        state: WrappedEnvState,
+        actions: Dict[str, chex.Array],
+        reset_state: Optional[WrappedEnvState] = None,
+    ) -> Tuple[Dict[str, chex.Array], WrappedEnvState, Dict[str, float], Dict[str, bool], Dict]:
         '''Performs step transitions in the environment. 
         In compliance with JaxMARL MultiAgentEnv interface, auto-resets the environment if done.
         '''
@@ -60,7 +72,7 @@ class LBFWrapper(object):
         env_state, timestep = self.env.step(state.env_state, actions_array)
         avail_actions = self._extract_avail_actions(timestep)
 
-        state_st = WrappedEnvState(env_state, avail_actions, timestep.observation.step_count)
+        state_st = WrappedEnvState(env_state, jnp.zeros(self.num_agents), avail_actions, timestep.observation.step_count)
         obs_st = self._extract_observations(timestep.observation)
         reward = self._extract_rewards(timestep.reward)
         done = self._extract_dones(timestep)

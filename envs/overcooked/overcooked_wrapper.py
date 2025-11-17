@@ -10,12 +10,10 @@ from jaxmarl.environments import spaces
 
 from envs.overcooked.overcooked_v1 import OvercookedV1
 
-@dataclass
-class WrappedEnvState:
-    env_state: OvercookedState
-    base_return_so_far: jnp.ndarray # records the original return w/o reward shaping terms
+from ..base_env import BaseEnv
+from ..base_env import WrappedEnvState
 
-class OvercookedWrapper():
+class OvercookedWrapper(BaseEnv):
     '''Wrapper for the Overcooked-v1 environment to ensure that it follows a common interface 
     with other environments provided in this library.
     
@@ -44,10 +42,10 @@ class OvercookedWrapper():
     def action_space(self, agent: str):
         return self.env.action_space()
     
-    def reset(self, key: chex.PRNGKey, ) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
+    def reset(self, key: chex.PRNGKey) -> Tuple[Dict[str, chex.Array], WrappedEnvState]:
         obs, env_state = self.env.reset(key)
         flat_obs = {agent: obs[agent].flatten() for agent in self.agents} # flatten obs
-        return flat_obs, WrappedEnvState(env_state, jnp.zeros(self.num_agents))
+        return flat_obs, WrappedEnvState(env_state, jnp.zeros(self.num_agents), jnp.zeros(self.num_agents), jnp.empty((), dtype=jnp.int32))
 
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
@@ -80,6 +78,6 @@ class OvercookedWrapper():
         
         # handle auto-resetting the base return upon episode termination
         base_return_so_far = jax.lax.select(dones['__all__'], jnp.zeros(self.num_agents), base_return_so_far)
-        new_state = WrappedEnvState(env_state=env_state, base_return_so_far=base_return_so_far)
+        new_state = WrappedEnvState(env_state=env_state, base_return_so_far=base_return_so_far, avail_actions=jnp.zeros(self.num_agents), step=jnp.empty((), dtype=jnp.int32))
         return flat_obs, new_state, rewards, dones, new_info
 
