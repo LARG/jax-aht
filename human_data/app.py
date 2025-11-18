@@ -5,11 +5,20 @@ Human player plays against a heuristic LBF agent.
 import os
 import sys
 import json
+import cProfile
+import pstats
+import io
+import time
+from functools import wraps
 from flask import Flask, render_template, jsonify, request, session
 from flask_cors import CORS
 import jax
 import jax.numpy as jnp
 import numpy as np
+import asyncio
+import uuid
+import threading
+from asyncio import run_coroutine_threadsafe
 
 # Add parent directory to path to import project modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,6 +33,10 @@ CORS(app)
 # Global game state storage (in production, use Redis or similar)
 game_sessions = {}
 
+# Profiling configuration
+ENABLE_PROFILING = False
+PROFILE_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'profile_results')
+
 # Action constants
 NOOP = 0
 UP = 1
@@ -31,6 +44,74 @@ DOWN = 2
 LEFT = 3
 RIGHT = 4
 LOAD = 5
+
+def profile_function(func):
+    """
+    Decorator to profile a function using cProfile.
+    Only profiles when ENABLE_PROFILING environment variable is set to 'true'.
+    Saves detailed profile stats to file and prints summary to console.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not ENABLE_PROFILING:
+            # No profiling, just run the function normally
+            return func(*args, **kwargs)
+        
+        # Create profile output directory if it doesn't exist
+        os.makedirs(PROFILE_OUTPUT_DIR, exist_ok=True)
+        
+        # Create profiler
+        profiler = cProfile.Profile()
+        
+        # Time the execution
+        start_time = time.time()
+        
+        # Profile the function
+        profiler.enable()
+        result = func(*args, **kwargs)
+        profiler.disable()
+        
+        elapsed_time = time.time() - start_time
+        
+        # Save stats to file with timestamp
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        stats_file = os.path.join(
+            PROFILE_OUTPUT_DIR, 
+            f"{func.__name__}_{timestamp}.prof"
+        )
+        profiler.dump_stats(stats_file)
+        
+        # Print summary to console
+        s = io.StringIO()
+        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        ps.print_stats(20)  # Top 20 functions by cumulative time
+        
+        print("\n" + "=" * 80)
+        print(f"PROFILE: {func.__name__} (Total time: {elapsed_time:.4f}s)")
+        print("=" * 80)
+        print(s.getvalue())
+        print(f"Full profile saved to: {stats_file}")
+        print("=" * 80 + "\n")
+        
+        return result
+    
+    return wrapper
+
+
+def simple_timer(func):
+    """
+    Simple timing decorator that always runs.
+    Prints execution time for the function.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        elapsed_time = time.time() - start_time
+        print(f"⏱️  {func.__name__} took {elapsed_time:.4f}s")
+        return result
+    return wrapper
+
 
 class GameSession:
     """Manages a single game session with environment state and agent state."""
@@ -75,6 +156,64 @@ class GameSession:
         
         # Initialize the game
         self.reset()
+        
+        # Pre-compile JAX functions with a warmup step
+        self._warmup_jit_compilation()
+    
+    def _warmup_jit_compilation(self):
+        """
+        Pre-compile JAX functions by doing warmup steps.
+        This ensures the first actual game step is fast.
+        """
+        print(f"🔥 Warming up JIT compilation for session {self.session_id[:8]}...")
+        warmup_start = time.time()
+        
+        # Save current state
+        saved_obs = self.obs
+        saved_state = self.state
+        saved_ai_agent_state = self.ai_agent_state
+        saved_rng = self.rng
+        
+        # Do a few warmup steps to trigger compilation
+        for _ in range(3):
+            # Get AI agent action (triggers agent compilation)
+            self.rng, ai_rng = jax.random.split(self.rng)
+            ai_action, self.ai_agent_state = self.ai_agent.get_action(
+                self.obs["agent_1"], 
+                self.state, 
+                self.ai_agent_state, 
+                ai_rng
+            )
+            
+            # Prepare actions
+            actions = {
+                "agent_0": jnp.array(0, dtype=jnp.int32),  # NOOP
+                "agent_1": ai_action
+            }
+            
+            # Step environment (triggers env.step compilation)
+            self.rng, step_key = jax.random.split(self.rng)
+            self.obs, self.state, self.rewards, done_dict, info = self.env.step(
+                step_key, self.state, actions
+            )
+            
+            # If done, reset for next warmup iteration
+            if done_dict["__all__"]:
+                self.rng, reset_key = jax.random.split(self.rng)
+                self.obs, self.state = self.env.reset(reset_key)
+                self.ai_agent_state = self.ai_agent.init_agent_state(1)
+        
+        # Block until all JAX operations complete
+        jax.block_until_ready(self.obs)
+        
+        # Restore original state
+        self.obs = saved_obs
+        self.state = saved_state
+        self.ai_agent_state = saved_ai_agent_state
+        self.rng = saved_rng
+        
+        warmup_time = time.time() - warmup_start
+        print(f"✅ JIT compilation complete ({warmup_time:.2f}s)")
     
     def reset(self):
         """Reset the game environment."""
@@ -92,6 +231,7 @@ class GameSession:
         
         return self.get_state_dict()
     
+    @profile_function
     def step(self, human_action):
         """Execute one step with human action and AI agent action."""
         if self.done:
@@ -203,6 +343,26 @@ class GameSession:
         
         return filepath
 
+# -- PREWARMING -- 
+# Prewarm a queue of game sessions that are ready to go
+
+PREWARMED_GAMES = []
+
+def get_game():
+    max_steps = 50
+    grid_size = 7
+    num_fruits = 3
+    game = GameSession(str(uuid.uuid4()), max_steps, grid_size, num_fruits)
+    return game
+
+async def add_prewarmed_game():
+    print("Adding prewarmed game session...")
+    game = get_game()
+    print("Added prewarmed game session")
+    PREWARMED_GAMES.append(game)
+
+    return game
+
 
 @app.route('/')
 def index():
@@ -214,17 +374,23 @@ def index():
 def new_game():
     """Start a new game session."""
     # Generate session ID
-    import uuid
     session_id = str(uuid.uuid4())
     
-    # Get parameters from request
-    data = request.get_json() or {}
-    max_steps = data.get('max_steps', 50)
-    grid_size = data.get('grid_size', 7)
-    num_fruits = data.get('num_fruits', 3)
-    
-    # Create new game session
-    game = GameSession(session_id, max_steps, grid_size, num_fruits)
+    # # Get parameters from request
+    # data = request.get_json() or {}
+    # max_steps = data.get('max_steps', 50)
+    # grid_size = data.get('grid_size', 7)
+    # num_fruits = data.get('num_fruits', 3)
+
+    print("Prewarmed games:", len(PREWARMED_GAMES))
+
+    if PREWARMED_GAMES:
+        game = PREWARMED_GAMES.pop(0)
+        run_coroutine_threadsafe(add_prewarmed_game(), BACKGROUND_LOOP)
+    else:
+        game = get_game()
+
+    game.session_id = session_id
     game_sessions[session_id] = game
     
     # Store session ID in Flask session
@@ -325,6 +491,12 @@ def get_controls():
     return jsonify(controls)
 
 
+global BACKGROUND_LOOP
+BACKGROUND_LOOP = asyncio.new_event_loop()
+def start_background_loop(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
 if __name__ == '__main__':
     print("=" * 60)
     print("LBF Human Interaction Server")
@@ -336,7 +508,13 @@ if __name__ == '__main__':
     print("  D/→    : Move Right")
     print("  SPACE  : Load/Collect Food")
     print("  Q      : No Operation (Wait)")
-    print("\nStarting server at http://localhost:5000")
+    print("\nStarting server at http://localhost:8998")
     print("=" * 60)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    threading.Thread(target=start_background_loop, args=(BACKGROUND_LOOP,), daemon=True).start()
+
+    for _ in range(2):
+        print("[Startup] prewarming")
+        run_coroutine_threadsafe(add_prewarmed_game(), BACKGROUND_LOOP)
+
+    app.run(debug=False, host='0.0.0.0', port=8998)

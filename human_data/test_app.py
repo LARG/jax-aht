@@ -143,6 +143,9 @@ def main():
     for test in tests:
         results.append(test())
     
+    for _ in range(2):
+        test_episode()
+
     print("\n" + "=" * 60)
     print(f"Test Results: {sum(results)}/{len(results)} passed")
     print("=" * 60)
