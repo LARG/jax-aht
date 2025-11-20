@@ -1101,9 +1101,9 @@ def log_metrics(config, outs, logger, metric_names: tuple):
         "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size, num_updates)
         "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=(0, 3, 4)),
         "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossSP": np.asarray(metrics["value_loss_sp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossXP": np.asarray(metrics["value_loss_xp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossMP": np.asarray(metrics["value_loss_mp"]).mean(axis=(0, 3, 4)),
+        "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=(0, 3, 4)),
+        "ConfValLossXP": np.asarray(metrics["value_loss_conf_xp"]).mean(axis=(0, 3, 4)),
+        "ConfValLossMP": np.asarray(metrics["value_loss_conf_mp"]).mean(axis=(0, 3, 4)),
         "EntropySP": np.asarray(metrics["entropy_conf_sp"]).mean(axis=(0, 3, 4)),
         "EntropyXP": np.asarray(metrics["entropy_conf_xp"]).mean(axis=(0, 3, 4)),
         "EntropyMP": np.asarray(metrics["entropy_conf_mp"]).mean(axis=(0, 3, 4)),
