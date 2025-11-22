@@ -5,8 +5,6 @@ Human player plays against a heuristic LBF agent.
 import os
 import sys
 import json
-import cProfile
-import pstats
 import io
 import time
 from functools import wraps
@@ -27,15 +25,13 @@ from envs import make_env
 from agents.lbf import SequentialFruitAgent
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-in-production'  # Change this in production
+app.secret_key = '<FILL_THIS_IN>'  # Change this in production
 CORS(app)
 
 # Global game state storage (in production, use Redis or similar)
 game_sessions = {}
 
-# Profiling configuration
-ENABLE_PROFILING = False
-PROFILE_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'profile_results')
+
 
 # Action constants
 NOOP = 0
@@ -44,59 +40,6 @@ DOWN = 2
 LEFT = 3
 RIGHT = 4
 LOAD = 5
-
-def profile_function(func):
-    """
-    Decorator to profile a function using cProfile.
-    Only profiles when ENABLE_PROFILING environment variable is set to 'true'.
-    Saves detailed profile stats to file and prints summary to console.
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not ENABLE_PROFILING:
-            # No profiling, just run the function normally
-            return func(*args, **kwargs)
-        
-        # Create profile output directory if it doesn't exist
-        os.makedirs(PROFILE_OUTPUT_DIR, exist_ok=True)
-        
-        # Create profiler
-        profiler = cProfile.Profile()
-        
-        # Time the execution
-        start_time = time.time()
-        
-        # Profile the function
-        profiler.enable()
-        result = func(*args, **kwargs)
-        profiler.disable()
-        
-        elapsed_time = time.time() - start_time
-        
-        # Save stats to file with timestamp
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        stats_file = os.path.join(
-            PROFILE_OUTPUT_DIR, 
-            f"{func.__name__}_{timestamp}.prof"
-        )
-        profiler.dump_stats(stats_file)
-        
-        # Print summary to console
-        s = io.StringIO()
-        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-        ps.print_stats(20)  # Top 20 functions by cumulative time
-        
-        print("\n" + "=" * 80)
-        print(f"PROFILE: {func.__name__} (Total time: {elapsed_time:.4f}s)")
-        print("=" * 80)
-        print(s.getvalue())
-        print(f"Full profile saved to: {stats_file}")
-        print("=" * 80 + "\n")
-        
-        return result
-    
-    return wrapper
-
 
 def simple_timer(func):
     """
@@ -231,7 +174,6 @@ class GameSession:
         
         return self.get_state_dict()
     
-    @profile_function
     def step(self, human_action):
         """Execute one step with human action and AI agent action."""
         if self.done:
