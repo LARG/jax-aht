@@ -32,38 +32,27 @@ A Flask-based web application for collecting human interaction data with the Lev
 
 ## Installation
 
-1. Make sure you have the main project dependencies installed:
+1. Make sure you have the main project dependencies installed found in
 ```bash
-cd /scratch/cluster/jyliu/Documents/jax-aht
-conda activate /scratch/cluster/jyliu/conda_envs/AHT
+jax-aht/pyproject.toml
 ```
 
-2. Install Flask dependencies:
+2. Install dependencies found in
 ```bash
-pip install flask flask-cors
+jax-aht/human_data/requirements.txt
 ```
 
 ## Running the Application
 
 1. Navigate to the human_data directory:
-```bash
-cd /scratch/cluster/jyliu/Documents/jax-aht/human_data
-```
 
 2. Start the Flask server:
 ```bash
 python app.py
 ```
 
-3. Open your web browser and navigate to:
-```
-http://localhost:5000
-```
+3. Open your web browser and navigate to the port the flask app is serving to
 
-If running on a remote server, you may need to set up SSH port forwarding:
-```bash
-ssh -L 5000:localhost:5000 user@remote-server
-```
 
 ## Collected Data
 
@@ -151,13 +140,6 @@ The application runs on CPU by default. If you encounter JAX GPU issues:
 ```bash
 export JAX_PLATFORM_NAME=cpu
 python app.py
-```
-
-### Module import errors
-Make sure you're in the correct conda environment and the PYTHONPATH is set:
-```bash
-conda activate /scratch/cluster/jyliu/conda_envs/AHT
-export PYTHONPATH=/scratch/cluster/jyliu/Documents/jax-aht:$PYTHONPATH
 ```
 
 ## Future Enhancements
