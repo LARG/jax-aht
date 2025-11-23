@@ -7,7 +7,7 @@ Modify these settings to customize the game experience
 # Server Configuration
 # ============================================
 SERVER_HOST = '0.0.0.0'  # '0.0.0.0' for all interfaces, 'localhost' for local only
-SERVER_PORT = 5000
+SERVER_PORT = 8998
 DEBUG_MODE = True  # Set to False in production
 SECRET_KEY = 'your-secret-key-change-in-production'  # IMPORTANT: Change this!
 

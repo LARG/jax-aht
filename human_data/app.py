@@ -5,7 +5,6 @@ Human player plays against a heuristic LBF agent.
 import os
 import sys
 import json
-import io
 import time
 from functools import wraps
 from flask import Flask, render_template, jsonify, request, session
@@ -31,8 +30,6 @@ CORS(app)
 # Global game state storage (in production, use Redis or similar)
 game_sessions = {}
 
-
-
 # Action constants
 NOOP = 0
 UP = 1
@@ -54,7 +51,6 @@ def simple_timer(func):
         print(f"⏱️  {func.__name__} took {elapsed_time:.4f}s")
         return result
     return wrapper
-
 
 class GameSession:
     """Manages a single game session with environment state and agent state."""
@@ -318,12 +314,6 @@ def new_game():
     # Generate session ID
     session_id = str(uuid.uuid4())
     
-    # # Get parameters from request
-    # data = request.get_json() or {}
-    # max_steps = data.get('max_steps', 50)
-    # grid_size = data.get('grid_size', 7)
-    # num_fruits = data.get('num_fruits', 3)
-
     print("Prewarmed games:", len(PREWARMED_GAMES))
 
     if PREWARMED_GAMES:
