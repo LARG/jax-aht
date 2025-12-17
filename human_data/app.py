@@ -16,6 +16,7 @@ import asyncio
 import uuid
 import threading
 from asyncio import run_coroutine_threadsafe
+from werkzeug.utils import secure_filename
 
 # Add parent directory to path to import project modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,6 +30,7 @@ CORS(app)
 
 # Global game state storage (in production, use Redis or similar)
 game_sessions = {}
+replay_sessions = {}
 
 # Action constants
 NOOP = 0
@@ -281,6 +283,90 @@ class GameSession:
         
         return filepath
 
+class ReplaySession:
+    """Manages replay of a saved episode."""
+    
+    def __init__(self, session_id, episode_data):
+        self.session_id = session_id
+        self.episode_data = episode_data
+        self.trajectory = episode_data['trajectory']
+        self.current_step = 0
+        self.is_playing = False
+        self.playback_speed = 1.0  # Steps per second
+        
+    def get_current_state(self):
+        """Get the current replay state."""
+        if self.current_step >= len(self.trajectory):
+            return self._get_final_state()
+        
+        step_data = self.trajectory[self.current_step]
+        return {
+            "replay": True,
+            "done": self.current_step >= len(self.trajectory) - 1,
+            "current_step": self.current_step,
+            "total_steps": len(self.trajectory),
+            "step_count": step_data['step'],
+            "max_steps": self.episode_data.get('total_steps', len(self.trajectory)),
+            "rewards": step_data['rewards'],
+            "total_rewards": self._calculate_total_rewards_up_to(self.current_step),
+            "state": step_data['state'],
+            "human_action": step_data.get('human_action'),
+            "ai_action": step_data.get('ai_action'),
+            "player_name": self.episode_data.get('player_name', 'Anonymous'),
+            "is_playing": self.is_playing
+        }
+    
+    def _get_final_state(self):
+        """Get the final state when replay is complete."""
+        final_step = self.trajectory[-1] if self.trajectory else {}
+        return {
+            "replay": True,
+            "done": True,
+            "current_step": len(self.trajectory),
+            "total_steps": len(self.trajectory),
+            "step_count": final_step.get('step', 0),
+            "max_steps": self.episode_data.get('total_steps', len(self.trajectory)),
+            "rewards": final_step.get('rewards', {"agent_0": 0.0, "agent_1": 0.0}),
+            "total_rewards": self.episode_data.get('total_rewards', {"agent_0": 0.0, "agent_1": 0.0}),
+            "state": final_step.get('state', {}),
+            "player_name": self.episode_data.get('player_name', 'Anonymous'),
+            "is_playing": False
+        }
+    
+    def _calculate_total_rewards_up_to(self, step_index):
+        """Calculate cumulative rewards up to the given step."""
+        total = {"agent_0": 0.0, "agent_1": 0.0}
+        for i in range(step_index + 1):
+            if i < len(self.trajectory):
+                rewards = self.trajectory[i]['rewards']
+                total["agent_0"] += rewards.get("agent_0", 0.0)
+                total["agent_1"] += rewards.get("agent_1", 0.0)
+        return total
+    
+    def next_step(self):
+        """Advance to the next step in the replay."""
+        if self.current_step < len(self.trajectory) - 1:
+            self.current_step += 1
+        return self.get_current_state()
+    
+    def prev_step(self):
+        """Go back to the previous step in the replay."""
+        if self.current_step > 0:
+            self.current_step -= 1
+        return self.get_current_state()
+    
+    def goto_step(self, step_index):
+        """Jump to a specific step in the replay."""
+        if 0 <= step_index < len(self.trajectory):
+            self.current_step = step_index
+        return self.get_current_state()
+    
+    def reset(self):
+        """Reset replay to the beginning."""
+        self.current_step = 0
+        self.is_playing = False
+        return self.get_current_state()
+
 # -- PREWARMING -- 
 # Prewarm a queue of game sessions that are ready to go
 
@@ -421,6 +507,96 @@ def get_controls():
         }
     }
     return jsonify(controls)
+
+
+@app.route('/api/upload_replay', methods=['POST'])
+def upload_replay():
+    """Upload an episode file and start a replay session."""
+    if 'file' not in request.files:
+        return jsonify({"success": False, "error": "No file provided"}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "error": "No file selected"}), 400
+    
+    if not file.filename.endswith('.json'):
+        return jsonify({"success": False, "error": "File must be a JSON file"}), 400
+    
+    try:
+        # Parse the uploaded JSON file
+        episode_data = json.load(file)
+        
+        # Validate the episode data structure
+        if 'trajectory' not in episode_data:
+            return jsonify({"success": False, "error": "Invalid episode file format"}), 400
+        
+        # Create a new replay session
+        replay_id = str(uuid.uuid4())
+        replay_session = ReplaySession(replay_id, episode_data)
+        replay_sessions[replay_id] = replay_session
+        
+        # Store replay ID in Flask session
+        session['replay_id'] = replay_id
+        
+        return jsonify({
+            "success": True,
+            "replay_id": replay_id,
+            "state": replay_session.get_current_state(),
+            "metadata": {
+                "player_name": episode_data.get('player_name', 'Anonymous'),
+                "timestamp": episode_data.get('timestamp', ''),
+                "total_steps": len(episode_data['trajectory']),
+                "grid_size": episode_data.get('grid_size', 7),
+                "num_fruits": episode_data.get('num_fruits', 3)
+            }
+        })
+    except json.JSONDecodeError:
+        return jsonify({"success": False, "error": "Invalid JSON file"}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/replay/step', methods=['POST'])
+def replay_step():
+    """Control replay playback."""
+    data = request.get_json()
+    replay_id = session.get('replay_id')
+    
+    if not replay_id or replay_id not in replay_sessions:
+        return jsonify({"success": False, "error": "No active replay session"}), 400
+    
+    replay = replay_sessions[replay_id]
+    action = data.get('action')  # 'next', 'prev', 'goto', 'reset'
+    
+    if action == 'next':
+        state = replay.next_step()
+    elif action == 'prev':
+        state = replay.prev_step()
+    elif action == 'goto':
+        step_index = data.get('step_index', 0)
+        state = replay.goto_step(step_index)
+    elif action == 'reset':
+        state = replay.reset()
+    else:
+        return jsonify({"success": False, "error": "Invalid action"}), 400
+    
+    return jsonify({
+        "success": True,
+        "state": state
+    })
+
+
+@app.route('/api/exit_replay', methods=['POST'])
+def exit_replay():
+    """Exit replay mode and return to normal game mode."""
+    replay_id = session.get('replay_id')
+    
+    if replay_id and replay_id in replay_sessions:
+        del replay_sessions[replay_id]
+    
+    session.pop('replay_id', None)
+    
+    return jsonify({"success": True})
 
 
 global BACKGROUND_LOOP
