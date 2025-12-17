@@ -80,8 +80,24 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         layout = augmented_layouts[env_kwargs['layout']]
         env_kwargs_copy["layout"] = layout
         env = OvercookedWrapper(**env_kwargs_copy)
+    
+    elif env_name == 'hanabi':
+        default_env_kwargs = {
+            "num_agents": 2,
+            "num_colors": 5,
+            "num_ranks": 5,
+            "max_info_tokens": 8,
+            "max_life_tokens": 3,
+            "num_cards_of_rank": np.array([3, 2, 2, 2, 1]),
+        }
+
+        from envs.hanabi.hanabi_wrapper import HanabiWrapper
+        env_kwargs = default_env_kwargs
+        env = HanabiWrapper(**env_kwargs)
+
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
+    
     return env
 
 if __name__ == "__main__":
@@ -89,4 +105,6 @@ if __name__ == "__main__":
     env = make_env('lbf-reward-shaping', {'num_agents': 3, 'grid_size': 9})
     print(env)
     env = make_env('overcooked-v1', {'layout': 'cramped_room'})
+    print(env)
+    env = make_env('hanabi', {'num_agents': 2})
     print(env)
