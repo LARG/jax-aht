@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LBF Human Interaction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .game-area {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #gameCanvas {
+            border: 3px solid #333;
+            border-radius: 10px;
+            background: #f0f0f0;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .info-panel {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .player-score {
+            font-size: 1.1em;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .control-key {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #ddd;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .control-key.highlight {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+        }
+
+        .status-message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #333;
+        }
+
+        .legend-text {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        @media (max-width: 968px) {
+            .game-area {
+                flex-direction: column;
+            }
+
+            .info-panel {
+                width: 100%;
+            }
+        }
+        /* Overlay shown when episode is complete to visually disable the game canvas */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 10px;
+            z-index: 50;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay.show {
+            display: flex;
+        }
+
+        .overlay-text {
+            font-size: 1.4em;
+            color: #333;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        /* Keep the overlay tightly bound to the canvas by wrapping the canvas
+           in a positioned element. We intentionally don't hardcode sizes so
+           the overlay follows the canvas' natural layout/scaling. */
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block; /* shrinkwrap to the canvas size */
+        }
+
+        /* Replay controls */
+        .file-upload-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-upload-section input[type="file"] {
+            flex: 1;
+            max-width: 300px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            font-size: 0.9em;
+        }
+
+        .playback-controls {
+            display: none;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .playback-controls.active {
+            display: flex;
+        }
+
+        .playback-controls button {
+            min-width: 100px;
+        }
+
+        .replay-info-section {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 10px;
+            border: 2px solid #ffeaa7;
+        }
+
+        .replay-info-section.active {
+            display: block;
+        }
+
+        .replay-slider {
+            margin: 10px 0;
+        }
+
+        .replay-slider input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .replay-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .replay-slider input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .replay-info {
+            text-align: center;
+            color: #666;
+            font-size: 0.95em;
+            margin: 5px 0;
+        }
+
+        .replay-metadata {
+            text-align: center;
+            color: #856404;
+            font-size: 0.9em;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ffeaa7;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍎 Level-Based Foraging</h1>
+        <p class="subtitle">Play cooperatively with an AI agent to collect food!</p>
+
+        <div id="statusMessage" class="status-message"></div>
+
+        <div class="game-area">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="gameCanvas" width="600" height="600"></canvas>
+                    <div id="gameOverlay" class="overlay" aria-hidden="true">
+                        <div class="overlay-text">🎮 Episode Complete — Click the button below to play again</div>
+                    </div>
+                </div>
+                
+                <!-- Normal Play Mode Controls -->
+                <div id="playModeControls" class="button-group">
+                    <button id="mainActionBtn" onclick="mainAction()">New Game</button>
+                    <button onclick="showFileUpload()">📂 Load Replay</button>
+                </div>
+                
+                <!-- File Upload (shown when Load Replay is clicked) -->
+                <div id="fileUploadSection" class="file-upload-section hidden">
+                    <input type="file" id="replayFile" accept=".json" />
+                    <button onclick="uploadReplay()">Upload & Play</button>
+                    <button onclick="cancelFileUpload()">Cancel</button>
+                </div>
+                
+                <!-- Replay Mode Controls -->
+                <div id="replayControls" class="playback-controls">
+                    <button onclick="replayControl('reset')">⏮️ Reset</button>
+                    <button onclick="replayControl('prev')">⏪ Prev</button>
+                    <button onclick="replayControl('next')">⏩ Next</button>
+                    <button onclick="exitReplay()" style="background: #e74c3c;">❌ Exit Replay</button>
+                </div>
+                
+                <p id="normalModeNote" style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9em;">
+                    📝 Episodes are automatically saved when completed
+                </p>
+                
+                <!-- Replay Info Section (below buttons) -->
+                <div id="replayInfoSection" class="replay-info-section">
+                    <div class="replay-info">
+                        <strong>Step <span id="replayStep">0</span> / <span id="replayTotal">0</span></strong>
+                    </div>
+                    
+                    <div class="replay-slider">
+                        <input type="range" id="replaySlider" min="0" max="0" value="0" onchange="seekReplay(this.value)" />
+                    </div>
+                    
+                    <div class="replay-metadata" id="replayMetadata"></div>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <div class="info-card">
+                    <h3>📊 Game Stats</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Steps:</span>
+                        <span class="stat-value" id="stepCount">0 / 0</span>
+                    </div>
+                    <div class="stat-row player-score">
+                        <span class="stat-label">👤 Your Score:</span>
+                        <span class="stat-value" id="playerScore">0.0</span>
+                    </div>
+                    <div class="stat-row player-score">
+                        <span class="stat-label">🤖 AI Score:</span>
+                        <span class="stat-value" id="aiScore">0.0</span>
+                    </div>
+                    <div class="stat-row player-score">
+                        <span class="stat-label">🏆 Team Total:</span>
+                        <span class="stat-value" id="totalScore">0.0</span>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>🎮 Controls</h3>
+                    <div class="controls-grid">
+                        <div></div>
+                        <div class="control-key">W ↑</div>
+                        <div></div>
+                        <div class="control-key">A ←</div>
+                        <div class="control-key">S ↓</div>
+                        <div class="control-key">D →</div>
+                        <div class="control-key" style="grid-column: span 2;">SPACE - Collect</div>
+                        <div class="control-key">Q - Wait</div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>🎯 Legend</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff6b6b;"></div>
+                            <span class="legend-text">You (Player)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4ecdc4;"></div>
+                            <span class="legend-text">AI Agent</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #95e1d3;"></div>
+                            <span class="legend-text">Food Item</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #f0f0f0;"></div>
+                            <span class="legend-text">Empty Cell</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>ℹ️ How to Play</h3>
+                    <p style="color: #666; line-height: 1.6; font-size: 0.9em;">
+                        • Move around the grid using WASD or arrow keys<br>
+                        • Press SPACE when next to food to collect it<br>
+                        • You can only collect food if your level ≥ food level<br>
+                        • Work with the AI to maximize team score!<br>
+                        • Food requires combined levels to collect
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = null;
+        let sessionId = null;
+        let replayMode = false;
+        let replayId = null;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Action constants
+        const ACTIONS = {
+            NOOP: 0,
+            UP: 1,
+            DOWN: 2,
+            LEFT: 3,
+            RIGHT: 4,
+            LOAD: 5
+        };
+
+        // Key mappings
+        const keyMap = {
+            'w': ACTIONS.UP,
+            'W': ACTIONS.UP,
+            'ArrowUp': ACTIONS.UP,
+            's': ACTIONS.DOWN,
+            'S': ACTIONS.DOWN,
+            'ArrowDown': ACTIONS.DOWN,
+            'a': ACTIONS.LEFT,
+            'A': ACTIONS.LEFT,
+            'ArrowLeft': ACTIONS.LEFT,
+            'd': ACTIONS.RIGHT,
+            'D': ACTIONS.RIGHT,
+            'ArrowRight': ACTIONS.RIGHT,
+            ' ': ACTIONS.LOAD,
+            'q': ACTIONS.NOOP,
+            'Q': ACTIONS.NOOP
+        };
+
+        // Initialize game on page load
+        window.onload = function() {
+            startNewGame();
+        };
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(event) {
+            if (replayMode) return; // Disable keyboard controls in replay mode
+            if (!gameState || gameState.done) return;
+            
+            const action = keyMap[event.key];
+            if (action !== undefined) {
+                event.preventDefault();
+                executeAction(action);
+            }
+        });
+
+        function showMessage(message, type = 'info') {
+            const msgDiv = document.getElementById('statusMessage');
+            msgDiv.textContent = message;
+            msgDiv.className = `status-message ${type}`;
+            msgDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        async function startNewGame() {
+            try {
+                const response = await fetch('/api/new_game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        max_steps: 50,
+                        grid_size: 7,
+                        num_fruits: 3
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    sessionId = data.session_id;
+                    gameState = data.state;
+                    updateDisplay();
+                    showMessage('New game started! Good luck!', 'success');
+                    // Update main action button label to 'Reset' since a session now exists
+                    const mainBtn = document.getElementById('mainActionBtn');
+                    if (mainBtn) mainBtn.textContent = 'Reset';
+                }
+            } catch (error) {
+                console.error('Error starting new game:', error);
+                showMessage('Error starting game. Please try again.', 'warning');
+            }
+        }
+
+        async function resetGame() {
+            try {
+                const response = await fetch('/api/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.state;
+                    updateDisplay();
+                    showMessage('Game reset!', 'info');
+                    // Ensure main action button remains labeled 'Reset'
+                    const mainBtn = document.getElementById('mainActionBtn');
+                    if (mainBtn) mainBtn.textContent = 'Reset';
+                }
+            } catch (error) {
+                console.error('Error resetting game:', error);
+                showMessage('Error resetting game. Please try again.', 'warning');
+            }
+        }
+
+        async function executeAction(action) {
+            if (!gameState || gameState.done) return;
+            
+            try {
+                const response = await fetch('/api/step', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: action })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.state;
+                    updateDisplay();
+                    
+                    if (gameState.done) {
+                        const teamScore = gameState.total_rewards.agent_0 + gameState.total_rewards.agent_1;
+                        showMessage(`🎉 Episode Complete! Team Score: ${teamScore.toFixed(2)} - Automatically Saved!`, 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Error executing action:', error);
+                showMessage('Error executing action. Please try again.', 'warning');
+            }
+        }
+
+        // Unified button handler: start a new game if no session or the episode is done,
+        // otherwise reset the existing session. No saving is triggered by this button.
+        async function mainAction() {
+            // If there is no active session, start a new one
+            if (!sessionId) {
+                await startNewGame();
+                return;
+            }
+
+            // If the episode is complete, start a fresh session (new game)
+            if (gameState && gameState.done) {
+                await startNewGame();
+                return;
+            }
+
+            // Otherwise, reset the current session
+            await resetGame();
+        }
+
+        function updateDisplay() {
+            if (!gameState) return;
+            
+            // Update stats
+            document.getElementById('stepCount').textContent = 
+                `${gameState.step_count} / ${gameState.max_steps}`;
+            document.getElementById('playerScore').textContent = 
+                gameState.total_rewards.agent_0.toFixed(2);
+            document.getElementById('aiScore').textContent = 
+                gameState.total_rewards.agent_1.toFixed(2);
+            document.getElementById('totalScore').textContent = 
+                (gameState.total_rewards.agent_0 + gameState.total_rewards.agent_1).toFixed(2);
+            
+            // Draw game state
+            drawGame();
+
+            // Show/hide the game-over overlay so the player knows to click Reset
+            setGameOverOverlay(Boolean(gameState.done) && !replayMode);
+            
+            // Update replay UI if in replay mode
+            if (replayMode) {
+                updateReplayUI();
+            }
+        }
+
+        function drawGame() {
+            if (!gameState || !gameState.state) return;
+            
+            const state = gameState.state;
+            const gridSize = 7; // Default grid size
+            const cellSize = canvas.width / gridSize;
+            
+            // Clear canvas
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= gridSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, canvas.height);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(canvas.width, i * cellSize);
+                ctx.stroke();
+            }
+            
+            // Draw food items
+            for (let i = 0; i < state.food_positions.length; i++) {
+                if (!state.food_eaten[i]) {
+                    const [row, col] = state.food_positions[i];
+                    const level = state.food_levels[i];
+                    
+                    ctx.fillStyle = '#95e1d3';
+                    ctx.fillRect(col * cellSize + 2, row * cellSize + 2, 
+                                cellSize - 4, cellSize - 4);
+                    
+                    // Draw level
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`🍎${level}`, (col + 0.5) * cellSize, (row + 0.5) * cellSize);
+                }
+            }
+            
+            // Draw agents
+            const agentColors = ['#ff6b6b', '#4ecdc4'];
+            const agentLabels = ['👤', '🤖'];
+            
+            for (let i = 0; i < state.agent_positions.length; i++) {
+                const [row, col] = state.agent_positions[i];
+                const level = state.agent_levels[i];
+                
+                // Draw agent background
+                ctx.fillStyle = agentColors[i];
+                ctx.fillRect(col * cellSize + 5, row * cellSize + 5, 
+                            cellSize - 10, cellSize - 10);
+                
+                // Draw border for player (agent 0)
+                if (i === 0) {
+                    ctx.strokeStyle = '#c92a2a';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(col * cellSize + 5, row * cellSize + 5, 
+                                  cellSize - 10, cellSize - 10);
+                }
+                
+                // Draw agent icon and level
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(agentLabels[i], (col + 0.5) * cellSize, (row + 0.35) * cellSize);
+                
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText(`Lv${level}`, (col + 0.5) * cellSize, (row + 0.65) * cellSize);
+            }
+        }
+
+        // Toggle the overlay that visually disables the canvas when an episode ends
+        function setGameOverOverlay(show) {
+            const overlay = document.getElementById('gameOverlay');
+            if (!overlay || !canvas) return;
+
+            if (show) {
+                overlay.classList.add('show');
+                overlay.setAttribute('aria-hidden', 'false');
+                // slightly dim the canvas for better contrast (optional)
+                canvas.style.filter = 'grayscale(0.2) blur(1px)';
+                canvas.style.pointerEvents = 'none';
+            } else {
+                overlay.classList.remove('show');
+                overlay.setAttribute('aria-hidden', 'true');
+                canvas.style.filter = '';
+                canvas.style.pointerEvents = '';
+            }
+        }
+
+        // ===== REPLAY FUNCTIONS =====
+        
+        function showFileUpload() {
+            document.getElementById('playModeControls').classList.add('hidden');
+            document.getElementById('fileUploadSection').classList.remove('hidden');
+            document.getElementById('normalModeNote').classList.add('hidden');
+        }
+        
+        function cancelFileUpload() {
+            document.getElementById('playModeControls').classList.remove('hidden');
+            document.getElementById('fileUploadSection').classList.add('hidden');
+            document.getElementById('normalModeNote').classList.remove('hidden');
+            document.getElementById('replayFile').value = '';
+        }
+        
+        async function uploadReplay() {
+            const fileInput = document.getElementById('replayFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('Please select a file to upload', 'warning');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload_replay', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    replayMode = true;
+                    replayId = data.replay_id;
+                    gameState = data.state;
+                    
+                    // Hide file upload, show replay controls
+                    document.getElementById('fileUploadSection').classList.add('hidden');
+                    document.getElementById('playModeControls').classList.add('hidden');
+                    document.getElementById('normalModeNote').classList.add('hidden');
+                    document.getElementById('replayControls').classList.add('active');
+                    document.getElementById('replayInfoSection').classList.add('active');
+                    
+                    // Update replay UI
+                    document.getElementById('replayTotal').textContent = data.state.total_steps;
+                    document.getElementById('replaySlider').max = data.state.total_steps - 1;
+                    
+                    // Show metadata
+                    const metadata = data.metadata;
+                    document.getElementById('replayMetadata').innerHTML = 
+                        `<strong>Player:</strong> ${metadata.player_name} | ` +
+                        `<strong>Date:</strong> ${metadata.timestamp} | ` +
+                        `<strong>Grid:</strong> ${metadata.grid_size}x${metadata.grid_size} | ` +
+                        `<strong>Fruits:</strong> ${metadata.num_fruits}`;
+                    
+                    updateDisplay();
+                    showMessage('Replay loaded successfully!', 'success');
+                } else {
+                    showMessage(data.error || 'Failed to load replay', 'warning');
+                }
+            } catch (error) {
+                console.error('Error uploading replay:', error);
+                showMessage('Error loading replay file', 'warning');
+            }
+        }
+        
+        async function replayControl(action) {
+            if (!replayMode) return;
+            
+            try {
+                const response = await fetch('/api/replay/step', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: action })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.state;
+                    updateDisplay();
+                }
+            } catch (error) {
+                console.error('Error controlling replay:', error);
+                showMessage('Error controlling replay', 'warning');
+            }
+        }
+        
+        async function seekReplay(stepIndex) {
+            if (!replayMode) return;
+            
+            try {
+                const response = await fetch('/api/replay/step', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        action: 'goto',
+                        step_index: parseInt(stepIndex)
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    gameState = data.state;
+                    updateDisplay();
+                }
+            } catch (error) {
+                console.error('Error seeking replay:', error);
+            }
+        }
+        
+        async function exitReplay() {
+            try {
+                await fetch('/api/exit_replay', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Reset replay state
+                replayMode = false;
+                replayId = null;
+                
+                // Reset UI - hide replay controls, show play controls
+                document.getElementById('replayControls').classList.remove('active');
+                document.getElementById('replayInfoSection').classList.remove('active');
+                document.getElementById('playModeControls').classList.remove('hidden');
+                document.getElementById('fileUploadSection').classList.add('hidden');
+                document.getElementById('normalModeNote').classList.remove('hidden');
+                document.getElementById('replayFile').value = '';
+                
+                // Start a new game
+                await startNewGame();
+                
+                showMessage('Exited replay mode', 'info');
+            } catch (error) {
+                console.error('Error exiting replay:', error);
+            }
+        }
+        
+        function updateReplayUI() {
+            if (!replayMode || !gameState) return;
+            
+            document.getElementById('replayStep').textContent = gameState.current_step + 1;
+            document.getElementById('replaySlider').value = gameState.current_step;
+            
+            // Show action information if available
+            if (gameState.human_action !== undefined && gameState.ai_action !== undefined) {
+                const actionNames = ['NOOP', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'LOAD'];
+                console.log(`Step ${gameState.current_step + 1}: Human=${actionNames[gameState.human_action]}, AI=${actionNames[gameState.ai_action]}`);
+            }
+        }
+    </script>
+</body>
+</html>
