@@ -11,6 +11,7 @@ from envs.log_wrapper import LogWrapper
 
 from ego_agent_training.ppo_ego import train_ppo_ego_agent
 from ego_agent_training.utils import initialize_ego_agent
+from ego_agent_training.ppo_monitoring import PPOMonitor
 from common.plot_utils import get_metric_names, get_stats
 from common.save_load_utils import save_train_run
 
@@ -39,6 +40,13 @@ def train_ego_agent(config, logger, partner_params, partner_population):
     log.info("Starting ego agent training...")
     start_time = time.time()
     
+    # Initialize monitoring if enabled
+    monitor = None
+    if config.get("enable_ppo_monitoring", False):
+        monitoring_dir = config.get("ppo_monitoring_dir", "./ppo_monitoring")
+        monitor = PPOMonitor(output_dir=monitoring_dir)
+        monitor.start()
+    
     def train_ego_fn(rng, partner_params):
         rng, init_rng, train_rng = jax.random.split(rng, 3)
         ego_policy, init_ego_params = initialize_ego_agent(algorithm_config, env, init_rng)
@@ -57,7 +65,10 @@ def train_ego_agent(config, logger, partner_params, partner_population):
     # Run the training
     vmapped_train_fn = jax.jit(jax.vmap(train_ego_fn, in_axes=(0, 0)))
     out = vmapped_train_fn(train_rngs, partner_params)
-    log.info(f"Ego agent training completed in {time.time() - start_time:.2f} seconds")
+    
+    end_time = time.time()
+    total_training_time = end_time - start_time
+    log.info(f"Ego agent training completed in {total_training_time:.2f} seconds")
     
     # Prepare ego params and policy for heldout evaluation
     num_seeds, num_ego_train_seeds = jax.tree.leaves(out["final_params"])[0].shape[:2]
@@ -67,11 +78,11 @@ def train_ego_agent(config, logger, partner_params, partner_population):
 
     # Log metrics
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
-    log_ego_metrics(config, out, logger, metric_names)
+    log_ego_metrics(config, out, logger, metric_names, monitor=monitor, total_training_time=total_training_time)
 
     return ego_params, ego_policy, init_ego_params
 
-def log_ego_metrics(config, out, logger, metric_names: tuple):
+def log_ego_metrics(config, out, logger, metric_names: tuple, monitor=None, total_training_time=None):
     '''Log metrics for the ego agent returned by the above train_ego_agent function.
     '''
     train_metrics = out["metrics"]
@@ -117,6 +128,28 @@ def log_ego_metrics(config, out, logger, metric_names: tuple):
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
         
         logger.commit()
+        
+        # Record in monitor if available
+        if monitor is not None:
+            # Reconstruct timing: assume updates were roughly evenly spaced during training
+            if total_training_time is not None:
+                estimated_elapsed_time = (step / num_updates) * total_training_time
+            else:
+                estimated_elapsed_time = 0
+            
+            monitor.record_update_with_time(
+                update_step=step,
+                ego_return=average_ego_rets_per_iter[step],
+                value_loss=average_ego_value_losses[step],
+                actor_loss=average_ego_actor_losses[step],
+                entropy_loss=average_ego_entropy_losses[step],
+                elapsed_time=estimated_elapsed_time
+            )
+    
+    # Save and plot monitoring data if monitor is available
+    if monitor is not None:
+        monitor.save_data()
+        monitor.plot_results()
     
     # Saving artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir

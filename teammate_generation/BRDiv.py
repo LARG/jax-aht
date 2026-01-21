@@ -725,6 +725,14 @@ def run_brdiv(config, wandb_logger):
 
     log.info("Starting BRDiv training...")
     start = time.time()
+    
+    # Initialize monitoring if enabled
+    monitor = None
+    if config.get("enable_brdiv_monitoring", False):
+        from teammate_generation.brdiv_with_monitoring import BRDivMonitor
+        monitoring_dir = config.get("brdiv_monitoring_dir", "./brdiv_monitoring")
+        monitor = BRDivMonitor(output_dir=monitoring_dir)
+        monitor.start()
 
     # Generate multiple random seeds from the base seed
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
@@ -752,17 +760,18 @@ def run_brdiv(config, wandb_logger):
         out = vmapped_train_fn(rngs)
 
     end = time.time()
-    log.info(f"BRDiv training complete in {end - start} seconds")
+    total_training_time = end - start
+    log.info(f"BRDiv training complete in {total_training_time} seconds")
 
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
-    log_metrics(config, out, wandb_logger, metric_names)
+    log_metrics(config, out, wandb_logger, metric_names, monitor=monitor, total_training_time=total_training_time)
 
     partner_params, partner_population = get_brdiv_population(config, out, env)
 
     return partner_params, partner_population
 
 
-def log_metrics(config, outs, logger, metric_names: tuple):
+def log_metrics(config, outs, logger, metric_names: tuple, monitor=None, total_training_time=None):
     metrics = outs["metrics"]
     # metrics now has shape (num_seeds, num_updates, _, _, pop_size)
     num_seeds, num_updates, _, _, pop_size = metrics["pg_loss_conf_agent"].shape # number of trained pairs
@@ -785,7 +794,30 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     for step in range(num_updates):
         logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[step], train_step=step)
         logger.log_item("Eval/AvgXPReturnCurve", xp_return_curve[step], train_step=step)
+        
+        # Record in monitor if available
+        if monitor is not None:
+            # Reconstruct timing: assume updates were roughly evenly spaced during training
+            if total_training_time is not None:
+                # Estimate time of this update based on its position in training
+                estimated_elapsed_time = (step / num_updates) * total_training_time
+            else:
+                # Fallback to actual wall-clock time (less accurate)
+                estimated_elapsed_time = time.time() - monitor.start_time if monitor.start_time else 0
+            
+            monitor.record_update_with_time(
+                update_step=step,
+                sp_return=sp_return_curve[step],
+                xp_return=xp_return_curve[step],
+                elapsed_time=estimated_elapsed_time
+            )
+    
     logger.commit()
+    
+    # Save and plot monitoring data if monitor is available
+    if monitor is not None:
+        monitor.save_data()
+        monitor.plot_results()
 
     # log final XP matrix to wandb - average over seeds
     last_returns_array = all_returns[:, -1].mean(axis=(0, 2, 3))
