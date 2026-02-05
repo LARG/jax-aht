@@ -1,31 +1,32 @@
 # @package algorithm
 # ^ tells hydra to place these value directly under algorithm key
 ALG: brdiv
-TOTAL_TIMESTEPS: 4.5e7  # divided among each pair of BR and Conf agents
+TOTAL_TIMESTEPS: 3e6  # divided among each pair of BR and Conf agents
 NUM_CHECKPOINTS: 5
-PARTNER_POP_SIZE: 4
-NUM_ENVS: 64
+PARTNER_POP_SIZE: 3
+NUM_ENVS: 2
 # SP weight = 1 + 2*XP weight. 
 # Thus, as XP weight -> 0, SP/(SP+XP) -> 1.
 # If XP weight -> infinity, XP/(SP+XP) -> 1/3, and SP/(SP+XP) -> 2/3.
-XP_LOSS_WEIGHTS: 1 
-LR: 1e-4
-UPDATE_EPOCHS: 15
-NUM_MINIBATCHES: 4
+XP_LOSS_WEIGHTS: 5
+LR: 1e-5
+UPDATE_EPOCHS: 10
+NUM_MINIBATCHES: 2
 GAMMA: 0.99
 GAE_LAMBDA: 0.95
-CLIP_EPS: 0.05
-ENT_COEF: 0.01
-VF_COEF: 0.5
+CLIP_EPS: 0.1
+ENT_COEF: 1e-4
+VF_COEF: 5.0
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: false
+
+# NUM_SEEDS: 100
+
 ego_train_algorithm:
-  EGO_ACTOR_TYPE: s5
-  S5_D_MODEL: 16
-  S5_SSM_SIZE: 16
-  S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+  EGO_ACTOR_TYPE: mlp
+
   FC_N_LAYERS: 2
-  TOTAL_TIMESTEPS: 1e7
+  TOTAL_TIMESTEPS: 3e6
   NUM_CHECKPOINTS: 5 
   NUM_ENVS: 8
   LR: 1e-4

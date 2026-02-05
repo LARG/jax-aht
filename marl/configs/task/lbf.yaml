@@ -1,4 +1,4 @@
 ENV_NAME: lbf
 ROLLOUT_LENGTH: 128
-ENV_KWARGS: {}
+ENV_KWARGS: {"fov": 20, "grid_size": 20, "num_agents": 2, "num_food": 4, "max_agent_level": 2, "force_coop": False}
 TASK_NAME: lbf

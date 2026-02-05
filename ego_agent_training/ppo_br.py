@@ -107,6 +107,7 @@ class HeuristicPolicyPopulation(AgentPopulation):
 def run_br_training(config, wandb_logger):
     '''Run ego agent training against a single partner agent.
     '''
+
     algorithm_config = dict(config["algorithm"])
 
     # Create only one environment instance
@@ -126,6 +127,8 @@ def run_br_training(config, wandb_logger):
 
     partner_policy, partner_params, partner_test_mode, _ = list(heldout_agents.values())[0]
 
+
+
     if partner_params is not None: # RL agent
         partner_params = jax.tree.map(lambda x: x[jnp.newaxis, ...], partner_params)
         partner_population = DummyPolicyPopulation(
@@ -142,7 +145,10 @@ def run_br_training(config, wandb_logger):
         )
 
     log.info("Starting ego agent training...")
+    print("Training steps:", algorithm_config["TOTAL_TIMESTEPS"])
     start_time = time.time()
+
+    exit()
     
     # Run the training
     out = train_ppo_ego_agent(

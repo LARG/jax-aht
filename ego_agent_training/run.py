@@ -26,10 +26,10 @@ def run_training(cfg):
     elif cfg["algorithm"]["ALG"] == "meliba_ego":
         ego_params, ego_policy, init_ego_params = run_ego_meliba_training(cfg, wandb_logger)
 
-    if cfg["run_heldout_eval"]:
-        metric_names = get_metric_names(cfg["ENV_NAME"])
-        eval_metrics, ego_names, heldout_names = run_heldout_evaluation(cfg, ego_policy, ego_params, init_ego_params, ego_as_2d=False)
-        log_heldout_metrics(cfg, wandb_logger, eval_metrics, ego_names, heldout_names, metric_names, ego_as_2d=False)
+    # if cfg["run_heldout_eval"]:
+    #     metric_names = get_metric_names(cfg["ENV_NAME"])
+    #     eval_metrics, ego_names, heldout_names = run_heldout_evaluation(cfg, ego_policy, ego_params, init_ego_params, ego_as_2d=False)
+    #     log_heldout_metrics(cfg, wandb_logger, eval_metrics, ego_names, heldout_names, metric_names, ego_as_2d=False)
 
     # Cleanup
     wandb_logger.close()

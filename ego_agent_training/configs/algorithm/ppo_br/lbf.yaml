@@ -2,7 +2,11 @@ defaults:
   - ppo_br/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 6e7
+EGO_ACTOR_TYPE: s5
+TOTAL_TIMESTEPS: 3e6
+partner_agent:
+  random_agent:
+    actor_type: random_agent
 LR: 5e-5
 ENT_COEF: 1e-4
 CLIP_EPS: 0.1

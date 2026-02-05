@@ -100,6 +100,11 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
     (policy, params, test_mode).
     '''
     heldout_agents = {}
+
+    print(heldout_config.items())
+
+    exit()
+
     for agent_name, agent_config in heldout_config.items():
         params_list = None
         idx_labels = None
@@ -115,6 +120,10 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
 
         # Load non-RL-based heuristic agents
         elif task_name == 'lbf':
+
+            print("im here")
+            exit()
+
             performance_bounds = agent_config.get("performance_bounds", None)
             if agent_config["actor_type"] == 'random_agent':
                 policy = LBFRandomPolicyWrapper(using_log_wrapper=True)
