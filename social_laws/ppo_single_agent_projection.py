@@ -8,6 +8,7 @@ python social_laws/run.py algorithm=ppo/lbf task=lbf label=test_ppo_single_agent
 Suggested debug command:
 python social_laws/run.py algorithm=ppo/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
 '''
+import os
 import shutil
 import time
 import logging
@@ -21,7 +22,7 @@ import hydra
 from flax.training.train_state import TrainState
 
 from social_laws.initialize_agents import initialize_agent
-from social_laws.run_episodes import run_episodes
+from social_laws.run_episodes import run_episodes, run_render_episodes
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 from envs import make_env
@@ -154,9 +155,18 @@ def train_ppo_agent(config, env, train_rng,
                     step_rngs, env_state, env_act
                 )
                 # note that num_actors = num_envs * num_agents
-                # Get agent_idx info from info dict
-                # info = jax.tree.map(lambda x: jnp.take(x, agent_idx, axis=1), info)
-                info = jax.tree.map(lambda x: x[:, agent_idx], info)
+                # Get agent_idx info from info dict, excluding certain keys
+                keys_to_exclude = {'pre_reset_state', 'pre_reset_obs'}  # Add any keys that shouldn't be indexed
+
+                def filter_agent_info(path, x):
+                    # Get the key name from the path
+                    key_name = path[-1].key if hasattr(path[-1], 'key') else None
+                    if key_name in keys_to_exclude or x.ndim <= 1:
+                        return x
+                    else:
+                        return x[:, agent_idx]
+
+                info = jax.tree_util.tree_map_with_path(filter_agent_info, info)
 
                 # Store agent_idx data in transition
                 transition = Transition(
@@ -400,12 +410,23 @@ def train_ppo_agent(config, env, train_rng,
                 xs=None,
                 length=config["NUM_UPDATES"]
             )
+
             (final_runner_state, checkpoint_array, final_ckpt_idx, eval_eps_last_infos) = state_with_ckpt
             out = {
                 "final_params": final_runner_state[0].params,
                 "metrics": metrics,  # shape (NUM_UPDATES, ...)
                 "checkpoints": checkpoint_array,
             }
+
+            # Collect final eval gifs for logging
+            rng_eval = final_runner_state[2] # extract final rng_eval from the final runner state after training
+            rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+            params = final_runner_state[0].params
+            out["render_outs"] = run_render_episodes(eval_rng, env, agent_idx,
+                                                     agent_param=params, agent_policy=policy,
+                                                     max_episode_steps=env.env.horizon,
+                                                     num_eps=5, render=True)
+
             return out
         return train
 
@@ -427,7 +448,7 @@ def train_ppo_agent(config, env, train_rng,
     return out
 
 def run_training(config, wandb_logger, agent_idx=0):
-    '''Run ego agent training against the population of partner agents.
+    '''Run single agent projection training.
 
     Args:
         config: dict, config for the training
@@ -448,7 +469,7 @@ def run_training(config, wandb_logger, agent_idx=0):
     policy, init_params = initialize_agent(algorithm_config, env, init_rng, agent_index=agent_idx)
 
     log.info(f"Starting single agent projection training for agent {agent_idx}...")
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     # Run the training
     out = train_ppo_agent(
@@ -460,27 +481,31 @@ def run_training(config, wandb_logger, agent_idx=0):
         agent_idx=agent_idx
     )
 
-    elapsed_time = time.time() - start_time
-    hours = int(elapsed_time // 3600)
-    minutes = int((elapsed_time % 3600) // 60)
-    seconds = int(elapsed_time % 60)
-    milliseconds = int((elapsed_time * 1000) % 1000)
-    microseconds = int((elapsed_time * 1000000) % 1000)
-    log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {hours:02d}h {minutes:02d}m {seconds:02d}s {milliseconds:03d}ms {microseconds:03d}µs")
+    elapsed_time = time.perf_counter() - start_time
+    hours, rem = divmod(elapsed_time, 3600)
+    minutes, rem = divmod(rem, 60)
+    seconds, rem = divmod(rem, 1)
+    milliseconds = int(rem * 1000)
+    microseconds = int((rem * 1_000_000) % 1000)
+    log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {elapsed_time:.2f}s")
+    log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
     # process and log metrics
     metric_names = get_metric_names(config["ENV_NAME"])
-    log_metrics(config, out, wandb_logger, metric_names, agent_idx)
+    log_metrics(env, config, out, wandb_logger, metric_names, agent_idx)
 
     return out["final_params"], policy, init_params
 
-def log_metrics(config, train_out, logger, metric_names: tuple, agent_idx: int):
+def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: int):
     """Process training metrics and log them using the provided logger.
 
     Args:
-        training_logs: dict, the logs from training
+        env: the environment used for training, needed for logging videos
+        config: dict, the training configuration
+        train_out: dict, the logs from training
         logger: Logger, instance to log metrics
         metric_names: tuple, names of metrics to extract from training logs
+        agent_idx: int, index of the trained agent
     """
     train_metrics = train_out["metrics"]
 
@@ -523,6 +548,19 @@ def log_metrics(config, train_out, logger, metric_names: tuple, agent_idx: int):
 
     # Saving artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+
+    # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
+    eval_render_init_env_state = train_out['render_outs'][1].env_state.env_state # LogEnvState
+    eval_render_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
+    eval_render_dones = train_out['render_outs'][0][4]['__all__']
+    num_episodes = eval_render_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
+    env.animate((eval_render_init_env_state, eval_render_env_state), eval_render_dones, num_episodes, debug=True)
+
+    for eval_ep in range(num_episodes):
+        logger.log_video(
+            tag=f"Videos/Agent_{agent_idx + 1}_Proj/Agent_{agent_idx}_Episode_{eval_ep}",
+            path=os.path.join(env._render_dir, f"{env._render_name}_ep_{eval_ep}.gif")
+        )
 
     out_savepath = save_train_run(train_out, savedir, savename=f"PPO_Agent_{agent_idx + 1}_Proj_Train_Run")
     if config["logger"]["log_train_out"]:

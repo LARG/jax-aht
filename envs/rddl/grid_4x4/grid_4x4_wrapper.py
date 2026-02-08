@@ -2,18 +2,22 @@ from functools import partial
 from typing import Dict, Any, List, Tuple, Optional
 
 import chex
-from flax.struct import dataclass
+import hydra
 import math
+import os
 import jax
 import jax.numpy as jnp
 import pyRDDLGym_jax
-import pyRDDLGym_jax.core.env as jax_pyrddl
+
+# from pyRDDLGym.core.visualizer.movie import MovieGenerator
 from pyRDDLGym_jax.core.env import JaxRDDLEnv
 from jumanji import specs as jumanji_specs
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
 from envs.base_env import BaseEnv
 from envs.base_env import WrappedEnvState
+
+from envs.rddl.grid_4x4.Grid4x4MultiAgentViz import Grid4x4MultiAgentVisualizer
 
 class Grid4x4Wrapper(BaseEnv):
     """Use the RDDL JAX Environment with JaxMARL environments.
@@ -30,12 +34,29 @@ class Grid4x4Wrapper(BaseEnv):
         self.env = args[0]
         self.vectorized = kwargs.get('vectorized', True)
         self.share_rewards = kwargs.get('share_rewards', False)
+        self.render = kwargs.get('render', False)
+        self._render_name = kwargs.get('render_name', "grid_4x4")
+        self._render_dir = kwargs.get('render_dir', "grid_4x4")
 
         self.name = self.env.__class__.__name__
         self.rddl_agent_names = self.env.model.type_to_objects['agent']
         self.rddl_action_keys = sorted(self.env.action_space.keys())
         self.num_agents = len(self.rddl_agent_names)
         self.agents = [f"agent_{i}" for i in range(self.num_agents)]
+
+        controllable = self.env.model.non_fluents['CONTROLLABLE']
+        self.uncontrolled_agents_exist = not all(controllable)
+        self.controllable = {}
+        self.controlled_agents = []
+        self.uncontrolled_agents = []
+        for agent_idx, agent in enumerate(self.agents):
+            if controllable[agent_idx]:
+                self.controllable[agent] = True
+                self.controlled_agents.append(agent_idx)
+            else:
+                self.controllable[agent] = False
+                self.uncontrolled_agents.append(agent_idx)
+        self.single_agent_projection = len(self.controlled_agents) == 1 and self.uncontrolled_agents_exist
 
         self._xpos_list = list(self.env.model.type_to_objects['xpos'])
         self._ypos_list = list(self.env.model.type_to_objects['ypos'])
@@ -56,15 +77,15 @@ class Grid4x4Wrapper(BaseEnv):
         for i, agent in enumerate(self.agents):
             self._agent_halves[agent] = agent_half_array[i]
 
-        # TODO: Configure rendering for JAX RDDL envs
-        # if self._render:
-        #     self._render_name = render_name
-        #     self._render_dir = os.path.join(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir, render_dir)
-        #     if not os.path.exists(self._render_dir):
-        #         os.makedirs(self._render_dir)
-        #     # movie_gen = MovieGenerator(output_dir, render_name, max_frames=100000000, frame_duration=1000)
-        #     self._env.set_visualizer(viz=Grid4x4MultiAgentVisualizer)#, movie_gen=movie_gen, movie_per_episode=True)
-
+        if self.render:
+            self.render_name = kwargs.get('render_name', "grid_4x4")
+            self.render_dir = os.path.join(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir, kwargs.get('render_dir', "render"))
+            if not os.path.exists(self.render_dir):
+                os.makedirs(self.render_dir)
+            # movie_gen = MovieGenerator(save_dir=self.render_dir, env_name=self.render_name, max_frames=1000, frame_duration=1000)
+            viz=Grid4x4MultiAgentVisualizer(self.env.model)
+            # self.env.set_visualizer(visualizer=viz, movie_gen=movie_gen)
+            self.env.set_visualizer(visualizer=viz)
 
         # WARNING: This wrapper currently only supports homogeneous agent envs
         self.observation_spaces = {
@@ -110,7 +131,10 @@ class Grid4x4Wrapper(BaseEnv):
         obs_st = self._extract_observations(timestep.observation)
         reward = self._extract_rewards(timestep.reward)
         done = self._extract_dones(timestep)
-        info  = self._extract_infos(timestep)
+        info = self._extract_infos(timestep)
+        # Save the state before reset to info dict for rendering purposes
+        info['pre_reset_state'] = state_st
+        info['pre_reset_obs'] = obs_st
         # Auto-reset environment based on termination
         obs, state = jax.tree.map(
             lambda x, y: jax.lax.select(done["__all__"], x, y),
@@ -182,6 +206,11 @@ class Grid4x4Wrapper(BaseEnv):
         else:
             dones = {agent: timestep.observation[f'goal-reached___{self.rddl_agent_names[agent_idx]}'] for agent_idx, agent in enumerate(self.agents)}
         dones["__all__"] = done | terminal
+
+        # For single agent projection, only the controlled agent's done flag matters for the "__all__" key
+        if self.single_agent_projection:
+            dones["__all__"] = dones[self.agents[self.controlled_agents[0]]] | terminal
+
         return dones
 
     def _extract_infos(self, timestep):
@@ -316,7 +345,103 @@ class Grid4x4Wrapper(BaseEnv):
         return env_state, timestep
 
     def render(self, state: WrappedEnvState):
-        self.env.render(state.env_state)
+        return self.env.render(state.env_state)
 
-    def animate(self, states: List[WrappedEnvState], interval=100):
-        return self.env.animate([s.env_state for s in states], interval=interval)
+    def reset_render(self):
+        self.env.reset_render()
+
+    def animate(self, states, dones, num_episodes, fps=1, loop_count=0, debug=False):
+
+        init_state, state = states
+
+        for i in range(num_episodes):
+            if debug:
+                # Also save individual frames for debugging
+                debug_dir = os.path.join(self._render_dir, f"{self._render_name}_ep_{i}_frames")
+                os.makedirs(debug_dir, exist_ok=True)
+
+            # List of EnvState for each timestep in the episode
+            init_env_state = self.unbatch_init_envstate(init_state, idx1=0, idx2=i)
+            env_states = self.unbatch_envstate(state, idx1=0, idx2=i)
+
+            # Generate frames and optionally save them for debugging
+            frames = []
+            frame = self.env.render(init_env_state)
+            frames.append(frame)
+            if debug:
+                # Also save individual frames for debugging
+                frame_path = os.path.join(debug_dir, f"frame_{0:04d}.png")
+                frame.save(frame_path)
+
+            for j in range(self.env.model.horizon):
+                frame = self.env.render(env_states[j])
+                frames.append(frame)
+                if debug:
+                    # Also save individual frames for debugging
+                    frame_path = os.path.join(debug_dir, f"frame_{j+1:04d}.png")
+                    frame.save(frame_path)
+
+                if dones[0,i,j]:
+                    break
+
+            # Save animation
+            frames[0].save(
+                os.path.join(self._render_dir, f"{self._render_name}_ep_{i}.gif"),
+                save_all=True,
+                append_images=frames[1:], # Append all frames from the second one onwards
+                duration=1000 // fps,
+                loop=loop_count
+            )
+
+            self.reset_render()
+
+    @staticmethod
+    def unbatch_init_envstate(batched_state, idx1=None, idx2=None):
+        """Convert an Init EnvState with batched arrays into a single EnvState for the specified indices.
+
+        Args:
+            batched_state: EnvState with arrays of shape (batch_size, ...)
+            idx1: Optional index for first dimension (if provided, slice into this dimension first)
+            idx2: Optional index for second dimension (if provided, slice into this dimension second)
+
+        Returns:
+            EnvState object, each with arrays of shape (...)
+        """
+        # First, index into specified dimensions if provided
+        state = batched_state
+        if idx1 is not None:
+            state = jax.tree.map(lambda x: x[idx1], state)
+        if idx2 is not None:
+            state = jax.tree.map(lambda x: x[idx2], state)
+
+        return state
+
+    @staticmethod
+    def unbatch_envstate(batched_state, idx1=None, idx2=None, unbatch_axis=0):
+        """Convert an EnvState with batched arrays into a list of EnvStates.
+
+        Args:
+            batched_state: EnvState with arrays of shape (batch_size, ...)
+            idx1: Optional index for first dimension (if provided, slice into this dimension first)
+            idx2: Optional index for second dimension (if provided, slice into this dimension second)
+            unbatch_axis: Which axis to unbatch along (default 0, or 2 if idx1 and idx2 provided)
+
+        Returns:
+            List of EnvState objects, each with arrays of shape (...)
+        """
+        # First, index into specified dimensions if provided
+        state = batched_state
+        if idx1 is not None:
+            state = jax.tree.map(lambda x: x[idx1], state)
+        if idx2 is not None:
+            state = jax.tree.map(lambda x: x[idx2], state)
+
+        # Get batch size from the unbatch axis
+        batch_size = jax.tree.leaves(state)[0].shape[unbatch_axis]
+
+        # Create a list of unbatched states by indexing each array at position i along unbatch_axis
+        if unbatch_axis == 0:
+            return [jax.tree.map(lambda x: x[i], state) for i in range(batch_size)]
+        else:
+            # For non-zero axes, need to use dynamic slicing
+            return [jax.tree.map(lambda x: jnp.take(x, i, axis=unbatch_axis), state) for i in range(batch_size)]

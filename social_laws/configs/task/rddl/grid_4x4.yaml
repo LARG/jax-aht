@@ -1,9 +1,9 @@
 ENV_NAME: rddl/grid_4x4
 ROLLOUT_LENGTH: 128
-NUM_EVAL_EPISODES: 5
+NUM_EVAL_EPISODES: 10
 ENV_KWARGS: {domain: "grid_4x4_domain.rddl",
              instance: "grid_4x4_instance2.rddl",
-             render: false,
+             render: true,
              render_name: "grid_4x4",
              render_dir: "render",
              enforce_action_constraints: true,

@@ -74,26 +74,21 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
 
     def build_nonfluents_layout(self):
         """Extract non-fluent information from the model."""
-        goals = {}  # {agent: (x, y)}
         obstacles = []
         controllable = {}  # {agent: bool}
 
         non_fluents = self._model.ground_vars_with_values(self._model.non_fluents)
 
         for k, v in non_fluents.items():
-            var, objects = RDDLPlanningModel.parse_grounded(k)
+            var, objects = self._model.parse_grounded(k)
 
-            if var == 'GOAL' and v:
-                agent, x, y = objects
-                goals[agent] = (x, y)
-            elif var == 'OBSTACLE' and v:
+            if var == 'OBSTACLE' and v:
                 obstacles.append(tuple(objects))
             elif var == 'CONTROLLABLE':
                 agent = objects[0]
                 controllable[agent] = v
 
         return {
-            'goals': goals,
             'obstacles': obstacles,
             'controllable': controllable
         }
@@ -101,20 +96,25 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
     def build_states_layout(self, state):
         """Extract state information."""
         agent_positions = {}  # {agent: (x, y)}
+        goal_positions = {}  # {agent: (x, y)}
         goal_reached = {}  # {agent: bool}
 
         for k, v in state.items():
-            var, objects = RDDLPlanningModel.parse_grounded(k)
+            var, objects = self._model.parse_grounded(k)
 
             if var == 'agent-at' and v:
                 agent, x, y = objects
                 agent_positions[agent] = (x, y)
+            elif var == 'goal-at' and v:
+                agent, x, y = objects
+                goal_positions[agent] = (x, y)
             elif var == 'goal-reached':
                 agent = objects[0]
                 goal_reached[agent] = v
 
         return {
             'agent_positions': agent_positions,
+            'goals': goal_positions,
             'goal_reached': goal_reached
         }
 
@@ -174,7 +174,7 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
                    fontweight='bold', color='darkred', zorder=4)
 
         # Draw goals for each agent
-        for agent_idx, (agent, (goal_x, goal_y)) in enumerate(nonfluent_layout['goals'].items()):
+        for agent_idx, (agent, (goal_x, goal_y)) in enumerate(state_layout['goals'].items()):
             if (goal_x, goal_y) == (x_name, y_name):
                 goal_color = self.GOAL_COLORS[agent_idx % len(self.GOAL_COLORS)]
                 # Draw goal as a star
@@ -315,6 +315,7 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
         """
         # Extract layouts
         nonfluent_layout = self.build_nonfluents_layout()
+        # env.render() already extracts .state from EnvState, so state is already a dict
         state_layout = self.build_states_layout(state)
 
         # Initialize canvas

@@ -18,9 +18,10 @@ cd /path/to/jax-aht
 pip install -e .
 ```
 
-4. Install our custom PyRDDL-JAX library
+4. Install our modifed PyRDDL libraries
 ```
 pip install git+https://github.com/FernandezR/pyRDDLGym-jax.git@main
+pip install git+https://github.com/FernandezR/pyRDDLGym.git@main
 ```
 
 This will automatically install all dependencies from `pyproject.toml` and set up the package for development.
@@ -47,9 +48,10 @@ If you prefer the manual setup or encounter issues with the pip installation:
 
 1. Follow steps 1-2 above
 2. Install packages manually: `pip install -r requirements.txt`
-3. Install our custom PyRDDL-JAX library
+3. Install our modifed PyRDDL libraries
 ```
 pip install git+https://github.com/FernandezR/pyRDDLGym-jax.git@main
+pip install git+https://github.com/FernandezR/pyRDDLGym.git@main
 ```
 4. Add project path to PYTHONPATH as a conda env var:
 ```
