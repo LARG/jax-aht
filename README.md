@@ -103,6 +103,7 @@ Algorithms are sorted into four main directories in this codebase.
 - `marl/`: contains MARL algorithms for training a team of agents from scratch
 - `open_ended_training/`: contains open-ended AHT algorithms
 - `teammate_generation/`: contains teammate generation algorithms.
+- `social_laws/`: contains social laws algorithms
 
 Each contains a `run.py`, that serves as an entry point.
 We provide an `experiments.sh` for open-ended and teammate generation methods that runs the algorithm specified
@@ -215,6 +216,9 @@ This codebase uses the Jumanji LBF implementation. The wrapper for the Jumanji L
 `
 #### Overcooked-v1
 We made some modifications to the JaxMARL Overcooked environment to improve the functionality and ensure environments are solvable.
+
+#### PyRDDL-JAX
+We made some modifications to the PyRDDL-JAX library to support the full JAX functionality and ensure environments are solvable.
 
 - **Initialization randomization**: Previously, setting `random_reset` would lead to random initial agent positions, and randomized initial object states (e.g. pot might be initialized with onions already in it, agents might be initialized holding plates, etc.). We separate the functionality of the argument `random_reset` into two arguments: `random_reset` and `random_obj_state`, where `random_reset` only controls the initial positions of the two agents.
 - **Agent initial positions**: previously, in a map with disconnected components, it was possible for two agents to be spawned in the same component, making it impossible to solve the task. The Overcooked-v1 environment initializes agents such that one is always spawned on each side of the map.

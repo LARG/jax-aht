@@ -1,0 +1,75 @@
+////////////////////////////////////////////////////////////////////
+//
+// Instance for Multi-Agent 4x4 Grid (Social Law - Vertical Split)
+//
+// Two agents restricted to different vertical halves:
+// - Agent a1: restricted to LEFT half (x0, x1) - starts at (x0,y0), goal at (x1,y3)
+// - Agent a2: restricted to RIGHT half (x2, x3) - starts at (x3,y0), goal at (x2,y3)
+//
+// Grid layout (4x4):
+//   y3: [ ][ ][G2][ ]
+//   y2: [ ][ ][ ][ ]
+//   y1: [ ][ ][ ][ ]
+//   y0: [S1][ ][ ][S2]
+//       x0  x1  x2  x3
+//
+// S1 = agent a1 start, G1 = agent a1 goal
+// S2 = agent a2 start, G2 = agent a2 goal
+// Left half: x0, x1 (a1)
+// Right half: x2, x3 (a2)
+//
+////////////////////////////////////////////////////////////////////
+
+instance grid_4x4_inst1 {
+	domain = grid_4x4;
+
+	objects {
+		agent : {a1, a2};
+		xpos : {x0, x1, x2, x3};
+		ypos : {y0, y1, y2, y3};
+	};
+
+	non-fluents {
+		// Grid connectivity - 4x4 grid
+		// Vertical connections (North-South)
+		NORTH(y0, y1); NORTH(y1, y2); NORTH(y2, y3);
+		SOUTH(y1, y0); SOUTH(y2, y1); SOUTH(y3, y2);
+
+		// Horizontal connections (East-West)
+		EAST(x0, x1); EAST(x1, x2); EAST(x2, x3);
+		WEST(x1, x0); WEST(x2, x1); WEST(x3, x2);
+
+		// Restriction type: 1 = vertical split (left/right)
+		RESTRICTION-TYPE = 1;
+
+		// Define left and right halves
+		LEFT-HALF(x0);
+		LEFT-HALF(x1);
+		RIGHT-HALF(x2);
+		RIGHT-HALF(x3);
+
+		// Agent restrictions
+		AGENT-HALF(a1) = 0;  // a1 restricted to left half
+		AGENT-HALF(a2) = 1;  // a2 restricted to right half
+
+		// Only one agent is controllable
+		CONTROLLABLE(a2);
+
+		// Agent goals
+		GOAL(a1, x1, y3);  // a1 goal in left half
+		GOAL(a2, x2, y3);  // a2 goal in right half
+	};
+
+	init-state {
+		// Initial agent positions
+		agent-at(a1, x0, y0);  // a1 starts bottom-left (left half)
+		agent-at(a2, x3, y0);  // a2 starts bottom-right (right half)
+
+		// Initialize goal positions in state (matches GOAL non-fluents)
+		goal-at(a1, x1, y3);
+		goal-at(a2, x2, y3);
+	};
+
+	horizon = 30;
+	discount = 1.0;
+}

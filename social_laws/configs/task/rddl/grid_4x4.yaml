@@ -1,0 +1,13 @@
+ENV_NAME: rddl/grid_4x4
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 5
+ENV_KWARGS: {domain: "grid_4x4_domain.rddl",
+             instance: "grid_4x4_instance2.rddl",
+             render: false,
+             render_name: "grid_4x4",
+             render_dir: "render",
+             enforce_action_constraints: true,
+             vectorized: true}
+TASK_NAME: rddl/grid_4x4
+SINGLE_AGENT_1_PROJECTION: "grid_4x4_instance0.rddl"
+SINGLE_AGENT_2_PROJECTION: "grid_4x4_instance1.rddl"

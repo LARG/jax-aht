@@ -1,0 +1,42 @@
+defaults:
+  - task: rddl/grid_4x4 # task configs
+  - algorithm@algorithm: ppo/${task} # task-specific algorithm configs
+  - hydra: hydra_simple
+  - _self_         # Ensures that values in this file override imported ones if needed
+
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
+TASK_NAME: ${task.TASK_NAME}
+NUM_EVAL_EPISODES: ${task.NUM_EVAL_EPISODES}
+
+# partner configs are specified in each algorithm _base_ config file
+# note that ppo_ego and ppo_br support different types of partner configs
+algorithm:
+  TRAIN_SEED:
+  EVAL_SEED:
+  NUM_EVAL_EPISODES: ${NUM_EVAL_EPISODES}
+  ENV_NAME: ${ENV_NAME}
+  ENV_KWARGS: ${ENV_KWARGS}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+
+label: "default_label"
+name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.ACTOR_TYPE}/${label}
+
+# WandB Params
+logger:
+  project: stochastic-policies-jax
+  entity: social-laws-project
+  tags:
+    - ${algorithm.ALG}
+    - ${TASK_NAME}
+    - ${label}
+  mode: online # options: online, offline, disabled
+  verbose: false
+  log_train_out: true # whether to log the out dictionary
+  log_eval_out: true # whether to log the eval metrics
+
+# Local logger
+local_logger:
+  save_train_out: true
+  save_eval_out: true

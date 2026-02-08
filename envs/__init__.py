@@ -1,13 +1,15 @@
 import copy
 import numpy as np
+import os
+from random import seed
 
 import jaxmarl
 import jumanji
 from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
 
 def process_default_args(env_kwargs: dict, default_args: dict):
-    '''Helper function to process generator and viewer args for Jumanji environments. 
-    If env_args and default_args have any key overlap, overwrite 
+    '''Helper function to process generator and viewer args for Jumanji environments.
+    If env_args and default_args have any key overlap, overwrite
     args in default_args with those in env_args, deleting those in env_args
     '''
     env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
@@ -22,9 +24,9 @@ def make_env(env_name: str, env_kwargs: dict = {}):
     if env_name in ['lbf', 'lbf-reward-shaping']:
         default_generator_args = {
             "grid_size": 7,
-            "fov": 7, 
+            "fov": 7,
             "num_agents": 2,
-            "num_food": 3, 
+            "num_food": 3,
             "max_agent_level": 2,
             "force_coop": True,
         }
@@ -36,7 +38,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
 
         generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args)
         viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args)
-        env = jumanji.make('LevelBasedForaging-v0', 
+        env = jumanji.make('LevelBasedForaging-v0',
                             generator=LbfGenerator(**generator_args),
                             **env_kwargs_copy,
                             viewer=AdHocLBFViewer(grid_size=generator_args["grid_size"],
@@ -46,24 +48,24 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             env = RewardShapingLBFWrapper(env, share_rewards=True)
         else:
             env = LBFWrapper(env, share_rewards=True)
-        
+
     elif env_name == 'overcooked-v1':
         default_env_kwargs = {
             "random_reset": True,
             "random_obj_state": False,
             "max_steps": 400
         }
-        
+
         # preprocess env_kwargs to maintain compatibility with symmetric reward shaping
         if "reward_shaping_params" in env_kwargs:
             for param in env_kwargs["reward_shaping_params"]:
                 payload = env_kwargs["reward_shaping_params"][param]
                 if type(payload) == int or type(payload) == float:
                     # turn the param into symmetric form
-                    env_kwargs["reward_shaping_params"][param] = [payload, payload] 
+                    env_kwargs["reward_shaping_params"][param] = [payload, payload]
                 elif type(payload) == tuple or type(payload) == list:
                     # this is the correct format
-                    pass 
+                    pass
                 else:
                     print(f"\n[Environment Instantiation Error] {type(payload)} is not valid type as a reward shaping parameter for {param}.\n")
                     exit()
@@ -80,7 +82,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         layout = augmented_layouts[env_kwargs['layout']]
         env_kwargs_copy["layout"] = layout
         env = OvercookedWrapper(**env_kwargs_copy)
-    
+
     elif env_name == 'hanabi':
         default_env_kwargs = {
             "num_agents": 2,
@@ -95,9 +97,34 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         env_kwargs = default_env_kwargs
         env = HanabiWrapper(**env_kwargs)
 
+    elif env_name == 'rddl/grid_4x4':
+        default_env_kwargs = {
+            "domain": "grid_4x4_domain.rddl",
+            "instance": "grid_4x4_instance2.rddl",
+            "render": False,
+            "render_name": "grid_4x4",
+            "render_dir": "render",
+            "enforce_action_constraints": True,
+            "vectorized": True
+        }
+
+        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.grid_4x4.grid_4x4_wrapper import Grid4x4Wrapper
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        # add default args that are not already in env_kwargs
+        for key in default_env_kwargs:
+            if key not in env_kwargs:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+
+        # create the JAX RDDL Grid4x4 environment
+        rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/grid_4x4', env_kwargs_copy["domain"]),
+                              instance=os.path.join(os.path.dirname(__file__), 'rddl/grid_4x4', env_kwargs_copy["instance"]),
+                              vectorized=env_kwargs_copy["vectorized"])
+        env = Grid4x4Wrapper(rddl_env, **env_kwargs_copy)
+
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
-    
+
     return env
 
 if __name__ == "__main__":

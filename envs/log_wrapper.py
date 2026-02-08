@@ -69,14 +69,14 @@ class LogWrapper(JaxMARLWrapper):
 
         # for compatibility with auto-resetting wrapped envs
         state = jax.tree.map(
-            lambda x, y: jax.lax.select(ep_done, x, y), 
+            lambda x, y: jax.lax.select(ep_done, x, y),
             LogEnvState(
                 env_state,
                 jnp.zeros((self._env.num_agents,)),
                 jnp.zeros((self._env.num_agents,)),
                 jnp.zeros((self._env.num_agents,)),
                 jnp.zeros((self._env.num_agents,)),
-            ), 
+            ),
             state)
 
         return obs, state, reward, done, info
