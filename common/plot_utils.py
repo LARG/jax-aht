@@ -11,22 +11,24 @@ def get_metric_names(env_name):
         return ("percent_eaten", "returned_episode_returns")
     elif env_name == "overcooked-v1":
         return ("base_return", "returned_episode_returns")
+    elif env_name == "social_laws_joint":
+        return ("returned_episode_minimized_returns", "returned_episode_returns")
     else:
         return ("returned_episode_returns",)
 
 @partial(jax.jit, static_argnames=['stats'])
 def get_stats(metrics, stats: tuple):
     '''
-    Computes mean and std of metrics of interest for each seed and update, 
+    Computes mean and std of metrics of interest for each seed and update,
     using only the final steps of episodes. Note that each rollout contains multiple episodes.
 
-    metrics is a pytree where each leaf has shape 
+    metrics is a pytree where each leaf has shape
         (..., rollout_length, num_envs)
     stats is a tuple of strings, each corresponding to a metric of interest in metrics
     '''
     # Get mask for final steps of episodes
     mask = metrics["returned_episode"]
-    
+
     # Initialize output dictionary
     all_stats = {}
     stats = list(stats) # convert to list to correctly iterate if the tuple only has a single element
@@ -44,11 +46,11 @@ def get_stats(metrics, stats: tuple):
         stds = jnp.sqrt(variance)
         # Stack means and stds
         all_stats[stat_name] = jnp.stack([means, stds], axis=-1)
-    
+
     return all_stats
 
 
-def plot_train_metrics(all_stats, 
+def plot_train_metrics(all_stats,
                        num_rollout_steps, num_envs,
                        savedir=None, savename=None,
                        show_plots=False
@@ -74,17 +76,17 @@ def plot_train_metrics(all_stats,
             plt.plot(xs, means, label=f"Seed {i}")
 
             # Shade the region between the bounds
-            plt.fill_between(xs, lower_bound, upper_bound, 
+            plt.fill_between(xs, lower_bound, upper_bound,
                             alpha=0.3)
-                        
+
         plt.xlabel("Time Step")
         plt.ylabel(stat_name)
         plt.title(f"Learning Curve for {stat_name}")
         plt.legend()
-        
+
         # Get the current figure
         fig = plt.gcf()
-        
+
         # Save the figure if requested
         savepath = None
         if savedir is not None and savename is not None:
@@ -93,13 +95,13 @@ def plot_train_metrics(all_stats,
         figures[stat_name] = fig
         if show_plots:
             plt.show()
-        
+
         plt.close(fig)
-    
+
     return figures, savepath
 
 
-def plot_xp_matrix(xp_matrix, xlabel, ylabel, title, 
+def plot_xp_matrix(xp_matrix, xlabel, ylabel, title,
                    higher_is_better=True,
                    savedir=None, savename=None,
                    show_plots=False
@@ -107,7 +109,7 @@ def plot_xp_matrix(xp_matrix, xlabel, ylabel, title,
     if higher_is_better:
         colormap="coolwarm_r"
         arrow_str = r" ($\uparrow$)"
-    else:    
+    else:
         colormap="coolwarm"
         arrow_str = r" ($\downarrow$)"
     # Plot as heatmap
@@ -120,7 +122,7 @@ def plot_xp_matrix(xp_matrix, xlabel, ylabel, title,
 
     # Get the current figure
     fig = plt.gcf()
-    
+
     # Save the figure if requested
     savepath = None
     if savedir is not None and savename is not None:
@@ -128,27 +130,26 @@ def plot_xp_matrix(xp_matrix, xlabel, ylabel, title,
         plt.savefig(savepath)
     if show_plots:
         plt.show()
-    
+
     plt.close(fig)
-    
+
     return fig, savepath
 
 def plot_xp_from_eval_metrics(eval_metrics, metric_name, higher_is_better=True, agent_idx=0,
                       savedir=None, savename=None,
                       show_plots=True):
     '''
-    Note that the FCP agent is always agent 0, the partner is agent 1. 
-    
-    eval_metrics is a dictionary with keys corresponding to metric names 
+    Note that the FCP agent is always agent 0, the partner is agent 1.
+
+    eval_metrics is a dictionary with keys corresponding to metric names
     and values as arrays of shape (num_seeds, num_fcp_checkpoints, num_eval_checkpoints, num_episodes, num_agents)
     '''
     # Select agent 0's data and compute mean over seeds and episodes
     heatmap_data = jnp.mean(eval_metrics[metric_name][:, :, :, :, agent_idx], axis=(0, 3))
-    fig, savepath = plot_xp_matrix(heatmap_data, 
-                   xlabel="Eval Checkpoint", ylabel="Ego Agent Checkpoint", 
-                   title=f"Average {metric_name.replace('_', ' ').title()}", 
+    fig, savepath = plot_xp_matrix(heatmap_data,
+                   xlabel="Eval Checkpoint", ylabel="Ego Agent Checkpoint",
+                   title=f"Average {metric_name.replace('_', ' ').title()}",
                    higher_is_better=higher_is_better,
                    savedir=savedir, savename=savename,
                    show_plots=show_plots)
     return fig, savepath
-        

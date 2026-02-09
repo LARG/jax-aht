@@ -509,6 +509,7 @@ def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
     env_kwargs = algorithm_config["ENV_KWARGS"].copy()
 
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
+    env_kwargs["render_dir"] = os.path.join("render", "dqnppo", f"agent_{agent_idx + 1}")
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 

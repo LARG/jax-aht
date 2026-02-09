@@ -350,14 +350,17 @@ class Grid4x4Wrapper(BaseEnv):
     def reset_render(self):
         self.env.reset_render()
 
-    def animate(self, states, dones, num_episodes, fps=1, loop_count=0, debug=False):
+    def animate(self, states, dones, num_episodes, extra_dir=None, fps=1, loop_count=0, debug=False):
 
         init_state, state = states
+
+        if extra_dir is not None:
+            os.makedirs(os.path.join(self._render_dir, extra_dir), exist_ok=True)
 
         for i in range(num_episodes):
             if debug:
                 # Also save individual frames for debugging
-                debug_dir = os.path.join(self._render_dir, f"{self._render_name}_ep_{i}_frames")
+                debug_dir = os.path.join(self._render_dir, extra_dir if extra_dir is not None else "", f"{self._render_name}_ep_{i}_frames")
                 os.makedirs(debug_dir, exist_ok=True)
 
             # List of EnvState for each timestep in the episode
@@ -386,7 +389,7 @@ class Grid4x4Wrapper(BaseEnv):
 
             # Save animation
             frames[0].save(
-                os.path.join(self._render_dir, f"{self._render_name}_ep_{i}.gif"),
+                os.path.join(self._render_dir, extra_dir if extra_dir is not None else "", f"{self._render_name}_ep_{i}.gif"),
                 save_all=True,
                 append_images=frames[1:], # Append all frames from the second one onwards
                 duration=1000 // fps,
