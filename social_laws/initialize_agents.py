@@ -1,5 +1,6 @@
 import jax
 
+from agents.dqn_actor_crtic_fqe_agent import DQNActorCriticFQEPolicy
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
 from agents.s5_actor_critic_agent import S5ActorCriticPolicy
@@ -90,4 +91,30 @@ def initialize_agent(algorithm_config, env, init_rng, agent_index):
         policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng, agent_index)
     else:
         raise ValueError(f"Unknown ACTOR_TYPE: {algorithm_config['ACTOR_TYPE']}")
+    return policy, init_params
+
+def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy, agent_index):
+    """Initialize the DQN actor-critic FQE agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        actor_critic_policy: the actor-critic policy to be used by the DQN actor-critic FQE policy
+    Returns:
+        policy: DQNActorCriticFQEPolicy, the policy object
+        params: dict, initial parameters for the policy
+    """
+
+    policy = DQNActorCriticFQEPolicy(
+        action_dim=env.action_space(env.agents[agent_index]).n,
+        obs_dim=env.observation_space(env.agents[agent_index]).shape[0],
+        actor_critic_policy=actor_critic_policy,
+        epsilon_start=config["EPSILON_START"],
+        epsilon_finish=config["EPSILON_END"],
+        epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
     return policy, init_params

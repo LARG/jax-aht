@@ -1,5 +1,6 @@
 import jax
 
+from agents.dqn_actor_crtic_fqe_agent import DQNActorCriticFQEPolicy
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy, ActorWithDoubleCriticPolicy, \
     ActorWithConditionalCriticPolicy, PseudoActorWithDoubleCriticPolicy, \
     PseudoActorWithConditionalCriticPolicy
@@ -204,3 +205,29 @@ def initialize_meliba_agent(config, env, rng):
               'decoder': init_encoder_decoder_params['decoder'],
               'policy': init_ego_params}
     return meliba, params
+
+def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy):
+    """Initialize the DQN actor-critic FQE agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        actor_critic_policy: the actor-critic policy to be used by the DQN actor-critic FQE policy
+    Returns:
+        policy: DQNActorCriticFQEPolicy, the policy object
+        params: dict, initial parameters for the policy
+    """
+
+    policy = DQNActorCriticFQEPolicy(
+        action_dim=env.action_space(env.agents[0]).n,
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        actor_critic_policy=actor_critic_policy,
+        epsilon_start=config["EPSILON_START"],
+        epsilon_finish=config["EPSILON_END"],
+        epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
+    return policy, init_params

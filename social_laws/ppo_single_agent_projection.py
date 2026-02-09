@@ -170,14 +170,14 @@ def train_ppo_agent(config, env, train_rng,
 
                 # Store agent_idx data in transition
                 transition = Transition(
-                    done=get_agent_data(done_next, agent_idx),
-                    action=act,
-                    value=val,
-                    reward=get_agent_data(reward, agent_idx),
-                    log_prob=logp,
-                    obs=get_agent_data(prev_obs, agent_idx),
+                    done=get_agent_data(done_next, agent_idx), # shape (num_envs,)
+                    action=act, # shape (num_envs,)
+                    value=val, # shape (num_envs,)
+                    reward=get_agent_data(reward, agent_idx), # shape (num_envs,)
+                    log_prob=logp, # shape (num_envs,)
+                    obs=get_agent_data(prev_obs, agent_idx), # shape (num_envs, obs_dim)
                     info=info,
-                    avail_actions=avail_actions
+                    avail_actions=avail_actions # shape (num_envs, num_actions)
                 )
 
                 new_runner_state = (train_state, env_state_next, obs_next, done_next,
@@ -390,7 +390,6 @@ def train_ppo_agent(config, env, train_rng,
 
             rng_eval = jax.random.PRNGKey(config["EVAL_SEED"] + agent_idx + 14)
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-
 
             # Init eval return infos
             eval_eps_last_infos = run_episodes(eval_rng, env, agent_idx,

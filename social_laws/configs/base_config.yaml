@@ -1,6 +1,7 @@
 defaults:
   - task: rddl/grid_4x4 # task configs
   - algorithm@algorithm: ppo/${task} # task-specific algorithm configs
+  - value_function@value_function: dqnppo/${task} # task-specific value function configs
   - hydra: hydra_simple
   - _self_         # Ensures that values in this file override imported ones if needed
 
@@ -19,6 +20,13 @@ algorithm:
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
   ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+
+value_function:
+  TRAIN_SEED:
+  EVAL_SEED:
+  NUM_EVAL_EPISODES: ${NUM_EVAL_EPISODES}
+  ENV_NAME: ${ENV_NAME}
+  ENV_KWARGS: ${ENV_KWARGS}
 
 label: "default_label"
 name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.ACTOR_TYPE}/${label}
