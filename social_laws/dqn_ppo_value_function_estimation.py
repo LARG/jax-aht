@@ -24,8 +24,8 @@ import flashbax as fbx
 from flax.struct import dataclass
 from typing import NamedTuple
 
-from social_laws.run_episodes import run_episodes, run_render_episodes
-from social_laws.initialize_agents import initialize_dqn_actor_critic_fqe_agent
+from social_laws.common.run_episodes import run_episodes, run_render_episodes
+from social_laws.common.initialize_agents import initialize_dqn_actor_critic_fqe_agent
 from agents.q_network import DQNTrainState
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
