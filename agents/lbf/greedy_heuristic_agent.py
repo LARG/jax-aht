@@ -21,13 +21,12 @@ class GreedyHeuristicAgent(BaseAgent):
     class GreedyAgentState:
         """Internal state for the GreedyHeuristicAgent."""
         agent_id: int                   # The unique ID of this agent.
-        heuristic: str                  # The heuristic strategy this agent uses.
 
     VALID_HEURISTICS = [
-        'closest_self', 
-        'closest_avg', 
-        'closest_level', 
-        'closest_combined_level'
+        'closest_self',
+        # 'closest_avg', 
+        # 'closest_level', 
+        # 'closest_combined_level',
     ]
 
     def __init__(self, grid_size: int = 7, num_fruits: int = 3, heuristic: str = 'closest_self'):
@@ -40,7 +39,7 @@ class GreedyHeuristicAgent(BaseAgent):
         self.heuristic = heuristic # Store the chosen heuristic string
   
     def init_agent_state(self, agent_id: int):
-        return GreedyHeuristicAgent.GreedyAgentState(agent_id=agent_id, heuristic=self.heuristic)
+        return GreedyHeuristicAgent.GreedyAgentState(agent_id=agent_id)
 
     def _create_distance_map(
         self,
@@ -109,6 +108,65 @@ class GreedyHeuristicAgent(BaseAgent):
         final_grid = jax.lax.fori_loop(0, max_iterations, body_fn, grid)
         return final_grid
 
+    def _get_best_move(
+        self,
+        agent_pos: jnp.ndarray,
+        distance_map: jnp.ndarray,
+        rng_key: jax.random.PRNGKey # Added rng_key for tie-breaking
+    ) -> Tuple[jnp.ndarray, jax.random.PRNGKey]: # Return action and new key
+        """Finds the best move action (1-4) using random tie-breaking.
+
+        Args:
+            agent_pos: Current position (row, col)
+            distance_map: Distance map from target
+            rng_key: JAX random key for tie-breaking.
+
+        Returns:
+            Tuple: (Action index (0-4) as jnp.ndarray, new_rng_key)
+        """
+        r, c = agent_pos
+        current_dist = jax.lax.select(
+            jnp.all((agent_pos >= 0) & (agent_pos < self.grid_size)),
+            distance_map[r, c],
+            jnp.inf
+        )
+
+        actions = jnp.array([1, 2, 3, 4], dtype=jnp.int32)
+        neighbor_coords = jnp.array([
+            [r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]
+        ])
+        neighbor_dists = jnp.full(4, jnp.inf)
+
+        def update_dist(index, coords, dists):
+            return jax.lax.cond(
+                jnp.all((coords >= 0) & (coords < self.grid_size)),
+                lambda d: d.at[index].set(distance_map[coords[0], coords[1]]),
+                lambda d: d,
+                dists
+            )
+        neighbor_dists = update_dist(0, neighbor_coords[0], neighbor_dists)
+        neighbor_dists = update_dist(1, neighbor_coords[1], neighbor_dists)
+        neighbor_dists = update_dist(2, neighbor_coords[2], neighbor_dists)
+        neighbor_dists = update_dist(3, neighbor_coords[3], neighbor_dists)
+
+        min_neighbor_dist = jnp.min(neighbor_dists)
+
+        # --- Random Tie-breaking ---
+        key, subkey = jax.random.split(rng_key)
+        noise = jax.random.uniform(subkey, shape=(4,), maxval=1e-5)
+        min_mask = (neighbor_dists == min_neighbor_dist) & jnp.isfinite(neighbor_dists)
+        noisy_dists = jnp.where(min_mask, neighbor_dists + noise, neighbor_dists)
+        best_neighbor_action_idx = jnp.argmin(noisy_dists)
+        # --- End Random Tie-breaking ---
+
+        best_action = jnp.where(
+            jnp.logical_and(min_neighbor_dist < current_dist, jnp.isfinite(min_neighbor_dist)),
+            actions[best_neighbor_action_idx],
+            jnp.array(0, dtype=jnp.int32)
+        )
+
+        return jnp.array(best_action, dtype=jnp.int32), key # Return action and the new key
+
     def _get_action(
         self,
         obs: jnp.ndarray,
@@ -117,8 +175,10 @@ class GreedyHeuristicAgent(BaseAgent):
         rng: jax.random.PRNGKey
     ) -> Tuple[jnp.ndarray, GreedyAgentState]:
 
+        agent_pos = env_state.agents.position[agent_state.agent_id]
+
         target = self.closest_self(
-            env_state.agent_pos[agent_state.agent_id], 
+            agent_pos, 
             env_state.food_items
         )
 

@@ -107,6 +107,22 @@ class GameSession:
         # Pre-compile JAX functions with a warmup step
         self._warmup_jit_compilation()
     
+    def _choose_agent(self):
+        import random
+        if random.random() < 0.5:
+            return SequentialFruitAgent(
+                grid_size=self.grid_size, 
+                num_fruits=self.num_fruits, 
+                ordering_strategy=random.choice(SequentialFruitAgent.VALID_ORDERING_STRATEGIES)
+            )
+        else:
+            return GreedyHeuristicAgent(
+                grid_size=self.grid_size, 
+                num_fruits=self.num_fruits, 
+                heuristic=random.choice(GreedyHeuristicAgent.VALID_HEURISTICS)
+            )
+        
+
     def _warmup_jit_compilation(self):
         """
         Pre-compile JAX functions by doing warmup steps.
