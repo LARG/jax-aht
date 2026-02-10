@@ -704,6 +704,10 @@
         let sessionId = null;
         let replayMode = false;
         let replayId = null;
+        let lastHumanAction = null;
+        let lastAIAction = null;
+        let actionAnimationTimer = null;
+        let actionAnimationAlpha = 1.0;
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -819,6 +823,8 @@
                 if (data.success) {
                     sessionId = data.session_id;
                     gameState = data.state;
+                    lastHumanAction = null;
+                    lastAIAction = null;
                     updateDisplay();
                     showMessage('New game started! Good luck!', 'success');
                     // Update main action button label to 'Reset' since a session now exists
@@ -843,6 +849,8 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = null;
+                    lastAIAction = null;
                     updateDisplay();
                     showMessage('Game reset!', 'info');
                     // Ensure main action button remains labeled 'Reset'
@@ -870,6 +878,9 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = data.human_action;
+                    lastAIAction = data.ai_action;
+                    startActionAnimation();
                     updateDisplay();
                     
                     if (gameState.done) {
@@ -925,6 +936,116 @@
             if (replayMode) {
                 updateReplayUI();
             }
+        }
+
+        // --- Action animation helpers ---
+        function startActionAnimation() {
+            actionAnimationAlpha = 1.0;
+            if (actionAnimationTimer) cancelAnimationFrame(actionAnimationTimer);
+            fadeActionIndicators();
+        }
+
+        function fadeActionIndicators() {
+            actionAnimationAlpha -= 0.025;
+            if (actionAnimationAlpha <= 0) {
+                actionAnimationAlpha = 0;
+                return; // done fading
+            }
+            drawGame();
+            actionAnimationTimer = requestAnimationFrame(fadeActionIndicators);
+        }
+
+        // Draw a directional arrow on an agent's cell
+        function drawDirectionArrow(row, col, action, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const arrowLen = cellSize * 0.35;
+            const headLen = 10;
+            const headAngle = Math.PI / 6;
+
+            let dx = 0, dy = 0;
+            if (action === ACTIONS.UP)    { dx = 0;  dy = -1; }
+            if (action === ACTIONS.DOWN)  { dx = 0;  dy =  1; }
+            if (action === ACTIONS.LEFT)  { dx = -1; dy =  0; }
+            if (action === ACTIONS.RIGHT) { dx =  1; dy =  0; }
+            if (dx === 0 && dy === 0) return;
+
+            const ex = cx + dx * arrowLen;
+            const ey = cy + dy * arrowLen;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(cx - dx * arrowLen * 0.3, cy - dy * arrowLen * 0.3);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ex - headLen * Math.cos(angle - headAngle), ey - headLen * Math.sin(angle - headAngle));
+            ctx.lineTo(ex - headLen * Math.cos(angle + headAngle), ey - headLen * Math.sin(angle + headAngle));
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw a "collecting" indicator (pulsing ring + sparkles) around an agent
+        function drawLoadIndicator(row, col, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const radius = cellSize * 0.48;
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+
+            // Outer glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Inner glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Sparkle lines radiating outward
+            const sparkleCount = 8;
+            const innerR = radius * 0.55;
+            const outerR = radius * 1.1;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            for (let s = 0; s < sparkleCount; s++) {
+                const a = (Math.PI * 2 * s) / sparkleCount + (actionAnimationAlpha * Math.PI);
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+                ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+                ctx.stroke();
+            }
+
+            // "⚡" label above the cell
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = color;
+            ctx.fillText('⚡ COLLECT', cx, row * cellSize - 2);
+
+            ctx.restore();
         }
 
         function drawGame() {
@@ -1003,6 +1124,23 @@
                 ctx.font = 'bold 16px Arial';
                 ctx.fillText(`Lv${level}`, (col + 0.5) * cellSize, (row + 0.65) * cellSize);
             }
+
+            // --- Draw action indicators (arrows & load rings) ---
+            if (actionAnimationAlpha > 0) {
+                const actions = [lastHumanAction, lastAIAction];
+                const indicatorColors = ['#c92a2a', '#1a9e91']; // darker shades for visibility
+                for (let i = 0; i < state.agent_positions.length; i++) {
+                    const act = actions[i];
+                    if (act === null || act === undefined) continue;
+                    const [row, col] = state.agent_positions[i];
+
+                    if (act >= ACTIONS.UP && act <= ACTIONS.RIGHT) {
+                        drawDirectionArrow(row, col, act, cellSize, indicatorColors[i]);
+                    } else if (act === ACTIONS.LOAD) {
+                        drawLoadIndicator(row, col, cellSize, indicatorColors[i]);
+                    }
+                }
+            }
         }
 
         // Toggle the overlay that visually disables the canvas when an episode ends
@@ -1062,6 +1200,9 @@
                     replayMode = true;
                     replayId = data.replay_id;
                     gameState = data.state;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     
                     // Hide file upload, show replay controls
                     document.getElementById('fileUploadSection').classList.add('hidden');
@@ -1108,6 +1249,9 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     updateDisplay();
                 }
             } catch (error) {
@@ -1134,6 +1278,9 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     updateDisplay();
                 }
             } catch (error) {
