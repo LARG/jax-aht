@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from envs import make_env
 from agents.lbf import SequentialFruitAgent
+from agents.lbf import GreedyHeuristicAgent
 
 app = Flask(__name__)
 app.secret_key = '<FILL_THIS_IN>'  # Change this in production
@@ -76,10 +77,15 @@ class GameSession:
         )
         
         # Initialize heuristic agent (agent 1 - computer)
-        self.ai_agent = SequentialFruitAgent(
+        # self.ai_agent = SequentialFruitAgent(
+        #     grid_size=grid_size, 
+        #     num_fruits=num_fruits, 
+        #     ordering_strategy='nearest_agent'
+        # )
+        self.ai_agent = GreedyHeuristicAgent(
             grid_size=grid_size, 
             num_fruits=num_fruits, 
-            ordering_strategy='nearest_agent'
+            heuristic='closest_self'
         )
         
         # Initialize JAX random key

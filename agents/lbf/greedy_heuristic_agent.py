@@ -142,9 +142,18 @@ class GreedyHeuristicAgent(BaseAgent):
             move_action_val, key_out = self._get_best_move(agent_pos, distance_map, key_in)
             return move_action_val, key_out
 
+        def no_move(key_in):
+            return jnp.array(0, dtype=jnp.int32), key_in
 
+        move_action, rng_key = jax.lax.cond(
+            should_load,
+            no_move, # if we should load, we don't move
+            calculate_move, # otherwise we want to move
+            rng
+        )
 
-        pass
+        action = jnp.where(action == 0, move_action, action)
+        return action, agent_state
 
     def closest_self(self, agent_pos: jnp.ndarray, food_items):
         """Return the index of the closest fruit to the agent."""
