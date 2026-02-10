@@ -6,6 +6,7 @@ import os
 import sys
 import json
 import time
+import random
 from functools import wraps
 from flask import Flask, render_template, jsonify, request, session
 from flask_cors import CORS
@@ -23,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from envs import make_env
 from agents.lbf import SequentialFruitAgent
+from agents.lbf import GreedyHeuristicAgent
 
 app = Flask(__name__)
 app.secret_key = '<FILL_THIS_IN>'  # Change this in production
@@ -76,11 +78,12 @@ class GameSession:
         )
         
         # Initialize heuristic agent (agent 1 - computer)
-        self.ai_agent = SequentialFruitAgent(
-            grid_size=grid_size, 
-            num_fruits=num_fruits, 
-            ordering_strategy='nearest_agent'
-        )
+        # self.ai_agent = SequentialFruitAgent(
+        #     grid_size=grid_size, 
+        #     num_fruits=num_fruits, 
+        #     ordering_strategy='nearest_agent'
+        # )
+        self.ai_agent = self._choose_agent()
         
         # Initialize JAX random key
         self.rng = jax.random.PRNGKey(np.random.randint(0, 1000000))
@@ -101,6 +104,21 @@ class GameSession:
         # Pre-compile JAX functions with a warmup step
         self._warmup_jit_compilation()
     
+    def _choose_agent(self):
+        if random.random() < 0.5:
+            return SequentialFruitAgent(
+                grid_size=self.grid_size, 
+                num_fruits=self.num_fruits, 
+                ordering_strategy=random.choice(SequentialFruitAgent.VALID_ORDERING_STRATEGIES)
+            )
+        else:
+            return GreedyHeuristicAgent(
+                grid_size=self.grid_size, 
+                num_fruits=self.num_fruits, 
+                heuristic=random.choice(GreedyHeuristicAgent.VALID_HEURISTICS)
+            )
+        
+
     def _warmup_jit_compilation(self):
         """
         Pre-compile JAX functions by doing warmup steps.
@@ -375,7 +393,7 @@ PREWARMED_GAMES = []
 def get_game():
     max_steps = 50
     grid_size = 7
-    num_fruits = 3
+    num_fruits = random.randint(3, 4)
     game = GameSession(str(uuid.uuid4()), max_steps, grid_size, num_fruits)
     return game
 
@@ -437,9 +455,14 @@ def step():
     game = game_sessions[session_id]
     state = game.step(action)
     
+    # Include the last actions so the frontend can show visual indicators
+    last_step = game.episode_history[-1] if game.episode_history else None
+    
     return jsonify({
         "success": True,
-        "state": state
+        "state": state,
+        "human_action": last_step["human_action"] if last_step else None,
+        "ai_action": last_step["ai_action"] if last_step else None
     })
 
 
