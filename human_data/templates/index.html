@@ -392,13 +392,32 @@
             background: white;
             border-radius: 20px;
             padding: 35px;
-            max-width: 600px;
+            max-width: 750px;
             width: 90%;
             max-height: 85vh;
             overflow-y: auto;
             box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
             transform: scale(0.9);
             transition: transform 0.3s ease;
+        }
+
+        .modal-image {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .modal-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-image .caption {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-style: italic;
         }
 
         .modal-overlay.show .modal-content {
@@ -522,12 +541,17 @@
                     </p>
                 </div>
                 
-                <div class="example">
+                <!-- <div class="example">
                     <strong>Example:</strong> A food item with level 3 can be collected by:
                     <ul style="margin-top: 8px;">
                         <li>One agent with level ≥ 3</li>
                         <li>Two agents with levels that sum to ≥ 3 (e.g., level 1 + level 2)</li>
                     </ul>
+                </div> -->
+
+                <div class="modal-image">
+                    <img src="/static/LBFannotated.png" alt="LBF Game Example showing a Level 1 player, Level 1 AI partner, and Level 2 food">
+                    <div class="caption">Example: A Level 1 player (you) and Level 1 AI partner can work together to collect Level 2 food (1 + 1 ≥ 2)</div>
                 </div>
 
                 <h3>Controls</h3>
