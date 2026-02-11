@@ -1,6 +1,7 @@
 # @package value_function
 # ^ tells hydra to place these value directly under algorithm key
 ALG: dqnppo
+NETWORK_TYPE: mlp
 NUM_TRAIN_SEEDS: 1
 TOTAL_TIMESTEPS: 3e6
 NUM_CHECKPOINTS: 5

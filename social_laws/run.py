@@ -11,6 +11,7 @@ from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
 from social_laws.ppo_single_agent_projection import run_training as run_ppo_training
 from social_laws.dqn_ppo_value_function_estimation import run_training as run_dqnppo_value_estimation
+# from social_laws.drqn_ppo_value_function_estimation import run_training as run_drqnppo_value_estimation
 from social_laws.ppo_joint import run_training as run_ppo_joint_training
 
 SEEDRANGE = (1, int(1e9))
@@ -37,6 +38,13 @@ def run_training(cfg):
     # Single agent projection training
     # Creates what is effectively the optimal policy for a single agent in the environment
     if cfg["algorithm"]["ALG"] == "ppo":
+        if cfg["value_function"]["ALG"] == "dqnppo":
+            assert cfg["algorithm"]["ACTOR_TYPE"] == "mlp", "For DQN PPO value estimation, the PPO policy actor type must be MLP."
+            assert cfg["value_function"]["NETWORK_TYPE"] == "mlp", "For DQN PPO value estimation, the DQN network type must be MLP."
+        elif cfg["value_function"]["ALG"] == "drqnppo":
+            assert cfg["algorithm"]["ACTOR_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the PPO policy actor type must be s5 or rnn."
+            assert cfg["value_function"]["NETWORK_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the DRQN network type must be s5 or rnn."
+
         agent_0_params, agent_0_policy, agent_0_init_params = run_ppo_training(cfg, wandb_logger, agent_idx=0)
         agent_1_params, agent_1_policy, agent_1_init_params = run_ppo_training(cfg, wandb_logger, agent_idx=1)
 
@@ -46,6 +54,9 @@ def run_training(cfg):
         if cfg["value_function"]["ALG"] == "dqnppo":
             agent_0_vf_params, agent_0_vf, agent_0_vf_init_params = run_dqnppo_value_estimation(cfg, wandb_logger, agent_0_params, agent_0_policy, agent_idx=0)
             agent_1_vf_params, agent_1_vf, agent_1_vf_init_params = run_dqnppo_value_estimation(cfg, wandb_logger, agent_1_params, agent_1_policy, agent_idx=1)
+        # elif cfg["value_function"]["ALG"] == "drqnppo":
+        #     agent_0_vf_params, agent_0_vf, agent_0_vf_init_params = run_drqnppo_value_estimation(cfg, wandb_logger, agent_0_params, agent_0_policy, agent_idx=0)
+        #     agent_1_vf_params, agent_1_vf, agent_1_vf_init_params = run_drqnppo_value_estimation(cfg, wandb_logger, agent_1_params, agent_1_policy, agent_idx=1)
 
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment

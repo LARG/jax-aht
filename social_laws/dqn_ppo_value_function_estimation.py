@@ -172,12 +172,15 @@ def train_dqnppo_agent(config, env, train_rng,
                 q_next_target = jax.lax.stop_gradient(q_next_target)
 
                 # Get PPO policy probabilities for next state
+                # TODO: Try to support reccurrent actor-critic.
+                #       Currently, not possible due to buffer not storing
+                #       sequences and doing random sampling.
                 ppo_pi = policy.actor_critic.get_action_value_policy(
                     ppo_params,
                     learn_batch.second.obs,
                     learn_batch.second.done,
                     learn_batch.second.avail_actions,
-                    policy.actor_critic.init_hstate(learn_batch.second.obs.shape[0]),
+                    policy.actor_critic.init_hstate(config["BUFFER_BATCH_SIZE"]),
                     ppo_rng
                 )[2]
                 ppo_probs = ppo_pi.probs  # (batch_size, num_actions)

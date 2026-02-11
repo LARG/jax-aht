@@ -1,0 +1,92 @@
+////////////////////////////////////////////////////////////////////
+//
+// Instance for Multi-Agent 10x10 Grid (Social Law - Vertical Split)
+//
+// Two agents restricted to different vertical halves:
+// - Agent a1: restricted to LEFT half (x0-x4) - starts at (x0,y0), goal at (x4,y9)
+// - Agent a2: restricted to RIGHT half (x5-x9) - starts at (x9,y0), goal at (x5,y9)
+//
+// Grid layout (10x10):
+//   y9: [ ][ ][ ][ ][G1][G2][ ][ ][ ][ ]
+//   y8: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y7: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y6: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y5: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y4: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y3: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y2: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y1: [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+//   y0: [S1][ ][ ][ ][ ][ ][ ][ ][ ][S2]
+//       x0  x1  x2  x3  x4  x5  x6  x7  x8  x9
+//
+// S1 = agent a1 start, G1 = agent a1 goal
+// S2 = agent a2 start, G2 = agent a2 goal
+// Left half: x0-x4 (a1)
+// Right half: x5-x9 (a2)
+//
+////////////////////////////////////////////////////////////////////
+
+instance grid_10x10_inst1 {
+	domain = grid_10x10;
+
+	objects {
+		agent : {a1, a2};
+		xpos : {x0, x1, x2, x3, x4, x5, x6, x7, x8, x9};
+		ypos : {y0, y1, y2, y3, y4, y5, y6, y7, y8, y9};
+	};
+
+	non-fluents {
+		// Grid connectivity - 10x10 grid
+		// Vertical connections (North-South)
+		NORTH(y0, y1); NORTH(y1, y2); NORTH(y2, y3); NORTH(y3, y4); NORTH(y4, y5);
+		NORTH(y5, y6); NORTH(y6, y7); NORTH(y7, y8); NORTH(y8, y9);
+		SOUTH(y1, y0); SOUTH(y2, y1); SOUTH(y3, y2); SOUTH(y4, y3); SOUTH(y5, y4);
+		SOUTH(y6, y5); SOUTH(y7, y6); SOUTH(y8, y7); SOUTH(y9, y8);
+
+		// Horizontal connections (East-West)
+		EAST(x0, x1); EAST(x1, x2); EAST(x2, x3); EAST(x3, x4); EAST(x4, x5);
+		EAST(x5, x6); EAST(x6, x7); EAST(x7, x8); EAST(x8, x9);
+		WEST(x1, x0); WEST(x2, x1); WEST(x3, x2); WEST(x4, x3); WEST(x5, x4);
+		WEST(x6, x5); WEST(x7, x6); WEST(x8, x7); WEST(x9, x8);
+
+		// Restriction type: 1 = vertical split (left/right)
+		RESTRICTION-TYPE = 1;
+
+		// Define left and right halves
+		LEFT-HALF(x0);
+		LEFT-HALF(x1);
+		LEFT-HALF(x2);
+		LEFT-HALF(x3);
+		LEFT-HALF(x4);
+		RIGHT-HALF(x5);
+		RIGHT-HALF(x6);
+		RIGHT-HALF(x7);
+		RIGHT-HALF(x8);
+		RIGHT-HALF(x9);
+
+		// Agent restrictions
+		AGENT-HALF(a1) = 0;  // a1 restricted to left half
+		AGENT-HALF(a2) = 1;  // a2 restricted to right half
+
+		// Only one agent is controllable
+		CONTROLLABLE(a1);
+		CONTROLLABLE(a2);
+
+		// Agent goals
+		GOAL(a1, x4, y9);  // a1 goal in left half
+		GOAL(a2, x5, y9);  // a2 goal in right half
+	};
+
+	init-state {
+		// Initial agent positions
+		agent-at(a1, x0, y0);  // a1 starts bottom-left (left half)
+		agent-at(a2, x9, y0);  // a2 starts bottom-right (right half)
+
+		// Initialize goal positions in state (matches GOAL non-fluents)
+		goal-at(a1, x4, y9);
+		goal-at(a2, x5, y9);
+	};
+
+	horizon = 70;
+	discount = 1.0;
+}
