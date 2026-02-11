@@ -7,10 +7,11 @@ import math
 import os
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pyRDDLGym_jax
 
 # from pyRDDLGym.core.visualizer.movie import MovieGenerator
-from pyRDDLGym_jax.core.env import JaxRDDLEnv
+from pyRDDLGym_jax.core.env import JaxRDDLEnv, EnvState
 from jumanji import specs as jumanji_specs
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
@@ -34,7 +35,7 @@ class Grid4x4Wrapper(BaseEnv):
         self.env = args[0]
         self.vectorized = kwargs.get('vectorized', True)
         self.share_rewards = kwargs.get('share_rewards', False)
-        self.render = kwargs.get('render', False)
+        self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "grid_4x4")
         self._render_dir = kwargs.get('render_dir', "grid_4x4")
 
@@ -77,7 +78,7 @@ class Grid4x4Wrapper(BaseEnv):
         for i, agent in enumerate(self.agents):
             self._agent_halves[agent] = agent_half_array[i]
 
-        if self.render:
+        if self._render:
             self.render_name = kwargs.get('render_name', "grid_4x4")
             self.render_dir = os.path.join(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir, kwargs.get('render_dir', "render"))
             if not os.path.exists(self.render_dir):
@@ -88,10 +89,12 @@ class Grid4x4Wrapper(BaseEnv):
             self.env.set_visualizer(visualizer=viz)
 
         # WARNING: This wrapper currently only supports homogeneous agent envs
-        self.observation_spaces = {
-            agent: self._convert_rddl_obs_spec_to_jaxmarl_space(self.env.observation_space)
-            for agent_idx, agent in enumerate(self.agents)
-        }
+        self.observation_spaces = {}
+        self.observation_full_spaces = {}
+        for agent_idx, agent in enumerate(self.agents):
+            agent_obs, full_obs = self._convert_rddl_obs_spec_to_jaxmarl_space(self.env.observation_space)
+            self.observation_spaces[agent] = agent_obs
+            self.observation_full_spaces[agent] = full_obs
 
         self.action_spaces = {
             agent: self._convert_rddl_action_spec_to_jaxmarl_space(self.env.action_space[self.rddl_action_keys[0]])
@@ -143,8 +146,13 @@ class Grid4x4Wrapper(BaseEnv):
         )
         return obs, state, reward, done, info
 
-    def observation_space(self, agent: str):
-        return self.observation_spaces[agent]
+    def observation_space(self, agent: str, observation_type: str = "agent") -> jaxmarl_spaces.Space:
+        if observation_type == "agent":
+            return self.observation_spaces[agent]
+        elif observation_type == "full":
+            return self.observation_full_spaces[agent]
+        else:
+            raise ValueError(f"Unknown observation_type: {observation_type}")
 
     def action_space(self, agent: str):
         return self.action_spaces[agent]
@@ -162,14 +170,22 @@ class Grid4x4Wrapper(BaseEnv):
     def _extract_observations(self, observation):
         '''Extract per-agent observations and flatten them into arrays'''
         if self.vectorized:
-            obs = {}
+            obs_agent = {}
+            obs_full = {}
             for agent_idx, agent in enumerate(self.agents):
-                obs_values = []
-                obs_values.append(observation['agent-at'].flatten())
-                obs_values.append(observation['goal-at'][agent_idx].flatten())
-                obs_values.append(observation['goal-reached'].flatten())
-                obs[agent] = jnp.concatenate(obs_values, dtype=self.observation_spaces[agent].dtype)
-            return obs
+                obs_agent_values = []
+                obs_full_values = []
+                agent_at = observation['agent-at'].flatten()
+                goal_reached = observation['goal-reached'].flatten()
+                obs_agent_values.append(agent_at)
+                obs_full_values.append(agent_at)
+                obs_agent_values.append(observation['goal-at'][agent_idx].flatten())
+                obs_full_values.append(observation['goal-at'].flatten())
+                obs_agent_values.append(goal_reached)
+                obs_full_values.append(goal_reached)
+                obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
+                obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
+            return obs_agent, obs_full
         else:
             raise NotImplementedError("Non-vectorized observations not implemented yet.")
 
@@ -234,13 +250,16 @@ class Grid4x4Wrapper(BaseEnv):
         # Remove collision indicators from the space
         if self.vectorized:
             obs_size = 0
+            obs_full_size = 0
             for key in space.keys():
                 if 'collision' in key:
                     pass
                 elif 'goal-at' in key:
                     obs_size += math.prod(space[key].shape[1:])
+                    obs_full_size += math.prod(space[key].shape)
                 else:
                     obs_size += math.prod(space[key].shape)
+                    obs_full_size += math.prod(space[key].shape)
 
             # Create Box space
             observation_space = jaxmarl_spaces.Box(
@@ -249,10 +268,17 @@ class Grid4x4Wrapper(BaseEnv):
                 shape=(obs_size,),
                 dtype=jnp.float32
             )
+
+            observation_full_space = jaxmarl_spaces.Box(
+                low=0,
+                high=1,
+                shape=(obs_full_size,),
+                dtype=jnp.float32
+            )
         else:
             raise NotImplementedError("Non-vectorized observation spaces not implemented yet.")
 
-        return observation_space
+        return observation_space, observation_full_space
 
     def _convert_rddl_action_spec_to_jaxmarl_space(self, space: pyRDDLGym_jax.core.spaces.Dict):
         """Converts the action spec for each agent to a JaxMARL space."""
@@ -344,8 +370,53 @@ class Grid4x4Wrapper(BaseEnv):
 
         return env_state, timestep
 
-    def render(self, state: WrappedEnvState):
-        return self.env.render(state.env_state)
+    def render(self, env_state: EnvState, save_frame: bool = True) -> Any:
+        """Render the current environment state.
+
+        This method extracts the state from the EnvState and calls the
+        visualizer's render method. It's designed to be called outside
+        JIT-compiled loops for visualization purposes.
+
+        Args:
+            env_state: The current environment state from step() or reset()
+            save_frame: If True and movie_generator is set, saves the frame
+
+        Returns:
+            image: The rendered image (typically a PIL Image), or None if
+                   no visualizer is set
+
+        Example:
+            ```python
+            env_state, timestep = env.reset(key)
+            image = env.render(env_state)
+
+            # Save or display the image
+            if image is not None:
+                image.save('state.png')
+            ```
+        """
+        if self.env._visualizer is None:
+            return None
+
+        # Extract state dictionary from EnvState
+        state = env_state.state
+
+        # Always convert to grounded format for visualizers
+        # (JAX env internally uses vectorized representation)
+        state = self.env.model.ground_vars_with_values(state)
+
+        # Convert JAX arrays to NumPy arrays for visualizer compatibility
+        state = {k: (np.asarray(v) if hasattr(v, '__array__') else v)
+                 for k, v in state.items()}
+
+        # Call visualizer's render method
+        image = self.env._visualizer.render(state, env_state.actions)
+
+        # Save frame to movie generator if enabled
+        if save_frame and self.env._movie_generator is not None and image is not None:
+            self.env._movie_generator.save_frame(image)
+
+        return image
 
     def reset_render(self):
         self.env.reset_render()
@@ -369,7 +440,7 @@ class Grid4x4Wrapper(BaseEnv):
 
             # Generate frames and optionally save them for debugging
             frames = []
-            frame = self.env.render(init_env_state)
+            frame = self.render(init_env_state)
             frames.append(frame)
             if debug:
                 # Also save individual frames for debugging
@@ -377,7 +448,7 @@ class Grid4x4Wrapper(BaseEnv):
                 frame.save(frame_path)
 
             for j in range(self.env.model.horizon):
-                frame = self.env.render(env_states[j])
+                frame = self.render(env_states[j])
                 frames.append(frame)
                 if debug:
                     # Also save individual frames for debugging

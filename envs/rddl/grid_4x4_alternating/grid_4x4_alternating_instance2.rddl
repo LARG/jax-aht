@@ -1,0 +1,81 @@
+////////////////////////////////////////////////////////////////////
+//
+// Instance for Multi-Agent 4x4 Grid (Alternating Direction Restrictions)
+//
+// REACHABLE GOALS CONFIGURATION
+//
+// Two agents with alternating directional restrictions:
+// - EVEN COLUMNS (x0, x2): Can only move SOUTH
+// - ODD COLUMNS (x1, x3): Can only move NORTH
+// - EVEN ROWS (y0, y2): Can only move EAST
+// - ODD ROWS (y1, y3): Can only move WEST
+//
+// Agent a1: starts at (x1,y0), goal at (x1,y3) - vertical movement in ODD column
+// Agent a2: starts at (x0,y1), goal at (x3,y1) - horizontal movement in ODD row
+//
+// Grid layout (4x4):
+//   y3: [ ][G1][ ][ ]  (ODD ROW - can only go WEST)
+//   y2: [ ][ ][ ][ ]   (EVEN ROW - can only go EAST)
+//   y1: [S2][ ][ ][G2] (ODD ROW - can only go WEST)
+//   y0: [ ][S1][ ][ ]  (EVEN ROW - can only go EAST)
+//       x0  x1  x2  x3
+//      EVEN ODD EVEN ODD
+//
+// Strategy for a1: Stay in column x1 (ODD), move NORTH through rows
+// Strategy for a2: Stay in row y1 (ODD), move WEST through columns
+//
+////////////////////////////////////////////////////////////////////
+
+instance grid_4x4_alternating_inst2 {
+	domain = grid_4x4_alternating;
+
+	objects {
+		agent : {a1, a2};
+		xpos : {x0, x1, x2, x3};
+		ypos : {y0, y1, y2, y3};
+	};
+
+	non-fluents {
+		// Grid connectivity - 4x4 grid
+		// Vertical connections (North-South)
+		NORTH(y0, y1); NORTH(y1, y2); NORTH(y2, y3);
+		SOUTH(y1, y0); SOUTH(y2, y1); SOUTH(y3, y2);
+
+		// Horizontal connections (East-West)
+		EAST(x0, x1); EAST(x1, x2); EAST(x2, x3);
+		WEST(x1, x0); WEST(x2, x1); WEST(x3, x2);
+
+		// Column parity definitions
+		EVEN-COLUMN(x0);  // Can only go SOUTH
+		ODD-COLUMN(x1);   // Can only go NORTH
+		EVEN-COLUMN(x2);  // Can only go SOUTH
+		ODD-COLUMN(x3);   // Can only go NORTH
+
+		// Row parity definitions
+		EVEN-ROW(y0);  // Can only go EAST
+		ODD-ROW(y1);   // Can only go WEST
+		EVEN-ROW(y2);  // Can only go EAST
+		ODD-ROW(y3);   // Can only go WEST
+
+		// Both agents are controllable
+		CONTROLLABLE(a1);
+		CONTROLLABLE(a2);
+
+		// Agent goals (reachable!)
+		GOAL(a1, x1, y3);  // a1 goal at (x1, y3) - same column, top
+		GOAL(a2, x3, y1);  // a2 goal at (x3, y1) - same row, right
+	};
+
+	init-state {
+		// Initial agent positions (designed for reachability)
+		agent-at(a1, x1, y0);  // a1 starts at (x1, y0) - ODD column, EVEN row
+		agent-at(a2, x0, y1);  // a2 starts at (x0, y1) - EVEN column, ODD row
+
+		// Initialize goal positions in state (matches GOAL non-fluents)
+		goal-at(a1, x1, y3);
+		goal-at(a2, x3, y1);
+	};
+
+	horizon = 40;
+	discount = 1.0;
+}

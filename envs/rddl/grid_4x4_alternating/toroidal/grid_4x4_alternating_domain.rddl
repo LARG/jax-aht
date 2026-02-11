@@ -1,0 +1,389 @@
+////////////////////////////////////////////////////////////////////
+//
+// Multi-Agent 4x4 Grid Navigation Domain (Alternating Direction Restrictions)
+//
+// A multi-agent discrete grid navigation problem where multiple agents
+// must navigate from their start positions to their individual goal
+// positions on a 4x4 grid, with alternating directional restrictions.
+//
+// Actions:
+// - 0: no-op (stay in place)
+// - 1: move west (left)
+// - 2: move east (right)
+// - 3: move south (down)
+// - 4: move north (up)
+//
+// Restriction Modes (RESTRICTION-MODE):
+// - Mode -1: NO restrictions (free movement in all directions)
+//
+// - Mode 0: Both column AND row restrictions (default)
+//   * EVEN COLUMNS (x0, x2): Can only move SOUTH
+//   * ODD COLUMNS (x1, x3): Can only move NORTH
+//   * EVEN ROWS (y0, y2): Can only move EAST
+//   * ODD ROWS (y1, y3): Can only move WEST
+//
+// - Mode 1: Only COLUMN restrictions (rows unrestricted)
+//   * EVEN COLUMNS (x0, x2): Can only move SOUTH
+//   * ODD COLUMNS (x1, x3): Can only move NORTH
+//   * All rows: Can move EAST or WEST freely
+//
+// - Mode 2: Only ROW restrictions (columns unrestricted)
+//   * All columns: Can move NORTH or SOUTH freely
+//   * EVEN ROWS (y0, y2): Can only move EAST
+//   * ODD ROWS (y1, y3): Can only move WEST
+//
+// Features:
+// - Multiple agents with individual goals
+// - Controllable flag per agent
+// - Obstacles that block movement
+// - Collision detection between agents
+// - Early termination when all agents reach goals
+//
+////////////////////////////////////////////////////////////////////
+
+domain grid_4x4_alternating {
+	requirements = {
+		reward-deterministic,
+		reward-vector
+	};
+
+	types {
+		agent : object;
+		xpos : object;
+		ypos : object;
+	};
+
+	pvariables {
+		// Non-fluents: grid connectivity
+		NORTH(ypos, ypos) : {non-fluent, bool, default = false};
+		SOUTH(ypos, ypos) : {non-fluent, bool, default = false};
+		EAST(xpos, xpos)  : {non-fluent, bool, default = false};
+		WEST(xpos, xpos)  : {non-fluent, bool, default = false};
+
+		// Non-fluents: per-agent goal locations
+		GOAL(agent, xpos, ypos) : {non-fluent, bool, default = false};
+
+		// Non-fluents: controllable flag per agent
+		CONTROLLABLE(agent) : {non-fluent, bool, default = false};
+
+		// Non-fluents: obstacles
+		OBSTACLE(xpos, ypos) : {non-fluent, bool, default = false};
+
+		// Non-fluents: reward parameters
+		GOAL-REWARD : {non-fluent, real, default = 20.0};      // Reward for reaching goal
+		STEP-PENALTY : {non-fluent, real, default = -1.0};     // Penalty per step for agent not at goal
+		COLLISION-PENALTY : {non-fluent, real, default = -5.0}; // Penalty when agents collide
+
+		// Non-fluents: Column and row parity for alternating restrictions
+		// EVEN columns: x0, x2 (can only go SOUTH, not NORTH)
+		// ODD columns: x1, x3 (can only go NORTH, not SOUTH)
+		EVEN-COLUMN(xpos) : {non-fluent, bool, default = false};
+		ODD-COLUMN(xpos) : {non-fluent, bool, default = false};
+
+		// EVEN rows: y0, y2 (can only go EAST, not WEST)
+		// ODD rows: y1, y3 (can only go WEST, not EAST)
+		EVEN-ROW(ypos) : {non-fluent, bool, default = false};
+		ODD-ROW(ypos) : {non-fluent, bool, default = false};
+
+		// Non-fluent: Restriction mode setting
+		// -1 = No restrictions
+		//  0 = Both column and row restrictions (default)
+		//  1 = Only column restrictions (rows unrestricted)
+		//  2 = Only row restrictions (columns unrestricted)
+		RESTRICTION-MODE : {non-fluent, int, default = 0};
+
+		TOROIDAL : {non-fluent, bool, default = true};
+
+		// State fluents: agent positions
+		agent-at(agent, xpos, ypos) : {state-fluent, bool, default = false};
+
+		// State fluents: goal position for each agent (derived from GOAL non-fluent)
+		// These make goal positions observable in the state
+		goal-at(agent, xpos, ypos) : {state-fluent, bool, default = false};
+
+		// State fluents: whether each agent has reached its goal
+		goal-reached(agent) : {state-fluent, bool, default = false};
+
+		// State fluents: whether agent caused a collision (tried to move into occupied space)
+		collision(agent) : {state-fluent, bool, default = false};
+
+		// Action fluents: integer action per agent
+		// 0 = no-op, 1 = west, 2 = east, 3 = south, 4 = north
+		move(agent) : {action-fluent, int, default = 0};
+	};
+
+	cpfs {
+		// Detect if agent caused a collision by trying to move into an occupied space
+		// Only considers collisions when both agents are performing valid moves under restrictions
+		// This includes:
+		// 1. Moving into another agent's current position (when move is valid)
+		// 2. Both agents trying to move into the same cell (when both moves are valid)
+		collision'(?a) =
+			if (exists_{?xt : xpos, ?yt : ypos, ?x : xpos, ?y : ypos, ?x2 : xpos, ?y2 : ypos, ?a2 : agent} [
+				(?a ~= ?a2) ^
+				agent-at(?a, ?x, ?y) ^
+				agent-at(?a2, ?x2, ?y2) ^
+				(
+					// Case 1: Agent ?a tries to move into ?a2's current position (only if move is valid)
+					(((move(?a) == 4) ^ NORTH(?y, ?yt) ^ (?xt == ?x) ^ (?xt == ?x2) ^ (?yt == ?y2) ^
+					  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ EVEN-COLUMN(?x)))) |
+					 ((move(?a) == 3) ^ SOUTH(?y, ?yt) ^ (?xt == ?x) ^ (?xt == ?x2) ^ (?yt == ?y2) ^
+					  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ ODD-COLUMN(?x)))) |
+					 ((move(?a) == 2) ^ EAST(?x, ?xt) ^ (?yt == ?y) ^ (?xt == ?x2) ^ (?yt == ?y2) ^
+					  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ ODD-ROW(?y)))) |
+					 ((move(?a) == 1) ^ WEST(?x, ?xt) ^ (?yt == ?y) ^ (?xt == ?x2) ^ (?yt == ?y2) ^
+					  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ EVEN-ROW(?y))))) |
+
+					// Case 2: Both agents try to move into the same target cell (?xt, ?yt)
+					// Both moves must be valid under restriction mode
+					(
+						// Agent ?a moves north to (?xt, ?yt) - valid if mode=-1 or not in even column with mode 0 or 1
+						(((move(?a) == 4) ^ NORTH(?y, ?yt) ^ (?xt == ?x) ^
+						  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ EVEN-COLUMN(?x)))) ^
+						 (
+						  // Agent ?a2 moves south to same target - valid if mode=-1 or not in odd column with mode 0 or 1
+						  ((move(?a2) == 3) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ ODD-COLUMN(?x2)))) |
+						  // Or agent ?a2 moves east to same target - valid if mode=-1 or not in odd row with mode 0 or 2
+						  ((move(?a2) == 2) ^ EAST(?x2, ?xt) ^ (?yt == ?y2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ ODD-ROW(?y2)))) |
+						  // Or agent ?a2 moves west to same target - valid if mode=-1 or not in even row with mode 0 or 2
+						  ((move(?a2) == 1) ^ WEST(?x2, ?xt) ^ (?yt == ?y2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ EVEN-ROW(?y2))))
+						 )) |
+
+						// Agent ?a moves south to (?xt, ?yt) - valid if mode=-1 or not in odd column with mode 0 or 1
+						(((move(?a) == 3) ^ SOUTH(?y, ?yt) ^ (?xt == ?x) ^
+						  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ ODD-COLUMN(?x)))) ^
+						 (
+						  // Agent ?a2 moves north to same target - valid if mode=-1 or not in even column with mode 0 or 1
+						  ((move(?a2) == 4) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ EVEN-COLUMN(?x2)))) |
+						  // Or agent ?a2 moves east to same target - valid if mode=-1 or not in odd row with mode 0 or 2
+						  ((move(?a2) == 2) ^ EAST(?x2, ?xt) ^ (?yt == ?y2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ ODD-ROW(?y2)))) |
+						  // Or agent ?a2 moves west to same target - valid if mode=-1 or not in even row with mode 0 or 2
+						  ((move(?a2) == 1) ^ WEST(?x2, ?xt) ^ (?yt == ?y2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ EVEN-ROW(?y2))))
+						 )) |
+
+						// Agent ?a moves east to (?xt, ?yt) - valid if mode=-1 or not in odd row with mode 0 or 2
+						(((move(?a) == 2) ^ EAST(?x, ?xt) ^ (?yt == ?y) ^
+						  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ ODD-ROW(?y)))) ^
+						 (
+						  // Agent ?a2 moves west to same target - valid if mode=-1 or not in even row with mode 0 or 2
+						  ((move(?a2) == 1) ^ WEST(?x2, ?xt) ^ (?yt == ?y2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ EVEN-ROW(?y2)))) |
+						  // Or agent ?a2 moves north to same target - valid if mode=-1 or not in even column with mode 0 or 1
+						  ((move(?a2) == 4) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ EVEN-COLUMN(?x2)))) |
+						  // Or agent ?a2 moves south to same target - valid if mode=-1 or not in odd column with mode 0 or 1
+						  ((move(?a2) == 3) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ ODD-COLUMN(?x2))))
+						 )) |
+
+						// Agent ?a moves west to (?xt, ?yt) - valid if mode=-1 or not in even row with mode 0 or 2
+						(((move(?a) == 1) ^ WEST(?x, ?xt) ^ (?yt == ?y) ^
+						  ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ EVEN-ROW(?y)))) ^
+						 (
+						  // Agent ?a2 moves east to same target - valid if mode=-1 or not in odd row with mode 0 or 2
+						  ((move(?a2) == 2) ^ EAST(?x2, ?xt) ^ (?yt == ?y2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ ODD-ROW(?y2)))) |
+						  // Or agent ?a2 moves north to same target - valid if mode=-1 or not in even column with mode 0 or 1
+						  ((move(?a2) == 4) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ EVEN-COLUMN(?x2)))) |
+						  // Or agent ?a2 moves south to same target - valid if mode=-1 or not in odd column with mode 0 or 1
+						  ((move(?a2) == 3) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2) ^
+						   ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ ODD-COLUMN(?x2))))
+						 ))
+					)
+				)
+			])
+			then KronDelta(true)
+			else KronDelta(false);
+
+		// Update goal positions (stays constant, just copies from GOAL non-fluent)
+		goal-at'(?a, ?x, ?y) = KronDelta(GOAL(?a, ?x, ?y));
+
+		// Update goal-reached status for each agent
+		goal-reached'(?a) =
+			if (goal-reached(?a))
+				then KronDelta(true)
+			else if (exists_{?x : xpos, ?y : ypos} [agent-at(?a, ?x, ?y) ^ GOAL(?a, ?x, ?y)])
+				then KronDelta(true)
+			else if (exists_{?x : xpos, ?y : ypos} [agent-at'(?a, ?x, ?y) ^ GOAL(?a, ?x, ?y)])
+				then KronDelta(true)
+			else
+				KronDelta(false);
+
+		// Update agent positions
+		agent-at'(?a, ?x, ?y) =
+			// First check: If agent is not controllable, it stays in place
+			if (~CONTROLLABLE(?a))
+				then KronDelta(agent-at(?a, ?x, ?y))
+
+			// Second check: If agent already reached its goal, stay at goal (MUST be checked early)
+			else if (goal-reached(?a) ^ GOAL(?a, ?x, ?y))
+				then KronDelta(true)
+
+			// Third check: If agent already reached goal but this is NOT the goal position, agent can't be here
+			else if (goal-reached(?a) ^ ~GOAL(?a, ?x, ?y))
+				then KronDelta(false)
+
+			// Fourth check: If agent is currently at goal (even if goal-reached not yet true), stay at goal
+			else if (agent-at(?a, ?x, ?y) ^ GOAL(?a, ?x, ?y))
+				then KronDelta(true)
+
+            // If moving TO this position from an adjacent cell (not an obstacle, no other agent there, no collision)
+            else if (~collision'(?a) ^
+                    ~OBSTACLE(?x, ?y) ^
+                    ~(exists_{?a2 : agent} [(?a2 ~= ?a) ^ agent-at(?a2, ?x, ?y)]) ^
+                    (((move(?a) == 4) ^ exists_{?y2 : ypos} [NORTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)] ^
+                    // Check restriction: NORTH not allowed from EVEN-COLUMN in modes 0 and 1 (but allowed in mode -1)
+                    ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ EVEN-COLUMN(?x))))
+                    | ((move(?a) == 3) ^ exists_{?y2 : ypos} [SOUTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)] ^
+                    // Check restriction: SOUTH not allowed from ODD-COLUMN in modes 0 and 1 (but allowed in mode -1)
+                    ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ ODD-COLUMN(?x))))
+                    | ((move(?a) == 2) ^ exists_{?x2 : xpos} [EAST(?x2, ?x) ^ agent-at(?a, ?x2, ?y)] ^
+                    // Check restriction: EAST not allowed from ODD-ROW in modes 0 and 2 (but allowed in mode -1)
+                    ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ ODD-ROW(?y))))
+                    | ((move(?a) == 1) ^ exists_{?x2 : xpos} [WEST(?x2, ?x) ^ agent-at(?a, ?x2, ?y)] ^
+                    // Check restriction: WEST not allowed from EVEN-ROW in modes 0 and 2 (but allowed in mode -1)
+                    ((RESTRICTION-MODE == -1) | ~(((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ EVEN-ROW(?y))))))
+                then KronDelta(true)
+
+            // If staying at current position (no-op or blocked move)
+            else if (agent-at(?a, ?x, ?y) ^
+                    (move(?a) == 0 |  // no-op
+                    // Or trying to move but blocked by collision
+                    collision'(?a) |
+                    // Or trying to move north but blocked
+                    ((move(?a) == 4) ^ ~exists_{?y2 : ypos} [NORTH(?y, ?y2)]) |
+                    // Or trying to move south but blocked
+                    ((move(?a) == 3) ^ ~exists_{?y2 : ypos} [SOUTH(?y, ?y2)]) |
+                    // Or trying to move east but blocked
+                    ((move(?a) == 2) ^ ~exists_{?x2 : xpos} [EAST(?x, ?x2)]) |
+                    // Or trying to move west but blocked
+                    ((move(?a) == 1) ^ ~exists_{?x2 : xpos} [WEST(?x, ?x2)]) |
+                    // Or trying to move into an obstacle
+                    ((move(?a) == 4) ^ exists_{?y2 : ypos} [NORTH(?y, ?y2) ^ OBSTACLE(?x, ?y2)]) |
+                    ((move(?a) == 3) ^ exists_{?y2 : ypos} [SOUTH(?y, ?y2) ^ OBSTACLE(?x, ?y2)]) |
+                    ((move(?a) == 2) ^ exists_{?x2 : xpos} [EAST(?x, ?x2) ^ OBSTACLE(?x2, ?y)]) |
+                    ((move(?a) == 1) ^ exists_{?x2 : xpos} [WEST(?x, ?x2) ^ OBSTACLE(?x2, ?y)]) |
+                    // Or trying to move but violating restriction mode (not applicable in mode -1)
+                    ((move(?a) == 4) ^ (RESTRICTION-MODE ~= -1) ^ ((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ EVEN-COLUMN(?x)) |
+                    ((move(?a) == 3) ^ (RESTRICTION-MODE ~= -1) ^ ((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) ^ ODD-COLUMN(?x)) |
+                    ((move(?a) == 2) ^ (RESTRICTION-MODE ~= -1) ^ ((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ ODD-ROW(?y)) |
+                    ((move(?a) == 1) ^ (RESTRICTION-MODE ~= -1) ^ ((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) ^ EVEN-ROW(?y))))
+                then KronDelta(true)
+
+            // Otherwise, not at this position
+			else
+				KronDelta(false);
+	};
+
+	// Reward: sum of individual agent rewards
+	reward =
+		[sum_{?a : agent} [
+			if (goal-reached(?a))
+				then 0.0
+			else if (collision'(?a))
+				then COLLISION-PENALTY + STEP-PENALTY  // Collision penalty + step penalty
+			else if (goal-reached'(?a))
+				then GOAL-REWARD
+			else
+				STEP-PENALTY
+		]];
+
+	action-preconditions {
+		// Valid action values: 0-4
+		forall_{?a : agent} [
+			(move(?a) >= 0) ^ (move(?a) <= 4)
+		];
+
+		// Non-controllable agents must take no-op action (0)
+		forall_{?a : agent} [
+			~CONTROLLABLE(?a) => (move(?a) == 0)
+		];
+
+		// Prevent agents from moving outside grid boundaries
+		forall_{?a : agent} [
+			// Can't move north if there's no valid north position
+			(move(?a) == 4) => exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
+				agent-at(?a, ?x, ?y) ^ NORTH(?y, ?y2)
+			]
+		];
+
+		forall_{?a : agent} [
+			// Can't move south if there's no valid south position
+			(move(?a) == 3) => exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
+				agent-at(?a, ?x, ?y) ^ SOUTH(?y, ?y2)
+			]
+		];
+
+		forall_{?a : agent} [
+			// Can't move east if there's no valid east position
+			(move(?a) == 2) => exists_{?x : xpos, ?x2 : xpos, ?y : ypos} [
+				agent-at(?a, ?x, ?y) ^ EAST(?x, ?x2)
+			]
+		];
+
+		forall_{?a : agent} [
+			// Can't move west if there's no valid west position
+			(move(?a) == 1) => exists_{?x : xpos, ?x2 : xpos, ?y : ypos} [
+				agent-at(?a, ?x, ?y) ^ WEST(?x, ?x2)
+			]
+		];
+
+		// ALTERNATING DIRECTION RESTRICTIONS:
+		// Mode 0 (default): Both column and row restrictions
+		// Mode 1: Only column restrictions
+		// Mode 2: Only row restrictions
+
+		// EVEN COLUMNS (x0, x2): Can only move SOUTH, not NORTH
+		// Active in modes 0 and 1 (not enforced in mode -1)
+		forall_{?a : agent} [
+			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) =>
+			((move(?a) == 4) => ~exists_{?x : xpos, ?y : ypos} [
+				agent-at(?a, ?x, ?y) ^ EVEN-COLUMN(?x)
+			])
+		];
+
+		// ODD COLUMNS (x1, x3): Can only move NORTH, not SOUTH
+		// Active in modes 0 and 1 (not enforced in mode -1)
+		forall_{?a : agent} [
+			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) =>
+			((move(?a) == 3) => ~exists_{?x : xpos, ?y : ypos} [
+				agent-at(?a, ?x, ?y) ^ ODD-COLUMN(?x)
+			])
+		];
+
+		// ODD ROWS (y0, y2): Can only move WEST, not EAST
+		// Active in modes 0 and 2 (not enforced in mode -1)
+		forall_{?a : agent} [
+			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) =>
+			((move(?a) == 2) => ~exists_{?x : xpos, ?y : ypos} [
+				agent-at(?a, ?x, ?y) ^ ODD-ROW(?y)
+			])
+		];
+
+		// EVEN ROWS (y1, y3): Can only move EAST, not WEST
+		// Active in modes 0 and 2
+		forall_{?a : agent} [
+			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) =>
+			((move(?a) == 1) => ~exists_{?x : xpos, ?y : ypos} [
+				agent-at(?a, ?x, ?y) ^ EVEN-ROW(?y)
+			])
+		];
+
+		// Agents that have reached their goal must take no-op
+		forall_{?a : agent} [
+			goal-reached(?a) => (move(?a) == 0)
+		];
+	};
+
+	termination {
+		// Terminate early when all agents have reached their goals
+		forall_{?a : agent} [goal-reached(?a)];
+	};
+}

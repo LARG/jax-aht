@@ -146,7 +146,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 q_values = vf_policy.network.apply(vf_params, obs)  # (num_envs, num_actions)
 
                 # Mask Q-values with available actions (set unavailable to -inf)
-                q_values_masked = jnp.where(avail_actions > 0, q_values, -jnp.inf)
+                q_values_masked = jnp.where(avail_actions, q_values, -jnp.inf)
 
                 # Find max Q-value for each environment
                 max_q = jnp.max(q_values_masked, axis=-1, keepdims=True)  # (num_envs, 1)
@@ -167,6 +167,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 3. Return state, reward, ...
                 """
                 agent_0_train_state, agent_1_train_state, env_state, prev_obs, prev_done, hstate_0, hstate_1, rng = runner_state
+                prev_obs, prev_full_obs = prev_obs
                 rng, actor_0_rng, actor_1_rng, step_rng = jax.random.split(rng, 4)
 
                  # Get available actions for the agent from environment state
@@ -177,6 +178,8 @@ def train_ppo_joint_agents(config, env, train_rng,
 
                 prev_obs_0 = get_agent_data(prev_obs, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
                 prev_obs_1 = get_agent_data(prev_obs, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                prev_full_obs_0 = get_agent_data(prev_full_obs, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                prev_full_obs_1 = get_agent_data(prev_full_obs, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
 
                 # Restrict available actions based on value function
                 vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
@@ -198,7 +201,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 # Agent 0 action, value, log_prob (using VF-restricted available actions)
                 act_0, val_0, pi_0, new_hstate_0 = agent_0_policy.get_action_value_policy(
                     params=agent_0_train_state.params,
-                    obs=prev_obs_0,
+                    obs=prev_full_obs_0,
                     done=get_agent_data(prev_done, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=vf_restricted_avail_actions_0,
                     hstate=hstate_0,
@@ -213,7 +216,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 # Agent 1 action, value, log_prob (using VF-restricted available actions)
                 act_1, val_1, pi_1, new_hstate_1 = agent_1_policy.get_action_value_policy(
                     params=agent_1_train_state.params,
-                    obs=prev_obs_1,
+                    obs=prev_full_obs_1,
                     done=get_agent_data(prev_done, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=vf_restricted_avail_actions_1,
                     hstate=hstate_1,
@@ -257,7 +260,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                     value=val_0, # shape (num_envs,)
                     reward=get_agent_data(reward, agent_idx) * -1, # shape (num_envs,)
                     log_prob=logp_0, # shape (num_envs,)
-                    obs=get_agent_data(prev_obs, 0), # shape (num_envs, obs_dim)
+                    obs=get_agent_data(prev_full_obs, 0), # shape (num_envs, obs_dim)
                     info=info,
                     avail_actions=vf_restricted_avail_actions_0 # shape (num_envs, num_actions)
                 )
@@ -268,7 +271,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                     value=val_1, # shape (num_envs,)
                     reward=get_agent_data(reward, agent_idx) * -1, # shape (num_envs,)
                     log_prob=logp_1, # shape (num_envs,)
-                    obs=get_agent_data(prev_obs, 1), # shape (num_envs, obs_dim)
+                    obs=get_agent_data(prev_full_obs, 1), # shape (num_envs, obs_dim)
                     info=info,
                     avail_actions=vf_restricted_avail_actions_1, # shape (num_envs, num_actions)
                 )
@@ -448,6 +451,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
                 (agent_0_train_state, agent_1_train_state, env_state, obs, done, agent_0_hstate, agent_1_hstate, rng) = runner_state
                 agent_0_traj_batch, agent_1_traj_batch = traj_batch
+                obs, obs_full = obs
 
                 # 2) advantage
                 # Get available actions for agent 0 from environment state
@@ -457,6 +461,8 @@ def train_ppo_joint_agents(config, env, train_rng,
 
                 obs_0 = get_agent_data(obs, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
                 obs_1 = get_agent_data(obs, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                obs_full_0 = get_agent_data(obs_full, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
+                obs_full_1 = get_agent_data(obs_full, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
 
                 # Restrict available actions based on value function
                 vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
@@ -475,7 +481,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 # Get agent 0 final value estimate for completed trajectory
                 _, last_val_0, _, _ = agent_0_policy.get_action_value_policy(
                     params=agent_0_train_state.params,
-                    obs=obs_0,
+                    obs=obs_full_0,
                     done=get_agent_data(done, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=jax.lax.stop_gradient(vf_restricted_avail_actions_0),
                     hstate=agent_0_hstate,
@@ -486,7 +492,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 # Get agent 1 final value estimate for completed trajectory
                 _, last_val_1, _, _ = agent_1_policy.get_action_value_policy(
                     params=agent_1_train_state.params,
-                    obs=obs_1,
+                    obs=obs_full_1,
                     done=get_agent_data(done, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=jax.lax.stop_gradient(vf_restricted_avail_actions_1),
                     hstate=agent_1_hstate,
@@ -711,8 +717,8 @@ def run_training(config, wandb_logger, ppo_params, ppo_policies,
     _, init_rng, train_rng = jax.random.split(rng, 3)
 
     # Initialize agent
-    agent_0_policy, agent_0_init_params = initialize_agent(algorithm_config, env, init_rng, agent_index=0)
-    agent_1_policy, agent_1_init_params = initialize_agent(algorithm_config, env, init_rng, agent_index=1)
+    agent_0_policy, agent_0_init_params = initialize_agent(algorithm_config, env, init_rng, agent_index=0, observation_type="full")
+    agent_1_policy, agent_1_init_params = initialize_agent(algorithm_config, env, init_rng, agent_index=1, observation_type="full")
 
     # Squeeze PPO params to remove leading dimension for compatibility with single-agent training
     agent_0_ppo_params, agent_1_ppo_params = ppo_params

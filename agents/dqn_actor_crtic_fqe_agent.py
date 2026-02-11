@@ -119,12 +119,12 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
         # Greedy argmax actions from the Q-values
         actions = jnp.argmax(masked_qvals, axis=-1)
 
-        return actions, masked_qvals, None, None  # no policy or hidden state
+        return actions, qvals, None, None  # no policy or hidden state
 
     def init_hstate(self, batch_size, aux_info=None):
         """Initialize hidden state for the DQN policy."""
         actor_critic_hstate = self.actor_critic.init_hstate(batch_size, aux_info)
-        return actor_critic_hstate
+        return None, actor_critic_hstate
 
     def init_params(self, rng):
         """Initialize parameters for the DQN policy."""

@@ -155,8 +155,9 @@ def train_dqnppo_agent(config, env, train_rng,
                 branches = [lambda d=data_dict, k=agent_key, v=value: {**d, k: v} for agent_key in env.agents]
                 return jax.lax.switch(idx, branches)
 
-            #  Init hstates
-            init_hstate = policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            # Init hstates
+            # Will return hstate for dqn and ppo policies, but note that dqn hstate is just None
+            init_hstates = policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
 
             # DQN Learning Phase
             def _dqn_learn_phase(train_state, ppo_params, buffer_state, rng):
@@ -217,7 +218,8 @@ def train_dqnppo_agent(config, env, train_rng,
                 3. Add experience to replay buffer
                 4. Optionally perform DQN update
                 """
-                train_state, buffer_state, env_state, prev_obs, prev_done, hstate, rng = runner_state
+                train_state, buffer_state, env_state, prev_obs, prev_done, hstates, rng = runner_state
+                hstate, ppo_hstate = hstates
                 rng, actor_rng, step_rng, learn_rng = jax.random.split(rng, 4)
 
                  # Get available actions for the agent from environment state
@@ -229,12 +231,12 @@ def train_dqnppo_agent(config, env, train_rng,
                 # as the recurrent states are automatically reset when done is True.
 
                 # Get actions from DQN policy (uses actor-critic under the hood for exploration)
-                act, new_hstate = policy.get_actor_critic_action(
+                act, new_ppo_hstate = policy.get_actor_critic_action(
                     params=ppo_params,  # Use PPO params for action selection
                     obs=get_agent_data(prev_obs, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
                     done=get_agent_data(prev_done, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=avail_actions,
-                    hstate=hstate,
+                    hstate=ppo_hstate,
                     rng=actor_rng,
                     env_state=env_state,
                     test_mode=False
@@ -261,7 +263,7 @@ def train_dqnppo_agent(config, env, train_rng,
 
                 # Step env
                 step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
-                obs_next, env_state_next, reward, done_next, info = jax.vmap(env.step, in_axes=(0,0,0))(
+                (obs_next, obs_full_next), env_state_next, reward, done_next, info = jax.vmap(env.step, in_axes=(0,0,0))(
                     step_rngs, env_state, env_act
                 )
                 # note that num_actors = num_envs * num_agents
@@ -349,7 +351,7 @@ def train_dqnppo_agent(config, env, train_rng,
                 info["td_target_mean"] = td_target_mean
 
                 new_runner_state = (train_state, buffer_state, env_state_next, obs_next, done_next,
-                                    new_hstate, rng)
+                                    (hstate, new_ppo_hstate), rng)
                 return new_runner_state, transition
 
             def _update_step(update_runner_state, unused):
@@ -362,15 +364,15 @@ def train_dqnppo_agent(config, env, train_rng,
                 # Init envs
                 rng, reset_rng = jax.random.split(rng, 2)
                 reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
-                init_obs, init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
+                (init_obs, init_full_obs), init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
                 init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
                 # Rollout (DQN updates happen inside _env_step)
-                runner_state = (train_state, buffer_state, init_env_state, init_obs, init_done, init_hstate, rng)
+                runner_state = (train_state, buffer_state, init_env_state, init_obs, init_done, init_hstates, rng)
 
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
-                (train_state, buffer_state, env_state, obs, done, hstate, rng) = runner_state
+                (train_state, buffer_state, env_state, obs, done, hstates, rng) = runner_state
 
                 metric = traj_batch.info
                 metric["update_steps"] = update_steps

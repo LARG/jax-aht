@@ -5,13 +5,13 @@ from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
 from agents.s5_actor_critic_agent import S5ActorCriticPolicy
 
-def initialize_mlp_agent(config, env, rng, agent_index):
+def initialize_mlp_agent(config, env, rng, agent_index, observation_type="agent"):
     """
     Initialize an MLP agent with the given config.
     """
     policy = MLPActorCriticPolicy(
         action_dim=env.action_space(env.agents[agent_index]).n,
-        obs_dim=env.observation_space(env.agents[agent_index]).shape[0],
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
         activation=config.get("ACTIVATION", "tanh"),
     )
     rng, init_rng = jax.random.split(rng)
@@ -19,7 +19,7 @@ def initialize_mlp_agent(config, env, rng, agent_index):
 
     return policy, init_params
 
-def initialize_rnn_agent(config, env, rng, agent_index):
+def initialize_rnn_agent(config, env, rng, agent_index, observation_type="agent"):
     """Initialize an RNN agent with the given config.
 
     Args:
@@ -34,7 +34,7 @@ def initialize_rnn_agent(config, env, rng, agent_index):
     # Create the RNN policy
     policy = RNNActorCriticPolicy(
         action_dim=env.action_space(env.agents[agent_index]).n,
-        obs_dim=env.observation_space(env.agents[agent_index]).shape[0],
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
         gru_hidden_dim=config.get("GRU_HIDDEN_DIM", 64),
@@ -45,7 +45,7 @@ def initialize_rnn_agent(config, env, rng, agent_index):
 
     return policy, init_params
 
-def initialize_s5_agent(config, env, rng, agent_index):
+def initialize_s5_agent(config, env, rng, agent_index, observation_type="agent"):
     """Initialize an S5 agent with the given config.
 
     Args:
@@ -60,7 +60,7 @@ def initialize_s5_agent(config, env, rng, agent_index):
     # Create the S5 policy with direct parameters
     policy = S5ActorCriticPolicy(
         action_dim=env.action_space(env.agents[agent_index]).n,
-        obs_dim=env.observation_space(env.agents[agent_index]).shape[0],
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
         d_model=config.get("S5_D_MODEL", 128),
         ssm_size=config.get("S5_SSM_SIZE", 128),
         # d_model=config.get("S5_D_MODEL", 16),
@@ -82,18 +82,18 @@ def initialize_s5_agent(config, env, rng, agent_index):
 
     return policy, init_params
 
-def initialize_agent(algorithm_config, env, init_rng, agent_index):
+def initialize_agent(algorithm_config, env, init_rng, agent_index, observation_type="agent"):
     if algorithm_config["ACTOR_TYPE"] == "mlp":
-        policy, init_params = initialize_mlp_agent(algorithm_config, env, init_rng, agent_index)
+        policy, init_params = initialize_mlp_agent(algorithm_config, env, init_rng, agent_index, observation_type=observation_type)
     elif algorithm_config["ACTOR_TYPE"] == "rnn":
-        policy, init_params = initialize_rnn_agent(algorithm_config, env, init_rng, agent_index)
+        policy, init_params = initialize_rnn_agent(algorithm_config, env, init_rng, agent_index, observation_type=observation_type)
     elif algorithm_config["ACTOR_TYPE"] == "s5":
-        policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng, agent_index)
+        policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng, agent_index, observation_type=observation_type)
     else:
         raise ValueError(f"Unknown ACTOR_TYPE: {algorithm_config['ACTOR_TYPE']}")
     return policy, init_params
 
-def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy, agent_index):
+def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy, agent_index, observation_type="agent"):
     """Initialize the DQN actor-critic FQE agent with the given config.
 
     Args:
@@ -108,7 +108,7 @@ def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy,
 
     policy = DQNActorCriticFQEPolicy(
         action_dim=env.action_space(env.agents[agent_index]).n,
-        obs_dim=env.observation_space(env.agents[agent_index]).shape[0],
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
         actor_critic_policy=actor_critic_policy,
         epsilon_start=config["EPSILON_START"],
         epsilon_finish=config["EPSILON_END"],

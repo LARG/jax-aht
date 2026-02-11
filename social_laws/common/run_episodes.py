@@ -11,7 +11,7 @@ def run_single_episode(rng, env, agent_idx, agent_param, agent_policy,
                        max_episode_steps, agent_test_mode=False):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
-    init_obs, init_env_state = env.reset(reset_rng)
+    (init_obs, init_obs_full), init_env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
     init_reward = {k: jnp.zeros((1)) for i, k in enumerate(env.agents)}
 
@@ -55,7 +55,7 @@ def run_single_episode(rng, env, agent_idx, agent_param, agent_policy,
     env_act = {k: jnp.zeros_like(act) for i, k in enumerate(env.agents)}
     env_act = set_agent_data(env_act, agent_idx, act)
     env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-    obs, env_state, reward, done, dummy_info = env.step(step_rng, init_env_state, env_act)
+    (obs, obs_full), env_state, reward, done, dummy_info = env.step(step_rng, init_env_state, env_act)
 
     # We'll use a scan to iterate steps until the episode is done.
     ep_ts = 1
@@ -86,7 +86,7 @@ def run_single_episode(rng, env, agent_idx, agent_param, agent_policy,
             env_act = {k: jnp.zeros_like(act) for i, k in enumerate(env.agents)}
             env_act = set_agent_data(env_act, agent_idx, act)
             env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-            obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
+            (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
 
             return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, hstate_next, info_next)
 
@@ -133,7 +133,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_param, agent_policy,
                        max_episode_steps, agent_test_mode=False):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
-    init_obs, init_env_state = env.reset(reset_rng)
+    (init_obs, init_obs_full), init_env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
     init_reward = {k: jnp.zeros((1)) for i, k in enumerate(env.agents)}
 
@@ -177,7 +177,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_param, agent_policy,
     env_act = {k: jnp.zeros_like(act) for i, k in enumerate(env.agents)}
     env_act = set_agent_data(env_act, agent_idx, act)
     env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-    obs, env_state, reward, done, info = env.step(step_rng, init_env_state, env_act)
+    (obs, obs_full), env_state, reward, done, info = env.step(step_rng, init_env_state, env_act)
 
     # We'll use a scan to iterate steps until the episode is done.
     ep_ts = 1
@@ -208,7 +208,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_param, agent_policy,
             env_act = {k: jnp.zeros_like(act) for i, k in enumerate(env.agents)}
             env_act = set_agent_data(env_act, agent_idx, act)
             env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-            obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
+            (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
 
             return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, hstate_next, info_next)
 

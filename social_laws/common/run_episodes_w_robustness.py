@@ -30,7 +30,7 @@ def _get_vf_restricted_avail_actions(obs, avail_actions, vf_params, vf_policy, e
     q_values = vf_policy.network.apply(vf_params, obs)  # (num_envs, num_actions)
 
     # Mask Q-values with available actions (set unavailable to -inf)
-    q_values_masked = jnp.where(avail_actions > 0, q_values, -jnp.inf)
+    q_values_masked = jnp.where(avail_actions, q_values, -jnp.inf)
 
     # Find max Q-value for each environment
     max_q = jnp.max(q_values_masked, axis=-1, keepdims=True)  # (num_envs, 1)
@@ -48,7 +48,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
                        max_episode_steps, epsilon_optimal, agent_test_mode=False):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
-    init_obs, init_env_state = env.reset(reset_rng)
+    (init_obs, init_obs_full), init_env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
     init_reward = {k: jnp.zeros((1)) for i, k in enumerate(env.agents)}
 
@@ -85,6 +85,8 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
 
     init_obs_0 = get_agent_data(init_obs, 0).reshape(1, 1, -1)
     init_obs_1 = get_agent_data(init_obs, 1).reshape(1, 1, -1)
+    init_obs_full_0 = get_agent_data(init_obs_full, 0).reshape(1, 1, -1)
+    init_obs_full_1 = get_agent_data(init_obs_full, 1).reshape(1, 1, -1)
 
     # Restrict available actions based on value function
     vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
@@ -112,7 +114,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     # Get agent 0 action
     act_0, hstate_0 = agent_0_policy.get_action(
         params=agent_0_params,
-        obs=init_obs_0,
+        obs=init_obs_full_0,
         done=get_agent_data(init_done, 0).reshape(1, 1),
         avail_actions=vf_restricted_avail_actions_0,
         hstate=agent_0_init_hstate,
@@ -126,7 +128,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     # Get agent 1 action
     act_1, hstate_1 = agent_1_policy.get_action(
         params=agent_1_params,
-        obs=init_obs_1,
+        obs=init_obs_full_1,
         done=get_agent_data(init_done, 1).reshape(1, 1),
         avail_actions=vf_restricted_avail_actions_1,
         hstate=agent_1_init_hstate,
@@ -177,7 +179,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     optimal_both_actions = [optimal_act_0, optimal_act_1]
     optimal_env_act = {k: optimal_both_actions[i] for i, k in enumerate(env.agents)}
     optimal_env_act_onehot = {k: jax.nn.one_hot(optimal_env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-    optimal_obs, optimal_env_state, optimal_reward, optimal_done, optimal_info = env.step(step_rng, init_env_state, optimal_env_act)
+    (optimal_obs, optimal_obs_full), optimal_env_state, optimal_reward, optimal_done, optimal_info = env.step(step_rng, init_env_state, optimal_env_act)
 
     # We'll use separate scans to iterate steps for worst case and optimal case
     # since they may have different episode lengths
@@ -189,7 +191,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot, (hstate_0, hstate_1), info)
     def worst_scan_step(carry, _):
         def take_worst_step(carry_step):
-            ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry_step
+            ep_ts, env_state, (obs, obs_full), rng, done, reward, act_onehot, hstate, last_info = carry_step
             hstate_0, hstate_1 = hstate
 
             # Get available actions for the agent from environment state
@@ -200,6 +202,8 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
 
             obs_0 = get_agent_data(obs, 0).reshape(1, 1, -1)
             obs_1 = get_agent_data(obs, 1).reshape(1, 1, -1)
+            obs_full_0 = get_agent_data(obs_full, 0).reshape(1, 1, -1)
+            obs_full_1 = get_agent_data(obs_full, 1).reshape(1, 1, -1)
 
             # Restrict available actions based on value function
             vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
@@ -222,7 +226,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
             # Get agent 0 action
             act_0, hstate_next_0 = agent_0_policy.get_action(
                 params=agent_0_params,
-                obs=obs_0,
+                obs=obs_full_0,
                 done=get_agent_data(done, 0).reshape(1, 1),
                 avail_actions=vf_restricted_avail_actions_0,
                 hstate=hstate_0,
@@ -236,7 +240,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
             # Get agent 1 action
             act_1, hstate_next_1 = agent_1_policy.get_action(
                 params=agent_1_params,
-                obs=obs_1,
+                obs=obs_full_1,
                 done=get_agent_data(done, 1).reshape(1, 1),
                 avail_actions=vf_restricted_avail_actions_1,
                 hstate=hstate_1,
@@ -319,7 +323,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
             both_actions = [act_0, act_1]
             env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
             env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-            obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
+            (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
 
             return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, (hstate_next_0, hstate_next_1), info_next)
 
@@ -371,7 +375,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
                        max_episode_steps, epsilon_optimal, agent_test_mode=False):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
-    init_obs, init_env_state = env.reset(reset_rng)
+    (init_obs, init_obs_full), init_env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
     init_reward = {k: jnp.zeros((1)) for i, k in enumerate(env.agents)}
 
@@ -408,6 +412,8 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
 
     init_obs_0 = get_agent_data(init_obs, 0).reshape(1, 1, -1)
     init_obs_1 = get_agent_data(init_obs, 1).reshape(1, 1, -1)
+    init_obs_full_0 = get_agent_data(init_obs_full, 0).reshape(1, 1, -1)
+    init_obs_full_1 = get_agent_data(init_obs_full, 1).reshape(1, 1, -1)
 
     # Restrict available actions based on value function
     vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
@@ -435,7 +441,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
     # Get agent 0 action
     act_0, hstate_0 = agent_0_policy.get_action(
         params=agent_0_params,
-        obs=init_obs_0,
+        obs=init_obs_full_0,
         done=get_agent_data(init_done, 0).reshape(1, 1),
         avail_actions=vf_restricted_avail_actions_0,
         hstate=agent_0_init_hstate,
@@ -449,7 +455,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
     # Get agent 1 action
     act_1, hstate_1 = agent_1_policy.get_action(
         params=agent_1_params,
-        obs=init_obs_1,
+        obs=init_obs_full_1,
         done=get_agent_data(init_done, 1).reshape(1, 1),
         avail_actions=vf_restricted_avail_actions_1,
         hstate=agent_1_init_hstate,
@@ -500,7 +506,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
     optimal_both_actions = [optimal_act_0, optimal_act_1]
     optimal_env_act = {k: optimal_both_actions[i] for i, k in enumerate(env.agents)}
     optimal_env_act_onehot = {k: jax.nn.one_hot(optimal_env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-    optimal_obs, optimal_env_state, optimal_reward, optimal_done, optimal_info = env.step(step_rng, init_env_state, optimal_env_act)
+    (optimal_obs, optimal_obs_full), optimal_env_state, optimal_reward, optimal_done, optimal_info = env.step(step_rng, init_env_state, optimal_env_act)
 
     # We'll use separate scans to iterate steps for worst case and optimal case
     # since they may have different episode lengths
@@ -512,7 +518,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
     worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot, (hstate_0, hstate_1), info)
     def worst_scan_step(carry, _):
         def take_worst_step(carry_step):
-            ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry_step
+            ep_ts, env_state, (obs, obs_full), rng, done, reward, act_onehot, hstate, last_info = carry_step
             hstate_0, hstate_1 = hstate
 
             # Get available actions for the agent from environment state
@@ -523,6 +529,8 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
 
             obs_0 = get_agent_data(obs, 0).reshape(1, 1, -1)
             obs_1 = get_agent_data(obs, 1).reshape(1, 1, -1)
+            obs_full_0 = get_agent_data(obs_full, 0).reshape(1, 1, -1)
+            obs_full_1 = get_agent_data(obs_full, 1).reshape(1, 1, -1)
 
             # Restrict available actions based on value function
             vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
@@ -545,7 +553,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
             # Get agent 0 action
             act_0, hstate_next_0 = agent_0_policy.get_action(
                 params=agent_0_params,
-                obs=obs_0,
+                obs=obs_full_0,
                 done=get_agent_data(done, 0).reshape(1, 1),
                 avail_actions=vf_restricted_avail_actions_0,
                 hstate=hstate_0,
@@ -559,7 +567,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
             # Get agent 1 action
             act_1, hstate_next_1 = agent_1_policy.get_action(
                 params=agent_1_params,
-                obs=obs_1,
+                obs=obs_full_1,
                 done=get_agent_data(done, 1).reshape(1, 1),
                 avail_actions=vf_restricted_avail_actions_1,
                 hstate=hstate_1,
@@ -642,7 +650,7 @@ def run_single_render_episode(rng, env, agent_idx, agent_params, agent_policies,
             both_actions = [act_0, act_1]
             env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
             env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-            obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
+            (obs_next, obs_next_full), env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
 
             return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, (hstate_next_0, hstate_next_1), info_next)
 

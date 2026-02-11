@@ -52,7 +52,7 @@ class Logger:
         wandb.define_metric("Eval/*", step_metric="train_step")
         wandb.define_metric("Returns/*", step_metric="train_step")
         wandb.define_metric("HeldoutEval/*", step_metric="iter")
-    
+
     def log_artifact(self, name, path, type_name):
         artifact = wandb.Artifact(name, type=type_name)
         # check if path is a directory or a file
@@ -61,9 +61,9 @@ class Logger:
         else:
             artifact.add_file(path)
         self.run.log_artifact(artifact)
-    
-    def log_video(self, tag, path, commit=True):
-        wandb.log({tag: wandb.Video(path)}, commit=commit)
-    
+
+    def log_video(self, tag, path, format="gif", commit=True):
+        wandb.log({tag: wandb.Video(path, format=format)}, commit=commit)
+
     def close(self):
         wandb.finish()

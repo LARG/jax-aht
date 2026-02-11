@@ -151,7 +151,7 @@ def train_ppo_agent(config, env, train_rng,
 
                 # Step env
                 step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
-                obs_next, env_state_next, reward, done_next, info = jax.vmap(env.step, in_axes=(0,0,0))(
+                (obs_next, obs_full_next), env_state_next, reward, done_next, info = jax.vmap(env.step, in_axes=(0,0,0))(
                     step_rngs, env_state, env_act
                 )
                 # note that num_actors = num_envs * num_agents
@@ -282,7 +282,7 @@ def train_ppo_agent(config, env, train_rng,
                 # Init envs & partner indices
                 rng, reset_rng = jax.random.split(rng, 2)
                 reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
-                init_obs, init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
+                (init_obs, init_full_obs), init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
                 init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
                 # 1) rollout
