@@ -4,14 +4,15 @@ import jax
 import jax.numpy as jnp
 
 from agents.agent_interface import AgentPolicy
-from agents.q_network import QNetwork
+from agents.rnn_q_network import RNNQNetwork
+from agents.rnn_actor_critic import ScannedRNN
 
 
-class DQNActorCriticFQEPolicy(AgentPolicy):
-    """Policy wrapper for DQN Actor-Critic Fitted Q Estimation"""
+class RNNDQNActorCriticFQEPolicy(AgentPolicy):
+    """Policy wrapper for DRQN Actor-Critic Fitted Q Estimation"""
 
     def __init__(self, action_dim, obs_dim, actor_critic_policy, epsilon_start=1.0, epsilon_finish=0.1, epsilon_anneal_time=10000,
-                 hidden_dim=64):
+                 gru_hidden_dim=64, init_scale=1.0):
         """
         Args:
             action_dim: int, dimension of the action space
@@ -20,10 +21,11 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
             epsilon_start: float, initial epsilon for epsilon-greedy exploration
             epsilon_finish: float, final epsilon for epsilon-greedy exploration
             epsilon_anneal_time: int, number of timesteps over which to anneal epsilon
-            hidden_dim: int, dimension of the hidden layers
+            gru_hidden_dim: int, hidden dimension for the GRU in the DRQN
+            init_scale: float, scale for orthogonal initialization of network weights
         """
         super().__init__(action_dim, obs_dim)
-        self.network = QNetwork(action_dim, hidden_dim)
+        self.network = RNNQNetwork(action_dim, gru_hidden_dim, init_scale)
         self.actor_critic = actor_critic_policy
         self.epsilon_start = epsilon_start
         self.epsilon_finish = epsilon_finish
@@ -81,8 +83,9 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
                    aux_obs=None, env_state=None, test_mode=False):
-        """Get actions for the DQN policy."""
-        qvals = self.network.apply(params, obs)
+        """Get actions for the DRQN policy."""
+        batch_size = obs.shape[1]
+        new_hstate, qvals = self.network.apply(params, hstate.squeeze(0), (obs, done))
 
         # Mask out unavailable actions by setting their Q-values to -inf
         masked_qvals = jnp.where(avail_actions, qvals, -jnp.inf)
@@ -90,12 +93,12 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
         actions = jax.lax.cond(test_mode,
                                lambda: jnp.argmax(masked_qvals, axis=-1),
                                lambda: self.eps_greedy_exploration(rng, masked_qvals, env_state.env_state.env_state.timestep))
-        return actions, None  # no hidden state
+        return actions, new_hstate.reshape(1, batch_size, -1)
 
     @partial(jax.jit, static_argnums=(0,))
     def get_actor_critic_action(self, params, obs, done, avail_actions, hstate, rng,
                    aux_obs=None, env_state=None, test_mode=False):
-        """Get actions for the DQN policy."""
+        """Get actions for the DRQN policy."""
         actions, new_ac_hstate = self.actor_critic.get_action(params, obs, done, avail_actions, hstate, rng,
                                                               aux_obs, env_state, test_mode=False)
         actions = jax.lax.stop_gradient(actions)
@@ -112,8 +115,9 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
     @partial(jax.jit, static_argnums=(0,))
     def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng,
                                 aux_obs=None, env_state=None):
-        """Get actions, values, and policy for the DQN policy."""
-        qvals = self.network.apply(params, obs)
+        """Get actions, values, and policy for the DRQN policy."""
+        batch_size = obs.shape[1]
+        new_hstate, qvals = self.network.apply(params, hstate.squeeze(0), (obs, done))
 
         # Mask out unavailable actions by setting their Q-values to -inf
         masked_qvals = jnp.where(avail_actions, qvals, -jnp.inf)
@@ -121,14 +125,25 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
         # Greedy argmax actions from the Q-values
         actions = jnp.argmax(masked_qvals, axis=-1)
 
-        return actions, qvals, None, None  # no policy or hidden state
+        return actions, qvals, None, new_hstate.reshape(1, batch_size, -1) # no policy
 
-    # def init_hstate(self, batch_size, aux_info=None):
-    #     """Initialize hidden state for the DQN policy."""
-    #     actor_critic_hstate = self.actor_critic.init_hstate(batch_size, aux_info)
-    #     return None, actor_critic_hstate
+    def init_hstate(self, batch_size, aux_info=None):
+        """Initialize hidden state for the DRQN policy."""
+        hstate =  ScannedRNN.initialize_carry(batch_size, self.gru_hidden_dim)
+        hstate = hstate.reshape(1, batch_size, self.gru_hidden_dim)
+        # actor_critic_hstate = self.actor_critic.init_hstate(batch_size, aux_info)
+        return hstate #, actor_critic_hstate
 
     def init_params(self, rng):
-        """Initialize parameters for the DQN policy."""
-        dummy_obs = jnp.zeros((self.obs_dim,))
-        return self.network.init(rng, dummy_obs)
+        """Initialize parameters for the DRQN policy."""
+        batch_size = 1
+        # Initialize hidden state
+        init_hstate = self.init_hstate(batch_size)
+
+        # Create dummy inputs - add time dimension
+        dummy_obs = jnp.zeros((1, batch_size, self.obs_dim))
+        dummy_done = jnp.zeros((1, batch_size))
+        dummy_x = (dummy_obs, dummy_done)
+
+        # Initialize model
+        return self.network.init(rng, init_hstate.reshape(batch_size, -1), dummy_x)

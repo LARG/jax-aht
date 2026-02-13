@@ -127,23 +127,29 @@ def train_ppo_joint_agents(config, env, train_rng,
             #  Init hstates
             agent_0_init_hstate = agent_0_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
             agent_1_init_hstate = agent_1_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            agent_0_vf_init_hstate = agent_0_vf_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            agent_1_vf_init_hstate = agent_1_vf_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
 
-            def _get_vf_restricted_avail_actions(obs, avail_actions, vf_params, vf_policy):
+            def _get_vf_restricted_avail_actions(obs, done, avail_actions, hstate, vf_params, vf_policy):
                 """
                 Get restricted available actions based on value function Q-values.
                 Only allows actions within epsilon of the maximum Q-value.
 
                 Args:
                     obs: observations (shape: num_envs, obs_dim)
+                    done: done flags (shape: num_envs,)
                     avail_actions: available actions mask (shape: num_envs, num_actions)
+                    hstate: hidden state for the value function policy (shape depends on policy)
                     vf_params: value function parameters
                     vf_policy: value function policy
 
                 Returns:
                     restricted_avail_actions: mask with only near-optimal actions (shape: num_envs, num_actions)
                 """
-                # Get Q-values from value function
-                q_values = vf_policy.network.apply(vf_params, obs)  # (num_envs, num_actions)
+                _, q_values, _, next_hstate = vf_policy.get_action_value_policy(
+                    vf_params, obs, done, avail_actions,
+                    hstate, jax.random.PRNGKey(0) # Use dummy since we only need the qvals
+                ) # (num_envs, num_actions)
 
                 # Mask Q-values with available actions (set unavailable to -inf)
                 q_values_masked = jnp.where(avail_actions, q_values, -jnp.inf)
@@ -157,7 +163,8 @@ def train_ppo_joint_agents(config, env, train_rng,
                 # Combine with original available actions
                 restricted_avail_actions = optimal_action_mask * avail_actions
 
-                return restricted_avail_actions.squeeze(axis=0)  # remove extra batch dim
+                # remove extra batch dim
+                return restricted_avail_actions.squeeze(axis=0), next_hstate
 
             def _env_step(runner_state, unused):
                 """
@@ -166,7 +173,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 2. Step environment using sampled actions
                 3. Return state, reward, ...
                 """
-                agent_0_train_state, agent_1_train_state, env_state, prev_obs, prev_done, hstate_0, hstate_1, rng = runner_state
+                agent_0_train_state, agent_1_train_state, env_state, prev_obs, prev_done, hstate_0, hstate_1, vf_hstate_0, vf_hstate_1, rng = runner_state
                 prev_obs, prev_full_obs = prev_obs
                 rng, actor_0_rng, actor_1_rng, step_rng = jax.random.split(rng, 4)
 
@@ -181,16 +188,23 @@ def train_ppo_joint_agents(config, env, train_rng,
                 prev_full_obs_0 = get_agent_data(prev_full_obs, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
                 prev_full_obs_1 = get_agent_data(prev_full_obs, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
 
+                prev_done_0 = get_agent_data(prev_done, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"])
+                prev_done_1 = get_agent_data(prev_done, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"])
+
                 # Restrict available actions based on value function
-                vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
+                vf_restricted_avail_actions_0, new_vf_hstate_0 = _get_vf_restricted_avail_actions(
                     obs=prev_obs_0,
+                    done=prev_done_0,
                     avail_actions=avail_actions_0,
+                    hstate=vf_hstate_0,
                     vf_params=agent_0_vf_params,
                     vf_policy=agent_0_vf_policy
                 )
-                vf_restricted_avail_actions_1 = _get_vf_restricted_avail_actions(
+                vf_restricted_avail_actions_1, new_vf_hstate_1 = _get_vf_restricted_avail_actions(
                     obs=prev_obs_1,
+                    done=prev_done_1,
                     avail_actions=avail_actions_1,
+                    hstate=vf_hstate_1,
                     vf_params=agent_1_vf_params,
                     vf_policy=agent_1_vf_policy
                 )
@@ -202,7 +216,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 act_0, val_0, pi_0, new_hstate_0 = agent_0_policy.get_action_value_policy(
                     params=agent_0_train_state.params,
                     obs=prev_full_obs_0,
-                    done=get_agent_data(prev_done, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
+                    done=prev_done_0,
                     avail_actions=vf_restricted_avail_actions_0,
                     hstate=hstate_0,
                     rng=actor_0_rng
@@ -217,7 +231,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 act_1, val_1, pi_1, new_hstate_1 = agent_1_policy.get_action_value_policy(
                     params=agent_1_train_state.params,
                     obs=prev_full_obs_1,
-                    done=get_agent_data(prev_done, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
+                    done=prev_done_1,
                     avail_actions=vf_restricted_avail_actions_1,
                     hstate=hstate_1,
                     rng=actor_1_rng
@@ -277,7 +291,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 )
 
                 new_runner_state = (agent_0_train_state, agent_1_train_state, env_state_next, obs_next, done_next,
-                                    new_hstate_0, new_hstate_1, rng)
+                                    new_hstate_0, new_hstate_1, new_vf_hstate_0, new_vf_hstate_1, rng)
                 return new_runner_state, (transition_0, transition_1)
 
             def _calculate_gae(traj_batch, last_val):
@@ -445,11 +459,11 @@ def train_ppo_joint_agents(config, env, train_rng,
                 init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
                 # 1) rollout
-                runner_state = (agent_0_train_state, agent_1_train_state, init_env_state, init_obs, init_done, agent_0_init_hstate, agent_1_init_hstate, rng)
+                runner_state = (agent_0_train_state, agent_1_train_state, init_env_state, init_obs, init_done, agent_0_init_hstate, agent_1_init_hstate, agent_0_vf_init_hstate, agent_1_vf_init_hstate, rng)
 
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
-                (agent_0_train_state, agent_1_train_state, env_state, obs, done, agent_0_hstate, agent_1_hstate, rng) = runner_state
+                (agent_0_train_state, agent_1_train_state, env_state, obs, done, agent_0_hstate, agent_1_hstate, agent_0_vf_hstate, agent_1_vf_hstate, rng) = runner_state
                 agent_0_traj_batch, agent_1_traj_batch = traj_batch
                 obs, obs_full = obs
 
@@ -464,16 +478,23 @@ def train_ppo_joint_agents(config, env, train_rng,
                 obs_full_0 = get_agent_data(obs_full, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
                 obs_full_1 = get_agent_data(obs_full, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1)
 
+                done_0 = get_agent_data(done, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"])
+                done_1 = get_agent_data(done, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"])
+
                 # Restrict available actions based on value function
-                vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
+                vf_restricted_avail_actions_0, _ = _get_vf_restricted_avail_actions(
                     obs=obs_0,
+                    done=done_0,
                     avail_actions=avail_actions_0,
+                    hstate=agent_0_vf_hstate,
                     vf_params=agent_0_vf_params,
                     vf_policy=agent_0_vf_policy
                 )
-                vf_restricted_avail_actions_1 = _get_vf_restricted_avail_actions(
+                vf_restricted_avail_actions_1, _ = _get_vf_restricted_avail_actions(
                     obs=obs_1,
+                    done=done_1,
                     avail_actions=avail_actions_1,
+                    hstate=agent_1_vf_hstate,
                     vf_params=agent_1_vf_params,
                     vf_policy=agent_1_vf_policy
                 )
@@ -482,7 +503,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 _, last_val_0, _, _ = agent_0_policy.get_action_value_policy(
                     params=agent_0_train_state.params,
                     obs=obs_full_0,
-                    done=get_agent_data(done, 0).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
+                    done=done_0,
                     avail_actions=jax.lax.stop_gradient(vf_restricted_avail_actions_0),
                     hstate=agent_0_hstate,
                     rng=jax.random.PRNGKey(0)  # Dummy key since we're just extracting the value
@@ -493,7 +514,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 _, last_val_1, _, _ = agent_1_policy.get_action_value_policy(
                     params=agent_1_train_state.params,
                     obs=obs_full_1,
-                    done=get_agent_data(done, 1).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
+                    done=done_1,
                     avail_actions=jax.lax.stop_gradient(vf_restricted_avail_actions_1),
                     hstate=agent_1_hstate,
                     rng=jax.random.PRNGKey(0)  # Dummy key since we're just extracting the value

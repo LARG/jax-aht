@@ -222,13 +222,75 @@ def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy)
     """
 
     policy = DQNActorCriticFQEPolicy(
-        hidden_dim=config.get("DQN_HIDDEN_DIM", 64),
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         actor_critic_policy=actor_critic_policy,
         epsilon_start=config["EPSILON_START"],
         epsilon_finish=config["EPSILON_END"],
         epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        hidden_dim=config.get("DQN_HIDDEN_DIM", 64)
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
+    return policy, init_params
+
+def initialize_rnn_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy):
+    """Initialize the RNN DQN actor-critic FQE agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        actor_critic_policy: the actor-critic policy to be used by the DQN actor-critic FQE policy
+    Returns:
+        policy: RNNDQNActorCriticFQEPolicy, the policy object
+        params: dict, initial parameters for the policy
+    """
+
+    policy = RNNDQNActorCriticFQEPolicy(
+        action_dim=env.action_space(env.agents[0]).n,
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        actor_critic_policy=actor_critic_policy,
+        epsilon_start=config["EPSILON_START"],
+        epsilon_finish=config["EPSILON_END"],
+        epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        gru_hidden_dim=config.get("RNN_HIDDEN_DIM", 64),
+        init_scale=config.get("INIT_SCALE", 1.0),
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
+    return policy, init_params
+
+def initialize_s5_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy):
+    """Initialize the S5 DQN actor-critic FQE agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        actor_critic_policy: the actor-critic policy to be used by the DQN actor-critic FQE policy
+    Returns:
+        policy: S5DQNActorCriticFQEPolicy, the policy object
+        params: dict, initial parameters for the policy
+    """
+
+    policy = S5DQNActorCriticFQEPolicy(
+        action_dim=env.action_space(env.agents[0]).n,
+        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        actor_critic_policy=actor_critic_policy,
+        epsilon_start=config["EPSILON_START"],
+        epsilon_finish=config["EPSILON_END"],
+        epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        d_model=config.get("S5_D_MODEL", 128),
+        ssm_size=config.get("S5_SSM_SIZE", 128),
+        ssm_n_layers=config.get("S5_N_LAYERS", 2),
+        blocks=config.get("S5_BLOCKS", 1),
+        s5_activation=config.get("S5_ACTIVATION", "full_glu"),
+        s5_do_norm=config.get("S5_DO_NORM", True),
+        s5_prenorm=config.get("S5_PRENORM", True),
+        s5_do_gtrxl_norm=config.get("S5_DO_GTRXL_NORM", True),
     )
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)

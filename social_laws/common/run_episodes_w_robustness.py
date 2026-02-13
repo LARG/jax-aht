@@ -11,23 +11,29 @@ class Transition(NamedTuple):
     worst_case_reward: jnp.ndarray
     optimal_reward: jnp.ndarray
 
-def _get_vf_restricted_avail_actions(obs, avail_actions, vf_params, vf_policy, epsilon_optimal):
+def _get_vf_restricted_avail_actions(obs, done, avail_actions, hstate, vf_params, vf_policy, epsilon_optimal):
     """
     Get restricted available actions based on value function Q-values.
     Only allows actions within epsilon of the maximum Q-value.
 
     Args:
         obs: observations (shape: num_envs, obs_dim)
+        done: done flags (shape: num_envs,)
         avail_actions: available actions mask (shape: num_envs, num_actions)
+        hstate: hidden state for the value function policy (shape depends on policy)
         vf_params: value function parameters
         vf_policy: value function policy
         epsilon_optimal: threshold for considering actions as near-optimal
 
     Returns:
         restricted_avail_actions: mask with only near-optimal actions (shape: num_envs, num_actions)
+        next_hstate: next hidden state from the value function policy (shape depends on policy)
     """
     # Get Q-values from value function
-    q_values = vf_policy.network.apply(vf_params, obs)  # (num_envs, num_actions)
+    _, q_values, _, next_hstate = vf_policy.get_action_value_policy(
+        vf_params, obs, done, avail_actions,
+        hstate, jax.random.PRNGKey(0) # Use dummy since we only need the qvals
+    ) # (num_envs, num_actions)
 
     # Mask Q-values with available actions (set unavailable to -inf)
     q_values_masked = jnp.where(avail_actions, q_values, -jnp.inf)
@@ -41,7 +47,8 @@ def _get_vf_restricted_avail_actions(obs, avail_actions, vf_params, vf_policy, e
     # Combine with original available actions
     restricted_avail_actions = optimal_action_mask * avail_actions
 
-    return restricted_avail_actions.squeeze(axis=0)  # remove extra batch dim
+    # remove extra batch dim
+    return restricted_avail_actions.squeeze(axis=0), next_hstate
 
 def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
                        ppo_params, ppo_policies, vf_params, vf_policies,
@@ -64,6 +71,8 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     agent_1_init_hstate = agent_1_policy.init_hstate(1, aux_info={"agent_id": 1})
     agent_0_ppo_init_hstate = agent_0_ppo_policy.init_hstate(1, aux_info={"agent_id": 0})
     agent_1_ppo_init_hstate = agent_1_ppo_policy.init_hstate(1, aux_info={"agent_id": 1})
+    agent_0_vf_init_hstate = agent_0_vf_policy.init_hstate(1, aux_info={"agent_id": 0})
+    agent_1_vf_init_hstate = agent_1_vf_policy.init_hstate(1, aux_info={"agent_id": 1})
 
     # Create functions to get agent-specific data based on agent_idx
     # This avoids indexing with traced values
@@ -88,17 +97,24 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     init_obs_full_0 = get_agent_data(init_obs_full, 0).reshape(1, 1, -1)
     init_obs_full_1 = get_agent_data(init_obs_full, 1).reshape(1, 1, -1)
 
+    init_done_0 = get_agent_data(init_done, 0).reshape(1, 1)
+    init_done_1 = get_agent_data(init_done, 1).reshape(1, 1)
+
     # Restrict available actions based on value function
-    vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
+    vf_restricted_avail_actions_0, vf_hstate_0 = _get_vf_restricted_avail_actions(
         obs=init_obs_0,
+        done=init_done_0,
         avail_actions=avail_actions_0,
+        hstate=agent_0_vf_init_hstate,
         vf_params=agent_0_vf_params,
         vf_policy=agent_0_vf_policy,
         epsilon_optimal=epsilon_optimal
     )
-    vf_restricted_avail_actions_1 = _get_vf_restricted_avail_actions(
+    vf_restricted_avail_actions_1, vf_hstate_1 = _get_vf_restricted_avail_actions(
         obs=init_obs_1,
+        done=init_done_1,
         avail_actions=avail_actions_1,
+        hstate=agent_1_vf_init_hstate,
         vf_params=agent_1_vf_params,
         vf_policy=agent_1_vf_policy,
         epsilon_optimal=epsilon_optimal
@@ -115,7 +131,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     act_0, hstate_0 = agent_0_policy.get_action(
         params=agent_0_params,
         obs=init_obs_full_0,
-        done=get_agent_data(init_done, 0).reshape(1, 1),
+        done=init_done_0,
         avail_actions=vf_restricted_avail_actions_0,
         hstate=agent_0_init_hstate,
         rng=act0_rng,
@@ -129,7 +145,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     act_1, hstate_1 = agent_1_policy.get_action(
         params=agent_1_params,
         obs=init_obs_full_1,
-        done=get_agent_data(init_done, 1).reshape(1, 1),
+        done=init_done_1,
         avail_actions=vf_restricted_avail_actions_1,
         hstate=agent_1_init_hstate,
         rng=act1_rng,
@@ -152,7 +168,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     optimal_act_0, optimal_hstate_0 = agent_0_ppo_policy.get_action(
         params=agent_0_ppo_params,
         obs=init_obs_0,
-        done=get_agent_data(init_done, 0).reshape(1, 1),
+        done=init_done_0,
         avail_actions=avail_actions_0,
         hstate=agent_0_ppo_init_hstate,
         rng=act0_rng,
@@ -166,7 +182,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     optimal_act_1, optimal_hstate_1 = agent_1_ppo_policy.get_action(
         params=agent_1_ppo_params,
         obs=init_obs_1,
-        done=get_agent_data(init_done, 1).reshape(1, 1),
+        done=init_done_1,
         avail_actions=avail_actions_1,
         hstate=agent_1_ppo_init_hstate,
         rng=act1_rng,
@@ -188,11 +204,11 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     #          Worst Case Scan                #
     ###########################################
     worst_ep_ts = 1
-    worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot, (hstate_0, hstate_1), info)
+    worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot, (hstate_0, hstate_1, vf_hstate_0, vf_hstate_1), info)
     def worst_scan_step(carry, _):
         def take_worst_step(carry_step):
             ep_ts, env_state, (obs, obs_full), rng, done, reward, act_onehot, hstate, last_info = carry_step
-            hstate_0, hstate_1 = hstate
+            hstate_0, hstate_1, vf_hstate_0, vf_hstate_1 = hstate
 
             # Get available actions for the agent from environment state
             avail_actions = env.get_avail_actions(env_state.env_state)
@@ -205,17 +221,24 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
             obs_full_0 = get_agent_data(obs_full, 0).reshape(1, 1, -1)
             obs_full_1 = get_agent_data(obs_full, 1).reshape(1, 1, -1)
 
+            done_0 = get_agent_data(done, 0).reshape(1, 1)
+            done_1 = get_agent_data(done, 1).reshape(1, 1)
+
             # Restrict available actions based on value function
-            vf_restricted_avail_actions_0 = _get_vf_restricted_avail_actions(
+            vf_restricted_avail_actions_0, vf_hstate_next_0 = _get_vf_restricted_avail_actions(
                 obs=obs_0,
+                done=done_0,
                 avail_actions=avail_actions_0,
+                hstate=vf_hstate_0,
                 vf_params=agent_0_vf_params,
                 vf_policy=agent_0_vf_policy,
                 epsilon_optimal=epsilon_optimal
             )
-            vf_restricted_avail_actions_1 = _get_vf_restricted_avail_actions(
+            vf_restricted_avail_actions_1, vf_hstate_next_1 = _get_vf_restricted_avail_actions(
                 obs=obs_1,
+                done=done_1,
                 avail_actions=avail_actions_1,
+                hstate=vf_hstate_1,
                 vf_params=agent_1_vf_params,
                 vf_policy=agent_1_vf_policy,
                 epsilon_optimal=epsilon_optimal
@@ -227,7 +250,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
             act_0, hstate_next_0 = agent_0_policy.get_action(
                 params=agent_0_params,
                 obs=obs_full_0,
-                done=get_agent_data(done, 0).reshape(1, 1),
+                done=done_0,
                 avail_actions=vf_restricted_avail_actions_0,
                 hstate=hstate_0,
                 rng=act0_rng,
@@ -241,7 +264,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
             act_1, hstate_next_1 = agent_1_policy.get_action(
                 params=agent_1_params,
                 obs=obs_full_1,
-                done=get_agent_data(done, 1).reshape(1, 1),
+                done=done_1,
                 avail_actions=vf_restricted_avail_actions_1,
                 hstate=hstate_1,
                 rng=act1_rng,
@@ -256,7 +279,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
             env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
             obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
 
-            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, (hstate_next_0, hstate_next_1), info_next)
+            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, (hstate_next_0, hstate_next_1, vf_hstate_next_0, vf_hstate_next_1), info_next)
 
         ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry
         output = carry
