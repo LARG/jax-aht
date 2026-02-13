@@ -1,6 +1,8 @@
 import jax
 
 from agents.dqn_actor_crtic_fqe_agent import DQNActorCriticFQEPolicy
+from agents.rnn_dqn_actor_crtic_fqe_agent import RNNDQNActorCriticFQEPolicy
+from agents.s5_dqn_actor_crtic_fqe_agent import S5DQNActorCriticFQEPolicy
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
 from agents.s5_actor_critic_agent import S5ActorCriticPolicy
@@ -101,12 +103,15 @@ def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy,
         env: gymnasium environment
         rng: jax.random.PRNGKey, random key for initialization
         actor_critic_policy: the actor-critic policy to be used by the DQN actor-critic FQE policy
+        agent_index: int, index of the agent in the environment
+        observation_type: str, type of observation to use ("agent" or "full")
     Returns:
         policy: DQNActorCriticFQEPolicy, the policy object
         params: dict, initial parameters for the policy
     """
 
     policy = DQNActorCriticFQEPolicy(
+        hidden_dim=config.get("DQN_HIDDEN_DIM", 64),
         action_dim=env.action_space(env.agents[agent_index]).n,
         obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
         actor_critic_policy=actor_critic_policy,

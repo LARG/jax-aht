@@ -17,4 +17,6 @@ VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: false
 
+TRAIN_EVAL: true
+
 EPSILON_OPTIMAL: 1e-2 # Tolerance for near-optimal actions

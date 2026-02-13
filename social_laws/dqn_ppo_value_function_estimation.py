@@ -24,7 +24,7 @@ import flashbax as fbx
 from flax.struct import dataclass
 from typing import NamedTuple
 
-from social_laws.common.run_episodes import run_episodes, run_render_episodes
+from social_laws.common.run_episodes import run_episodes_vmap
 from social_laws.common.initialize_agents import initialize_dqn_actor_critic_fqe_agent
 from agents.q_network import DQNTrainState
 from common.plot_utils import get_stats, get_metric_names
@@ -82,7 +82,7 @@ def train_dqnppo_agent(config, env, train_rng,
         config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
         config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["ROLLOUT_LENGTH"] = env.env.horizon
+        config["ROLLOUT_LENGTH"] = env.env.horizon # assumption: rollout length is equal to episode length
         config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
         config["NUM_ACTIONS"] = env.action_space(f"agent_{agent_idx}").n
 
@@ -156,13 +156,13 @@ def train_dqnppo_agent(config, env, train_rng,
                 return jax.lax.switch(idx, branches)
 
             # Init hstates
-            # Will return hstate for dqn and ppo policies, but note that dqn hstate is just None
-            init_hstates = policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            init_hstate = policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            init_ppo_hstate = policy.actor_critic.init_hstate(config["NUM_CONTROLLED_ACTORS"])
 
             # DQN Learning Phase
             def _dqn_learn_phase(train_state, ppo_params, buffer_state, rng):
                 """Sample from buffer and update Q-network"""
-                sample_rng, ppo_rng = jax.random.split(rng)
+                _, sample_rng = jax.random.split(rng, 2)
                 learn_batch = buffer.sample(buffer_state, sample_rng).experience
 
                 # Compute target Q-values using target network
@@ -172,16 +172,13 @@ def train_dqnppo_agent(config, env, train_rng,
                 q_next_target = jax.lax.stop_gradient(q_next_target)
 
                 # Get PPO policy probabilities for next state
-                # TODO: Try to support reccurrent actor-critic.
-                #       Currently, not possible due to buffer not storing
-                #       sequences and doing random sampling.
                 ppo_pi = policy.actor_critic.get_action_value_policy(
                     ppo_params,
                     learn_batch.second.obs,
                     learn_batch.second.done,
                     learn_batch.second.avail_actions,
                     policy.actor_critic.init_hstate(config["BUFFER_BATCH_SIZE"]),
-                    ppo_rng
+                    jax.random.PRNGKey(0) # Use dummy rng since with only need the policy
                 )[2]
                 ppo_probs = ppo_pi.probs  # (batch_size, num_actions)
                 ppo_probs = jax.lax.stop_gradient(ppo_probs)
@@ -367,11 +364,11 @@ def train_dqnppo_agent(config, env, train_rng,
                 # Init envs
                 rng, reset_rng = jax.random.split(rng, 2)
                 reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
-                (init_obs, init_full_obs), init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
+                (init_obs, init_obs_full), init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
                 init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
                 # Rollout (DQN updates happen inside _env_step)
-                runner_state = (train_state, buffer_state, init_env_state, init_obs, init_done, init_hstates, rng)
+                runner_state = (train_state, buffer_state, init_env_state, init_obs, init_done, (init_hstate, init_ppo_hstate), rng)
 
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
@@ -397,7 +394,7 @@ def train_dqnppo_agent(config, env, train_rng,
             max_episode_steps = config["ROLLOUT_LENGTH"]
 
             def _update_step_with_ckpt(state_with_ckpt, unused):
-                (update_state, checkpoint_array, ckpt_idx, init_eval_last_info) = state_with_ckpt
+                (update_state, checkpoint_array, ckpt_idx, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
 
                 # Single DQN update step
                 new_update_state, metric = _update_step(
@@ -412,29 +409,49 @@ def train_dqnppo_agent(config, env, train_rng,
 
 
                 def store_and_eval_ckpt(args):
-                    ckpt_arr, cidx, rng, rng_eval, prev_eval_ret_info = args
+                    ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
                     new_ckpt_arr = jax.tree.map(
                         lambda c_arr, p: c_arr.at[cidx].set(p),
                         ckpt_arr, train_state.params
                     )
 
                     rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                    eval_eps_last_infos = run_episodes(
+                    ckpt_eval_eps_last_infos = run_episodes_vmap(
                         eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
                         max_episode_steps=max_episode_steps,
                         num_eps=config["NUM_EVAL_EPISODES"], agent_test_mode=True)  # Use test mode for eval
-                    return (new_ckpt_arr, cidx + 1, rng, rng_eval, eval_eps_last_infos)
+                    return (new_ckpt_arr, cidx + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
 
-                def skip_ckpt(args):
-                    return args
+                def skip_ckpt_and_eval(args):
+                    def do_eval(eval_args):
+                        ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
+                        rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                        eval_eps_last_infos = run_episodes_vmap(
+                            eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
+                            max_episode_steps=max_episode_steps,
+                            num_eps=config["NUM_EVAL_EPISODES"], agent_test_mode=True)  # Use test mode for eval
+                        return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
 
-                (checkpoint_array, ckpt_idx, rng, rng_eval, eval_last_infos) = jax.lax.cond(
-                    to_store, store_and_eval_ckpt, skip_ckpt, (checkpoint_array, ckpt_idx, rng, rng_eval, init_eval_last_info)
+                    def skip_eval(eval_args):
+                        return eval_args
+
+                    (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos) = jax.lax.cond(
+                        config["TRAIN_EVAL"],
+                        do_eval,
+                        skip_eval,
+                        args
+                    )
+
+                    return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+
+                (checkpoint_array, ckpt_idx, rng, rng_eval, ckpt_eval_eps_last_infos, eval_eps_last_infos) = jax.lax.cond(
+                    to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array, ckpt_idx, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
                 )
 
-                metric["eval_ep_last_info"] = eval_last_infos
+                metric["ckpt_eval_ep_last_info"] = ckpt_eval_eps_last_infos
+                metric["eval_ep_last_info"] = eval_eps_last_infos
                 return ((train_state, buffer_state, rng, rng_eval, update_steps),
-                         checkpoint_array, ckpt_idx, eval_last_infos), metric
+                         checkpoint_array, ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
 
             checkpoint_array = init_ckpt_array(train_state.params)
             ckpt_idx = 0
@@ -446,7 +463,7 @@ def train_dqnppo_agent(config, env, train_rng,
 
 
             # Init eval return infos
-            eval_eps_last_infos = run_episodes(eval_rng, env, agent_idx,
+            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
                                     agent_param=train_state.params, agent_policy=policy,
                                     max_episode_steps=max_episode_steps,
                                     num_eps=config["NUM_EVAL_EPISODES"], agent_test_mode=True)
@@ -455,7 +472,7 @@ def train_dqnppo_agent(config, env, train_rng,
             update_steps = 0
 
             update_runner_state = (train_state, buffer_state, rng_train, rng_eval, update_steps)
-            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos)
+            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos, eval_eps_last_infos)
 
             state_with_ckpt, metrics = jax.lax.scan(
                 _update_step_with_ckpt,
@@ -464,7 +481,7 @@ def train_dqnppo_agent(config, env, train_rng,
                 length=config["NUM_UPDATES"]
             )
 
-            (final_runner_state, checkpoint_array, final_ckpt_idx, eval_eps_last_infos) = state_with_ckpt
+            (final_runner_state, checkpoint_array, final_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos) = state_with_ckpt
             out = {
                 "final_params": final_runner_state[0].params,
                 "metrics": metrics,  # shape (NUM_UPDATES, ...)
@@ -475,11 +492,10 @@ def train_dqnppo_agent(config, env, train_rng,
             rng_eval = final_runner_state[3] # extract final rng_eval from the final runner state after training
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
             params = final_runner_state[0].params
-            out["render_outs"] = run_render_episodes(eval_rng, env, agent_idx,
-                                                     agent_param=params, agent_policy=policy,
-                                                     max_episode_steps=env.env.horizon,
-                                                     num_eps=5, render=True, agent_test_mode=True)  # Use test mode for final renders
-
+            out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
+                                                   agent_param=params, agent_policy=policy,
+                                                   max_episode_steps=env.env.horizon,
+                                                   num_eps=5, render=True, agent_test_mode=True)
             return out
         return train
 
@@ -586,8 +602,11 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     all_n_updates = np.asarray(train_metrics["n_updates"]) # shape (n_train_seeds, num_updates, rollout_length)
 
     # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
+    all_ckpt_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_ckpt_agent_returns = all_ckpt_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_agent_returns = all_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    average_ckpt_agent_rets_per_iter = np.mean(all_ckpt_agent_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_rets_per_iter = np.mean(all_agent_returns, axis=(0, 2)) # shape (num_updates,)
 
     # Process DQN loss metrics - average across train seeds and rollout steps, filtering out NaN values
@@ -606,6 +625,7 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
             logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/{stat_name}", stat_mean, train_step=step, commit=True)
 
         logger.log_item(f"Eval/ValueFunction/Agent_{agent_idx + 1}_Proj/Return", average_agent_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/ValueFunction/Agent_{agent_idx + 1}_Proj/CheckpointReturn", average_ckpt_agent_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/TD_Loss", average_dqn_losses[step], train_step=step, commit=True)
         logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/Q_Values_Mean", average_q_vals_mean[step], train_step=step, commit=True)
         logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/TD_Target_Mean", average_td_target_mean[step], train_step=step, commit=True)

@@ -22,7 +22,7 @@ import hydra
 from flax.training.train_state import TrainState
 
 from social_laws.common.initialize_agents import initialize_agent
-from social_laws.common.run_episodes import run_episodes, run_render_episodes
+from social_laws.common.run_episodes import run_episodes_vmap
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 from envs import make_env
@@ -344,7 +344,7 @@ def train_ppo_agent(config, env, train_rng,
             max_episode_steps = config["ROLLOUT_LENGTH"]
 
             def _update_step_with_ckpt(state_with_ckpt, unused):
-                (update_state, checkpoint_array, ckpt_idx, init_eval_last_info) = state_with_ckpt
+                (update_state, checkpoint_array, ckpt_idx, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
 
                 # Single PPO update
                 new_update_state, metric = _update_step(
@@ -359,29 +359,49 @@ def train_ppo_agent(config, env, train_rng,
 
 
                 def store_and_eval_ckpt(args):
-                    ckpt_arr, cidx, rng, rng_eval, prev_eval_ret_info = args
+                    ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
                     new_ckpt_arr = jax.tree.map(
                         lambda c_arr, p: c_arr.at[cidx].set(p),
                         ckpt_arr, train_state.params
                     )
 
                     rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                    eval_eps_last_infos = run_episodes(
+                    ckpt_eval_eps_last_infos = run_episodes_vmap(
                         eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
                         max_episode_steps=max_episode_steps,
                         num_eps=config["NUM_EVAL_EPISODES"])
-                    return (new_ckpt_arr, cidx + 1, rng, rng_eval, eval_eps_last_infos)
+                    return (new_ckpt_arr, cidx + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
 
-                def skip_ckpt(args):
-                    return args
+                def skip_ckpt_and_eval(args):
+                    def do_eval(eval_args):
+                        ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
+                        rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                        eval_eps_last_infos = run_episodes_vmap(
+                            eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
+                            max_episode_steps=max_episode_steps,
+                            num_eps=config["NUM_EVAL_EPISODES"])
+                        return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
 
-                (checkpoint_array, ckpt_idx, rng, rng_eval, eval_last_infos) = jax.lax.cond(
-                    to_store, store_and_eval_ckpt, skip_ckpt, (checkpoint_array, ckpt_idx, rng, rng_eval, init_eval_last_info)
+                    def skip_eval(eval_args):
+                        return eval_args
+
+                    (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos) = jax.lax.cond(
+                        config["TRAIN_EVAL"],
+                        do_eval,
+                        skip_eval,
+                        args
+                    )
+
+                    return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+
+                (checkpoint_array, ckpt_idx, rng, rng_eval, ckpt_eval_eps_last_infos, eval_eps_last_infos) = jax.lax.cond(
+                    to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array, ckpt_idx, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
                 )
 
-                metric["eval_ep_last_info"] = eval_last_infos
+                metric["ckpt_eval_ep_last_info"] = ckpt_eval_eps_last_infos
+                metric["eval_ep_last_info"] = eval_eps_last_infos
                 return ((train_state, rng, rng_eval, update_steps),
-                         checkpoint_array, ckpt_idx, eval_last_infos), metric
+                         checkpoint_array, ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
 
             checkpoint_array = init_ckpt_array(train_state.params)
             ckpt_idx = 0
@@ -392,7 +412,7 @@ def train_ppo_agent(config, env, train_rng,
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
 
             # Init eval return infos
-            eval_eps_last_infos = run_episodes(eval_rng, env, agent_idx,
+            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
                                     agent_param=train_state.params, agent_policy=policy,
                                     max_episode_steps=max_episode_steps,
                                     num_eps=config["NUM_EVAL_EPISODES"])
@@ -401,7 +421,7 @@ def train_ppo_agent(config, env, train_rng,
             update_steps = 0
 
             update_runner_state = (train_state, rng_train, rng_eval, update_steps)
-            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos)
+            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos, eval_eps_last_infos)
 
             state_with_ckpt, metrics = jax.lax.scan(
                 _update_step_with_ckpt,
@@ -410,7 +430,7 @@ def train_ppo_agent(config, env, train_rng,
                 length=config["NUM_UPDATES"]
             )
 
-            (final_runner_state, checkpoint_array, final_ckpt_idx, eval_eps_last_infos) = state_with_ckpt
+            (final_runner_state, checkpoint_array, final_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos) = state_with_ckpt
             out = {
                 "final_params": final_runner_state[0].params,
                 "metrics": metrics,  # shape (NUM_UPDATES, ...)
@@ -421,10 +441,10 @@ def train_ppo_agent(config, env, train_rng,
             rng_eval = final_runner_state[2] # extract final rng_eval from the final runner state after training
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
             params = final_runner_state[0].params
-            out["render_outs"] = run_render_episodes(eval_rng, env, agent_idx,
-                                                     agent_param=params, agent_policy=policy,
-                                                     max_episode_steps=env.env.horizon,
-                                                     num_eps=5, render=True)
+            out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
+                                                   agent_param=params, agent_policy=policy,
+                                                   max_episode_steps=env.env.horizon,
+                                                   num_eps=5, render=True)
 
             return out
         return train
@@ -520,8 +540,11 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     all_agent_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
     all_agent_grad_norms = np.asarray(train_metrics["avg_grad_norm"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
     # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
+    all_ckpt_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_ckpt_agent_returns = all_ckpt_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_agent_returns = all_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    average_ckpt_agent_rets_per_iter = np.mean(all_ckpt_agent_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_rets_per_iter = np.mean(all_agent_returns, axis=(0, 2)) # shape (num_updates,)
 
     # Process loss metrics - average across train seeds, partners and minibatches dims
@@ -540,6 +563,7 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
             logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/{stat_name}", stat_mean, train_step=step, commit=True)
 
         logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/Return", average_agent_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/CheckpointReturn", average_ckpt_agent_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/ValueLoss", average_agent_value_losses[step], train_step=step, commit=True)
         logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/ActorLoss", average_agent_actor_losses[step], train_step=step, commit=True)
         logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/EntropyLoss", average_agent_entropy_losses[step], train_step=step, commit=True)

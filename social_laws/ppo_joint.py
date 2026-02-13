@@ -22,7 +22,7 @@ import hydra
 from flax.training.train_state import TrainState
 
 from social_laws.common.initialize_agents import initialize_agent
-from social_laws.common.run_episodes_w_robustness import run_episodes, run_render_episodes
+from social_laws.common.run_episodes_w_robustness import run_episodes_vmap
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 from envs import make_env
@@ -562,7 +562,7 @@ def train_ppo_joint_agents(config, env, train_rng,
             max_episode_steps = config["ROLLOUT_LENGTH"]
 
             def _update_step_with_ckpt(state_with_ckpt, unused):
-                (update_state, checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, init_eval_last_info) = state_with_ckpt
+                (update_state, checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
 
                 # Single PPO update
                 new_update_state, metric = _update_step(
@@ -577,7 +577,7 @@ def train_ppo_joint_agents(config, env, train_rng,
 
 
                 def store_and_eval_ckpt(args):
-                    ckpt_arr_0, cidx_0, ckpt_arr_1, cidx_1, rng, rng_eval, prev_eval_ret_info = args
+                    ckpt_arr_0, cidx_0, ckpt_arr_1, cidx_1, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
                     new_ckpt_arr_0 = jax.tree.map(
                         lambda c_arr, p: c_arr.at[cidx_0].set(p),
                         ckpt_arr_0, agent_0_train_state.params
@@ -588,7 +588,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                     )
 
                     rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                    eval_eps_last_infos = run_episodes(eval_rng, env, agent_idx,
+                    ckpt_eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
                         agent_params=(agent_0_train_state.params, agent_1_train_state.params),
                         agent_policies=(agent_0_policy, agent_1_policy),
                         ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
@@ -599,18 +599,44 @@ def train_ppo_joint_agents(config, env, train_rng,
                         num_eps=config["NUM_EVAL_EPISODES"],
                         epsilon_optimal=config["EPSILON_OPTIMAL"])
 
-                    return (new_ckpt_arr_0, cidx_0 + 1, new_ckpt_arr_1, cidx_1 + 1, rng, rng_eval, eval_eps_last_infos)
+                    return (new_ckpt_arr_0, cidx_0 + 1, new_ckpt_arr_1, cidx_1 + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
 
-                def skip_ckpt(args):
-                    return args
+                def skip_ckpt_and_eval(args):
+                    def do_eval(eval_args):
+                        ckpt_arr_0, cidx_0, ckpt_arr_1, cidx_1, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
+                        rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                        eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
+                            agent_params=(agent_0_train_state.params, agent_1_train_state.params),
+                            agent_policies=(agent_0_policy, agent_1_policy),
+                            ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
+                            ppo_policies=(agent_0_ppo_policy, agent_1_ppo_policy),
+                            vf_params=(agent_0_vf_params, agent_1_vf_params),
+                            vf_policies=(agent_0_vf_policy, agent_1_vf_policy),
+                            max_episode_steps=max_episode_steps,
+                            num_eps=config["NUM_EVAL_EPISODES"],
+                            epsilon_optimal=config["EPSILON_OPTIMAL"])
 
-                (checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, rng, rng_eval, eval_last_infos) = jax.lax.cond(
-                    to_store, store_and_eval_ckpt, skip_ckpt, (checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, rng, rng_eval, init_eval_last_info)
+                        return (ckpt_arr_0, cidx_0, ckpt_arr_1, cidx_1, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+                    def skip_eval(eval_args):
+                        return eval_args
+
+                    (ckpt_arr_0, cidx_0, ckpt_arr_1, cidx_1, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos) = jax.lax.cond(
+                        config["TRAIN_EVAL"],
+                        do_eval,
+                        skip_eval,
+                        args
+                    )
+
+                    return (ckpt_arr_0, cidx_0, ckpt_arr_1, cidx_1, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+
+                (checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, rng, rng_eval, ckpt_eval_eps_last_infos, eval_eps_last_infos) = jax.lax.cond(
+                    to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
                 )
 
-                metric["eval_ep_last_info"] = eval_last_infos
+                metric["ckpt_eval_ep_last_info"] = ckpt_eval_eps_last_infos
+                metric["eval_ep_last_info"] = eval_eps_last_infos
                 return ((agent_0_train_state, agent_1_train_state, rng, rng_eval, update_steps),
-                         checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, eval_last_infos), metric
+                         checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
 
             checkpoint_array_0 = init_ckpt_array(agent_0_train_state.params)
             checkpoint_array_1 = init_ckpt_array(agent_1_train_state.params)
@@ -623,7 +649,7 @@ def train_ppo_joint_agents(config, env, train_rng,
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
 
             # Init eval return infos
-            eval_eps_last_infos = run_episodes(eval_rng, env, agent_idx,
+            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
                                     agent_params=(agent_0_train_state.params, agent_1_train_state.params),
                                     agent_policies=(agent_0_policy, agent_1_policy),
                                     ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
@@ -638,7 +664,7 @@ def train_ppo_joint_agents(config, env, train_rng,
             update_steps = 0
 
             update_runner_state = (agent_0_train_state, agent_1_train_state, rng_train, rng_eval, update_steps)
-            state_with_ckpt = (update_runner_state, checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, eval_eps_last_infos)
+            state_with_ckpt = (update_runner_state, checkpoint_array_0, ckpt_idx_0, checkpoint_array_1, ckpt_idx_1, eval_eps_last_infos, eval_eps_last_infos)
 
             state_with_ckpt, metrics = jax.lax.scan(
                 _update_step_with_ckpt,
@@ -647,7 +673,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                 length=config["NUM_UPDATES"]
             )
 
-            (final_runner_state, checkpoint_array_0, final_ckpt_idx_0, checkpoint_array_1, final_ckpt_idx_1, eval_eps_last_infos) = state_with_ckpt
+            (final_runner_state, checkpoint_array_0, final_ckpt_idx_0, checkpoint_array_1, final_ckpt_idx_1, ckpt_eval_eps_last_infos, eval_eps_last_infos) = state_with_ckpt
             out = {
                 "final_params_agent_0": final_runner_state[0].params,
                 "final_params_agent_1": final_runner_state[1].params,
@@ -661,7 +687,7 @@ def train_ppo_joint_agents(config, env, train_rng,
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
             agent_0_params = final_runner_state[0].params
             agent_1_params = final_runner_state[1].params
-            out["render_outs"] = run_render_episodes(eval_rng, env, agent_idx,
+            out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
                                     agent_params=(agent_0_params, agent_1_params),
                                     agent_policies=(agent_0_policy, agent_1_policy),
                                     ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
@@ -669,7 +695,8 @@ def train_ppo_joint_agents(config, env, train_rng,
                                     vf_params=(agent_0_vf_params, agent_1_vf_params),
                                     vf_policies=(agent_0_vf_policy, agent_1_vf_policy),
                                     max_episode_steps=env.env.horizon,
-                                    num_eps=5, epsilon_optimal=config["EPSILON_OPTIMAL"])
+                                    num_eps=5, epsilon_optimal=config["EPSILON_OPTIMAL"],
+                                    render=True)
 
             return out
         return train
@@ -809,13 +836,21 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     # Eval metrics include worst-case returns and optimal returns, which we can use to compute alpha-returns.
     # Process these metrics by averaging across train seeds and eval episodes for each checkpoint, then
     # compute alpha-returns using the formula: alpha_return = worst_case_return / optimal_return.
+    all_ckpt_worst_case_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_worst_case_returns = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_ckpt_worst_case_returns = all_ckpt_worst_case_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_worst_case_returns = all_worst_case_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    all_ckpt_optimal_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_optimal_returns = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_ckpt_optimal_returns = all_ckpt_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_optimal_returns = all_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    all_ckpt_alpha_returns = all_ckpt_worst_case_returns / all_ckpt_optimal_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_alpha_returns = all_worst_case_returns / all_optimal_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
+    average_ckpt_worst_case_rets_per_iter = np.mean(all_ckpt_worst_case_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_worst_case_rets_per_iter = np.mean(all_worst_case_returns, axis=(0, 2)) # shape (num_updates,)
+    average_ckpt_optimal_rets_per_iter = np.mean(all_ckpt_optimal_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_optimal_rets_per_iter = np.mean(all_optimal_returns, axis=(0, 2)) # shape (num_updates,)
+    average_ckpt_alpha_rets_per_iter = np.mean(all_ckpt_alpha_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_alpha_rets_per_iter = np.mean(all_alpha_returns, axis=(0, 2)) # shape (num_updates,)
 
     # Log metrics for each update step
@@ -827,8 +862,11 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
             logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{stat_name}", stat_mean, train_step=step, commit=True)
 
         logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/WorstCaseReturn", average_agent_worst_case_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCaseReturn", average_ckpt_worst_case_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalReturn", average_agent_optimal_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalReturn", average_ckpt_optimal_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/AlphaReturn", average_agent_alpha_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointAlphaReturn", average_ckpt_alpha_rets_per_iter[step], train_step=step, commit=True)
 
         logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Agent_1/ValueLoss", average_agent_0_value_losses[step], train_step=step, commit=True)
         logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Agent_1/ActorLoss", average_agent_0_actor_losses[step], train_step=step, commit=True)

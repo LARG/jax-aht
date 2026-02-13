@@ -1,6 +1,8 @@
 import jax
 
 from agents.dqn_actor_crtic_fqe_agent import DQNActorCriticFQEPolicy
+from agents.rnn_dqn_actor_crtic_fqe_agent import RNNDQNActorCriticFQEPolicy
+from agents.s5_dqn_actor_crtic_fqe_agent import S5DQNActorCriticFQEPolicy
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy, ActorWithDoubleCriticPolicy, \
     ActorWithConditionalCriticPolicy, PseudoActorWithDoubleCriticPolicy, \
     PseudoActorWithConditionalCriticPolicy
@@ -220,6 +222,7 @@ def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy)
     """
 
     policy = DQNActorCriticFQEPolicy(
+        hidden_dim=config.get("DQN_HIDDEN_DIM", 64),
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         actor_critic_policy=actor_critic_policy,

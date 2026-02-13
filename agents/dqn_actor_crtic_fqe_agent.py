@@ -10,9 +10,10 @@ from agents.q_network import QNetwork
 class DQNActorCriticFQEPolicy(AgentPolicy):
     """Policy wrapper for DQN Actor-Critic Fitted Q Estimation"""
 
-    def __init__(self, action_dim, obs_dim, actor_critic_policy, epsilon_start=1.0, epsilon_finish=0.1, epsilon_anneal_time=10000):
+    def __init__(self, hidden_dim, action_dim, obs_dim, actor_critic_policy, epsilon_start=1.0, epsilon_finish=0.1, epsilon_anneal_time=10000):
         """
         Args:
+            hidden_dim: int, dimension of the hidden layers
             action_dim: int, dimension of the action space
             obs_dim: int, dimension of the observation space
             actor_critic_policy: nn.Module, the actor-critic network to use for value estimation
@@ -21,7 +22,7 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
             epsilon_anneal_time: int, number of timesteps over which to anneal epsilon
         """
         super().__init__(action_dim, obs_dim)
-        self.network = QNetwork(action_dim)
+        self.network = QNetwork(action_dim, hidden_dim)
         self.actor_critic = actor_critic_policy
         self.epsilon_start = epsilon_start
         self.epsilon_finish = epsilon_finish
@@ -121,10 +122,10 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
 
         return actions, qvals, None, None  # no policy or hidden state
 
-    def init_hstate(self, batch_size, aux_info=None):
-        """Initialize hidden state for the DQN policy."""
-        actor_critic_hstate = self.actor_critic.init_hstate(batch_size, aux_info)
-        return None, actor_critic_hstate
+    # def init_hstate(self, batch_size, aux_info=None):
+    #     """Initialize hidden state for the DQN policy."""
+    #     actor_critic_hstate = self.actor_critic.init_hstate(batch_size, aux_info)
+    #     return None, actor_critic_hstate
 
     def init_params(self, rng):
         """Initialize parameters for the DQN policy."""
