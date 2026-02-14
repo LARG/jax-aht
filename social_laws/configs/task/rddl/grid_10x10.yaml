@@ -7,7 +7,8 @@ ENV_KWARGS: {domain: "grid_10x10_domain.rddl",
              render_name: "grid_10x10",
              render_dir: "render",
              enforce_action_constraints: true,
-             vectorized: true}
+             vectorized: true,
+             ego_centric_obs: true}
 TASK_NAME: rddl/grid_10x10
 SINGLE_AGENT_1_PROJECTION: "grid_10x10_instance0.rddl"
 SINGLE_AGENT_2_PROJECTION: "grid_10x10_instance1.rddl"

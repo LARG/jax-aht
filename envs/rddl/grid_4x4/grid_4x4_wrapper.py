@@ -39,6 +39,8 @@ class Grid4x4Wrapper(BaseEnv):
         self._render_name = kwargs.get('render_name', "grid_4x4")
         self._render_dir = kwargs.get('render_dir', "grid_4x4")
 
+        self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
+
         self.name = self.env.__class__.__name__
         self.rddl_agent_names = self.env.model.type_to_objects['agent']
         self.rddl_action_keys = sorted(self.env.action_space.keys())
@@ -175,16 +177,54 @@ class Grid4x4Wrapper(BaseEnv):
             for agent_idx, agent in enumerate(self.agents):
                 obs_agent_values = []
                 obs_full_values = []
-                agent_at = observation['agent-at'].flatten()
-                goal_reached = observation['goal-reached'].flatten()
-                obs_agent_values.append(agent_at)
-                obs_full_values.append(agent_at)
-                obs_agent_values.append(observation['goal-at'][agent_idx].flatten())
-                obs_full_values.append(observation['goal-at'].flatten())
-                obs_agent_values.append(goal_reached)
-                obs_full_values.append(goal_reached)
-                obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
-                obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
+
+                if self._ego_centric_obs:
+                    # Ego-centric: reorder so this agent's information comes first
+                    # Reorder agent-at: put agent_idx first, then others
+                    agent_at_reordered = jnp.concatenate([
+                        observation['agent-at'][agent_idx:agent_idx+1],  # This agent
+                        observation['agent-at'][:agent_idx],             # Agents before
+                        observation['agent-at'][agent_idx+1:]            # Agents after
+                    ], axis=0).flatten()
+
+                    goal_at_reordered = jnp.concatenate([
+                        observation['goal-at'][agent_idx:agent_idx+1],  # This agent
+                        observation['goal-at'][:agent_idx],             # Agents before
+                        observation['goal-at'][agent_idx+1:]            # Agents after
+                    ], axis=0)
+
+                    # Reorder goal-reached: put agent_idx first, then others
+                    goal_reached_reordered = jnp.concatenate([
+                        observation['goal-reached'][agent_idx:agent_idx+1],  # This agent
+                        observation['goal-reached'][:agent_idx],             # Agents before
+                        observation['goal-reached'][agent_idx+1:]            # Agents after
+                    ], axis=0).flatten()
+
+                    obs_agent_values.append(agent_at_reordered)
+                    obs_agent_values.append(goal_at_reordered[0].flatten())
+                    obs_agent_values.append(goal_reached_reordered)
+
+                    obs_full_values.append(agent_at_reordered)
+                    obs_full_values.append(goal_at_reordered.flatten())
+                    obs_full_values.append(goal_reached_reordered)
+
+                    obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
+                    obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
+                else:
+                    # Non-ego-centric: keep original ordering
+                    agent_at = observation['agent-at'].flatten()
+                    goal_reached = observation['goal-reached'].flatten()
+                    obs_agent_values.append(agent_at)
+                    obs_agent_values.append(observation['goal-at'][agent_idx].flatten())
+                    obs_agent_values.append(goal_reached)
+
+                    # Full observation include all goal positions
+                    obs_full_values.append(agent_at)
+                    obs_full_values.append(observation['goal-at'].flatten())
+                    obs_full_values.append(goal_reached)
+
+                    obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
+                    obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
             return obs_agent, obs_full
         else:
             raise NotImplementedError("Non-vectorized observations not implemented yet.")
