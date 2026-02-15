@@ -706,22 +706,23 @@ def train_ppo_joint_agents(config, env, train_rng,
                 "checkpoints_agent_1": checkpoint_array_1,
             }
 
-            # Collect final eval gifs for logging
-            rng_eval = final_runner_state[3] # extract final rng_eval from the final runner state after training
-            rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-            agent_0_params = final_runner_state[0].params
-            agent_1_params = final_runner_state[1].params
-            out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
-                                    agent_params=(agent_0_params, agent_1_params),
-                                    agent_policies=(agent_0_policy, agent_1_policy),
-                                    ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
-                                    ppo_policies=(agent_0_ppo_policy, agent_1_ppo_policy),
-                                    vf_params=(agent_0_vf_params, agent_1_vf_params),
-                                    vf_policies=(agent_0_vf_policy, agent_1_vf_policy),
-                                    max_episode_steps=env.env.horizon,
-                                    num_eps=5, epsilon_optimal=config["EPSILON_OPTIMAL"],
-                                    use_full_obs=config["JOINT_USE_FULL_OBS"],
-                                    render=True)
+            if env._render:
+                # Collect final eval gifs for logging
+                rng_eval = final_runner_state[3] # extract final rng_eval from the final runner state after training
+                rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                agent_0_params = final_runner_state[0].params
+                agent_1_params = final_runner_state[1].params
+                out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
+                                        agent_params=(agent_0_params, agent_1_params),
+                                        agent_policies=(agent_0_policy, agent_1_policy),
+                                        ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
+                                        ppo_policies=(agent_0_ppo_policy, agent_1_ppo_policy),
+                                        vf_params=(agent_0_vf_params, agent_1_vf_params),
+                                        vf_policies=(agent_0_vf_policy, agent_1_vf_policy),
+                                        max_episode_steps=env.env.horizon,
+                                        num_eps=5, epsilon_optimal=config["EPSILON_OPTIMAL"],
+                                        use_full_obs=config["JOINT_USE_FULL_OBS"],
+                                        render=True)
 
             return out
         return train
@@ -907,25 +908,26 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     # Saving artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
-    # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
-    eval_render_init_env_state = train_out['render_outs'][2].env_state.env_state # LogEnvState
-    eval_render_optimal_env_state = train_out['render_outs'][1][-1]['pre_reset_state'].env_state # WrappedEnvState
-    eval_render_optimal_dones = train_out['render_outs'][1][4]['__all__']
-    eval_render_worst_case_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
-    eval_render_worst_case_dones = train_out['render_outs'][0][4]['__all__']
-    num_episodes = eval_render_worst_case_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
-    env.animate((eval_render_init_env_state, eval_render_optimal_env_state), eval_render_optimal_dones, num_episodes, extra_dir="Optimal", debug=True)
-    env.animate((eval_render_init_env_state, eval_render_worst_case_env_state), eval_render_worst_case_dones, num_episodes, extra_dir="WorstCase", debug=True)
+    if env._render:
+        # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
+        eval_render_init_env_state = train_out['render_outs'][2].env_state.env_state # LogEnvState
+        eval_render_optimal_env_state = train_out['render_outs'][1][-1]['pre_reset_state'].env_state # WrappedEnvState
+        eval_render_optimal_dones = train_out['render_outs'][1][4]['__all__']
+        eval_render_worst_case_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
+        eval_render_worst_case_dones = train_out['render_outs'][0][4]['__all__']
+        num_episodes = eval_render_worst_case_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
+        env.animate((eval_render_init_env_state, eval_render_optimal_env_state), eval_render_optimal_dones, num_episodes, extra_dir="Optimal", debug=True)
+        env.animate((eval_render_init_env_state, eval_render_worst_case_env_state), eval_render_worst_case_dones, num_episodes, extra_dir="WorstCase", debug=True)
 
-    for eval_ep in range(num_episodes):
-        logger.log_video(
-            tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/WorstCase/Episode_{eval_ep}",
-            path=os.path.join(env._render_dir, "WorstCase", f"{env._render_name}_ep_{eval_ep}.gif")
-        )
-        logger.log_video(
-            tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/Episode_{eval_ep}",
-            path=os.path.join(env._render_dir, "Optimal", f"{env._render_name}_ep_{eval_ep}.gif")
-        )
+        for eval_ep in range(num_episodes):
+            logger.log_video(
+                tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/WorstCase/Episode_{eval_ep}",
+                path=os.path.join(env._render_dir, "WorstCase", f"{env._render_name}_ep_{eval_ep}.gif")
+            )
+            logger.log_video(
+                tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/Episode_{eval_ep}",
+                path=os.path.join(env._render_dir, "Optimal", f"{env._render_name}_ep_{eval_ep}.gif")
+            )
 
     train_out_agent_0 = {
         "final_params": train_out["final_params_agent_0"],

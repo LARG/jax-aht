@@ -437,14 +437,15 @@ def train_ppo_agent(config, env, train_rng,
                 "checkpoints": checkpoint_array,
             }
 
-            # Collect final eval gifs for logging
-            rng_eval = final_runner_state[2] # extract final rng_eval from the final runner state after training
-            rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-            params = final_runner_state[0].params
-            out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
-                                                   agent_param=params, agent_policy=policy,
-                                                   max_episode_steps=env.env.horizon,
-                                                   num_eps=5, render=True)
+            if env._render:
+                # Collect final eval gifs for logging
+                rng_eval = final_runner_state[2] # extract final rng_eval from the final runner state after training
+                rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                params = final_runner_state[0].params
+                out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
+                                                    agent_param=params, agent_policy=policy,
+                                                    max_episode_steps=env.env.horizon,
+                                                    num_eps=5, render=True)
 
             return out
         return train
@@ -573,18 +574,19 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     # Saving artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
-    # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
-    eval_render_init_env_state = train_out['render_outs'][1].env_state.env_state # LogEnvState
-    eval_render_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
-    eval_render_dones = train_out['render_outs'][0][4]['__all__']
-    num_episodes = eval_render_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
-    env.animate((eval_render_init_env_state, eval_render_env_state), eval_render_dones, num_episodes, debug=True)
+    if env._render:
+        # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
+        eval_render_init_env_state = train_out['render_outs'][1].env_state.env_state # LogEnvState
+        eval_render_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
+        eval_render_dones = train_out['render_outs'][0][4]['__all__']
+        num_episodes = eval_render_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
+        env.animate((eval_render_init_env_state, eval_render_env_state), eval_render_dones, num_episodes, debug=True)
 
-    for eval_ep in range(num_episodes):
-        logger.log_video(
-            tag=f"Videos/Agent_{agent_idx + 1}_Proj/Agent_{agent_idx}_Episode_{eval_ep}",
-            path=os.path.join(env._render_dir, f"{env._render_name}_ep_{eval_ep}.gif")
-        )
+        for eval_ep in range(num_episodes):
+            logger.log_video(
+                tag=f"Videos/Agent_{agent_idx + 1}_Proj/Agent_{agent_idx}_Episode_{eval_ep}",
+                path=os.path.join(env._render_dir, f"{env._render_name}_ep_{eval_ep}.gif")
+            )
 
     out_savepath = save_train_run(train_out, savedir, savename=f"PPO_Agent_{agent_idx + 1}_Proj_Train_Run")
     if config["logger"]["log_train_out"]:

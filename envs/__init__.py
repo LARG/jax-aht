@@ -175,6 +175,32 @@ def make_env(env_name: str, env_kwargs: dict = {}):
                               vectorized=env_kwargs_copy["vectorized"])
         env = Grid10x10Wrapper(rddl_env, **env_kwargs_copy)
 
+    elif env_name == 'rddl/pizza':
+        default_env_kwargs = {
+            "domain": "pizza_domain_new.rddl",
+            "instance": "pizza_instance_all.rddl",
+            "render": False,
+            "render_name": "pizza",
+            "render_dir": "render",
+            "enforce_action_constraints": True,
+            "vectorized": True,
+            "ego_centric_obs": False
+        }
+
+        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.pizza.pizza_wrapper import PizzaWrapper
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        # add default args that are not already in env_kwargs
+        for key in default_env_kwargs:
+            if key not in env_kwargs:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+
+        # create the JAX RDDL Pizza environment
+        rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/pizza', env_kwargs_copy["domain"]),
+                              instance=os.path.join(os.path.dirname(__file__), 'rddl/pizza', env_kwargs_copy["instance"]),
+                              vectorized=env_kwargs_copy["vectorized"])
+        env = PizzaWrapper(rddl_env, **env_kwargs_copy)
+
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
 
