@@ -81,7 +81,7 @@ def train_drqnppo_agent(config, env, train_rng,
         config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
         config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["ROLLOUT_LENGTH"] = env.env.horizon # assumption: rollout length is equal to episode length
+        config["ROLLOUT_LENGTH"] = env.horizon # assumption: rollout length is equal to episode length
         config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
         config["NUM_ACTIONS"] = env.action_space(f"agent_{agent_idx}").n
 
@@ -538,7 +538,7 @@ def train_drqnppo_agent(config, env, train_rng,
                 params = final_runner_state[0].params
                 out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
                                                     agent_param=params, agent_policy=policy,
-                                                    max_episode_steps=env.env.horizon,
+                                                    max_episode_steps=env.horizon,
                                                     num_eps=5, render=True, agent_test_mode=True)
             return out
         return train

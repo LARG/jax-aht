@@ -41,6 +41,10 @@ class Grid10x10Wrapper(BaseEnv):
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
 
+        # Stochastic movement: probability that horizontal movement (left-right) becomes vertical (up-down)
+        self.stochastic_movement_prob = kwargs.get('stochastic_movement_prob', 0.0)
+
+        self.horizon = self.env.horizon
         self.name = self.env.__class__.__name__
         self.rddl_agent_names = self.env.model.type_to_objects['agent']
         self.rddl_action_keys = sorted(self.env.action_space.keys())
@@ -229,18 +233,60 @@ class Grid10x10Wrapper(BaseEnv):
         else:
             raise NotImplementedError("Non-vectorized observations not implemented yet.")
 
-    def _actions_to_rddl(self, actions: Dict[str, Any]):
-        '''Convert dict of actions to array'''
+    def _actions_to_rddl(self, actions: Dict[str, Any], key: Optional[chex.PRNGKey] = None):
+        '''Convert dict of actions to array with optional stochastic movement'''
         if self.vectorized:
             action_array = jnp.zeros((self.num_agents,), dtype=jnp.int32)
             for agent_idx, agent in enumerate(self.agents):
                 # Ensure action is scalar by squeezing if needed
-                # action_value = jnp.asarray(actions[agent]).squeeze()
                 action_array = action_array.at[agent_idx].set(actions[agent].squeeze())
+
+            # Apply stochastic movement if enabled
+            # if self.stochastic_movement_prob > 0.0 and key is not None:
+            #     action_array = self._apply_stochastic_movement(action_array, key)
+
             vectorized_actions = {self.rddl_action_keys[0]: action_array}
             return vectorized_actions
         else:
             raise NotImplementedError("Non-vectorized actions not implemented yet.")
+
+    def _apply_stochastic_movement(self, action_array: jnp.ndarray, key: chex.PRNGKey) -> jnp.ndarray:
+        """Apply stochastic movement where horizontal actions can become vertical.
+
+        Actions: 0=noop, 1=west, 2=east, 3=south, 4=north
+        With probability stochastic_movement_prob:
+        - west (1) → south (3)
+        - east (2) → north (4)
+
+        Args:
+            action_array: Array of actions for each agent
+            key: PRNG key for randomness
+
+        Returns:
+            Modified action array with stochastic movements applied
+        """
+        # Generate Bernoulli random variables for each agent
+        should_flip = jax.random.bernoulli(key, self.stochastic_movement_prob, shape=action_array.shape)
+
+        # Identify which movements should be flipped
+        is_west = (action_array == 1)
+        is_east = (action_array == 2)
+        should_flip_west = is_west & should_flip
+        should_flip_east = is_east & should_flip
+
+        # # Generate random values for each agent
+        # flip_probs = jax.random.uniform(key, shape=action_array.shape)
+
+        # # Identify which movements should be flipped
+        # is_west = (action_array == 1)
+        # is_east = (action_array == 2)
+        # should_flip_west = is_west & (flip_probs < self.stochastic_movement_prob)
+        # should_flip_east = is_east & (flip_probs < self.stochastic_movement_prob)
+
+        action_array = jnp.where(should_flip_west, 3, action_array)
+        action_array = jnp.where(should_flip_east, 4, action_array)
+
+        return action_array
 
     def _extract_rewards(self, reward):
         '''Extract per-agent rewards'''

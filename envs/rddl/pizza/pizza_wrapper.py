@@ -37,6 +37,7 @@ class PizzaWrapper(BaseEnv):
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
 
+        self.horizon = self.env.horizon
         self.name = self.env.__class__.__name__
         self.rddl_agent_names = self.env.model.type_to_objects['truck']
         self.rddl_action_keys = list(self.env.action_space.keys())

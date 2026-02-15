@@ -444,7 +444,7 @@ def train_ppo_agent(config, env, train_rng,
                 params = final_runner_state[0].params
                 out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
                                                     agent_param=params, agent_policy=policy,
-                                                    max_episode_steps=env.env.horizon,
+                                                    max_episode_steps=env.horizon,
                                                     num_eps=5, render=True)
 
             return out

@@ -42,6 +42,10 @@ class Grid4x4AlternatingWrapper(BaseEnv):
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
 
+        # Stochastic movement
+        self.stochastic_movement_prob = kwargs.get('stochastic_movement_prob', 0.0)
+
+        self.horizon = self.env.horizon
         self.name = self.env.__class__.__name__
         self.toroidal = self.env.model.non_fluents['TOROIDAL']
         self.rddl_agent_names = self.env.model.type_to_objects['agent']

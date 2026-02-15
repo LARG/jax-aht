@@ -104,6 +104,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "render": False,
             "render_name": "grid_4x4",
             "render_dir": "render",
+            "stochastic_movement_prob": 0.0,
             "enforce_action_constraints": True,
             "vectorized": True,
             "ego_centric_obs": False
@@ -130,6 +131,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "render": False,
             "render_name": "grid_4x4_alternating",
             "render_dir": "render",
+            "stochastic_movement_prob": 0.0,
             "enforce_action_constraints": True,
             "vectorized": True,
             "ego_centric_obs": False
@@ -156,6 +158,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "render": False,
             "render_name": "grid_10x10",
             "render_dir": "render",
+            "stochastic_movement_prob": 0.0,
             "enforce_action_constraints": True,
             "vectorized": True,
             "ego_centric_obs": False

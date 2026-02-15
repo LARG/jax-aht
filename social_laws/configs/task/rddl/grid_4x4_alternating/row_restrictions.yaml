@@ -6,6 +6,7 @@ ENV_KWARGS: {domain: "row_restrictions/grid_4x4_alternating_domain.rddl",
              render: true,
              render_name: "grid_4x4_alternating_row_restrictions",
              render_dir: "render",
+             stochastic_movement_prob: 0.4,
              enforce_action_constraints: true,
              vectorized: true,
              ego_centric_obs: true}

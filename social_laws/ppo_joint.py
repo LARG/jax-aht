@@ -719,7 +719,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                                         ppo_policies=(agent_0_ppo_policy, agent_1_ppo_policy),
                                         vf_params=(agent_0_vf_params, agent_1_vf_params),
                                         vf_policies=(agent_0_vf_policy, agent_1_vf_policy),
-                                        max_episode_steps=env.env.horizon,
+                                        max_episode_steps=env.horizon,
                                         num_eps=5, epsilon_optimal=config["EPSILON_OPTIMAL"],
                                         use_full_obs=config["JOINT_USE_FULL_OBS"],
                                         render=True)
