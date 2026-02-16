@@ -53,6 +53,9 @@ domain pizza {
 		// Per-agent reward tracking
 		deliveredByTruck(truck, pizza, location) : { interm-fluent, bool, level = 3 };
 
+		// Count pizzas already delivered to each location (from previous timesteps)
+		numPreviouslyDelivered(location) : { interm-fluent, int, level = 3 };
+
 		// Random selection for delivery conflicts (when more trucks deliver than orders remain)
 		// Counts how many trucks are delivering to each location
 		numTrucksDeliveringToLoc(location) : { interm-fluent, int, level = 3 };
@@ -117,6 +120,9 @@ domain pizza {
 		// Track which truck delivered which pizza at which location
 		deliveredByTruck(?t, ?p, ?l) = (pizzaInTruck(?p, ?t) ^ deliver(?t, ?p, ?l));
 
+		// Count pizzas that were already delivered to this location in previous timesteps
+		numPreviouslyDelivered(?l) = (sum_{?p : pizza} [delivered(?p, ?l)]);
+
 		// Old reward, new reward below updated to handle too may trucks delivering
 		// Compute per-truck reward based on deliveries made by that truck
 		//truckReward(?t) = [sum_{?l : location} [ (ORDERS(?l) > 0) *
@@ -134,13 +140,14 @@ domain pizza {
 		deliveryRewarded(?t, ?l) =
 			if (~exists_{?p : pizza} [deliveredByTruck(?t, ?p, ?l)])
 				then false  // truck didn't deliver to this location
-			else if (numTrucksDeliveringToLoc(?l) <= ORDERS(?l))
+			else if (numPreviouslyDelivered(?l) >= ORDERS(?l))
+				then false  // all orders already fulfilled, no reward
+			else if (numTrucksDeliveringToLoc(?l) <= (ORDERS(?l) - numPreviouslyDelivered(?l)))
 				then true   // no conflict, all deliveries rewarded
 			else
-				// Conflict: more deliveries than orders
-				// Randomly select with probability = ORDERS(?l) / numTrucksDeliveringToLoc(?l)
-				// This ensures on average ORDERS(?l) trucks are selected
-				Bernoulli(ORDERS(?l) / numTrucksDeliveringToLoc(?l));
+				// Conflict: more deliveries than remaining orders
+				// Randomly select with probability = remaining_orders / numTrucksDeliveringToLoc(?l)
+				Bernoulli((ORDERS(?l) - numPreviouslyDelivered(?l)) / numTrucksDeliveringToLoc(?l));
 
 		// Compute per-truck reward based on deliveries made by that truck
 		// Only count deliveries that are rewarded (passed random selection when there are conflicts)
