@@ -98,6 +98,7 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
         agent_positions = {}  # {agent: (x, y)}
         goal_positions = {}  # {agent: (x, y)}
         goal_reached = {}  # {agent: bool}
+        collisions = {}  # {agent: bool}
 
         for k, v in state.items():
             var, objects = self._model.parse_grounded(k)
@@ -111,11 +112,15 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
             elif var == 'goal-reached':
                 agent = objects[0]
                 goal_reached[agent] = v
+            elif var == 'collision':
+                agent = objects[0]
+                collisions[agent] = v
 
         return {
             'agent_positions': agent_positions,
             'goals': goal_positions,
-            'goal_reached': goal_reached
+            'goal_reached': goal_reached,
+            'collisions': collisions
         }
 
     def _pos_to_grid_coords(self, x_name, y_name):
@@ -195,6 +200,20 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
 
                 agent_color = self.AGENT_COLORS[agent_idx % len(self.AGENT_COLORS)]
                 is_controllable = nonfluent_layout['controllable'].get(agent, False)
+                is_colliding = state_layout['collisions'].get(agent, False)
+
+                # Draw collision indicator (red glow) if agent is colliding
+                if is_colliding:
+                    collision_circle = mpatches.Circle(
+                        (x_idx, y_idx),
+                        0.35,
+                        facecolor='none',
+                        edgecolor='red',
+                        linewidth=4,
+                        zorder=4,
+                        alpha=0.8
+                    )
+                    ax.add_patch(collision_circle)
 
                 # Draw the agent - different shapes for controllable vs non-controllable
                 if is_controllable:
@@ -203,8 +222,8 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
                         (x_idx, y_idx),
                         0.25,
                         facecolor=agent_color,
-                        edgecolor='black',
-                        linewidth=2,
+                        edgecolor='red' if is_colliding else 'black',
+                        linewidth=3 if is_colliding else 2,
                         zorder=5
                     )
                     ax.add_patch(circle)
@@ -214,8 +233,8 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
                         (x_idx, y_idx),
                         0.25,
                         facecolor='white',
-                        edgecolor=agent_color,
-                        linewidth=3,
+                        edgecolor='red' if is_colliding else agent_color,
+                        linewidth=4 if is_colliding else 3,
                         zorder=5
                     )
                     ax.add_patch(circle)
@@ -241,7 +260,7 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
                              marker='o', markersize=3,
                              markerfacecolor=path_color, markeredgecolor='none')
 
-    def add_legend_and_title(self, state_layout, nonfluent_layout, actions=None):
+    def add_legend_and_title(self, state_layout, nonfluent_layout, actions=None, subs=None):
         """Add legend and title to the visualization."""
         # Create legend elements
         legend_elements = []
@@ -273,7 +292,7 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
         # Add actions display below legend
         if actions is not None:
             action_mapping = {0: 'NOOP', 1: 'EAST', 2: 'WEST', 3: 'NORTH', 4: 'SOUTH'}
-            actions_text = "Current Actions:\n"
+            actions_text = "Actions:\n"
 
             # Parse actions from the state format
             # Actions come in format like {'move': [0, 2]} where values are action indices
@@ -292,13 +311,38 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
                          bbox=dict(boxstyle='round', facecolor='white', edgecolor='black', linewidth=1),
                          family='monospace')
 
+        # Add actions display below legend
+        if subs is not None:
+            action_mapping = {0: 'NOOP', 1: 'EAST', 2: 'WEST', 3: 'NORTH', 4: 'SOUTH'}
+            actions_text = "Effective Actions:\n"
+
+            # Parse actions from the state format
+            # Actions come in format like {'move': [0, 2]} where values are action indices
+            if 'effective-move' in subs:
+                move_actions = subs['effective-move']
+                for agent_idx, action_val in enumerate(move_actions):
+                    if agent_idx < len(self._agents):
+                        action_name = action_mapping.get(int(action_val), f'Unknown({action_val})')
+                        actions_text += f"  Agent {agent_idx + 1}: {action_name}\n"
+
+            # Place the actions text below the legend
+            self._ax.text(1.05, 0.45, actions_text,
+                         transform=self._ax.transAxes,
+                         fontsize=self._fontsize,
+                         verticalalignment='top',
+                         bbox=dict(boxstyle='round', facecolor='white', edgecolor='black', linewidth=1),
+                         family='monospace')
+
         # Add title
         num_reached = sum(1 for reached in state_layout['goal_reached'].values() if reached)
+        num_collisions = sum(1 for collision in state_layout['collisions'].values() if collision)
         num_controllable = sum(1 for c in nonfluent_layout['controllable'].values() if c)
 
         title = f"Multi-Agent Grid Navigation ({num_controllable} controllable)"
         if num_reached > 0:
             title += f" - {num_reached} goal(s) reached!"
+        # if num_collisions > 0:
+        #     title += f" ⚠️ {num_collisions} collision(s)!"
 
         self._ax.set_title(title, fontsize=self._fontsize + 4,
                           fontweight='bold', pad=20)
@@ -325,14 +369,14 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
         img = Image.fromarray(data)
         return img
 
-    def render(self, state, actions):
+    def render(self, state, actions, subs):
         """
         Main render method called by the environment.
 
         Args:
             state: Dictionary of current state values
             actions: Dictionary of current actions taken by agents
-        Returns:
+            subs: Dictionary of current subs values (e.g., effective actions)
             PIL Image of the rendered visualization
         """
         # Extract layouts
@@ -355,7 +399,7 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
         self.render_paths()
 
         # Add legend and title
-        self.add_legend_and_title(state_layout, nonfluent_layout, actions)
+        self.add_legend_and_title(state_layout, nonfluent_layout, actions, subs)
 
         # Convert to image
         img = self.convert2img(self._fig, self._ax)
