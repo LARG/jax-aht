@@ -414,7 +414,7 @@ def train_ppo_agent(config, env, train_rng,
 
             rng, rng_train = jax.random.split(rng, 2)
 
-            rng_eval = jax.random.PRNGKey(config["EVAL_SEED"] + agent_idx + 14)
+            rng_eval = jax.random.PRNGKey(config["EVAL_SEED"] + agent_idx)# + 14)
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
 
             # Init eval return infos
@@ -462,8 +462,8 @@ def train_ppo_agent(config, env, train_rng,
     # ------------------------------
     # Actually run the PPO training
     # ------------------------------
-    rngs = jax.random.split(train_rng, 1)
-    agent_idx_arr = jnp.array([agent_idx] * 1)
+    rngs = jax.random.split(train_rng, config["NUM_TRAIN_SEEDS"])
+    agent_idx_arr = jnp.array([agent_idx] * config["NUM_TRAIN_SEEDS"])
 
     # Define scan function to run training seeds sequentially
     train_fn = make_ppo_train(config)
@@ -474,6 +474,9 @@ def train_ppo_agent(config, env, train_rng,
 
     # Run training seeds sequentially using scan
     _, out = jax.lax.scan(scan_train, None, (rngs, agent_idx_arr))
+
+    # Run training seeds in parallel using vmap
+    # out = jax.vmap(train_fn, in_axes=(0, None))(rngs, agent_idx)
     return out
 
 def run_training(config, wandb_logger, agent_idx=0):
@@ -492,7 +495,7 @@ def run_training(config, wandb_logger, agent_idx=0):
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
-    rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"] + agent_idx + 7)
+    rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"] + agent_idx)# + 7)
     _, init_rng, train_rng = jax.random.split(rng, 3)
 
     # Initialize agent
