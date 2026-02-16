@@ -524,8 +524,18 @@ def run_training(config, wandb_logger, agent_idx=0):
     log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
     # process and log metrics
+    log.info(f"Starting single agent projection logging for agent {agent_idx}...")
+    start_time = time.perf_counter()
     metric_names = get_metric_names(config["ENV_NAME"])
     log_metrics(env, config, out, wandb_logger, metric_names, agent_idx)
+    elapsed_time = time.perf_counter() - start_time
+    hours, rem = divmod(elapsed_time, 3600)
+    minutes, rem = divmod(rem, 60)
+    seconds, rem = divmod(rem, 1)
+    milliseconds = int(rem * 1000)
+    microseconds = int((rem * 1_000_000) % 1000)
+    log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {elapsed_time:.2f}s")
+    log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
     return out["final_params"], policy, init_params
 
