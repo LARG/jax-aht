@@ -25,6 +25,8 @@ domain pizza {
 
 	pvariables {
 
+		DELIVERY-REWARD : {non-fluent, real, default = 1.0};      // Reward for delivery
+
     	CAPACITY(truck) : { non-fluent, int, default = 3 };
 		ORDERS(location) : { non-fluent, int, default = 0 };
 		CONNECTED(location, location) : { non-fluent, bool, default = false };
@@ -142,10 +144,9 @@ domain pizza {
 
 		// Compute per-truck reward based on deliveries made by that truck
 		// Only count deliveries that are rewarded (passed random selection when there are conflicts)
+		// Reward: +DELIVERY-REWARD per pizza delivered (hot/cold check removed for now)
 		truckReward(?t) = [sum_{?l : location} [ deliveryRewarded(?t, ?l) *
-			((sum_{?p: pizza} [deliveredByTruck(?t, ?p, ?l) ^ hot(?p)]) -
-			 (sum_{?p: pizza} [deliveredByTruck(?t, ?p, ?l)]))]];
-
+			DELIVERY-REWARD * (sum_{?p: pizza} [deliveredByTruck(?t, ?p, ?l)])]];
 	};
 
 	reward = [sum_{?t : truck} [truckReward(?t)]];
