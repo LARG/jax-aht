@@ -1,0 +1,11 @@
+ENV_NAME: continuous/coop_recon
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 10
+ENV_KWARGS: {instance: "",
+             render: false,
+             render_name: "coop_recon_continuous",
+             render_dir: "render",
+             ego_centric_obs: true}
+TASK_NAME: continuous/coop_recon
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""

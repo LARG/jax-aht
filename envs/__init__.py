@@ -204,6 +204,26 @@ def make_env(env_name: str, env_kwargs: dict = {}):
                               vectorized=env_kwargs_copy["vectorized"])
         env = PizzaWrapper(rddl_env, **env_kwargs_copy)
 
+    elif env_name == 'continuous/coop_recon':
+        default_env_kwargs = {
+            "instance": "",
+            "render": False,
+            "render_name": "coop_recon_continuous",
+            "render_dir": "render",
+            "enforce_action_constraints": True,
+            "ego_centric_obs": False
+        }
+
+        from envs.coop_recon_continuous.coop_recon_continuous_wrapper import CoopReconContinuousWrapper
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        # add default args that are not already in env_kwargs
+        for key in default_env_kwargs:
+            if key not in env_kwargs:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+
+        # create the CoopReconContinuous environment
+        env = CoopReconContinuousWrapper(**env_kwargs_copy)
+
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
 
