@@ -1,0 +1,18 @@
+ENV_NAME: rddl/coop_recon
+ROLLOUT_LENGTH: 30
+NUM_EVAL_EPISODES: 5
+ENV_KWARGS: {domain: "coop_recon_domain.rddl",
+             instance: "coop_recon_instance.rddl",
+             seed: ,
+             render: false,
+             render_name: "coop_recon",
+             render_dir: "render",
+             enforce_action_constraints: true}
+TASK_NAME: rddl/coop_recon
+SINGLE_AGENT_1_PROJECTION: "coop_recon_instance.rddl"
+SINGLE_AGENT_2_PROJECTION: "coop_recon_instance.rddl"
+
+logger:
+  entity: jeffreychen287
+  project: coop-recon-test
+  mode: offline

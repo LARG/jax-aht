@@ -458,7 +458,10 @@ def train_drqnppo_agent(config, env, train_rng,
                         ckpt_arr, train_state.params
                     )
 
-                    rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                    if config["FIXED_EVAL"]:
+                        eval_rng = rng_eval
+                    else:
+                        rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                     ckpt_eval_eps_last_infos = run_episodes_vmap(
                         eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
                         max_episode_steps=max_episode_steps,
@@ -468,7 +471,10 @@ def train_drqnppo_agent(config, env, train_rng,
                 def skip_ckpt_and_eval(args):
                     def do_eval(eval_args):
                         ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
-                        rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                        if config["FIXED_EVAL"]:
+                            eval_rng = rng_eval
+                        else:
+                            rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                         eval_eps_last_infos = run_episodes_vmap(
                             eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
                             max_episode_steps=max_episode_steps,
@@ -534,7 +540,10 @@ def train_drqnppo_agent(config, env, train_rng,
             if env._render:
                 # Collect final eval gifs for logging
                 rng_eval = final_runner_state[3] # extract final rng_eval from the final runner state after training
-                rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+                if config["FIXED_EVAL"]:
+                    eval_rng = rng_eval
+                else:
+                    rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                 params = final_runner_state[0].params
                 out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
                                                     agent_param=params, agent_policy=policy,

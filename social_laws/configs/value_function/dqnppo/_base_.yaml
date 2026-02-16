@@ -22,4 +22,5 @@ ANNEAL_LR: false
 
 DQN_HIDDEN_DIM: 64
 
+FIXED_EVAL: false
 TRAIN_EVAL: true

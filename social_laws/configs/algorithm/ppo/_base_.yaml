@@ -17,6 +17,7 @@ VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: false
 
+FIXED_EVAL: false
 TRAIN_EVAL: true
 
 JOINT_USE_FULL_OBS: true
