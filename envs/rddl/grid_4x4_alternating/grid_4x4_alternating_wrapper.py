@@ -799,7 +799,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
                  for k, v in state.items()}
 
         # Call visualizer's render method
-        image = self.env._visualizer.render(state, env_state.actions)
+        image = self.env._visualizer.render(state, env_state.actions, env_state.subs)
 
         # Save frame to movie generator if enabled
         if save_frame and self.env._movie_generator is not None and image is not None:
