@@ -50,13 +50,17 @@ def _get_vf_restricted_avail_actions(obs, done, avail_actions, hstate, vf_params
     # remove extra batch dim
     return restricted_avail_actions.squeeze(axis=0), next_hstate
 
-def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
+def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_policies,
                        ppo_params, ppo_policies, vf_params, vf_policies,
                        max_episode_steps, epsilon_optimal, use_full_obs=True, render=False, agent_test_mode=False):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
     (init_obs, init_obs_full), init_env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
+
+    (init_opt_obs, init_opt_obs_full), init_opt_env_state = optimal_env.reset(reset_rng)
+    init_opt_done = {k: jnp.zeros((1), dtype=bool) for k in optimal_env.agents + ["__all__"]}
+
     init_reward = {k: jnp.zeros((1)) for i, k in enumerate(env.agents)}
 
     agent_0_params, agent_1_params = agent_params
@@ -99,6 +103,19 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
 
     init_done_0 = get_agent_data(init_done, 0).reshape(1, 1)
     init_done_1 = get_agent_data(init_done, 1).reshape(1, 1)
+
+    opt_avail_actions = env.get_avail_actions(init_opt_env_state.env_state)
+    opt_avail_actions = jax.lax.stop_gradient(opt_avail_actions)
+    opt_avail_actions_0 = get_agent_data(opt_avail_actions, 0).astype(jnp.float32)
+    opt_avail_actions_1 = get_agent_data(opt_avail_actions, 1).astype(jnp.float32)
+
+    init_opt_obs_0 = get_agent_data(init_opt_obs, 0).reshape(1, 1, -1)
+    init_opt_obs_1 = get_agent_data(init_opt_obs, 1).reshape(1, 1, -1)
+    init_opt_obs_full_0 = get_agent_data(init_opt_obs_full, 0).reshape(1, 1, -1)
+    init_opt_obs_full_1 = get_agent_data(init_opt_obs_full, 1).reshape(1, 1, -1)
+
+    init_opt_done_0 = get_agent_data(init_opt_done, 0).reshape(1, 1)
+    init_opt_done_1 = get_agent_data(init_opt_done, 1).reshape(1, 1)
 
     # Restrict available actions based on value function
     vf_restricted_avail_actions_0, vf_hstate_0 = _get_vf_restricted_avail_actions(
@@ -168,13 +185,13 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     def get_agent_0_optimal():
         act, hstate = agent_0_ppo_policy.get_action(
             params=agent_0_ppo_params,
-            obs=init_obs_0,
-            done=init_done_0,
-            avail_actions=avail_actions_0,
+            obs=init_opt_obs_0,
+            done=init_opt_done_0,
+            avail_actions=opt_avail_actions_0,
             hstate=agent_0_ppo_init_hstate,
             rng=act0_rng,
             aux_obs=None,
-            env_state=init_env_state,
+            env_state=init_opt_env_state,
             test_mode=False
         )
         return act.squeeze(axis=0), (hstate, None)
@@ -182,23 +199,23 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
     def get_agent_1_optimal():
         act, hstate = agent_1_ppo_policy.get_action(
             params=agent_1_ppo_params,
-            obs=init_obs_1,
-            done=init_done_1,
-            avail_actions=avail_actions_1,
+            obs=init_opt_obs_1,
+            done=init_opt_done_1,
+            avail_actions=opt_avail_actions_1,
             hstate=agent_1_ppo_init_hstate,
             rng=act1_rng,
             aux_obs=None,
-            env_state=init_env_state,
+            env_state=init_opt_env_state,
             test_mode=False
         )
         return act.squeeze(axis=0), (None, hstate)
 
     optimal_act, optimal_hstate = jax.lax.switch(agent_idx, [get_agent_0_optimal, get_agent_1_optimal])
 
-    optimal_env_act = {k: jnp.zeros_like(optimal_act) for i, k in enumerate(env.agents)}
+    optimal_env_act = {k: jnp.zeros_like(optimal_act) for i, k in enumerate(optimal_env.agents)}
     optimal_env_act = set_agent_data(optimal_env_act, agent_idx, optimal_act)
-    optimal_env_act_onehot = {k: jax.nn.one_hot(optimal_env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-    (optimal_obs, optimal_obs_full), optimal_env_state, optimal_reward, optimal_done, optimal_info = env.step(step_rng, init_env_state, optimal_env_act)
+    optimal_env_act_onehot = {k: jax.nn.one_hot(optimal_env_act[optimal_env.agents[i]], optimal_env.action_space(optimal_env.agents[i]).n) for i, k in enumerate(optimal_env.agents)}
+    (optimal_obs, optimal_obs_full), optimal_env_state, optimal_reward, optimal_done, optimal_info = optimal_env.step(step_rng, init_opt_env_state, optimal_env_act)
 
     # We'll use separate scans to iterate steps for worst case and optimal case
     # since they may have different episode lengths
@@ -350,10 +367,10 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
 
             act, hstate_next = jax.lax.switch(agent_idx, [get_agent_0_optimal_step, get_agent_1_optimal_step])
 
-            env_act = {k: jnp.zeros_like(act) for i, k in enumerate(env.agents)}
+            env_act = {k: jnp.zeros_like(act) for i, k in enumerate(optimal_env.agents)}
             env_act = set_agent_data(env_act, agent_idx, act)
-            env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-            (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
+            env_act_onehot = {k: jax.nn.one_hot(env_act[optimal_env.agents[i]], optimal_env.action_space(optimal_env.agents[i]).n) for i, k in enumerate(optimal_env.agents)}
+            (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = optimal_env.step(step_rng, env_state, env_act)
 
             return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, hstate_next, info_next)
 
@@ -379,7 +396,7 @@ def run_single_episode(rng, env, agent_idx, agent_params, agent_policies,
         # Return the final info (which includes the episode return via LogWrapper).
         return (worst_case_info, optimal_case_info)
 
-def run_episodes(rng, env, agent_idx, agent_params, agent_policies,
+def run_episodes(rng, env, optimal_env, agent_idx, agent_params, agent_policies,
                  ppo_params, ppo_policies, vf_params, vf_policies,
                  max_episode_steps, num_eps, epsilon_optimal, use_full_obs=True, render=False, agent_test_mode=False):
     '''Run num_eps episodes sequentially using scan.'''
@@ -390,7 +407,7 @@ def run_episodes(rng, env, agent_idx, agent_params, agent_policies,
     # Define scan function to run episodes sequentially
     def scan_episode(carry, ep_rng):
         all_out = run_single_episode(
-            ep_rng, env, agent_idx, agent_params, agent_policies,
+            ep_rng, env, optimal_env, agent_idx, agent_params, agent_policies,
             ppo_params, ppo_policies, vf_params, vf_policies,
             max_episode_steps, epsilon_optimal, use_full_obs, render, agent_test_mode
         )
@@ -400,7 +417,7 @@ def run_episodes(rng, env, agent_idx, agent_params, agent_policies,
     _, all_outs = jax.lax.scan(scan_episode, None, ep_rngs)
     return all_outs  # each leaf has shape (num_eps, ...)
 
-def run_episodes_vmap(rng, env, agent_idx, agent_params, agent_policies,
+def run_episodes_vmap(rng, env, optimal_env, agent_idx, agent_params, agent_policies,
                       ppo_params, ppo_policies, vf_params, vf_policies,
                       max_episode_steps, num_eps, epsilon_optimal, use_full_obs=True, render=False, agent_test_mode=False):
     '''Run num_eps episodes in parallel using vmap.'''
@@ -411,13 +428,13 @@ def run_episodes_vmap(rng, env, agent_idx, agent_params, agent_policies,
     # Vmap over episodes - all episodes run in parallel
     vmapped_run = jax.vmap(
         run_single_episode,
-        in_axes=(0, None, None, None, None,
+        in_axes=(0, None, None, None, None, None,
                  None, None, None, None, None, None, None, None, None),  # only RNG varies
         out_axes=0  # stack outputs along first axis
     )
 
     all_outs = vmapped_run(
-        ep_rngs, env, agent_idx, agent_params, agent_policies,
+        ep_rngs, env, optimal_env, agent_idx, agent_params, agent_policies,
         ppo_params, ppo_policies, vf_params, vf_policies,
         max_episode_steps, epsilon_optimal, use_full_obs, render, agent_test_mode
     )

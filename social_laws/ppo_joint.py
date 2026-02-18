@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def train_ppo_joint_agents(config, env, train_rng,
+def train_ppo_joint_agents(config, env, optimal_env, train_rng,
                            joint_policies, init_joint_params,
                            ppo_policies, ppo_params,
                            vf_policies, vf_params,
@@ -44,6 +44,7 @@ def train_ppo_joint_agents(config, env, train_rng,
     Args:
         config: dict, config for the training
         env: gymnasium environment
+        optimal_env: gymnasium environment for evaluating optimal returns
         train_rng: jax.random.PRNGKey, random key for training
         joint_policies: tuple of AgentPolicy, policies for the agents
         init_joint_params: tuple of dict, initial parameters for the agents
@@ -612,7 +613,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                         eval_rng = rng_eval
                     else:
                         rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                    ckpt_eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
+                    ckpt_eval_eps_last_infos = run_episodes_vmap(eval_rng, env, optimal_env, agent_idx,
                         agent_params=(agent_0_train_state.params, agent_1_train_state.params),
                         agent_policies=(agent_0_policy, agent_1_policy),
                         ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
@@ -633,7 +634,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                             eval_rng = rng_eval
                         else:
                             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                        eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
+                        eval_eps_last_infos = run_episodes_vmap(eval_rng, env, optimal_env, agent_idx,
                             agent_params=(agent_0_train_state.params, agent_1_train_state.params),
                             agent_policies=(agent_0_policy, agent_1_policy),
                             ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
@@ -678,7 +679,7 @@ def train_ppo_joint_agents(config, env, train_rng,
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
 
             # Init eval return infos
-            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
+            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, optimal_env, agent_idx,
                                     agent_params=(agent_0_train_state.params, agent_1_train_state.params),
                                     agent_policies=(agent_0_policy, agent_1_policy),
                                     ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
@@ -721,7 +722,7 @@ def train_ppo_joint_agents(config, env, train_rng,
                     rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                 agent_0_params = final_runner_state[0].params
                 agent_1_params = final_runner_state[1].params
-                out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
+                out["render_outs"] = run_episodes_vmap(eval_rng, env, optimal_env, agent_idx,
                                         agent_params=(agent_0_params, agent_1_params),
                                         agent_policies=(agent_0_policy, agent_1_policy),
                                         ppo_params=(agent_0_ppo_params, agent_1_ppo_params),
@@ -778,6 +779,12 @@ def run_training(config, wandb_logger, ppo_params, ppo_policies,
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
+    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
+    env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
+    optimal_env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
+    optimal_env = LogWrapper(optimal_env)
+
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"] + agent_idx)# + 35)
     _, init_rng, train_rng = jax.random.split(rng, 3)
 
@@ -803,6 +810,7 @@ def run_training(config, wandb_logger, ppo_params, ppo_policies,
     out = train_ppo_joint_agents(
         config=algorithm_config,
         env=env,
+        optimal_env=optimal_env,
         train_rng=train_rng,
         joint_policies=(agent_0_policy, agent_1_policy),
         init_joint_params=(agent_0_init_params, agent_1_init_params),
@@ -827,7 +835,7 @@ def run_training(config, wandb_logger, ppo_params, ppo_policies,
     start_time = time.perf_counter()
     # metric_names = get_metric_names(config["ENV_NAME"])
     metric_names = get_metric_names("social_laws_joint")
-    log_metrics(env, config, out, wandb_logger, metric_names, agent_idx)
+    log_metrics(env, optimal_env, config, out, wandb_logger, metric_names, agent_idx)
     elapsed_time = time.perf_counter() - start_time
     hours, rem = divmod(elapsed_time, 3600)
     minutes, rem = divmod(rem, 60)
@@ -839,11 +847,12 @@ def run_training(config, wandb_logger, ppo_params, ppo_policies,
 
     return (out["final_params_agent_0"], out["final_params_agent_1"]), (agent_0_policy, agent_1_policy), (agent_0_init_params, agent_1_init_params)
 
-def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: int):
+def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple, agent_idx: int):
     """Process training metrics and log them using the provided logger.
 
     Args:
         env: the environment used for training, needed for logging videos
+        optimal_env: the optimal environment used for training, needed for logging videos
         config: dict, the training configuration
         train_out: dict, the logs from training
         logger: Logger, instance to log metrics
@@ -938,7 +947,7 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
         eval_render_worst_case_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
         eval_render_worst_case_dones = train_out['render_outs'][0][4]['__all__']
         num_episodes = eval_render_worst_case_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
-        env.animate((eval_render_init_env_state, eval_render_optimal_env_state), eval_render_optimal_dones, num_episodes, extra_dir="Optimal", debug=True)
+        optimal_env.animate((eval_render_init_env_state, eval_render_optimal_env_state), eval_render_optimal_dones, num_episodes, extra_dir="Optimal", debug=True)
         env.animate((eval_render_init_env_state, eval_render_worst_case_env_state), eval_render_worst_case_dones, num_episodes, extra_dir="WorstCase", debug=True)
 
         for eval_ep in range(num_episodes):
@@ -948,7 +957,7 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
             )
             logger.log_video(
                 tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/Episode_{eval_ep}",
-                path=os.path.join(env._render_dir, "Optimal", f"{env._render_name}_ep_{eval_ep}.gif")
+                path=os.path.join(optimal_env._render_dir, "Optimal", f"{optimal_env._render_name}_ep_{eval_ep}.gif")
             )
 
     train_out_agent_0 = {
