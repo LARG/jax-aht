@@ -72,6 +72,7 @@ domain grid_4x4_alternating {
 		// Non-fluents: reward parameters
 		GOAL-REWARD : {non-fluent, real, default = 20.0};      // Reward for reaching goal
 		STEP-PENALTY : {non-fluent, real, default = 0.0};     // Penalty per step for agent not at goal
+		COLLISION-PENALTY : {non-fluent, real, default = -5.0}; // Penalty when agents collide
 
 		STOCHASTIC-MOVEMENT-PROB : {non-fluent, real, default = 0.4}; // Probability of horizontal actions becoming vertical
 
@@ -91,9 +92,9 @@ domain grid_4x4_alternating {
 		//  0 = Both column and row restrictions (default)
 		//  1 = Only column restrictions (rows unrestricted)
 		//  2 = Only row restrictions (columns unrestricted)
-		RESTRICTION-MODE : {non-fluent, int, default = 1};
+		RESTRICTION-MODE : {non-fluent, int, default = 0};
 
-		TOROIDAL : {non-fluent, bool, default = false};
+		TOROIDAL : {non-fluent, bool, default = true};
 
 		// State fluents: agent positions
 		agent-at(agent, xpos, ypos) : {state-fluent, bool, default = false};
@@ -334,11 +335,12 @@ domain grid_4x4_alternating {
 	};
 
 	// Reward: sum of individual agent rewards
-	// Collisions now terminate the episode instead of giving penalties
 	reward =
 		[sum_{?a : agent} [
 			if (goal-reached(?a))
 				then 0.0
+			else if (collision'(?a))
+				then COLLISION-PENALTY + STEP-PENALTY  // Collision penalty + step penalty
 			else if (goal-reached'(?a))
 				then GOAL-REWARD
 			else
@@ -433,7 +435,7 @@ domain grid_4x4_alternating {
 	};
 
 	termination {
-		// Terminate if all agents have reached their goals OR if any collision occurred
-		forall_{?a : agent} [goal-reached(?a)] | exists_{?a2 : agent} [collision(?a2)];
+		// Terminate early when all agents have reached their goals
+		forall_{?a : agent} [goal-reached(?a)];
 	};
 }

@@ -9,10 +9,10 @@
 //
 // Actions:
 // - 0: no-op (stay in place)
-// - 1: move west (left)
-// - 2: move east (right)
-// - 3: move south (down)
-// - 4: move north (up)
+// - 1: move east (left)
+// - 2: move west (right)
+// - 3: move north (down)
+// - 4: move south (up)
 //
 // Features:
 // - Multiple agents with individual goals
@@ -104,21 +104,21 @@ domain grid_10x10 {
 		effective-move(agent) : {interm-fluent, int, level = 2};
 
 		// Action fluents: integer action per agent
-		// 0 = no-op, 1 = west, 2 = east, 3 = south, 4 = north
+		// 0 = no-op, 1 = east, 2 = west, 3 = north, 4 = south
 		move(agent) : {action-fluent, int, default = 0};
 	};
 
 	cpfs {
 		// Stochastic movement: randomly flip horizontal actions to vertical
-		// West (1) → South (3) with probability STOCHASTIC-MOVEMENT-PROB
-		// East (2) → North (4) with probability STOCHASTIC-MOVEMENT-PROB
-		should-flip-west(?a) =
+		// East (1) → North (3) with probability STOCHASTIC-MOVEMENT-PROB
+		// West (2) → South (4) with probability STOCHASTIC-MOVEMENT-PROB
+		should-flip-east(?a) =
 			if (move(?a) == 1)
 				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
 			else
 				Bernoulli(0.0);
 
-		should-flip-east(?a) =
+		should-flip-west(?a) =
 			if (move(?a) == 2)
 				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
 			else
@@ -126,10 +126,10 @@ domain grid_10x10 {
 
 		// Compute effective action after stochastic movement
 		effective-move(?a) =
-			if (should-flip-west(?a))
-				then 3  // west → south
-			else if (should-flip-east(?a))
-				then 4  // east → north
+			if (should-flip-east(?a))
+				then 3  // east → north
+			else if (should-flip-west(?a))
+				then 4  // west → south
 			else
 				move(?a);  // use original action
 
