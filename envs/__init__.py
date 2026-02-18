@@ -178,6 +178,33 @@ def make_env(env_name: str, env_kwargs: dict = {}):
                               vectorized=env_kwargs_copy["vectorized"])
         env = Grid10x10Wrapper(rddl_env, **env_kwargs_copy)
 
+    elif env_name == 'rddl/grid_4x4_alternating':
+        default_env_kwargs = {
+            "domain": "grid_4x4_alternating_domain.rddl",
+            "instance": "grid_4x4_alternating_instance2.rddl",
+            "render": False,
+            "render_name": "grid_4x4_alternating",
+            "render_dir": "render",
+            "stochastic_movement_prob": 0.0,
+            "enforce_action_constraints": True,
+            "vectorized": True,
+            "ego_centric_obs": False
+        }
+
+        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.grid_10x10_alternating.grid_10x10_alternating_wrapper import Grid10x10AlternatingWrapper
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        # add default args that are not already in env_kwargs
+        for key in default_env_kwargs:
+            if key not in env_kwargs:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+
+        # create the JAX RDDL Grid10x10 environment
+        rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/grid_10x10_alternating', env_kwargs_copy["domain"]),
+                              instance=os.path.join(os.path.dirname(__file__), 'rddl/grid_10x10_alternating', env_kwargs_copy["instance"]),
+                              vectorized=env_kwargs_copy["vectorized"])
+        env = Grid10x10AlternatingWrapper(rddl_env, **env_kwargs_copy)
+
     elif env_name == 'rddl/pizza':
         default_env_kwargs = {
             "domain": "pizza_domain_new.rddl",

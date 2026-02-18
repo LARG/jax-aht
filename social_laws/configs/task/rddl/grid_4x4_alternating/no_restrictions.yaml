@@ -2,7 +2,7 @@ ENV_NAME: rddl/grid_4x4_alternating
 ROLLOUT_LENGTH: 128
 NUM_EVAL_EPISODES: 10
 ENV_KWARGS: {domain: "no_restrictions/grid_4x4_alternating_domain.rddl",
-             instance: "no_restrictions/grid_4x4_alternating_instance2.rddl",
+             instance: "grid_4x4_alternating_instance2.rddl",
              render: true,
              render_name: "grid_4x4_alternating_no_restrictions",
              render_dir: "render",
@@ -11,5 +11,5 @@ ENV_KWARGS: {domain: "no_restrictions/grid_4x4_alternating_domain.rddl",
              vectorized: true,
              ego_centric_obs: true}
 TASK_NAME: rddl/grid_4x4_alternating/no_restrictions
-SINGLE_AGENT_1_PROJECTION: "no_restrictions/grid_4x4_alternating_instance0.rddl"
-SINGLE_AGENT_2_PROJECTION: "no_restrictions/grid_4x4_alternating_instance1.rddl"
+SINGLE_AGENT_1_PROJECTION: "grid_4x4_alternating_instance0.rddl"
+SINGLE_AGENT_2_PROJECTION: "grid_4x4_alternating_instance1.rddl"
