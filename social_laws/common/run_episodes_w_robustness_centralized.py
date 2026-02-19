@@ -185,7 +185,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
             env_state=init_opt_env_state,
             test_mode=False
         )
-        return act.squeeze(axis=0), (hstate, None)
+        return act.squeeze(axis=0), (hstate, hstate)
 
     def get_agent_1_optimal():
         act, hstate = agent_1_ppo_policy.get_action(
@@ -199,7 +199,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
             env_state=init_opt_env_state,
             test_mode=False
         )
-        return act.squeeze(axis=0), (None, hstate)
+        return act.squeeze(axis=0), (hstate, hstate)
 
     optimal_act, optimal_hstate = jax.lax.switch(agent_idx, [get_agent_0_optimal, get_agent_1_optimal])
 
@@ -323,7 +323,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
                     env_state=env_state,
                     test_mode=False
                 )
-                return act.squeeze(axis=0), (hstate_next, None)
+                return act.squeeze(axis=0), (hstate_next, hstate_next)
 
             def get_agent_1_optimal_step():
                 act, hstate_next = agent_1_ppo_policy.get_action(
@@ -337,7 +337,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
                     env_state=env_state,
                     test_mode=False
                 )
-                return act.squeeze(axis=0), (None, hstate_next)
+                return act.squeeze(axis=0), (hstate_next, hstate_next)
 
             act, hstate_next = jax.lax.switch(agent_idx, [get_agent_0_optimal_step, get_agent_1_optimal_step])
 
