@@ -311,7 +311,7 @@ class Grid4x4Wrapper(BaseEnv):
 
         # For single agent projection, only the controlled agent's done flag matters for the "__all__" key
         if self.single_agent_projection:
-            dones["__all__"] = dones[self.agents[self.controlled_agents[0]]] | terminal
+            dones["__all__"] = dones[self.agents[self.controlled_agents[0]]] | terminal | done
 
         return dones
 

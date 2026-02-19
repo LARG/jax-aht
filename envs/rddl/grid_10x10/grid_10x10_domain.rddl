@@ -9,10 +9,10 @@
 //
 // Actions:
 // - 0: no-op (stay in place)
-// - 1: move east (left)
-// - 2: move west (right)
-// - 3: move north (down)
-// - 4: move south (up)
+// - 1: move west (left)
+// - 2: move east (right)
+// - 3: move north (up)
+// - 4: move south (down)
 //
 // Features:
 // - Multiple agents with individual goals
@@ -60,7 +60,7 @@ domain grid_10x10 {
 		// Non-fluents: reward parameters
 		GOAL-REWARD : {non-fluent, real, default = 100.0};      // Reward for reaching goal
 		STEP-PENALTY : {non-fluent, real, default = -1.0};     // Penalty per step for agent not at goal
-		COLLISION-PENALTY : {non-fluent, real, default = -5.0}; // Penalty when agents collide
+		COLLISION-PENALTY : {non-fluent, real, default = -300.0}; // Penalty when agents collide
 
 		// Non-fluents: stochastic movement
 		STOCHASTIC-MOVEMENT-PROB : {non-fluent, real, default = 0.4}; // Probability of horizontal actions becoming vertical
@@ -104,21 +104,21 @@ domain grid_10x10 {
 		effective-move(agent) : {interm-fluent, int, level = 2};
 
 		// Action fluents: integer action per agent
-		// 0 = no-op, 1 = east, 2 = west, 3 = north, 4 = south
+		// 0 = no-op, 1 = west, 2 = east, 3 = north, 4 = south
 		move(agent) : {action-fluent, int, default = 0};
 	};
 
 	cpfs {
 		// Stochastic movement: randomly flip horizontal actions to vertical
-		// East (1) → North (3) with probability STOCHASTIC-MOVEMENT-PROB
-		// West (2) → South (4) with probability STOCHASTIC-MOVEMENT-PROB
-		should-flip-east(?a) =
+		// West (1) → North (3) with probability STOCHASTIC-MOVEMENT-PROB
+		// East (2) → South (4) with probability STOCHASTIC-MOVEMENT-PROB
+		should-flip-west(?a) =
 			if (move(?a) == 1)
 				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
 			else
 				Bernoulli(0.0);
 
-		should-flip-west(?a) =
+		should-flip-east(?a) =
 			if (move(?a) == 2)
 				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
 			else
@@ -126,15 +126,14 @@ domain grid_10x10 {
 
 		// Compute effective action after stochastic movement
 		effective-move(?a) =
-			if (should-flip-east(?a))
-				then 3  // east → north
-			else if (should-flip-west(?a))
-				then 4  // west → south
+			if (should-flip-west(?a))
+				then 3  // west → north
+			else if (should-flip-east(?a))
+				then 4  // east → south
 			else
 				move(?a);  // use original action
 
 		// Detect if agent caused a collision by trying to move into an occupied space
-		// BUT only if the move is not blocked by boundary restrictions
 		// Uses effective-move to account for stochastic transitions
 		collision'(?a) =
 			if (exists_{?x : xpos, ?y : ypos, ?x2 : xpos, ?y2 : ypos, ?a2 : agent} [
@@ -142,34 +141,17 @@ domain grid_10x10 {
 					agent-at(?a, ?x, ?y) ^  // Agent's current position
 					agent-at(?a2, ?x2, ?y2) ^  // Other agent's position
 					(
-						// Agent tried to move north (action=4) to where ?a2 is
-						(effective-move(?a) == 4 ^ exists_{?y3 : ypos} [NORTH(?y, ?y3) ^ (?x2 == ?x) ^ (?y2 == ?y3) ^
-							// Check that target position is not blocked by restrictions
-							~((RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 0 ^ ~LEFT-HALF(?x2)) |
-							  (RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 1 ^ ~RIGHT-HALF(?x2)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 0 ^ ~BOTTOM-HALF(?y3)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 1 ^ ~TOP-HALF(?y3)))])
+						// Agent tried to move south (action=4) to where ?a2 is
+						(effective-move(?a) == 4 ^ exists_{?y3 : ypos} [SOUTH(?y, ?y3) ^ (?x2 == ?x) ^ (?y2 == ?y3)])
 						|
-						// Agent tried to move south (action=3) to where ?a2 is
-						(effective-move(?a) == 3 ^ exists_{?y3 : ypos} [SOUTH(?y, ?y3) ^ (?x2 == ?x) ^ (?y2 == ?y3) ^
-							~((RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 0 ^ ~LEFT-HALF(?x2)) |
-							  (RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 1 ^ ~RIGHT-HALF(?x2)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 0 ^ ~BOTTOM-HALF(?y3)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 1 ^ ~TOP-HALF(?y3)))])
+						// Agent tried to move north (action=3) to where ?a2 is
+						(effective-move(?a) == 3 ^ exists_{?y3 : ypos} [NORTH(?y, ?y3) ^ (?x2 == ?x) ^ (?y2 == ?y3)])
 						|
 						// Agent tried to move east (action=2) to where ?a2 is
-						(effective-move(?a) == 2 ^ exists_{?x3 : xpos} [EAST(?x, ?x3) ^ (?x2 == ?x3) ^ (?y2 == ?y) ^
-							~((RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 0 ^ ~LEFT-HALF(?x3)) |
-							  (RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 1 ^ ~RIGHT-HALF(?x3)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 0 ^ ~BOTTOM-HALF(?y2)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 1 ^ ~TOP-HALF(?y2)))])
+						(effective-move(?a) == 2 ^ exists_{?x3 : xpos} [EAST(?x, ?x3) ^ (?x2 == ?x3) ^ (?y2 == ?y)])
 						|
 						// Agent tried to move west (action=1) to where ?a2 is
-						(effective-move(?a) == 1 ^ exists_{?x3 : xpos} [WEST(?x, ?x3) ^ (?x2 == ?x3) ^ (?y2 == ?y) ^
-							~((RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 0 ^ ~LEFT-HALF(?x3)) |
-							  (RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 1 ^ ~RIGHT-HALF(?x3)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 0 ^ ~BOTTOM-HALF(?y2)) |
-							  (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 1 ^ ~TOP-HALF(?y2)))])
+						(effective-move(?a) == 1 ^ exists_{?x3 : xpos} [WEST(?x, ?x3) ^ (?x2 == ?x3) ^ (?y2 == ?y)])
 					)
 				])
 				then KronDelta(true)
@@ -210,22 +192,12 @@ domain grid_10x10 {
 			else if (agent-at(?a, ?x, ?y) ^ GOAL(?a, ?x, ?y))
 				then KronDelta(true)
 
-			// Fifth check: Is this position allowed for this agent?
-			// For no restriction (0): all positions allowed
-			// For vertical restriction (1): check x against LEFT/RIGHT-HALF
-			// For horizontal restriction (2): check y against BOTTOM/TOP-HALF
-			else if ((RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 0 ^ ~LEFT-HALF(?x)) |
-			    (RESTRICTION-TYPE == 1 ^ AGENT-HALF(?a) == 1 ^ ~RIGHT-HALF(?x)) |
-			    (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 0 ^ ~BOTTOM-HALF(?y)) |
-			    (RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 1 ^ ~TOP-HALF(?y)))
-				// Position violates restriction - agent cannot be here
-				then KronDelta(false)
 
 			// If moving TO this position from an adjacent cell (and not an obstacle, and no other agent there)
 			else if (~OBSTACLE(?x, ?y) ^
 					~(exists_{?a2 : agent} [(?a2 ~= ?a) ^ agent-at(?a2, ?x, ?y)]) ^
-					((effective-move(?a) == 4 ^ exists_{?y2 : ypos} [NORTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])  // north
-					 | (effective-move(?a) == 3 ^ exists_{?y2 : ypos} [SOUTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])  // south
+					((effective-move(?a) == 4 ^ exists_{?y2 : ypos} [SOUTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])  // north
+					 | (effective-move(?a) == 3 ^ exists_{?y2 : ypos} [NORTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])  // south
 					 | (effective-move(?a) == 2 ^ exists_{?x2 : xpos} [EAST(?x2, ?x) ^ agent-at(?a, ?x2, ?y)])    // east
 					 | (effective-move(?a) == 1 ^ exists_{?x2 : xpos} [WEST(?x2, ?x) ^ agent-at(?a, ?x2, ?y)])))  // west
 				then KronDelta(true)
@@ -234,9 +206,9 @@ domain grid_10x10 {
 			// Only move away if target is valid (not obstacle, no agent, AND within agent's allowed region)
 			// AND agent has not reached goal yet AND is not currently at goal
 			else if (~goal-reached(?a) ^ ~GOAL(?a, ?x, ?y) ^ agent-at(?a, ?x, ?y) ^
-					((effective-move(?a) == 4 ^ exists_{?y2 : ypos} [NORTH(?y, ?y2) ^ ~OBSTACLE(?x, ?y2) ^
+					((effective-move(?a) == 4 ^ exists_{?y2 : ypos} [SOUTH(?y, ?y2) ^ ~OBSTACLE(?x, ?y2) ^
 					   ~(exists_{?a2 : agent} [(?a2 ~= ?a) ^ agent-at(?a2, ?x, ?y2)])])
-					 | (effective-move(?a) == 3 ^ exists_{?y2 : ypos} [SOUTH(?y, ?y2) ^ ~OBSTACLE(?x, ?y2) ^
+					 | (effective-move(?a) == 3 ^ exists_{?y2 : ypos} [NORTH(?y, ?y2) ^ ~OBSTACLE(?x, ?y2) ^
 					   ~(exists_{?a2 : agent} [(?a2 ~= ?a) ^ agent-at(?a2, ?x, ?y2)])])
 					 | (effective-move(?a) == 2 ^ exists_{?x2 : xpos} [EAST(?x, ?x2) ^ ~OBSTACLE(?x2, ?y) ^
 					   ~(exists_{?a2 : agent} [(?a2 ~= ?a) ^ agent-at(?a2, ?x2, ?y)])])
@@ -277,14 +249,14 @@ domain grid_10x10 {
 		forall_{?a : agent} [
 			// Can't move north if there's no valid north position
 			(move(?a) == 4) => exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
-				agent-at(?a, ?x, ?y) ^ NORTH(?y, ?y2)
+				agent-at(?a, ?x, ?y) ^ SOUTH(?y, ?y2)
 			]
 		];
 
 		forall_{?a : agent} [
 			// Can't move south if there's no valid south position
 			(move(?a) == 3) => exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
-				agent-at(?a, ?x, ?y) ^ SOUTH(?y, ?y2)
+				agent-at(?a, ?x, ?y) ^ NORTH(?y, ?y2)
 			]
 		];
 
@@ -320,18 +292,18 @@ domain grid_10x10 {
 		];
 
 		forall_{?a : agent} [
-			// Horizontal restriction (type 2): bottom-half agents can't move into top-half
+			// Horizontal restriction (type 2): top-half agents can't move into bottom-half
 			(move(?a) == 4) => ~(RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 0 ^
 				exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
-					agent-at(?a, ?x, ?y) ^ NORTH(?y, ?y2) ^ ~BOTTOM-HALF(?y2)
+					agent-at(?a, ?x, ?y) ^ SOUTH(?y, ?y2) ^ ~TOP-HALF(?y2)
 				])
 		];
 
 		forall_{?a : agent} [
-			// Horizontal restriction (type 2): top-half agents can't move into bottom-half
+			// Horizontal restriction (type 2): bottom-half agents can't move into top-half
 			(move(?a) == 3) => ~(RESTRICTION-TYPE == 2 ^ AGENT-HALF(?a) == 1 ^
 				exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
-					agent-at(?a, ?x, ?y) ^ SOUTH(?y, ?y2) ^ ~TOP-HALF(?y2)
+					agent-at(?a, ?x, ?y) ^ NORTH(?y, ?y2) ^ ~BOTTOM-HALF(?y2)
 				])
 		];
 
@@ -342,7 +314,7 @@ domain grid_10x10 {
 	};
 
 	termination {
-		// Terminate early when all agents have reached their goals
-		forall_{?a : agent} [goal-reached(?a)];
+		// Terminate if all agents have reached their goals OR if any collision occurred
+		forall_{?a : agent} [goal-reached(?a)] | exists_{?a2 : agent} [collision(?a2)];
 	};
 }

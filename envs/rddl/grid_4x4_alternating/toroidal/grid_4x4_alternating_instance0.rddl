@@ -5,24 +5,24 @@
 // REACHABLE GOALS CONFIGURATION
 //
 // Two agents with alternating directional restrictions:
-// - EVEN COLUMNS (x0, x2): Can only move SOUTH
-// - ODD COLUMNS (x1, x3): Can only move NORTH
-// - EVEN ROWS (y0, y2): Can only move EAST
-// - ODD ROWS (y1, y3): Can only move WEST
+// - EVEN COLUMNS (x0, x2): Can only move NORTH
+// - ODD COLUMNS (x1, x3): Can only move SOUTH
+// - EVEN ROWS (y0, y2): Can only move WEST
+// - ODD ROWS (y1, y3): Can only move EAST
 //
 // Agent a1: starts at (x1,y0), goal at (x1,y3) - vertical movement in ODD column
 // Agent a2: starts at (x0,y1), goal at (x3,y1) - horizontal movement in ODD row
 //
 // Grid layout (4x4):
-//   y3: [ ][G1][ ][ ]  (ODD ROW - can only go WEST)
-//   y2: [ ][ ][ ][ ]   (EVEN ROW - can only go EAST)
-//   y1: [S2][ ][ ][G2] (ODD ROW - can only go WEST)
-//   y0: [ ][S1][ ][ ]  (EVEN ROW - can only go EAST)
+//   y3: [ ][G1][ ][ ]  (ODD ROW - can only go EAST)
+//   y2: [ ][ ][ ][ ]   (EVEN ROW - can only go WEST)
+//   y1: [S2][ ][ ][G2] (ODD ROW - can only go EAST)
+//   y0: [ ][S1][ ][ ]  (EVEN ROW - can only go WEST)
 //       x0  x1  x2  x3
 //      EVEN ODD EVEN ODD
 //
 // Strategy for a1: Stay in column x1 (ODD), move NORTH through rows
-// Strategy for a2: Stay in row y1 (ODD), move WEST through columns
+// Strategy for a2: Stay in row y1 (ODD), move EAST through columns
 //
 ////////////////////////////////////////////////////////////////////
 
@@ -46,16 +46,16 @@ instance grid_4x4_alternating_inst0 {
 		WEST(x1, x0); WEST(x2, x1); WEST(x3, x2); WEST(x0, x3);
 
 		// Column parity definitions
-		EVEN-COLUMN(x0);  // Can only go SOUTH
-		ODD-COLUMN(x1);   // Can only go NORTH
-		EVEN-COLUMN(x2);  // Can only go SOUTH
-		ODD-COLUMN(x3);   // Can only go NORTH
+		EVEN-COLUMN(x0);  // Can only go NORTH
+		ODD-COLUMN(x1);   // Can only go SOUTH
+		EVEN-COLUMN(x2);  // Can only go NORTH
+		ODD-COLUMN(x3);   // Can only go SOUTH
 
 		// Row parity definitions
-		EVEN-ROW(y0);  // Can only go EAST
-		ODD-ROW(y1);   // Can only go WEST
-		EVEN-ROW(y2);  // Can only go EAST
-		ODD-ROW(y3);   // Can only go WEST
+		EVEN-ROW(y0);  // Can only go WEST
+		ODD-ROW(y1);   // Can only go EAST
+		EVEN-ROW(y2);  // Can only go WEST
+		ODD-ROW(y3);   // Can only go EAST
 
 		// Only one agent is controllable
 		CONTROLLABLE(a1);

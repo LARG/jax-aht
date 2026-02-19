@@ -61,7 +61,7 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
 
         # Get grid dimensions
         self._x_positions = sorted(self._objects['xpos'])
-        self._y_positions = sorted(self._objects['ypos'])
+        self._y_positions = list(reversed(sorted(self._objects['ypos'])))
         self._grid_width = len(self._x_positions)
         self._grid_height = len(self._y_positions)
 
@@ -291,7 +291,7 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
 
         # Add actions display below legend
         if actions is not None:
-            action_mapping = {0: 'NOOP', 1: 'EAST', 2: 'WEST', 3: 'NORTH', 4: 'SOUTH'}
+            action_mapping = {0: 'NOOP', 1: 'WEST', 2: 'EAST', 3: 'NORTH', 4: 'SOUTH'}
             actions_text = "Actions:\n"
 
             # Parse actions from the state format
@@ -313,7 +313,7 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
 
         # Add actions display below legend
         if subs is not None:
-            action_mapping = {0: 'NOOP', 1: 'EAST', 2: 'WEST', 3: 'NORTH', 4: 'SOUTH'}
+            action_mapping = {0: 'NOOP', 1: 'WEST', 2: 'EAST', 3: 'NORTH', 4: 'SOUTH'}
             actions_text = "Effective Actions:\n"
 
             # Parse actions from the state format

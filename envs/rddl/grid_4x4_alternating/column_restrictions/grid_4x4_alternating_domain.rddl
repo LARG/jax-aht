@@ -8,29 +8,29 @@
 //
 // Actions:
 // - 0: no-op (stay in place)
-// - 1: move east (left)
-// - 2: move west (right)
-// - 3: move north (down)
-// - 4: move south (up)
+// - 1: move west (left)
+// - 2: move east (right)
+// - 3: move north (up)
+// - 4: move south (down)
 //
 // Restriction Modes (RESTRICTION-MODE):
 // - Mode -1: NO restrictions (free movement in all directions)
 //
 // - Mode 0: Both column AND row restrictions (default)
-//   * EVEN COLUMNS (x0, x2): Can only move SOUTH
-//   * ODD COLUMNS (x1, x3): Can only move NORTH
-//   * EVEN ROWS (y0, y2): Can only move EAST
-//   * ODD ROWS (y1, y3): Can only move WEST
+//   * EVEN COLUMNS (x0, x2): Can only move NORTH
+//   * ODD COLUMNS (x1, x3): Can only move SOUTH
+//   * EVEN ROWS (y0, y2): Can only move WEST
+//   * ODD ROWS (y1, y3): Can only move EAST
 //
 // - Mode 1: Only COLUMN restrictions (rows unrestricted)
-//   * EVEN COLUMNS (x0, x2): Can only move SOUTH
-//   * ODD COLUMNS (x1, x3): Can only move NORTH
+//   * EVEN COLUMNS (x0, x2): Can only move NORTH
+//   * ODD COLUMNS (x1, x3): Can only move SOUTH
 //   * All rows: Can move EAST or WEST freely
 //
 // - Mode 2: Only ROW restrictions (columns unrestricted)
 //   * All columns: Can move NORTH or SOUTH freely
-//   * EVEN ROWS (y0, y2): Can only move EAST
-//   * ODD ROWS (y1, y3): Can only move WEST
+//   * EVEN ROWS (y0, y2): Can only move WEST
+//   * ODD ROWS (y1, y3): Can only move EAST
 //
 // Features:
 // - Multiple agents with individual goals
@@ -77,13 +77,13 @@ domain grid_4x4_alternating {
 		STOCHASTIC-MOVEMENT-PROB : {non-fluent, real, default = 0.4}; // Probability of horizontal actions becoming vertical
 
 		// Non-fluents: Column and row parity for alternating restrictions
-		// EVEN columns: x0, x2 (can only go SOUTH, not NORTH)
-		// ODD columns: x1, x3 (can only go NORTH, not SOUTH)
+		// EVEN columns: x0, x2 (can only go NORTH, not SOUTH)
+		// ODD columns: x1, x3 (can only go SOUTH, not NORTH)
 		EVEN-COLUMN(xpos) : {non-fluent, bool, default = false};
 		ODD-COLUMN(xpos) : {non-fluent, bool, default = false};
 
-		// EVEN rows: y0, y2 (can only go EAST, not WEST)
-		// ODD rows: y1, y3 (can only go WEST, not EAST)
+		// EVEN rows: y0, y2 (can only go WEST, not EAST)
+		// ODD rows: y1, y3 (can only go EAST, not WEST)
 		EVEN-ROW(ypos) : {non-fluent, bool, default = false};
 		ODD-ROW(ypos) : {non-fluent, bool, default = false};
 
@@ -94,7 +94,7 @@ domain grid_4x4_alternating {
 		//  2 = Only row restrictions (columns unrestricted)
 		RESTRICTION-MODE : {non-fluent, int, default = 1};
 
-		TOROIDAL : {non-fluent, bool, default = false};
+		TOROIDAL : {non-fluent, bool, default = true};
 
 		// State fluents: agent positions
 		agent-at(agent, xpos, ypos) : {state-fluent, bool, default = false};
@@ -120,21 +120,23 @@ domain grid_4x4_alternating {
 		effective-move(agent) : {interm-fluent, int, level = 2};
 
 		// Action fluents: integer action per agent
-		// 0 = no-op, 1 = east, 2 = west, 3 = north, 4 = south
+		// 0 = no-op, 1 = west, 2 = east, 3 = north, 4 = south
 		move(agent) : {action-fluent, int, default = 0};
 	};
 
 	cpfs {
 		// Stochastic movement: randomly flip horizontal actions to vertical
-		// East (1) → North (3) with probability STOCHASTIC-MOVEMENT-PROB
-		// West (2) → South (4) with probability STOCHASTIC-MOVEMENT-PROB
-		should-flip-east(?a) =
+		// West (1) → North (3) with probability STOCHASTIC-MOVEMENT-PROB
+		// East (2) → South (4) with probability STOCHASTIC-MOVEMENT-PROB
+		// North (3) → East (2) with probability STOCHASTIC-MOVEMENT-PROB
+		// South (4) → West (1) with probability STOCHASTIC-MOVEMENT-PROB
+		should-flip-west(?a) =
 			if (move(?a) == 1)
 				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
 			else
 				Bernoulli(0.0);
 
-		should-flip-west(?a) =
+		should-flip-east(?a) =
 			if (move(?a) == 2)
 				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
 			else
@@ -154,14 +156,14 @@ domain grid_4x4_alternating {
 
 		// Compute effective action after stochastic movement
 		effective-move(?a) =
-			if (should-flip-east(?a))
-				then 3  // east → north
-			else if (should-flip-west(?a))
-				then 4  // west → south
+			if (should-flip-west(?a))
+				then 3  // west → north
+			else if (should-flip-east(?a))
+				then 4  // east → south
 			else if (should-flip-north(?a))
-				then 1  // north → east
-			else if (should-flip-west(?a))
-				then 2  // south → west
+				then 2  // north → east
+			else if (should-flip-south(?a))
+				then 1  // south → west
 			else
 				move(?a);  // use original action
 
@@ -177,29 +179,29 @@ domain grid_4x4_alternating {
 				agent-at(?a2, ?x2, ?y2) ^
 				(
 					// Case 1: Agent ?a tries to move into ?a2's current position
-					(((effective-move(?a) == 4) ^ NORTH(?y, ?yt) ^ (?xt == ?x) ^ (?xt == ?x2) ^ (?yt == ?y2)) |
-					 ((effective-move(?a) == 3) ^ SOUTH(?y, ?yt) ^ (?xt == ?x) ^ (?xt == ?x2) ^ (?yt == ?y2)) |
+					(((effective-move(?a) == 4) ^ SOUTH(?y, ?yt) ^ (?xt == ?x) ^ (?xt == ?x2) ^ (?yt == ?y2)) |
+					 ((effective-move(?a) == 3) ^ NORTH(?y, ?yt) ^ (?xt == ?x) ^ (?xt == ?x2) ^ (?yt == ?y2)) |
 					 ((effective-move(?a) == 2) ^ EAST(?x, ?xt) ^ (?yt == ?y) ^ (?xt == ?x2) ^ (?yt == ?y2)) |
 					 ((effective-move(?a) == 1) ^ WEST(?x, ?xt) ^ (?yt == ?y) ^ (?xt == ?x2) ^ (?yt == ?y2))) |
 
 					// Case 2: Both agents try to move into the same target cell (?xt, ?yt)
 					(
-						// Agent ?a moves north to (?xt, ?yt)
-						(((effective-move(?a) == 4) ^ NORTH(?y, ?yt) ^ (?xt == ?x)) ^
+						// Agent ?a moves south to (?xt, ?yt)
+						(((effective-move(?a) == 4) ^ SOUTH(?y, ?yt) ^ (?xt == ?x)) ^
 						 (
-						  // Agent ?a2 moves south to same target
-						  ((effective-move(?a2) == 3) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2)) |
+						  // Agent ?a2 moves north to same target
+						  ((effective-move(?a2) == 3) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2)) |
 						  // Or agent ?a2 moves east to same target
 						  ((effective-move(?a2) == 2) ^ EAST(?x2, ?xt) ^ (?yt == ?y2)) |
 						  // Or agent ?a2 moves west to same target
 						  ((effective-move(?a2) == 1) ^ WEST(?x2, ?xt) ^ (?yt == ?y2))
 						 )) |
 
-						// Agent ?a moves south to (?xt, ?yt)
-						(((effective-move(?a) == 3) ^ SOUTH(?y, ?yt) ^ (?xt == ?x)) ^
+						// Agent ?a moves north to (?xt, ?yt)
+						(((effective-move(?a) == 3) ^ NORTH(?y, ?yt) ^ (?xt == ?x)) ^
 						 (
-						  // Agent ?a2 moves north to same target
-						  ((effective-move(?a2) == 4) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2)) |
+						  // Agent ?a2 moves south to same target
+						  ((effective-move(?a2) == 4) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2)) |
 						  // Or agent ?a2 moves east to same target
 						  ((effective-move(?a2) == 2) ^ EAST(?x2, ?xt) ^ (?yt == ?y2)) |
 						  // Or agent ?a2 moves west to same target
@@ -211,10 +213,10 @@ domain grid_4x4_alternating {
 						 (
 						  // Agent ?a2 moves west to same target
 						  ((effective-move(?a2) == 1) ^ WEST(?x2, ?xt) ^ (?yt == ?y2)) |
-						  // Or agent ?a2 moves north to same target
-						  ((effective-move(?a2) == 4) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2)) |
 						  // Or agent ?a2 moves south to same target
-						  ((effective-move(?a2) == 3) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2))
+						  ((effective-move(?a2) == 4) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2)) |
+						  // Or agent ?a2 moves north to same target
+						  ((effective-move(?a2) == 3) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2))
 						 )) |
 
 						// Agent ?a moves west to (?xt, ?yt)
@@ -222,10 +224,10 @@ domain grid_4x4_alternating {
 						 (
 						  // Agent ?a2 moves east to same target
 						  ((effective-move(?a2) == 2) ^ EAST(?x2, ?xt) ^ (?yt == ?y2)) |
-						  // Or agent ?a2 moves north to same target
-						  ((effective-move(?a2) == 4) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2)) |
 						  // Or agent ?a2 moves south to same target
-						  ((effective-move(?a2) == 3) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2))
+						  ((effective-move(?a2) == 4) ^ SOUTH(?y2, ?yt) ^ (?xt == ?x2)) |
+						  // Or agent ?a2 moves north to same target
+						  ((effective-move(?a2) == 3) ^ NORTH(?y2, ?yt) ^ (?xt == ?x2))
 						 ))
 					)
 				)
@@ -269,8 +271,8 @@ domain grid_4x4_alternating {
             else if (~collision'(?a) ^
                     ~OBSTACLE(?x, ?y) ^
                     ~(exists_{?a2 : agent} [(?a2 ~= ?a) ^ agent-at(?a2, ?x, ?y)]) ^
-                    (((effective-move(?a) == 4) ^ exists_{?y2 : ypos} [NORTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])
-                    | ((effective-move(?a) == 3) ^ exists_{?y2 : ypos} [SOUTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])
+                    (((effective-move(?a) == 4) ^ exists_{?y2 : ypos} [SOUTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])
+                    | ((effective-move(?a) == 3) ^ exists_{?y2 : ypos} [NORTH(?y2, ?y) ^ agent-at(?a, ?x, ?y2)])
                     | ((effective-move(?a) == 2) ^ exists_{?x2 : xpos} [EAST(?x2, ?x) ^ agent-at(?a, ?x2, ?y)])
                     | ((effective-move(?a) == 1) ^ exists_{?x2 : xpos} [WEST(?x2, ?x) ^ agent-at(?a, ?x2, ?y)])))
                 then KronDelta(true)
@@ -280,17 +282,17 @@ domain grid_4x4_alternating {
                     (effective-move(?a) == 0 |  // no-op
                     // Or trying to move but blocked by collision
                     collision'(?a) |
-                    // Or trying to move north but blocked
-                    ((effective-move(?a) == 4) ^ ~exists_{?y2 : ypos} [NORTH(?y, ?y2)]) |
                     // Or trying to move south but blocked
-                    ((effective-move(?a) == 3) ^ ~exists_{?y2 : ypos} [SOUTH(?y, ?y2)]) |
+                    ((effective-move(?a) == 4) ^ ~exists_{?y2 : ypos} [SOUTH(?y, ?y2)]) |
+                    // Or trying to move north but blocked
+                    ((effective-move(?a) == 3) ^ ~exists_{?y2 : ypos} [NORTH(?y, ?y2)]) |
                     // Or trying to move east but blocked
                     ((effective-move(?a) == 2) ^ ~exists_{?x2 : xpos} [EAST(?x, ?x2)]) |
                     // Or trying to move west but blocked
                     ((effective-move(?a) == 1) ^ ~exists_{?x2 : xpos} [WEST(?x, ?x2)]) |
                     // Or trying to move into an obstacle
-                    ((effective-move(?a) == 4) ^ exists_{?y2 : ypos} [NORTH(?y, ?y2) ^ OBSTACLE(?x, ?y2)]) |
-                    ((effective-move(?a) == 3) ^ exists_{?y2 : ypos} [SOUTH(?y, ?y2) ^ OBSTACLE(?x, ?y2)]) |
+                    ((effective-move(?a) == 4) ^ exists_{?y2 : ypos} [SOUTH(?y, ?y2) ^ OBSTACLE(?x, ?y2)]) |
+                    ((effective-move(?a) == 3) ^ exists_{?y2 : ypos} [NORTH(?y, ?y2) ^ OBSTACLE(?x, ?y2)]) |
                     ((effective-move(?a) == 2) ^ exists_{?x2 : xpos} [EAST(?x, ?x2) ^ OBSTACLE(?x2, ?y)]) |
                     ((effective-move(?a) == 1) ^ exists_{?x2 : xpos} [WEST(?x, ?x2) ^ OBSTACLE(?x2, ?y)])))
                 then KronDelta(true)
@@ -327,16 +329,16 @@ domain grid_4x4_alternating {
 
 		// Prevent agents from moving outside grid boundaries
 		forall_{?a : agent} [
-			// Can't move north if there's no valid north position
+			// Can't move south if there's no valid south position
 			(move(?a) == 4) => exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
-				agent-at(?a, ?x, ?y) ^ NORTH(?y, ?y2)
+				agent-at(?a, ?x, ?y) ^ SOUTH(?y, ?y2)
 			]
 		];
 
 		forall_{?a : agent} [
-			// Can't move south if there's no valid south position
+			// Can't move north if there's no valid north position
 			(move(?a) == 3) => exists_{?x : xpos, ?y : ypos, ?y2 : ypos} [
-				agent-at(?a, ?x, ?y) ^ SOUTH(?y, ?y2)
+				agent-at(?a, ?x, ?y) ^ NORTH(?y, ?y2)
 			]
 		];
 
@@ -359,7 +361,7 @@ domain grid_4x4_alternating {
 		// Mode 1: Only column restrictions
 		// Mode 2: Only row restrictions
 
-		// EVEN COLUMNS (x0, x2): Can only move SOUTH, not NORTH
+		// EVEN COLUMNS (x0, x2): Can only move NORTH, not SOUTH
 		// Active in modes 0 and 1 (not enforced in mode -1)
 		forall_{?a : agent} [
 			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) =>
@@ -368,7 +370,7 @@ domain grid_4x4_alternating {
 			])
 		];
 
-		// ODD COLUMNS (x1, x3): Can only move NORTH, not SOUTH
+		// ODD COLUMNS (x1, x3): Can only move SOUTH, not NORTH
 		// Active in modes 0 and 1 (not enforced in mode -1)
 		forall_{?a : agent} [
 			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 1)) =>
@@ -377,21 +379,21 @@ domain grid_4x4_alternating {
 			])
 		];
 
-		// ODD ROWS (y0, y2): Can only move WEST, not EAST
+		// EVEN ROWS (y0, y2): Can only move WEST, not EAST
 		// Active in modes 0 and 2 (not enforced in mode -1)
 		forall_{?a : agent} [
 			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) =>
 			((move(?a) == 2) => ~exists_{?x : xpos, ?y : ypos} [
-				agent-at(?a, ?x, ?y) ^ ODD-ROW(?y)
+				agent-at(?a, ?x, ?y) ^ EVEN-ROW(?y)
 			])
 		];
 
-		// EVEN ROWS (y1, y3): Can only move EAST, not WEST
+		// ODD ROWS (y1, y3): Can only move EAST, not WEST
 		// Active in modes 0 and 2
 		forall_{?a : agent} [
 			((RESTRICTION-MODE == 0) | (RESTRICTION-MODE == 2)) =>
 			((move(?a) == 1) => ~exists_{?x : xpos, ?y : ypos} [
-				agent-at(?a, ?x, ?y) ^ EVEN-ROW(?y)
+				agent-at(?a, ?x, ?y) ^ ODD-ROW(?y)
 			])
 		];
 
