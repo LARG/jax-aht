@@ -51,18 +51,24 @@ domain pizza {
 		hotPizzasTogether(pizza) :{ interm-fluent, int, level = 2 };
 
 		// Per-agent reward tracking
-		deliveredByTruck(truck, pizza, location) : { interm-fluent, bool, level = 3 };
+		deliveredByTruck(truck, pizza, location) : { interm-fluent, bool, level = 1 };
+
+		// Random number for determining priority if there are delivery conflicts
+		randomPriority(truck) : { interm-fluent, real, level = 2 };
 
 		// Count pizzas already delivered to each location (from previous timesteps)
-		numPreviouslyDelivered(location) : { interm-fluent, int, level = 3 };
+		numPreviouslyDelivered(location) : { interm-fluent, int, level = 2 };
 
 		// Random selection for delivery conflicts (when more trucks deliver than orders remain)
 		// Counts how many trucks are delivering to each location
 		numTrucksDeliveringToLoc(location) : { interm-fluent, int, level = 3 };
-		// Randomly determines if this truck's delivery is rewarded (when there are conflicts)
-		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 4 };
 
-		truckReward(truck) : { interm-fluent, real, level = 5 };
+		// The ranking of this truck's priority compared to other trucks delivering to the same location (for random selection in conflicts)
+		deliveryPriorityRank(truck, location) : { interm-fluent, int, level = 4 };
+		// Determines if this truck's delivery is rewarded (when there are conflicts)
+		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 5 };
+
+		truckReward(truck) : { interm-fluent, real, level = 6 };
 
 		// Action variables
 		noop(truck) : { action-fluent, bool, default = false };
@@ -120,6 +126,11 @@ domain pizza {
 		// Track which truck delivered which pizza at which location
 		deliveredByTruck(?t, ?p, ?l) = (pizzaInTruck(?p, ?t) ^ deliver(?t, ?p, ?l));
 
+		// Determine random priority for each truck
+		randomPriority(?t) = if (exists_{?p : pizza, ?l : location} [deliveredByTruck(?t, ?p, ?l)])
+			then Uniform(0.0, 1.0) // assign random priority if truck is delivering
+			else -10.0; // non-delivering trucks get lowest priority
+
 		// Count pizzas that were already delivered to this location in previous timesteps
 		numPreviouslyDelivered(?l) = (sum_{?p : pizza} [delivered(?p, ?l)]);
 
@@ -133,21 +144,22 @@ domain pizza {
 		// Count total number of trucks delivering to each location (for random selection)
 		numTrucksDeliveringToLoc(?l) = (sum_{?t : truck} [exists_{?p : pizza} [deliveredByTruck(?t, ?p, ?l)]]);
 
-		// Randomly determine if a truck's delivery is rewarded when there are conflicts
-		// This matches the Python logic: when more trucks deliver than orders remain,
-		// randomly select which trucks get rewarded (without replacement)
-		// Uses uniform probability for each delivering truck when there's a conflict
+		// Determine the priority rank of each truck delivering to the same location (for random selection in conflicts)
+		// How many other trucks at this location are also delivering and
+		// have a higher random priority (lower random number) than this truck?
+		deliveryPriorityRank(?t, ?l) = sum_{?t2 : truck} [ 
+			( ?t ~= ?t2 )
+			^ (exists_{?p : pizza} [deliveredByTruck(?t, ?p, ?l)]) // this truck is delivering to this location
+			^ (exists_{?p2 : pizza} [deliveredByTruck(?t2, ?p2, ?l)]) // other truck is also delivering to this location
+			^ (randomPriority(?t2) > randomPriority(?t)) // other truck has lower priority (higher random number) than this truck
+		];
+
+		// Determine if this truck's delivery is rewarded (when there are conflicts)
+		// Reward given if the truck's rank is lower than the number of orders remaining to be rewarded
 		deliveryRewarded(?t, ?l) =
-			if (~exists_{?p : pizza} [deliveredByTruck(?t, ?p, ?l)])
-				then false  // truck didn't deliver to this location
-			else if (numPreviouslyDelivered(?l) >= ORDERS(?l))
-				then false  // all orders already fulfilled, no reward
-			else if (numTrucksDeliveringToLoc(?l) <= (ORDERS(?l) - numPreviouslyDelivered(?l)))
-				then true   // no conflict, all deliveries rewarded
-			else
-				// Conflict: more deliveries than remaining orders
-				// Randomly select with probability = remaining_orders / numTrucksDeliveringToLoc(?l)
-				Bernoulli((ORDERS(?l) - numPreviouslyDelivered(?l)) / numTrucksDeliveringToLoc(?l));
+			if (exists_{?p : pizza} [deliveredByTruck(?t, ?p, ?l)]) // if this truck is delivering to this location
+			then (deliveryPriorityRank(?t, ?l) < (ORDERS(?l) - numPreviouslyDelivered(?l))) // check priority rank against remaining orders to reward
+			else false; // if not delivering, then not rewarded
 
 		// Compute per-truck reward based on deliveries made by that truck
 		// Only count deliveries that are rewarded (passed random selection when there are conflicts)
