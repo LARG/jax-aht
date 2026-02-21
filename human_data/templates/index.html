@@ -508,9 +508,69 @@
         .dont-show-again label {
             cursor: pointer;
         }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-spinner.show {
+            display: flex;
+        }
+
+        .spinner-content {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .spinner-ring {
+            border: 5px solid #f0f0f0;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner-text {
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .spinner-subtext {
+            color: #666;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-content">
+            <div class="spinner-ring"></div>
+            <div class="spinner-text" id="spinnerText">Loading Game...</div>
+            <div class="spinner-subtext" id="spinnerSubtext"></div>
+        </div>
+    </div>
+
     <!-- Welcome Modal -->
     <div id="welcomeModal" class="modal-overlay" aria-modal="true" role="dialog">
         <div class="modal-content">
@@ -635,6 +695,14 @@
                         <span class="stat-label">Steps:</span>
                         <span class="stat-value" id="stepCount">0 / 0</span>
                     </div>
+                    <div class="stat-row" id="multiProgressRow" style="display: none;">
+                        <span class="stat-label">Game Progress:</span>
+                        <span class="stat-value" id="multiProgress">1 / 1</span>
+                    </div>
+                    <div class="stat-row" id="currentConfigRow" style="display: none;">
+                        <span class="stat-label">Current Config:</span>
+                        <span class="stat-value" id="currentConfig">7x7 / same</span>
+                    </div>
                     <div class="stat-row player-score">
                         <span class="stat-label">👤 Your Score:</span>
                         <span class="stat-value" id="playerScore">0.0</span>
@@ -739,7 +807,6 @@
             'q': ACTIONS.NOOP,
             'Q': ACTIONS.NOOP
         };
-
         // Welcome Modal Functions
         function showWelcomeModal() {
             const modal = document.getElementById('welcomeModal');
@@ -761,6 +828,25 @@
 
         function shouldShowWelcomeModal() {
             return localStorage.getItem('lbf_hide_welcome') !== 'true';
+        }
+
+        // Loading Spinner Functions
+        function showLoadingSpinner(text = 'Loading Game...', subtext = '') {
+            const spinner = document.getElementById('loadingSpinner');
+            const spinnerText = document.getElementById('spinnerText');
+            const spinnerSubtext = document.getElementById('spinnerSubtext');
+            if (spinner) {
+                spinner.classList.add('show');
+                if (spinnerText) spinnerText.textContent = text;
+                if (spinnerSubtext) spinnerSubtext.textContent = subtext;
+            }
+        }
+
+        function hideLoadingSpinner() {
+            const spinner = document.getElementById('loadingSpinner');
+            if (spinner) {
+                spinner.classList.remove('show');
+            }
         }
 
         // Close modal on escape key
@@ -807,6 +893,7 @@
 
         async function startNewGame() {
             try {
+                showLoadingSpinner('Loading Game...', 'Initializing game session');
                 const response = await fetch('/api/new_game', {
                     method: 'POST',
                     headers: {
@@ -826,12 +913,16 @@
                     lastHumanAction = null;
                     lastAIAction = null;
                     updateDisplay();
+                    hideLoadingSpinner();
                     showMessage('New game started! Good luck!', 'success');
                     // Update main action button label to 'Reset' since a session now exists
                     const mainBtn = document.getElementById('mainActionBtn');
                     if (mainBtn) mainBtn.textContent = 'Reset';
+                } else {
+                    hideLoadingSpinner();
                 }
             } catch (error) {
+                hideLoadingSpinner();
                 console.error('Error starting new game:', error);
                 showMessage('Error starting game. Please try again.', 'warning');
             }
@@ -884,8 +975,15 @@
                     updateDisplay();
                     
                     if (gameState.done) {
-                        const teamScore = gameState.total_rewards.agent_0 + gameState.total_rewards.agent_1;
-                        showMessage(`🎉 Episode Complete! Team Score: ${teamScore.toFixed(2)} - Automatically Saved!`, 'success');
+                        // Check if transitioning to next game in multi-game session
+                        if (gameState.multi && gameState.current_game_index < gameState.total_games - 1) {
+                            showLoadingSpinner('Loading Next Game...', `Game ${gameState.current_game_index + 2} of ${gameState.total_games}`);
+                            // Hide spinner after a short delay to let the next game render
+                            setTimeout(hideLoadingSpinner, 500);
+                        } else {
+                            const teamScore = gameState.total_rewards.agent_0 + gameState.total_rewards.agent_1;
+                            showMessage(`🎉 Episode Complete! Team Score: ${teamScore.toFixed(2)} - Automatically Saved!`, 'success');
+                        }
                     }
                 }
             } catch (error) {
@@ -928,6 +1026,28 @@
             
             // Draw game state
             drawGame();
+
+            // Update multi-game progress if provided by server
+            const multiRow = document.getElementById('multiProgressRow');
+            const multiLabel = document.getElementById('multiProgress');
+            const cfgRow = document.getElementById('currentConfigRow');
+            const cfgLabel = document.getElementById('currentConfig');
+            if (gameState.multi) {
+                if (multiRow) multiRow.style.display = '';
+                if (multiLabel) multiLabel.textContent = `${(gameState.current_game_index || 0) + 1} / ${gameState.total_games || 1}`;
+                if (cfgRow) cfgRow.style.display = '';
+                try {
+                    const idx = gameState.current_game_index || 0;
+                    const configs = gameState.game_configs || [];
+                    const cfg = configs[idx] || {grid_size: gameState.grid_size || 7, levels_mode: gameState.levels_mode || 'same'};
+                    if (cfgLabel) cfgLabel.textContent = `${cfg.grid_size}x${cfg.grid_size} • ${cfg.levels_mode}`;
+                } catch (e) {
+                    if (cfgLabel) cfgLabel.textContent = '';
+                }
+            } else {
+                if (multiRow) multiRow.style.display = 'none';
+                if (cfgRow) cfgRow.style.display = 'none';
+            }
 
             // Show/hide the game-over overlay so the player knows to click Reset
             setGameOverOverlay(Boolean(gameState.done) && !replayMode);
@@ -1050,10 +1170,10 @@
 
         function drawGame() {
             if (!gameState || !gameState.state) return;
-            
-            const state = gameState.state;
-            const gridSize = 7; // Default grid size
-            const cellSize = canvas.width / gridSize;
+
+            const state = gameState.state || {};
+            const gridSize = gameState.grid_size || gameState.state.grid_size || 7; // dynamic grid size
+            const cellSize = Math.min(canvas.width, canvas.height) / gridSize;
             
             // Clear canvas
             ctx.fillStyle = '#f0f0f0';
@@ -1075,21 +1195,30 @@
             }
             
             // Draw food items
-            for (let i = 0; i < state.food_positions.length; i++) {
-                if (!state.food_eaten[i]) {
-                    const [row, col] = state.food_positions[i];
-                    const level = state.food_levels[i];
-                    
+            const foodPositions = state.food_positions || [];
+            const foodEaten = state.food_eaten || [];
+            const foodLevels = state.food_levels || [];
+            for (let i = 0; i < foodPositions.length; i++) {
+                try {
+                    if (foodEaten[i]) continue;
+                    const pos = foodPositions[i];
+                    if (!pos || pos.length < 2) continue;
+                    const row = pos[0], col = pos[1];
+                    const level = foodLevels[i] !== undefined ? foodLevels[i] : '';
+
                     ctx.fillStyle = '#95e1d3';
                     ctx.fillRect(col * cellSize + 2, row * cellSize + 2, 
                                 cellSize - 4, cellSize - 4);
-                    
+
                     // Draw level
                     ctx.fillStyle = '#000';
-                    ctx.font = 'bold 20px Arial';
+                    ctx.font = Math.max(12, Math.floor(cellSize * 0.25)) + 'px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(`🍎${level}`, (col + 0.5) * cellSize, (row + 0.5) * cellSize);
+                } catch (e) {
+                    // drawing error for this food item -> skip
+                    continue;
                 }
             }
             
@@ -1097,9 +1226,14 @@
             const agentColors = ['#ff6b6b', '#4ecdc4'];
             const agentLabels = ['👤', '🤖'];
             
-            for (let i = 0; i < state.agent_positions.length; i++) {
-                const [row, col] = state.agent_positions[i];
-                const level = state.agent_levels[i];
+            const agentPositions = state.agent_positions || [];
+            const agentLevels = state.agent_levels || [];
+            for (let i = 0; i < agentPositions.length; i++) {
+                try {
+                    const pos = agentPositions[i];
+                    if (!pos || pos.length < 2) continue;
+                    const row = pos[0], col = pos[1];
+                    const level = agentLevels[i] !== undefined ? agentLevels[i] : '';
                 
                 // Draw agent background
                 ctx.fillStyle = agentColors[i];
@@ -1116,13 +1250,16 @@
                 
                 // Draw agent icon and level
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 24px Arial';
+                ctx.font = 'bold ' + Math.max(12, Math.floor(cellSize * 0.4)) + 'px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(agentLabels[i], (col + 0.5) * cellSize, (row + 0.35) * cellSize);
-                
-                ctx.font = 'bold 16px Arial';
+                ctx.fillText(agentLabels[i] || '', (col + 0.5) * cellSize, (row + 0.35) * cellSize);
+
+                ctx.font = 'bold ' + Math.max(10, Math.floor(cellSize * 0.25)) + 'px Arial';
                 ctx.fillText(`Lv${level}`, (col + 0.5) * cellSize, (row + 0.65) * cellSize);
+            } catch (e) {
+                continue;
+            }
             }
 
             // --- Draw action indicators (arrows & load rings) ---
