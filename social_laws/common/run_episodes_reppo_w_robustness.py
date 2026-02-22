@@ -345,7 +345,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
                     rng=act0_rng,
                     aux_obs=None,
                     env_state=env_state,
-                    test_mode=False
+                    test_mode=agent_test_mode
                 )
                 return act.squeeze(axis=0), (hstate_next, hstate_next)
 
@@ -359,7 +359,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
                     rng=act1_rng,
                     aux_obs=None,
                     env_state=env_state,
-                    test_mode=False
+                    test_mode=agent_test_mode
                 )
                 return act.squeeze(axis=0), (hstate_next, hstate_next)
 
