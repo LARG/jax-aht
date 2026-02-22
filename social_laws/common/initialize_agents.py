@@ -6,6 +6,7 @@ from agents.s5_dqn_actor_crtic_fqe_agent import S5DQNActorCriticFQEPolicy
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
 from agents.s5_actor_critic_agent import S5ActorCriticPolicy
+from agents.mlp_reppo_agent import MLPREPPOPolicy
 
 def initialize_mlp_agent(config, env, rng, agent_index, observation_type="agent"):
     """
@@ -188,4 +189,52 @@ def initialize_s5_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_poli
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)
 
+    return policy, init_params
+
+def initialize_reppo_mlp_agent(config, env, rng, agent_index, observation_type="agent"):
+    """Initialize the REPPO ego agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        agent_index: int, index of the agent in the environment
+        observation_type: str, type of observation to use ("agent" or "full")
+
+    Returns:
+        policy: REPPOPolicy, the policy object
+        params: tuple, initial parameters for the {q_network, actor} and policy
+    """
+    # Create the REPPO policy
+    policy = MLPREPPOPolicy(
+        action_dim=env.action_space(env.agents[agent_index]).n,
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
+        norm_type=config.get("NORM_TYPE", "layer_norm"),
+        norm_input=config.get("NORM_INPUT", False),
+        num_bins=config.get("NUM_BINS", 256),
+        v_min=config.get("VMIN", -10.0),
+        v_max=config.get("VMAX", 10.0),
+        init_alpha=config.get("INIT_ALPHA", 1.0),
+        init_lagrangian=config.get("INIT_LAGRANGIAN", 1.0),
+        min_is_weight=config.get("MIN_IS_WEIGHT", 0.1),
+        max_is_weight=config.get("MAX_IS_WEIGHT", 10.0)
+    )
+
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
+    init_params = {'q_network': init_params[0],
+                   'actor': init_params[1]}
+
+    return policy, init_params
+
+def initialize_reppo_agent(algorithm_config, env, init_rng, agent_index, observation_type="agent"):
+    if algorithm_config["ACTOR_TYPE"] == "mlp":
+        policy, init_params = initialize_reppo_mlp_agent(algorithm_config, env, init_rng, agent_index, observation_type=observation_type)
+    # elif algorithm_config["ACTOR_TYPE"] == "rnn":
+    #     policy, init_params = initialize_rnn_agent(algorithm_config, env, init_rng, agent_index, observation_type=observation_type)
+    # elif algorithm_config["ACTOR_TYPE"] == "s5":
+    #     policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng, agent_index, observation_type=observation_type)
+    else:
+        raise ValueError(f"Unknown ACTOR_TYPE: {algorithm_config['ACTOR_TYPE']}")
     return policy, init_params
