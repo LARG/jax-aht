@@ -741,20 +741,10 @@ def train_ppo_joint_agents(config, env, optimal_env, train_rng,
     # Actually run the PPO training
     # ------------------------------
     rngs = jax.random.split(train_rng, config["NUM_TRAIN_SEEDS"])
-    agent_idx_arr = jnp.array([agent_idx] * config["NUM_TRAIN_SEEDS"])
-
-    # Define scan function to run training seeds sequentially
-    train_fn = make_ppo_joint_train(config)
-    def scan_train(carry, inputs):
-        rng, agent_idx, agent_0_ppo_param, agent_1_ppo_param, agent_0_vf_param, agent_1_vf_param = inputs
-        result = train_fn(rng, agent_idx, agent_0_ppo_param, agent_1_ppo_param, agent_0_vf_param, agent_1_vf_param)
-        return carry, result
-
-    # Run training seeds sequentially using scan
-    _, out = jax.lax.scan(scan_train, None, (rngs, agent_idx_arr, agent_0_ppo_params, agent_1_ppo_params, agent_0_vf_params, agent_1_vf_params))
 
     # Run training seeds in parallel using vmap
-    # out = jax.vmap(train_fn, in_axes=(0, None, 0, 0, 0, 0))(rngs, agent_idx, agent_0_ppo_params, agent_1_ppo_params, agent_0_vf_params, agent_1_vf_params)
+    train_fn = make_ppo_joint_train(config)
+    out = jax.vmap(train_fn, in_axes=(0, None, 0, 0, 0, 0))(rngs, agent_idx, agent_0_ppo_params, agent_1_ppo_params, agent_0_vf_params, agent_1_vf_params)
     return out
 
 def run_training(config, wandb_logger, ppo_params, ppo_policies,

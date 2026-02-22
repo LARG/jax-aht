@@ -86,9 +86,14 @@ def train_drqnppo_agent(config, env, train_rng,
         config["NUM_ACTIONS"] = env.action_space(f"agent_{agent_idx}").n
 
 
+        # NOTE: optax calls this with the GRADIENT step count, not rollout update count.
+        # With TRAINING_INTERVAL always firing (timesteps += NUM_ENVS, NUM_ENVS % TRAINING_INTERVAL == 0),
+        # gradient steps ≈ ROLLOUT_LENGTH * NUM_UPDATES, so we scale accordingly.
+        _total_grad_steps = config["NUM_UPDATES"] * config["ROLLOUT_LENGTH"]
+
         def linear_schedule(count):
-            frac = 1.0 - (count / config["NUM_UPDATES"])
-            return config["LR"] * frac
+            frac = 1.0 - (count / _total_grad_steps)
+            return config["LR"] * jnp.maximum(frac, 0.0)  # clamp to avoid negative LR
 
         def train(rng, agent_idx, ppo_params):
             if config["ANNEAL_LR"]:
@@ -556,20 +561,10 @@ def train_drqnppo_agent(config, env, train_rng,
     # Actually run the DRQN training
     # ------------------------------
     rngs = jax.random.split(train_rng, config["NUM_TRAIN_SEEDS"])
-    agent_idx_arr = jnp.array([agent_idx] * config["NUM_TRAIN_SEEDS"])
-
-    # Define scan function to run training seeds sequentially
-    train_fn = make_drqnppo_train(config)
-    def scan_train(carry, inputs):
-        rng, agent_idx, ppo_param = inputs
-        result = train_fn(rng, agent_idx, ppo_param)
-        return carry, result
-
-    # Run training seeds sequentially using scan
-    _, out = jax.lax.scan(scan_train, None, (rngs, agent_idx_arr, ppo_params))
 
     # Run training seeds in parallel using vmap
-    # out = jax.vmap(train_fn, in_axes=(0, None, 0))(rngs, agent_idx, ppo_params)
+    train_fn = make_drqnppo_train(config)
+    out = jax.vmap(train_fn, in_axes=(0, None, 0))(rngs, agent_idx, ppo_params)
     return out
 
 def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):

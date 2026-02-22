@@ -463,20 +463,10 @@ def train_ppo_agent(config, env, train_rng,
     # Actually run the PPO training
     # ------------------------------
     rngs = jax.random.split(train_rng, config["NUM_TRAIN_SEEDS"])
-    agent_idx_arr = jnp.array([agent_idx] * config["NUM_TRAIN_SEEDS"])
-
-    # Define scan function to run training seeds sequentially
-    train_fn = make_ppo_train(config)
-    def scan_train(carry, inputs):
-        rng, agent_idx = inputs
-        result = train_fn(rng, agent_idx)
-        return carry, result
-
-    # Run training seeds sequentially using scan
-    _, out = jax.lax.scan(scan_train, None, (rngs, agent_idx_arr))
 
     # Run training seeds in parallel using vmap
-    # out = jax.vmap(train_fn, in_axes=(0, None))(rngs, agent_idx)
+    train_fn = make_ppo_train(config)
+    out = jax.vmap(train_fn, in_axes=(0, None))(rngs, agent_idx)
     return out
 
 def run_training(config, wandb_logger, agent_idx=0):
