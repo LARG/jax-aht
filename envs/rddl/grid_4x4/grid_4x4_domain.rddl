@@ -63,7 +63,7 @@ domain grid_4x4 {
 		COLLISION-PENALTY : {non-fluent, real, default = -100.0}; // Penalty when agents collide
 
 		// Non-fluents: stochastic movement
-		STOCHASTIC-MOVEMENT-PROB : {non-fluent, real, default = 0.4}; // Probability of horizontal actions becoming vertical
+		STOCHASTIC-MOVEMENT-PROB : {non-fluent, real, default = 0.1}; // Probability of horizontal actions becoming vertical
 
 		// Non-fluents: restriction configuration
 		// Type of restriction: 0 = no restriction, 1 = vertical (left/right), 2 = horizontal (top/bottom)
@@ -99,6 +99,8 @@ domain grid_4x4 {
 		// Random flip decision for west and east actions
 		should-flip-west(agent) : {interm-fluent, bool, level = 1};
 		should-flip-east(agent) : {interm-fluent, bool, level = 1};
+		should-flip-north(agent) : {interm-fluent, bool, level = 1};
+		should-flip-south(agent) : {interm-fluent, bool, level = 1};
 
 		// Effective action after applying stochastic movement
 		effective-move(agent) : {interm-fluent, int, level = 2};
@@ -112,6 +114,8 @@ domain grid_4x4 {
 		// Stochastic movement: randomly flip horizontal actions to vertical
 		// West (1) → North (3) with probability STOCHASTIC-MOVEMENT-PROB
 		// East (2) → South (4) with probability STOCHASTIC-MOVEMENT-PROB
+		// North (3) → East (2) with probability STOCHASTIC-MOVEMENT-PROB
+		// South (4) → West (1) with probability STOCHASTIC-MOVEMENT-PROB
 		should-flip-west(?a) =
 			if (move(?a) == 1)
 				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
@@ -124,12 +128,28 @@ domain grid_4x4 {
 			else
 				Bernoulli(0.0);
 
+		should-flip-north(?a) =
+			if (move(?a) == 3)
+				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
+			else
+				Bernoulli(0.0);
+
+		should-flip-south(?a) =
+			if (move(?a) == 4)
+				then Bernoulli(STOCHASTIC-MOVEMENT-PROB)
+			else
+				Bernoulli(0.0);
+
 		// Compute effective action after stochastic movement
 		effective-move(?a) =
-			if (should-flip-west(?a))
-				then 3  // west → north
-			else if (should-flip-east(?a))
-				then 4  // east → south
+			//if (should-flip-west(?a))
+			//	then 3  // west → north
+			//else if (should-flip-east(?a))
+			//	then 4  // east → south
+			if (should-flip-north(?a))
+				then 2  // north → east
+			else if (should-flip-south(?a))
+				then 1  // south → west
 			else
 				move(?a);  // use original action
 
