@@ -137,7 +137,8 @@ class S5DQNActorCriticFQEPolicy(AgentPolicy):
 
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
-                   aux_obs=None, env_state=None, test_mode=False):
+                   aux_obs=None, env_state=None, test_mode=False,
+                   timestep=0):
         """Get actions for the DRQN policy."""
         new_hstate, qvals = self.network.apply(params, hstate, (obs, done))
 
@@ -146,12 +147,13 @@ class S5DQNActorCriticFQEPolicy(AgentPolicy):
 
         actions = jax.lax.cond(test_mode,
                                lambda: jnp.argmax(masked_qvals, axis=-1),
-                               lambda: self.eps_greedy_exploration(rng, masked_qvals, env_state.env_state.env_state.timestep))
+                               lambda: self.eps_greedy_exploration(rng, masked_qvals, timestep))
         return actions, new_hstate
 
     @partial(jax.jit, static_argnums=(0,))
     def get_actor_critic_action(self, params, obs, done, avail_actions, hstate, rng,
-                   aux_obs=None, env_state=None, test_mode=False):
+                   aux_obs=None, env_state=None, test_mode=False,
+                   timestep=0):
         """Get actions for the DRQN policy."""
         actions, new_ac_hstate = self.actor_critic.get_action(params, obs, done, avail_actions, hstate, rng,
                                                               aux_obs, env_state, test_mode=False)
@@ -162,7 +164,7 @@ class S5DQNActorCriticFQEPolicy(AgentPolicy):
                                lambda: actions,
                                lambda: self.eps_greedy_actor_critic_exploration(rng, actions,
                                                                                 avail_actions,
-                                                                                env_state.env_state.env_state.timestep))
+                                                                                timestep))
 
         return actions, new_ac_hstate
 
