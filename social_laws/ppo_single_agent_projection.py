@@ -414,7 +414,7 @@ def train_ppo_agent(config, env, train_rng,
 
             rng, rng_train = jax.random.split(rng, 2)
 
-            rng_eval = jax.random.PRNGKey(config["EVAL_SEED"] + agent_idx)# + 14)
+            rng_eval = jax.random.PRNGKey(config["EVAL_SEED"])# + agent_idx)# + 14)
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
 
             # Init eval return infos
@@ -485,7 +485,7 @@ def run_training(config, wandb_logger, agent_idx=0):
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
-    rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"] + agent_idx)# + 7)
+    rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])# + agent_idx)# + 7)
     _, init_rng, train_rng = jax.random.split(rng, 3)
 
     # Initialize agent
