@@ -82,7 +82,8 @@ class RNNDQNActorCriticFQEPolicy(AgentPolicy):
 
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
-                   aux_obs=None, env_state=None, test_mode=False):
+                   aux_obs=None, env_state=None, test_mode=False,
+                   timestep=0):
         """Get actions for the DRQN policy."""
         batch_size = obs.shape[1]
         new_hstate, qvals = self.network.apply(params, hstate.squeeze(0), (obs, done))
@@ -92,12 +93,13 @@ class RNNDQNActorCriticFQEPolicy(AgentPolicy):
 
         actions = jax.lax.cond(test_mode,
                                lambda: jnp.argmax(masked_qvals, axis=-1),
-                               lambda: self.eps_greedy_exploration(rng, masked_qvals, env_state.env_state.env_state.timestep))
+                               lambda: self.eps_greedy_exploration(rng, masked_qvals, timestep))
         return actions, new_hstate.reshape(1, batch_size, -1)
 
     @partial(jax.jit, static_argnums=(0,))
     def get_actor_critic_action(self, params, obs, done, avail_actions, hstate, rng,
-                   aux_obs=None, env_state=None, test_mode=False):
+                   aux_obs=None, env_state=None, test_mode=False,
+                   timestep=0):
         """Get actions for the DRQN policy."""
         actions, new_ac_hstate = self.actor_critic.get_action(params, obs, done, avail_actions, hstate, rng,
                                                               aux_obs, env_state, test_mode=False)
@@ -108,7 +110,7 @@ class RNNDQNActorCriticFQEPolicy(AgentPolicy):
                                lambda: actions,
                                lambda: self.eps_greedy_actor_critic_exploration(rng, actions,
                                                                                 avail_actions,
-                                                                                env_state.env_state.env_state.timestep))
+                                                                                timestep))
 
         return actions, new_ac_hstate
 

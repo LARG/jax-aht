@@ -10,8 +10,8 @@ from agents.q_network import QNetwork
 class DQNActorCriticFQEPolicy(AgentPolicy):
     """Policy wrapper for DQN Actor-Critic Fitted Q Estimation"""
 
-    def __init__(self, action_dim, obs_dim, actor_critic_policy, epsilon_start=1.0, epsilon_finish=0.1, epsilon_anneal_time=10000,
-                 hidden_dim=64):
+    def __init__(self, action_dim, obs_dim, actor_critic_policy, epsilon_start=0.2, epsilon_finish=1.0, epsilon_anneal_time=10000,
+                 epsilon_anneal_start=0, hidden_dim=64):
         """
         Args:
             action_dim: int, dimension of the action space
@@ -28,6 +28,7 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
         self.epsilon_start = epsilon_start
         self.epsilon_finish = epsilon_finish
         self.epsilon_anneal_time = epsilon_anneal_time
+        self.epsilon_anneal_start = epsilon_anneal_start  # timestep at which annealing begins
 
     def eps_greedy_exploration(self, rng, q_vals, t):
         """Epsilon-greedy exploration strategy."""
@@ -63,6 +64,18 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
             * t + self.epsilon_start, self.epsilon_finish,
         )
 
+        # Compute epsilon for the current timestep.
+        # Annealing only begins at epsilon_anneal_start; before that epsilon stays at epsilon_start.
+        # Clip with both min and max so this works for both increasing (0.2→1.0)
+        # and decreasing (1.0→0.1) schedules.
+        # effective_t = jnp.clip(t - self.epsilon_anneal_start, 0, self.epsilon_anneal_time)
+        # eps = jnp.clip(
+        #     ((self.epsilon_finish - self.epsilon_start) / self.epsilon_anneal_time)
+        #     * effective_t + self.epsilon_start,
+        #     a_min=min(self.epsilon_start, self.epsilon_finish),
+        #     a_max=max(self.epsilon_start, self.epsilon_finish),
+        # )
+
         # Sample random actions only from available actions
         # Generate random scores for all actions, mask unavailable ones
         random_scores = jax.random.uniform(rng_a, shape=avail_actions.shape)
@@ -80,7 +93,8 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
 
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
-                   aux_obs=None, env_state=None, test_mode=False):
+                   aux_obs=None, env_state=None, test_mode=False,
+                   timestep=0):
         """Get actions for the DQN policy."""
         qvals = self.network.apply(params, obs)
 
@@ -89,12 +103,13 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
 
         actions = jax.lax.cond(test_mode,
                                lambda: jnp.argmax(masked_qvals, axis=-1),
-                               lambda: self.eps_greedy_exploration(rng, masked_qvals, env_state.env_state.env_state.timestep))
+                               lambda: self.eps_greedy_exploration(rng, masked_qvals, timestep))
         return actions, None  # no hidden state
 
     @partial(jax.jit, static_argnums=(0,))
     def get_actor_critic_action(self, params, obs, done, avail_actions, hstate, rng,
-                   aux_obs=None, env_state=None, test_mode=False):
+                   aux_obs=None, env_state=None, test_mode=False,
+                   timestep=0):
         """Get actions for the DQN policy."""
         actions, new_ac_hstate = self.actor_critic.get_action(params, obs, done, avail_actions, hstate, rng,
                                                               aux_obs, env_state, test_mode=False)
@@ -105,7 +120,7 @@ class DQNActorCriticFQEPolicy(AgentPolicy):
                                lambda: actions,
                                lambda: self.eps_greedy_actor_critic_exploration(rng, actions,
                                                                                 avail_actions,
-                                                                                env_state.env_state.env_state.timestep))
+                                                                                timestep))
 
         return actions, new_ac_hstate
 

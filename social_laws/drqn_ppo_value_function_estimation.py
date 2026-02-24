@@ -282,7 +282,8 @@ def train_drqnppo_agent(config, env, train_rng,
                     hstate=ppo_hstate,
                     rng=actor_rng,
                     env_state=env_state,
-                    test_mode=False
+                    test_mode=False,
+                    timestep=train_state.timesteps
                 )
                 act = act.squeeze(axis=0)
 

@@ -244,7 +244,8 @@ def train_dqnppo_agent(config, env, train_rng,
                     hstate=ppo_hstate,
                     rng=actor_rng,
                     env_state=env_state,
-                    test_mode=False
+                    test_mode=False,
+                    timestep=train_state.timesteps
                 )
 
                 act = act.squeeze(axis=0)
@@ -533,6 +534,7 @@ def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
     algorithm_config = dict(config["value_function"])
 
     algorithm_config["EPSILON_ANNEAL_TIME"] = algorithm_config["TOTAL_TIMESTEPS"] * algorithm_config["EPSILON_EXPLORATION_FRACTION"]
+    algorithm_config["EPSILON_ANNEAL_START"] = algorithm_config["TOTAL_TIMESTEPS"] * (1.0 - algorithm_config["EPSILON_EXPLORATION_FRACTION"])
 
     # Create only one environment instance
     env_kwargs = algorithm_config["ENV_KWARGS"].copy()
