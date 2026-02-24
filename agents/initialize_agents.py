@@ -10,6 +10,7 @@ from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
 from agents.s5_actor_critic_agent import S5ActorCriticPolicy
 from agents.liam_agent import LIAMPolicy, initialize_liam_encoder_decoder
 from agents.meliba_agent import MeLIBAPolicy, initialize_meliba_encoder_decoder
+from agents.mlp_reppo_agent import MLPREPPOPolicy
 
 def initialize_s5_agent(config, env, rng):
     """Initialize an S5 agent with the given config.
@@ -228,6 +229,7 @@ def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy)
         epsilon_start=config["EPSILON_START"],
         epsilon_finish=config["EPSILON_END"],
         epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        epsilon_anneal_start=config.get("EPSILON_ANNEAL_START", 0),
         hidden_dim=config.get("DQN_HIDDEN_DIM", 64)
     )
     rng, init_rng = jax.random.split(rng)

@@ -118,6 +118,7 @@ def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy,
         epsilon_start=config["EPSILON_START"],
         epsilon_finish=config["EPSILON_END"],
         epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        epsilon_anneal_start=config.get("EPSILON_ANNEAL_START", 0),
         hidden_dim=config.get("DQN_HIDDEN_DIM", 64)
     )
     rng, init_rng = jax.random.split(rng)
