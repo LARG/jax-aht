@@ -1,9 +1,9 @@
 # This file is maintained for backward compatibility.
 # The canonical dependency specification is in pyproject.toml
-# 
+#
 # To regenerate this file from pyproject.toml, run:
 # pip-compile pyproject.toml
-# 
+#
 # Or install directly from pyproject.toml:
 # pip install -e .
 
@@ -11,6 +11,7 @@
 jax[cuda12]==0.5.3
 chex==0.1.88
 flax==0.10.2
+flashbax==0.1.3
 ml_dtypes==0.4.0
 optax==0.2.4
 orbax-checkpoint==0.11.1
