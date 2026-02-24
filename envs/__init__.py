@@ -178,12 +178,12 @@ def make_env(env_name: str, env_kwargs: dict = {}):
                               vectorized=env_kwargs_copy["vectorized"])
         env = Grid10x10Wrapper(rddl_env, **env_kwargs_copy)
 
-    elif env_name == 'rddl/grid_4x4_alternating':
+    elif env_name == 'rddl/grid_10x10_alternating':
         default_env_kwargs = {
-            "domain": "grid_4x4_alternating_domain.rddl",
-            "instance": "grid_4x4_alternating_instance2.rddl",
+            "domain": "grid_10x10_alternating_domain.rddl",
+            "instance": "grid_10x10_alternating_instance2.rddl",
             "render": False,
-            "render_name": "grid_4x4_alternating",
+            "render_name": "grid_10x10_alternating",
             "render_dir": "render",
             "stochastic_movement_prob": 0.0,
             "enforce_action_constraints": True,
