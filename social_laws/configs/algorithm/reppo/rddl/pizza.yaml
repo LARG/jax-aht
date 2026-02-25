@@ -6,9 +6,12 @@ TOTAL_TIMESTEPS: 3e6
 TOTAL_TIMESTEPS_DECAY: 3e6
 LR: 0.0003
 
+NUM_MINIBATCHES: 160
+
+TARGET_ENTROPY_MULT: 0.01
 GAMMA: 0.99
-VMIN: -10 # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * min_reward
-VMAX: 10  # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * max_reward
+VMIN: 0 # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * min_reward
+VMAX: 2  # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * max_reward
 
 ANNEAL_LR: false
 NUM_EPOCHS: 4

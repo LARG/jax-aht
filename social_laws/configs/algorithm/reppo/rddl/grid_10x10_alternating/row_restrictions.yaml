@@ -2,14 +2,22 @@ defaults:
   - reppo/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 6e6
-NUM_ENVS: 20
-NUM_MINIBATCHES: 5
-LR: 5e-5
-ENT_COEF: 1e-4
-CLIP_EPS: 0.1
+TOTAL_TIMESTEPS: 12e6
+TOTAL_TIMESTEPS_DECAY: 12e6
+
+NUM_ENVS: 40 # parallel environments
+NUM_EPOCHS: 4 # number of epochs per update
+NUM_MINIBATCHES: 128 # minibatches per epoch
+
+LR: 0.0003
+
+TARGET_ENTROPY_MULT: 0.01 # sum (action probabilities) * log(action probabilities), max entropy
+GAMMA: 0.99
+VMIN: -400 # -400 with step penalty, -300 without step penalty # Env dependent, (1 / (1 - gamma)) * min_reward
+VMAX: 100 # Env dependent, (1 / (1 - gamma)) * max_reward
+
 ANNEAL_LR: false
-UPDATE_EPOCHS: 10
+
 S5_D_MODEL: 128
 S5_SSM_SIZE: 128
 S5_ACTOR_CRITIC_HIDDEN_DIM: 1024

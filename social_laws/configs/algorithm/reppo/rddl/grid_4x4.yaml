@@ -6,6 +6,7 @@ TOTAL_TIMESTEPS: 3e6
 TOTAL_TIMESTEPS_DECAY: 3e6
 LR: 0.0003
 
+TARGET_ENTROPY_MULT: 0.01
 GAMMA: 0.99
 VMIN: -130 # -130 with step penalty, -100 without step penalty # Env dependent, (1 / (1 - gamma)) * min_reward
 VMAX: 10 # Env dependent, (1 / (1 - gamma)) * max_reward
