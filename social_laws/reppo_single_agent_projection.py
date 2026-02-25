@@ -24,7 +24,7 @@ import hydra
 
 from agents import q_network
 from social_laws.common.initialize_agents import initialize_reppo_agent
-from social_laws.common.run_episodes_reppo import run_episodes_vmap
+from social_laws.common.run_episodes_reppo_w_q_eval import run_episodes_vmap
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 from envs import make_env
@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def train_reppo_agent(config, env, train_rng,
+def train_reppo_agent(config, env, q_env, train_rng,
                     policy, init_params, agent_idx):
     '''
     Train REPPO single agent projection using the given initial parameters.
@@ -588,7 +588,7 @@ def train_reppo_agent(config, env, train_rng,
                     else:
                         rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                     ckpt_eval_eps_last_infos = run_episodes_vmap(
-                        eval_rng, env, agent_idx, agent_param=ckpt_params, agent_policy=policy,
+                        eval_rng, env, q_env, agent_idx, agent_param=ckpt_params, agent_policy=policy,
                         max_episode_steps=max_episode_steps,
                         num_eps=config["NUM_EVAL_EPISODES"],
                         agent_test_mode=True)
@@ -613,7 +613,7 @@ def train_reppo_agent(config, env, train_rng,
                         else:
                             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                         eval_eps_last_infos = run_episodes_vmap(
-                            eval_rng, env, agent_idx, agent_param=eval_params, agent_policy=policy,
+                            eval_rng, env, q_env, agent_idx, agent_param=eval_params, agent_policy=policy,
                             max_episode_steps=max_episode_steps,
                             num_eps=config["NUM_EVAL_EPISODES"],
                             agent_test_mode=True)
@@ -660,7 +660,7 @@ def train_reppo_agent(config, env, train_rng,
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
 
             # Init eval return infos
-            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
+            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, q_env, agent_idx,
                                     agent_param=init_ckpt_params, agent_policy=policy,
                                     max_episode_steps=max_episode_steps,
                                     num_eps=config["NUM_EVAL_EPISODES"],
@@ -704,7 +704,7 @@ def train_reppo_agent(config, env, train_rng,
                     eval_rng = rng_eval
                 else:
                     rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
+                out["render_outs"] = run_episodes_vmap(eval_rng, env, q_env, agent_idx,
                                                     agent_param=final_params, agent_policy=policy,
                                                     max_episode_steps=env.horizon,
                                                     num_eps=5, render=True,
@@ -739,6 +739,9 @@ def run_training(config, wandb_logger, agent_idx=0):
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
+    q_env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
+    q_env = LogWrapper(q_env)
+
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])# + agent_idx)# + 7)
     _, init_rng, train_rng = jax.random.split(rng, 3)
 
@@ -752,6 +755,7 @@ def run_training(config, wandb_logger, agent_idx=0):
     out = train_reppo_agent(
         config=algorithm_config,
         env=env,
+        q_env=q_env,
         train_rng=train_rng,
         policy=policy,
         init_params=init_params,
@@ -771,7 +775,7 @@ def run_training(config, wandb_logger, agent_idx=0):
     log.info(f"Starting single agent projection logging for agent {agent_idx}...")
     start_time = time.perf_counter()
     metric_names = get_metric_names(config["ENV_NAME"])
-    log_metrics(env, config, out, wandb_logger, metric_names, agent_idx)
+    log_metrics(env, q_env, config, out, wandb_logger, metric_names, agent_idx)
     elapsed_time = time.perf_counter() - start_time
     hours, rem = divmod(elapsed_time, 3600)
     minutes, rem = divmod(rem, 60)
@@ -783,11 +787,12 @@ def run_training(config, wandb_logger, agent_idx=0):
 
     return out["final_params"], policy, init_params
 
-def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: int):
+def log_metrics(env, q_env, config, train_out, logger, metric_names: tuple, agent_idx: int):
     """Process training metrics and log them using the provided logger.
 
     Args:
         env: the environment used for training, needed for logging videos
+        q_env: the q environment used for training, needed for logging videos
         config: dict, the training configuration
         train_out: dict, the logs from training
         logger: Logger, instance to log metrics
@@ -814,12 +819,19 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     all_agent_q_error = np.asarray(train_metrics["q_error"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
 
     # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
-    all_ckpt_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_ckpt_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_returns = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_ckpt_agent_returns = all_ckpt_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_agent_returns = all_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     average_ckpt_agent_rets_per_iter = np.mean(all_ckpt_agent_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_rets_per_iter = np.mean(all_agent_returns, axis=(0, 2)) # shape (num_updates,)
+
+    all_ckpt_q_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_q_returns = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_ckpt_agent_q_returns = all_ckpt_q_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    all_agent_q_returns = all_q_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    average_ckpt_agent_q_rets_per_iter = np.mean(all_ckpt_agent_q_returns, axis=(0, 2)) # shape (num_updates,)
+    average_agent_q_rets_per_iter = np.mean(all_agent_q_returns, axis=(0, 2)) # shape (num_updates,)
 
     # Process loss metrics - average across train seeds, partners and minibatches dims
     # Loss metrics shape should be (n_train_seeds, num_updates, ...)
@@ -844,6 +856,9 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
 
         logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/Return", average_agent_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/CheckpointReturn", average_ckpt_agent_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/QReturn", average_agent_q_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/CheckpointQReturn", average_ckpt_agent_q_rets_per_iter[step], train_step=step, commit=True)
+
         logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/ActorLoss", average_agent_actor_losses[step], train_step=step, commit=True)
         logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/TargetEntropyLoss", average_agent_target_entropy_losses[step], train_step=step, commit=True)
         logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/LagrangianLoss", average_agent_lagrangian_losses[step], train_step=step, commit=True)
@@ -862,16 +877,24 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
 
     if env._render:
         # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
-        eval_render_init_env_state = train_out['render_outs'][1].env_state.env_state # LogEnvState
+        eval_render_init_env_state = train_out['render_outs'][2].env_state.env_state # LogEnvState
+        eval_render_q_env_state = train_out['render_outs'][1][-1]['pre_reset_state'].env_state # WrappedEnvState
+        eval_render_q_dones = train_out['render_outs'][1][4]['__all__']
         eval_render_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
         eval_render_dones = train_out['render_outs'][0][4]['__all__']
         num_episodes = eval_render_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
-        env.animate((eval_render_init_env_state, eval_render_env_state), eval_render_dones, num_episodes, debug=True)
+        q_env.animate((eval_render_init_env_state, eval_render_q_env_state), eval_render_q_dones, num_episodes, extra_dir="Q_Values", debug=True)
+        env.animate((eval_render_init_env_state, eval_render_env_state), eval_render_dones, num_episodes, extra_dir="Policy", debug=True)
 
         for eval_ep in range(num_episodes):
             logger.log_video(
-                tag=f"Videos/Agent_{agent_idx + 1}_Proj/Agent_{agent_idx}_Episode_{eval_ep}",
-                path=os.path.join(env._render_dir, f"{env._render_name}_ep_{eval_ep}.gif")
+                tag=f"Videos/Agent_{agent_idx + 1}_Proj/Policy/Agent_{agent_idx}_Episode_{eval_ep}",
+                path=os.path.join(env._render_dir, "Policy", f"{env._render_name}_ep_{eval_ep}.gif")
+            )
+
+            logger.log_video(
+                tag=f"Videos/Agent_{agent_idx + 1}_Proj/Q_Values/Agent_{agent_idx}_Episode_{eval_ep}",
+                path=os.path.join(q_env._render_dir, "Q_Values", f"{q_env._render_name}_ep_{eval_ep}.gif")
             )
 
     out_savepath = save_train_run(train_out, savedir, savename=f"REPPO_Agent_{agent_idx + 1}_Proj_Train_Run")

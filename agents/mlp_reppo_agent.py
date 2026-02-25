@@ -133,6 +133,21 @@ class MLPREPPOPolicy(AgentPolicy):
 
         return critic_outs["logits"], critic_outs["probs"], critic_outs["q_values"], None  # no hidden state
 
+    @partial(jax.jit, static_argnums=(0,))
+    def get_critic_values_actions(self, params, obs, done, avail_actions, hstate, rng,
+                                       aux_obs=None, env_state=None):
+        """Get logits, probs, and valies for the MLP critic policy."""
+        params={
+            "params": params[0],
+            "batch_stats": params[1],
+        }
+
+        critic_outs = self.q_network.apply(params, obs, train=False)
+
+        masked_qvals = jnp.where(avail_actions, critic_outs["q_values"], -jnp.inf)
+
+        return critic_outs["q_values"], jnp.argmax(masked_qvals, axis=-1), None  # no hidden state
+
     # @partial(jax.jit, static_argnums=(0,))
     # def get_action_value_policy(self, params, obs, done, avail_actions, hstate, rng,
     #                             aux_obs=None, env_state=None):

@@ -7,12 +7,16 @@ import jax.numpy as jnp
 from functools import partial
 
 
-def run_single_episode(rng, env, agent_idx, agent_param, agent_policy,
+def run_single_episode(rng, env, q_env, agent_idx, agent_param, agent_policy,
                        max_episode_steps, render, agent_test_mode):
     # Reset the env.
     rng, reset_rng = jax.random.split(rng)
     (init_obs, init_obs_full), init_env_state = env.reset(reset_rng)
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
+
+    (init_q_obs, init_q_obs_full), init_q_env_state = q_env.reset(reset_rng)
+    init_q_done = {k: jnp.zeros((1), dtype=bool) for k in q_env.agents + ["__all__"]}
+
     init_reward = {k: jnp.zeros((1)) for i, k in enumerate(env.agents)}
 
     # Initialize hidden states. Agent id is passed as part of the hstate initialization to support heuristic agents.
@@ -35,8 +39,16 @@ def run_single_episode(rng, env, agent_idx, agent_param, agent_policy,
     avail_actions = jax.lax.stop_gradient(avail_actions)
     avail_actions = get_agent_data(avail_actions, agent_idx).astype(jnp.float32)
 
+    q_avail_actions = q_env.get_avail_actions(init_q_env_state.env_state)
+    q_avail_actions = jax.lax.stop_gradient(q_avail_actions)
+    q_avail_actions = get_agent_data(q_avail_actions, agent_idx).astype(jnp.float32)
+
     # Do one step to get a dummy info structure
     rng, act_rng, step_rng = jax.random.split(rng, 3)
+
+    ###########################################
+    #                  Policy                 #
+    ###########################################
 
     # Get ego action
     act, hstate = agent_policy.get_action(
@@ -56,6 +68,32 @@ def run_single_episode(rng, env, agent_idx, agent_param, agent_policy,
     env_act = set_agent_data(env_act, agent_idx, act)
     env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
     (obs, obs_full), env_state, reward, done, dummy_info = env.step(step_rng, init_env_state, env_act)
+
+    ###########################################
+    #                  Q Values               #
+    ###########################################
+
+    # Get ego action
+    _, q_act, q_hstate = agent_policy.get_critic_values_actions(
+        params=(agent_param['q_network']["params"], agent_param['q_network']["batch_stats"]),
+        obs=get_agent_data(init_q_obs, agent_idx).reshape(1, 1, -1),
+        done=get_agent_data(init_q_done, agent_idx).reshape(1, 1),
+        avail_actions=q_avail_actions,
+        hstate=init_hstate[1],
+        rng=act_rng,
+        aux_obs=None,
+        env_state=init_q_env_state
+    )
+    q_act = q_act.squeeze(axis=0)
+
+    q_env_act = {k: jnp.zeros_like(q_act) for i, k in enumerate(q_env.agents)}
+    q_env_act = set_agent_data(q_env_act, agent_idx, q_act)
+    q_env_act_onehot = {k: jax.nn.one_hot(q_env_act[q_env.agents[i]], q_env.action_space(q_env.agents[i]).n) for i, k in enumerate(q_env.agents)}
+    (q_obs, q_obs_full), q_env_state, q_reward, q_done, q_dummy_info = q_env.step(step_rng, init_q_env_state, q_env_act)
+
+    ###########################################
+    #                  Policy                 #
+    ###########################################
 
     # We'll use a scan to iterate steps until the episode is done.
     ep_ts = 1
@@ -103,15 +141,64 @@ def run_single_episode(rng, env, agent_idx, agent_param, agent_policy,
     final_carry, stacked_carry = jax.lax.scan(
         scan_step, init_carry, None, length=max_episode_steps)
 
+    ###########################################
+    #                  Q Values               #
+    ###########################################
+
+    # We'll use a scan to iterate steps until the episode is done.
+    ep_ts = 1
+    init_carry = (ep_ts, q_env_state, q_obs, rng, q_done, q_reward, q_env_act_onehot, q_hstate, q_dummy_info)
+    def q_scan_step(carry, _):
+        def take_q_step(carry_step):
+            ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry_step
+            # Get available actions for the agent from environment state
+            avail_actions = env.get_avail_actions(env_state.env_state)
+            avail_actions = jax.lax.stop_gradient(avail_actions)
+            avail_actions = get_agent_data(avail_actions, agent_idx).astype(jnp.float32)
+
+            # Get ego action
+            rng, act_rng, step_rng = jax.random.split(rng, 3)
+            _, act, hstate_next = agent_policy.get_critic_values_actions(
+                params=(agent_param['q_network']["params"], agent_param['q_network']["batch_stats"]),
+                obs=get_agent_data(obs, agent_idx).reshape(1, 1, -1),
+                done=get_agent_data(done, agent_idx).reshape(1, 1),
+                avail_actions=avail_actions,
+                hstate=hstate,
+                rng=act_rng,
+                aux_obs=None,
+                env_state=env_state
+            )
+            act = act.squeeze(axis=0)
+
+            env_act = {k: jnp.zeros_like(act) for i, k in enumerate(env.agents)}
+            env_act = set_agent_data(env_act, agent_idx, act)
+            env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
+            (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
+
+            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, hstate_next, info_next)
+
+        ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry
+        output = carry
+        new_carry = jax.lax.cond(
+            done["__all__"],
+            lambda curr_carry: curr_carry, # True fn
+            take_q_step, # False fn
+            operand=carry
+        )
+        return new_carry, output
+
+    q_final_carry, q_stacked_carry = jax.lax.scan(
+        q_scan_step, init_carry, None, length=max_episode_steps)
+
     if render:
         # If rendering, we return all step data (stacked_carry contains data for each timestep)
-        return (stacked_carry, init_env_state)
+        return (stacked_carry, q_stacked_carry, init_env_state)
     else:
         # If not rendering, we just return the final info (which includes the episode return via LogWrapper)
         # Return the final info (which includes the episode return via LogWrapper).
-        return final_carry[-1]
+        return (final_carry[-1], q_final_carry[-1])
 
-def run_episodes(rng, env, agent_idx, agent_param, agent_policy,
+def run_episodes(rng, env, q_env, agent_idx, agent_param, agent_policy,
                  max_episode_steps, num_eps, render=False, agent_test_mode=True):
     '''Run num_eps episodes sequentially using scan.'''
     # Create episode-specific RNGs
@@ -121,7 +208,7 @@ def run_episodes(rng, env, agent_idx, agent_param, agent_policy,
     # Define scan function to run episodes sequentially
     def scan_episode(carry, ep_rng):
         all_out = run_single_episode(
-            ep_rng, env, agent_idx, agent_param, agent_policy,
+            ep_rng, env, q_env, agent_idx, agent_param, agent_policy,
             max_episode_steps, render, agent_test_mode
         )
         return carry, all_out
@@ -130,7 +217,7 @@ def run_episodes(rng, env, agent_idx, agent_param, agent_policy,
     _, all_outs = jax.lax.scan(scan_episode, None, ep_rngs)
     return all_outs  # each leaf has shape (num_eps, ...)
 
-def run_episodes_vmap(rng, env, agent_idx, agent_param, agent_policy,
+def run_episodes_vmap(rng, env, q_env, agent_idx, agent_param, agent_policy,
                       max_episode_steps, num_eps, render=False, agent_test_mode=True):
     '''Run num_eps episodes in parallel using vmap.'''
     # Create episode-specific RNGs
@@ -140,12 +227,12 @@ def run_episodes_vmap(rng, env, agent_idx, agent_param, agent_policy,
     # Vmap over episodes - all episodes run in parallel
     vmapped_run = jax.vmap(
         run_single_episode,
-        in_axes=(0, None, None, None, None, None, None, None),  # only RNG varies
+        in_axes=(0, None, None, None, None, None, None, None, None),  # only RNG varies
         out_axes=0  # stack outputs along first axis
     )
 
     all_outs = vmapped_run(
-        ep_rngs, env, agent_idx, agent_param, agent_policy,
+        ep_rngs, env, q_env, agent_idx, agent_param, agent_policy,
         max_episode_steps, render, agent_test_mode
     )
 
