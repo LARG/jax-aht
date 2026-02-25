@@ -59,11 +59,12 @@ def simple_timer(func):
 class GameSession:
     """Manages a single game session with environment state and agent state."""
     
-    def __init__(self, session_id, max_steps=50, grid_size=7, num_fruits=3, env_kwargs: dict = None, levels_mode: str = 'same'):
+    def __init__(self, session_id, max_steps=50, grid_size=7, num_fruits=3, env_kwargs: dict = None, levels_mode: str = 'same', is_warmup: bool = False):
+        self.is_warmup = is_warmup
         self.session_id = session_id
         self.max_steps = max_steps
         self.grid_size = grid_size
-        self.num_fruits = num_fruits
+        self.num_fruits = 4 if grid_size == 7 else 6  # Override num_fruits based on grid size
         # env_kwargs and levels_mode control underlying generator behavior and post-reset level assignment
         self.env_kwargs = env_kwargs or {}
         # levels_mode: 'same' -> all fruits have same level (default behavior)
@@ -77,7 +78,7 @@ class GameSession:
             "time_limit": max_steps,
             "grid_size": grid_size,
             "num_agents": 2,
-            "num_food": num_fruits,
+            "num_food": self.num_fruits,
             "highlight_agent_idx": 0
         })
         self.env = make_env(env_name="lbf", env_kwargs=env_args)
@@ -205,13 +206,49 @@ class GameSession:
                     combined = int(2)
                 new_levels = jnp.full_like(food_levels, combined)
             else:
-                # 'different' mode: randomize levels across food items so some are uncollectable
+                # 'different' mode: guarantee variety in fruit collectability
+                # 1. At least one fruit collectable by one agent alone
+                # 2. At least one fruit that can't be collected even by both agents together
+                # 3. All remaining fruits can be collected by the agents together
                 num = int(food_levels.shape[0]) if hasattr(food_levels, 'shape') else len(food_levels)
-                # create a range including 1..(max_agent_level * 2) to allow uncollectable items
-                maxlvl = int(self.env.env.generator._max_agent_level) if hasattr(self.env.env, 'generator') and hasattr(self.env.env.generator, '_max_agent_level') else 3
-                # Make some items require combined level > available, some require single-player
-                rng_vals = np.random.randint(1, max(2, maxlvl * 2 + 1), size=(num,))
-                new_levels = jnp.array(rng_vals)
+
+                # Determine agent level info
+                try:
+                    agent_levels = self.state.env_state.agents.level
+                    agent_level_list = [int(l) for l in agent_levels]
+                    combined = sum(agent_level_list)
+                    min_agent = min(agent_level_list)
+                    max_agent = max(agent_level_list)
+                except Exception:
+                    combined = 2
+                    min_agent = 1
+                    max_agent = 1
+
+                levels = []
+
+                # Guarantee 1: one fruit collectable by a single agent
+                # (fruit level <= min agent level, so either agent can solo it)
+                solo_level = int(np.random.randint(1, max(2, min_agent + 1)))
+                levels.append(solo_level)
+
+                # Guarantee 2: one fruit that CAN'T be collected even together
+                # (fruit level > combined agent levels)
+                uncollectable_level = combined + int(np.random.randint(1, max(2, combined + 1)))
+                levels.append(uncollectable_level)
+
+                # Guarantee 3: remaining fruits are collectable by agents together
+                # (fruit level <= combined). Mix of solo-able and cooperation-required.
+                for _ in range(num - 2):
+                    if max_agent < combined and np.random.random() < 0.5:
+                        # Cooperation required (need both agents adjacent): level in (max_agent, combined]
+                        lvl = int(np.random.randint(max_agent + 1, combined + 1))
+                    else:
+                        # Solo-able by at least one agent: level in [1, max_agent]
+                        lvl = int(np.random.randint(1, max(2, max_agent + 1)))
+                    levels.append(lvl)
+
+                np.random.shuffle(levels)
+                new_levels = jnp.array(levels)
 
             # Try to replace nested dataclasses safely
             try:
@@ -345,7 +382,9 @@ class GameSession:
         }
         
         # Create data directory if it doesn't exist
-        data_dir = os.path.join(os.path.dirname(__file__), "collected_data")
+        # Warmup games go to a separate folder
+        folder_name = "collected_data_warmup" if self.is_warmup else "collected_data"
+        data_dir = os.path.join(os.path.dirname(__file__), folder_name)
         os.makedirs(data_dir, exist_ok=True)
         
         # Save to file with timestamp for uniqueness
@@ -442,18 +481,27 @@ class ReplaySession:
         return self.get_current_state()
 
 
+# Number of warmup games at the start of each session
+NUM_WARMUP_GAMES = 2
+NUM_REAL_GAMES = 8
+TOTAL_GAMES = NUM_WARMUP_GAMES + NUM_REAL_GAMES
+
+
 class MultiGameSession:
     """Manages a sequence of GameSession instances played sequentially with lazy loading."""
-    def __init__(self, session_id, game_configs, first_game=None):
+    def __init__(self, session_id, game_configs, first_game=None, num_warmup=NUM_WARMUP_GAMES):
         self.session_id = session_id
         self.config_list = game_configs  # All configs (used for lazy creation)
         self.games = [None] * len(game_configs)  # Placeholder for all games
         self.current_idx = 0
+        self.num_warmup = num_warmup  # First N games are warmup
+        self.session_complete = False  # True when all games are done
         
         # Set first game if provided (already prewarmed or created)
         if first_game:
             self.games[0] = first_game
             first_game.session_id = session_id
+            first_game.is_warmup = (0 < num_warmup)
 
     def _ensure_game_loaded(self, idx):
         """Ensure game at index is loaded; fetch or create if needed."""
@@ -463,6 +511,7 @@ class MultiGameSession:
         cfg = self.config_list[idx]
         game = get_or_create_game(cfg['grid_size'], cfg['levels_mode'])
         game.session_id = self.session_id
+        game.is_warmup = (idx < self.num_warmup)
         self.games[idx] = game
 
     def _current(self):
@@ -471,14 +520,23 @@ class MultiGameSession:
 
     def step(self, human_action):
         cur = self._current()
+        prev_idx = self.current_idx
         state = cur.step(human_action)
         # If current finished, advance to next game
         if cur.done and self.current_idx < len(self.games) - 1:
             self.current_idx += 1
             # Ensure next game is loaded before returning its state
             self._ensure_game_loaded(self.current_idx)
-            return self._current().get_state_dict()
-        return state
+            result = self.get_state_dict()
+            result['game_just_advanced'] = True
+            result['prev_game_index'] = prev_idx
+            return result
+        # If all games are done, mark session complete
+        if cur.done and self.current_idx >= len(self.games) - 1:
+            self.session_complete = True
+        result = self.get_state_dict()
+        result['game_just_advanced'] = False
+        return result
 
     def reset(self):
         # Reset current game
@@ -491,6 +549,9 @@ class MultiGameSession:
         state['multi'] = True
         state['current_game_index'] = self.current_idx
         state['total_games'] = len(self.games)
+        state['num_warmup'] = self.num_warmup
+        state['is_warmup'] = self.current_idx < self.num_warmup
+        state['session_complete'] = self.session_complete
         state['game_configs'] = [{'grid_size': cfg['grid_size'], 'num_fruits': cfg.get('num_fruits', 3), 'levels_mode': cfg['levels_mode']} for cfg in self.config_list]
         return state
 
@@ -506,7 +567,7 @@ class MultiGameSession:
 
 def get_game(grid_size=7, levels_mode='same'):
     max_steps = 50
-    num_fruits = random.randint(3, 4)
+    num_fruits = 4 if grid_size == 7 else 6
     env_kwargs = {}
     game = GameSession(str(uuid.uuid4()), max_steps, grid_size, num_fruits, env_kwargs=env_kwargs, levels_mode=levels_mode)
     return game
@@ -520,21 +581,31 @@ def get_game(grid_size=7, levels_mode='same'):
 PREWARMED_GAMES_POOL = {}  # {(grid_size, levels_mode): [GameSession, ...]}
 PREWARMING_LOCK = threading.Lock()
 
-def generate_game_order():
-    """Generate a random order for the four game configurations."""
-    indices = [0, 1, 2, 3]  # Indices for: (7x7,same), (7x7,diff), (12x12,same), (12x12,diff)
-    random.shuffle(indices)
-    return indices
-
-def get_config_for_index(idx):
-    """Get game config for a given index (0-3)."""
-    configs = [
+def generate_session_configs(num_warmup=NUM_WARMUP_GAMES, num_real=NUM_REAL_GAMES):
+    """Generate the full list of game configs for a session.
+    
+    Returns a list of dicts: first `num_warmup` are warmup, rest are real games.
+    Warmup games use randomly chosen configs.
+    Real games use 2 copies of each of the 4 base configs, shuffled.
+    """
+    base_configs = [
         {"grid_size": 7, "levels_mode": "same"},
         {"grid_size": 7, "levels_mode": "different"},
         {"grid_size": 12, "levels_mode": "same"},
         {"grid_size": 12, "levels_mode": "different"},
     ]
-    return configs[idx]
+    
+    # Warmup: pick randomly from base configs
+    warmup = [random.choice(base_configs).copy() for _ in range(num_warmup)]
+    
+    # Real games: 2 copies of each base config, shuffled
+    real = [cfg.copy() for cfg in base_configs for _ in range(num_real // len(base_configs))]
+    # If num_real isn't perfectly divisible, pad with random picks
+    while len(real) < num_real:
+        real.append(random.choice(base_configs).copy())
+    random.shuffle(real)
+    
+    return warmup + real
 
 def get_or_create_game(grid_size, levels_mode):
     """Get a prewarmed game or create one on-demand."""
@@ -559,8 +630,8 @@ async def prewarm_games():
                         if config_key not in PREWARMED_GAMES_POOL:
                             PREWARMED_GAMES_POOL[config_key] = []
                         
-                        # Keep at least 1 prewarmed for this config
-                        if len(PREWARMED_GAMES_POOL[config_key]) < 1:
+                        # Keep at least 2 prewarmed for this config
+                        if len(PREWARMED_GAMES_POOL[config_key]) < 2:
                             print(f"🔥 Prewarming {grid_size}x{grid_size} ({levels_mode})...")
                             gs = GameSession(str(uuid.uuid4()), 50, grid_size, 3, env_kwargs={}, levels_mode=levels_mode)
                             PREWARMED_GAMES_POOL[config_key].append(gs)
@@ -572,78 +643,6 @@ async def prewarm_games():
             await asyncio.sleep(2)
 
 
-    """Manages a sequence of GameSession instances played sequentially."""
-    def __init__(self, session_id, game_configs):
-        self.session_id = session_id
-        self.games = []
-        for cfg in game_configs:
-            gs = GameSession(str(uuid.uuid4()), cfg.get('max_steps', 50), cfg.get('grid_size', 7), cfg.get('num_fruits', 3), env_kwargs=cfg.get('env_kwargs', {}), levels_mode=cfg.get('levels_mode', 'same'))
-            self.games.append(gs)
-
-        self.current_idx = 0
-        # Ensure the wrapper session id is the provided one
-        for g in self.games:
-            g.session_id = session_id
-
-    def _current(self):
-        return self.games[self.current_idx]
-
-    def step(self, human_action):
-        cur = self._current()
-        state = cur.step(human_action)
-        # If current finished, move to next game (but only after save which is automatic in GameSession.step)
-        if cur.done and self.current_idx < len(self.games) - 1:
-            self.current_idx += 1
-            # return the initial state of the next game
-            return self._current().get_state_dict()
-        return state
-
-    def reset(self):
-        # Reset current game
-        return self._current().reset()
-
-    def get_state_dict(self):
-        state = self._current().get_state_dict()
-        # add multi-game metadata
-        state['multi'] = True
-        state['current_game_index'] = self.current_idx
-        state['total_games'] = len(self.games)
-        state['game_configs'] = [{'grid_size': g.grid_size, 'num_fruits': g.num_fruits, 'levels_mode': g.levels_mode} for g in self.games]
-        return state
-
-    def save_all(self, player_name='Anonymous'):
-        paths = []
-        for g in self.games:
-            p = g.save_episode(player_name)
-            if p:
-                paths.append(p)
-        return paths
-
-
-def get_game(grid_size=7, levels_mode='same'):
-    max_steps = 50
-    num_fruits = random.randint(3, 4)
-    env_kwargs = {}
-    game = GameSession(str(uuid.uuid4()), max_steps, grid_size, num_fruits, env_kwargs=env_kwargs, levels_mode=levels_mode)
-    return game
-
-async def add_prewarmed_game():
-    print("Adding prewarmed multi-game session...")
-    # Create the four configs and randomize order for prewarming
-    base_configs = [
-        {"grid_size": 7, "levels_mode": "same"},
-        {"grid_size": 7, "levels_mode": "different"},
-        {"grid_size": 12, "levels_mode": "same"},
-        {"grid_size": 12, "levels_mode": "different"},
-    ]
-    random.shuffle(base_configs)
-    mg = MultiGameSession(str(uuid.uuid4()), base_configs)
-    PREWARMED_GAMES.append(mg)
-    print("Added prewarmed multi-game session")
-
-    return mg
-
-
 @app.route('/')
 def index():
     """Serve the main game page."""
@@ -652,21 +651,18 @@ def index():
 
 @app.route('/api/new_game', methods=['POST'])
 def new_game():
-    """Start a new game session with predetermined random order. Only first game is loaded upfront."""
+    """Start a new game session with 2 warmup + 8 real games. Only first game is loaded upfront."""
     session_id = str(uuid.uuid4())
     
-    # Generate predetermined order for this session
-    order = generate_game_order()
-    
-    # Build config list for all 4 games
-    conf_list = [get_config_for_index(idx) for idx in order]
+    # Generate full config list: 2 warmup + 8 real
+    conf_list = generate_session_configs()
     
     # Only get/create the FIRST game immediately
     first_cfg = conf_list[0]
     first_game = get_or_create_game(first_cfg['grid_size'], first_cfg['levels_mode'])
     
-    # Create MultiGameSession with lazy loading for games 2-4
-    multi = MultiGameSession(session_id, conf_list, first_game=first_game)
+    # Create MultiGameSession with lazy loading for remaining games
+    multi = MultiGameSession(session_id, conf_list, first_game=first_game, num_warmup=NUM_WARMUP_GAMES)
     game_sessions[session_id] = multi
     
     # Store session ID in Flask session

@@ -559,6 +559,207 @@
             color: #666;
             font-size: 0.9em;
         }
+
+        /* Session Progress Bar */
+        .session-progress {
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .progress-label .warmup-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 8px;
+            font-weight: 700;
+        }
+
+        .progress-label .real-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 8px;
+            font-weight: 700;
+        }
+
+        .progress-count {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.95em;
+        }
+
+        .progress-track {
+            background: #ddd;
+            border-radius: 8px;
+            height: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .progress-fill.warmup {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        }
+
+        .progress-segments {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            padding: 0 2px;
+        }
+
+        .progress-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ddd;
+            border: 2px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.completed {
+            background: #667eea;
+            border-color: #5a6fd6;
+            color: white;
+        }
+
+        .progress-dot.completed.warmup-dot {
+            background: #ffc107;
+            border-color: #e5ac00;
+            color: #333;
+        }
+
+        .progress-dot.active {
+            background: white;
+            border-color: #667eea;
+            color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.3);
+            transform: scale(1.15);
+        }
+
+        .progress-dot.active.warmup-dot {
+            border-color: #ffc107;
+            color: #ffc107;
+            box-shadow: 0 0 0 3px rgba(255,193,7,0.3);
+        }
+
+        /* Finish Screen Modal */
+        .finish-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .finish-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .finish-content {
+            background: white;
+            border-radius: 24px;
+            padding: 45px;
+            max-width: 550px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            transform: scale(0.9);
+            transition: transform 0.4s ease;
+        }
+
+        .finish-overlay.show .finish-content {
+            transform: scale(1);
+        }
+
+        .finish-emoji {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .finish-title {
+            font-size: 2em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .finish-subtitle {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .finish-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .finish-stat {
+            text-align: center;
+        }
+
+        .finish-stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .finish-stat-label {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .finish-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -568,6 +769,38 @@
             <div class="spinner-ring"></div>
             <div class="spinner-text" id="spinnerText">Loading Game...</div>
             <div class="spinner-subtext" id="spinnerSubtext"></div>
+        </div>
+    </div>
+
+    <!-- Research Information Sheet Modal -->
+    <div id="researchModal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 style="font-size: 1.5em;">Research Information Sheet</h2>
+            </div>
+            <div class="modal-body" style="font-size: 0.97em;">
+                <p><strong>Title of the Project: Ad Hoc Teamwork with Humans in Level-Based Foraging</strong><br>
+                <strong>UT Austin Investigator:</strong> Prof. Peter Stone</p>
+
+                <p>You are invited to be part of a research study. Your participation is voluntary, and it is totally up to you to decide whether you want to participate. Even if you decide to be part of the study now, you can change your mind and stop at any time.</p>
+
+                <p>If you agree to take part in this study, you will be asked to play several games of Level-Based Foraging with an AI partner. We expect that this study will take about 10 minutes.</p>
+
+                <h3>Contact Information</h3>
+                <p>If you have any questions, concerns, or complaints about this research now or in the future, you may contact <em>Prof. Peter Stone, pstone@cs.utexas.edu</em>.</p>
+
+                <p>If you have questions about your rights as a research participant, or wish to obtain information, ask questions, or discuss any concerns about this study with someone other than the researcher(s), please contact the following:</p>
+
+                <p style="margin-left: 15px;">
+                    The University of Texas at Austin Institutional Review Board<br>
+                    Phone: 512-232-1543<br>
+                    IRB #STUDY00008549<br>
+                    Email: <a href="mailto:irb@austin.utexas.edu" style="color: #667eea;">irb@austin.utexas.edu</a>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeResearchModal()">I Understand, Continue &rarr;</button>
+            </div>
         </div>
     </div>
 
@@ -634,7 +867,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Finish Screen Modal -->
+    <div id="finishModal" class="finish-overlay" aria-modal="true" role="dialog">
+        <div class="finish-content">
+            <div class="finish-emoji">🎉🏆🎉</div>
+            <div class="finish-title">Session Complete!</div>
+            <div class="finish-subtitle">Thank you for playing all 10 games.<br>Your data has been saved.</div>
+            <div class="finish-stats">
+                <div class="finish-stat">
+                    <div class="finish-stat-value" id="finishGamesPlayed">10</div>
+                    <div class="finish-stat-label">Games Played</div>
+                </div>
+            </div>
+            <div class="finish-buttons">
+                <button onclick="playAgain()">Play Again 🔄</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
+        <!-- Session Progress Bar -->
+        <div id="sessionProgress" class="session-progress" style="display: none;">
+            <div class="progress-header">
+                <span class="progress-label" id="progressLabel">Game 1 of 10</span>
+                <span class="progress-count" id="progressCount"></span>
+            </div>
+            <div class="progress-segments" id="progressDots"></div>
+        </div>
+
         <h1>Level-Based Foraging</h1>
         <p class="subtitle">Play cooperatively with an AI agent to collect food!</p>
 
@@ -645,7 +906,7 @@
                 <div class="canvas-wrapper">
                     <canvas id="gameCanvas" width="600" height="600"></canvas>
                     <div id="gameOverlay" class="overlay" aria-hidden="true">
-                        <div class="overlay-text">🎮 Episode Complete — Click the button below to play again</div>
+                        <div class="overlay-text">� All Games Complete! Great job!</div>
                     </div>
                 </div>
                 
@@ -776,6 +1037,7 @@
         let lastAIAction = null;
         let actionAnimationTimer = null;
         let actionAnimationAlpha = 1.0;
+        let sessionComplete = false;
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -807,6 +1069,24 @@
             'q': ACTIONS.NOOP,
             'Q': ACTIONS.NOOP
         };
+        // Research Information Sheet Modal Functions
+        function showResearchModal() {
+            const modal = document.getElementById('researchModal');
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeResearchModal() {
+            const modal = document.getElementById('researchModal');
+            modal.classList.remove('show');
+            // After closing research modal, show welcome/instructions modal if needed
+            if (shouldShowWelcomeModal()) {
+                showWelcomeModal();
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+
         // Welcome Modal Functions
         function showWelcomeModal() {
             const modal = document.getElementById('welcomeModal');
@@ -849,9 +1129,80 @@
             }
         }
 
+        // ===== SESSION PROGRESS BAR =====
+        function updateProgressBar() {
+            if (!gameState || !gameState.multi) {
+                document.getElementById('sessionProgress').style.display = 'none';
+                return;
+            }
+
+            const progressEl = document.getElementById('sessionProgress');
+            progressEl.style.display = '';
+
+            const totalGames = gameState.total_games || 10;
+            const currentIdx = gameState.current_game_index || 0;
+            const numWarmup = gameState.num_warmup || 2;
+            const isWarmup = gameState.is_warmup;
+            const isDone = gameState.done && gameState.session_complete;
+
+            // Label
+            const label = document.getElementById('progressLabel');
+            if (isDone) {
+                label.innerHTML = 'All games complete!';
+            } else if (isWarmup) {
+                label.innerHTML = `Warmup ${currentIdx + 1} of ${numWarmup} <span class="warmup-badge">WARMUP</span>`;
+            } else {
+                const realIdx = currentIdx - numWarmup + 1;
+                const realTotal = totalGames - numWarmup;
+                label.innerHTML = `Game ${realIdx} of ${realTotal} <span class="real-badge">RECORDED</span>`;
+            }
+
+            // Dots
+            const dotsEl = document.getElementById('progressDots');
+            let dotsHTML = '';
+            for (let i = 0; i < totalGames; i++) {
+                const isWarmupDot = i < numWarmup;
+                let cls = 'progress-dot';
+                if (isWarmupDot) cls += ' warmup-dot';
+                if (i < currentIdx || (i === currentIdx && gameState.done)) {
+                    cls += ' completed';
+                } else if (i === currentIdx) {
+                    cls += ' active';
+                }
+                const dotLabel = isWarmupDot ? 'W' : (i - numWarmup + 1);
+                dotsHTML += `<div class="${cls}">${dotLabel}</div>`;
+            }
+            dotsEl.innerHTML = dotsHTML;
+        }
+
+        // ===== FINISH SCREEN =====
+        function showFinishScreen() {
+            sessionComplete = true;
+            const totalGames = gameState ? (gameState.total_games || 10) : 10;
+            document.getElementById('finishGamesPlayed').textContent = totalGames;
+            document.getElementById('finishModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideFinishScreen() {
+            document.getElementById('finishModal').classList.remove('show');
+            document.body.style.overflow = '';
+            sessionComplete = false;
+        }
+
+        async function playAgain() {
+            hideFinishScreen();
+            await startNewGame();
+        }
+
         // Close modal on escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
+                const researchModal = document.getElementById('researchModal');
+                if (researchModal.classList.contains('show')) {
+                    closeResearchModal();
+                    return;
+                }
                 const modal = document.getElementById('welcomeModal');
                 if (modal.classList.contains('show')) {
                     closeWelcomeModal();
@@ -861,16 +1212,15 @@
 
         // Initialize game on page load
         window.onload = function() {
-            // Show welcome modal if user hasn't opted out
-            if (shouldShowWelcomeModal()) {
-                showWelcomeModal();
-            }
+            // Show research info sheet first, then welcome modal
+            showResearchModal();
             startNewGame();
         };
 
         // Keyboard controls
         document.addEventListener('keydown', function(event) {
             if (replayMode) return; // Disable keyboard controls in replay mode
+            if (sessionComplete) return; // Disable during finish screen
             if (!gameState || gameState.done) return;
             
             const action = keyMap[event.key];
@@ -910,8 +1260,10 @@
                 if (data.success) {
                     sessionId = data.session_id;
                     gameState = data.state;
+                    sessionComplete = false;
                     lastHumanAction = null;
                     lastAIAction = null;
+                    updateProgressBar();
                     updateDisplay();
                     hideLoadingSpinner();
                     showMessage('New game started! Good luck!', 'success');
@@ -972,18 +1324,32 @@
                     lastHumanAction = data.human_action;
                     lastAIAction = data.ai_action;
                     startActionAnimation();
+                    updateProgressBar();
                     updateDisplay();
                     
                     if (gameState.done) {
-                        // Check if transitioning to next game in multi-game session
-                        if (gameState.multi && gameState.current_game_index < gameState.total_games - 1) {
-                            showLoadingSpinner('Loading Next Game...', `Game ${gameState.current_game_index + 2} of ${gameState.total_games}`);
-                            // Hide spinner after a short delay to let the next game render
-                            setTimeout(hideLoadingSpinner, 500);
+                        // Check if the entire session is complete
+                        if (gameState.session_complete) {
+                            updateProgressBar();
+                            setTimeout(() => showFinishScreen(), 800);
                         } else {
                             const teamScore = gameState.total_rewards.agent_0 + gameState.total_rewards.agent_1;
                             showMessage(`🎉 Episode Complete! Team Score: ${teamScore.toFixed(2)} - Automatically Saved!`, 'success');
                         }
+                    }
+                    
+                    // Game advanced to next in sequence
+                    if (gameState.game_just_advanced) {
+                        const numWarmup = gameState.num_warmup || 2;
+                        const idx = gameState.current_game_index || 0;
+                        let gameLabel;
+                        if (idx < numWarmup) {
+                            gameLabel = `Warmup ${idx + 1} of ${numWarmup}`;
+                        } else {
+                            gameLabel = `Game ${idx - numWarmup + 1} of ${gameState.total_games - numWarmup}`;
+                        }
+                        showLoadingSpinner('Loading Next Game...', gameLabel);
+                        setTimeout(hideLoadingSpinner, 600);
                     }
                 }
             } catch (error) {
@@ -992,16 +1358,24 @@
             }
         }
 
-        // Unified button handler: start a new game if no session or the episode is done,
+        // Unified button handler: start a new game if no session or the session is complete,
         // otherwise reset the existing session. No saving is triggered by this button.
         async function mainAction() {
+            // If the entire session is complete, start a fresh one
+            if (sessionComplete) {
+                hideFinishScreen();
+                await startNewGame();
+                return;
+            }
+
             // If there is no active session, start a new one
             if (!sessionId) {
                 await startNewGame();
                 return;
             }
 
-            // If the episode is complete, start a fresh session (new game)
+            // If the episode is complete (but session not done), the next game auto-advances
+            // via executeAction, so just start a fresh session here
             if (gameState && gameState.done) {
                 await startNewGame();
                 return;
@@ -1049,8 +1423,13 @@
                 if (cfgRow) cfgRow.style.display = 'none';
             }
 
-            // Show/hide the game-over overlay so the player knows to click Reset
-            setGameOverOverlay(Boolean(gameState.done) && !replayMode);
+            // Show/hide the game-over overlay — only show when the game is done
+            // AND the session is also complete (all games finished)
+            const showOverlay = Boolean(gameState.done) && !replayMode && Boolean(gameState.session_complete);
+            setGameOverOverlay(showOverlay);
+            
+            // Update progress bar
+            updateProgressBar();
             
             // Update replay UI if in replay mode
             if (replayMode) {
