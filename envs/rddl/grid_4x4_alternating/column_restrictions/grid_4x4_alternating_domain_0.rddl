@@ -94,7 +94,7 @@ domain grid_4x4_alternating {
 		//  2 = Only row restrictions (columns unrestricted)
 		RESTRICTION-MODE : {non-fluent, int, default = 1};
 
-		TOROIDAL : {non-fluent, bool, default = true};
+		TOROIDAL : {non-fluent, bool, default = false};
 
 		// State fluents: agent positions
 		agent-at(agent, xpos, ypos) : {state-fluent, bool, default = false};

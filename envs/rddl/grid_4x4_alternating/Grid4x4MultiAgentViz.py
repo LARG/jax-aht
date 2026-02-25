@@ -333,16 +333,39 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
                          bbox=dict(boxstyle='round', facecolor='white', edgecolor='black', linewidth=1),
                          family='monospace')
 
+        # Add collisions display below effective actions
+        if subs is not None and 'collision' in subs:
+            collisions_text = "Collision:\n"
+            for agent_idx, collision_val in enumerate(subs['collision']):
+                if agent_idx < len(self._agents):
+                    status = "YES" if collision_val else "no"
+                    collisions_text += f"  Agent {agent_idx + 1}: {status}\n"
+
+            self._ax.text(1.05, 0.25, collisions_text,
+                         transform=self._ax.transAxes,
+                         fontsize=self._fontsize,
+                         verticalalignment='top',
+                         bbox=dict(boxstyle='round',
+                                   facecolor='#FFE0E0' if any(subs['collision']) else 'white',
+                                   edgecolor='red' if any(subs['collision']) else 'black',
+                                   linewidth=1),
+                         family='monospace')
+
         # Add title
         num_reached = sum(1 for reached in state_layout['goal_reached'].values() if reached)
-        num_collisions = sum(1 for collision in state_layout['collisions'].values() if collision)
         num_controllable = sum(1 for c in nonfluent_layout['controllable'].values() if c)
+
+        # Count collisions from subs if available, otherwise fall back to state_layout
+        if subs is not None and 'collision' in subs:
+            num_collisions = sum(1 for c in subs['collision'] if c)
+        else:
+            num_collisions = sum(1 for collision in state_layout['collisions'].values() if collision)
 
         title = f"Multi-Agent Grid Navigation ({num_controllable} controllable)"
         if num_reached > 0:
-            title += f" - {num_reached} goal(s) reached!"
+            title += f" | {num_reached} goal(s) reached!"
         # if num_collisions > 0:
-        #     title += f" ⚠️ {num_collisions} collision(s)!"
+        #     title += f" | \u26a0 {num_collisions} collision(s)!"
 
         self._ax.set_title(title, fontsize=self._fontsize + 4,
                           fontweight='bold', pad=20)
