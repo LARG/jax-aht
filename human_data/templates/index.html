@@ -367,11 +367,215 @@
         .hidden {
             display: none !important;
         }
+
+        /* Welcome Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            max-width: 750px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-image {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .modal-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-image .caption {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .modal-header .modal-emoji {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .modal-body h3 {
+            color: #667eea;
+            margin: 20px 0 12px 0;
+            font-size: 1.15em;
+        }
+
+        .modal-body p {
+            margin-bottom: 12px;
+        }
+
+        .modal-body ul {
+            margin: 10px 0 15px 20px;
+        }
+
+        .modal-body li {
+            margin-bottom: 8px;
+        }
+
+        .modal-body .highlight-box {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .modal-body .example {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            margin: 10px 0;
+        }
+
+        .modal-footer {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .modal-footer button {
+            padding: 15px 50px;
+            font-size: 1.1em;
+        }
+
+        .dont-show-again {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .dont-show-again input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .dont-show-again label {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-emoji">🍎🤝🤖</div>
+                <h2>How to play Level-Based Foraging</h2>
+            </div>
+            
+            <div class="modal-body">
+                <p>
+                    Level-Based Foraging (LBF) is a cooperative game where you 
+                    work together with an AI partner to collect food items on a grid. 
+                </p>
+
+                <h3>Objective</h3>
+                <p>
+                    Collect all the food items on the grid to maximize your team's score. 
+                    The game ends when all food is collected or the maximum number of steps is reached.
+                </p>
+
+                <h3>The Level System</h3>
+                <div class="highlight-box">
+                    <p>
+                        <strong>Every agent and food item has a level.</strong> To collect a food item, 
+                        the <em>combined levels</em> of all agents adjacent to the food that are also 
+                        attempting to collect the food must be <strong>greater than or equal to</strong> 
+                        the food's level.
+                    </p>
+                </div>
+                
+                <!-- <div class="example">
+                    <strong>Example:</strong> A food item with level 3 can be collected by:
+                    <ul style="margin-top: 8px;">
+                        <li>One agent with level ≥ 3</li>
+                        <li>Two agents with levels that sum to ≥ 3 (e.g., level 1 + level 2)</li>
+                    </ul>
+                </div> -->
+
+                <div class="modal-image">
+                    <img src="/static/LBFannotated.png" alt="LBF Game Example showing a Level 1 player, Level 1 AI partner, and Level 2 food">
+                    <div class="caption">Example: A Level 1 player (you) and Level 1 AI partner can work together to collect Level 2 food (1 + 1 ≥ 2)</div>
+                </div>
+
+                <h3>Controls</h3>
+                <ul>
+                    <li><strong>W / ↑</strong> — Move Up</li>
+                    <li><strong>S / ↓</strong> — Move Down</li>
+                    <li><strong>A / ←</strong> — Move Left</li>
+                    <li><strong>D / →</strong> — Move Right</li>
+                    <li><strong>SPACE</strong> — Collect food (when adjacent)</li>
+                    <li><strong>Q</strong> — Wait (skip turn)</li>
+                </ul>
+            </div>
+
+            <div class="modal-footer">
+                <button onclick="closeWelcomeModal()">Got it! Let's Play 🎮</button>
+                <div class="dont-show-again">
+                    <input type="checkbox" id="dontShowAgain">
+                    <label for="dontShowAgain">Don't show this again</label>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="container">
-        <h1>🍎 Level-Based Foraging</h1>
+        <h1>Level-Based Foraging</h1>
         <p class="subtitle">Play cooperatively with an AI agent to collect food!</p>
 
         <div id="statusMessage" class="status-message"></div>
@@ -500,6 +704,10 @@
         let sessionId = null;
         let replayMode = false;
         let replayId = null;
+        let lastHumanAction = null;
+        let lastAIAction = null;
+        let actionAnimationTimer = null;
+        let actionAnimationAlpha = 1.0;
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -532,8 +740,45 @@
             'Q': ACTIONS.NOOP
         };
 
+        // Welcome Modal Functions
+        function showWelcomeModal() {
+            const modal = document.getElementById('welcomeModal');
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling behind modal
+        }
+
+        function closeWelcomeModal() {
+            const modal = document.getElementById('welcomeModal');
+            const dontShowAgain = document.getElementById('dontShowAgain').checked;
+            
+            modal.classList.remove('show');
+            document.body.style.overflow = ''; // Restore scrolling
+            
+            if (dontShowAgain) {
+                localStorage.setItem('lbf_hide_welcome', 'true');
+            }
+        }
+
+        function shouldShowWelcomeModal() {
+            return localStorage.getItem('lbf_hide_welcome') !== 'true';
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('welcomeModal');
+                if (modal.classList.contains('show')) {
+                    closeWelcomeModal();
+                }
+            }
+        });
+
         // Initialize game on page load
         window.onload = function() {
+            // Show welcome modal if user hasn't opted out
+            if (shouldShowWelcomeModal()) {
+                showWelcomeModal();
+            }
             startNewGame();
         };
 
@@ -578,6 +823,8 @@
                 if (data.success) {
                     sessionId = data.session_id;
                     gameState = data.state;
+                    lastHumanAction = null;
+                    lastAIAction = null;
                     updateDisplay();
                     showMessage('New game started! Good luck!', 'success');
                     // Update main action button label to 'Reset' since a session now exists
@@ -602,6 +849,8 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = null;
+                    lastAIAction = null;
                     updateDisplay();
                     showMessage('Game reset!', 'info');
                     // Ensure main action button remains labeled 'Reset'
@@ -629,6 +878,9 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = data.human_action;
+                    lastAIAction = data.ai_action;
+                    startActionAnimation();
                     updateDisplay();
                     
                     if (gameState.done) {
@@ -684,6 +936,116 @@
             if (replayMode) {
                 updateReplayUI();
             }
+        }
+
+        // --- Action animation helpers ---
+        function startActionAnimation() {
+            actionAnimationAlpha = 1.0;
+            if (actionAnimationTimer) cancelAnimationFrame(actionAnimationTimer);
+            fadeActionIndicators();
+        }
+
+        function fadeActionIndicators() {
+            actionAnimationAlpha -= 0.025;
+            if (actionAnimationAlpha <= 0) {
+                actionAnimationAlpha = 0;
+                return; // done fading
+            }
+            drawGame();
+            actionAnimationTimer = requestAnimationFrame(fadeActionIndicators);
+        }
+
+        // Draw a directional arrow on an agent's cell
+        function drawDirectionArrow(row, col, action, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const arrowLen = cellSize * 0.35;
+            const headLen = 10;
+            const headAngle = Math.PI / 6;
+
+            let dx = 0, dy = 0;
+            if (action === ACTIONS.UP)    { dx = 0;  dy = -1; }
+            if (action === ACTIONS.DOWN)  { dx = 0;  dy =  1; }
+            if (action === ACTIONS.LEFT)  { dx = -1; dy =  0; }
+            if (action === ACTIONS.RIGHT) { dx =  1; dy =  0; }
+            if (dx === 0 && dy === 0) return;
+
+            const ex = cx + dx * arrowLen;
+            const ey = cy + dy * arrowLen;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(cx - dx * arrowLen * 0.3, cy - dy * arrowLen * 0.3);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ex - headLen * Math.cos(angle - headAngle), ey - headLen * Math.sin(angle - headAngle));
+            ctx.lineTo(ex - headLen * Math.cos(angle + headAngle), ey - headLen * Math.sin(angle + headAngle));
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw a "collecting" indicator (pulsing ring + sparkles) around an agent
+        function drawLoadIndicator(row, col, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const radius = cellSize * 0.48;
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+
+            // Outer glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Inner glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Sparkle lines radiating outward
+            const sparkleCount = 8;
+            const innerR = radius * 0.55;
+            const outerR = radius * 1.1;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            for (let s = 0; s < sparkleCount; s++) {
+                const a = (Math.PI * 2 * s) / sparkleCount + (actionAnimationAlpha * Math.PI);
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+                ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+                ctx.stroke();
+            }
+
+            // "⚡" label above the cell
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = color;
+            ctx.fillText('⚡ COLLECT', cx, row * cellSize - 2);
+
+            ctx.restore();
         }
 
         function drawGame() {
@@ -762,6 +1124,23 @@
                 ctx.font = 'bold 16px Arial';
                 ctx.fillText(`Lv${level}`, (col + 0.5) * cellSize, (row + 0.65) * cellSize);
             }
+
+            // --- Draw action indicators (arrows & load rings) ---
+            if (actionAnimationAlpha > 0) {
+                const actions = [lastHumanAction, lastAIAction];
+                const indicatorColors = ['#c92a2a', '#1a9e91']; // darker shades for visibility
+                for (let i = 0; i < state.agent_positions.length; i++) {
+                    const act = actions[i];
+                    if (act === null || act === undefined) continue;
+                    const [row, col] = state.agent_positions[i];
+
+                    if (act >= ACTIONS.UP && act <= ACTIONS.RIGHT) {
+                        drawDirectionArrow(row, col, act, cellSize, indicatorColors[i]);
+                    } else if (act === ACTIONS.LOAD) {
+                        drawLoadIndicator(row, col, cellSize, indicatorColors[i]);
+                    }
+                }
+            }
         }
 
         // Toggle the overlay that visually disables the canvas when an episode ends
@@ -821,6 +1200,9 @@
                     replayMode = true;
                     replayId = data.replay_id;
                     gameState = data.state;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     
                     // Hide file upload, show replay controls
                     document.getElementById('fileUploadSection').classList.add('hidden');
@@ -867,6 +1249,9 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     updateDisplay();
                 }
             } catch (error) {
@@ -893,6 +1278,9 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     updateDisplay();
                 }
             } catch (error) {
