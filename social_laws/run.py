@@ -25,15 +25,17 @@ def run_training(cfg):
 
     if cfg.algorithm.TRAIN_SEED is None:
         cfg.algorithm.TRAIN_SEED = random.randint(*SEEDRANGE)
+        cfg.value_function.TRAIN_SEED = cfg.algorithm.TRAIN_SEED
 
     if cfg.algorithm.EVAL_SEED is None:
         cfg.algorithm.EVAL_SEED = random.randint(*SEEDRANGE)
+        cfg.value_function.EVAL_SEED = cfg.algorithm.EVAL_SEED
 
-    if cfg.value_function.TRAIN_SEED is None:
-        cfg.value_function.TRAIN_SEED = random.randint(*SEEDRANGE)
+    # if cfg.value_function.TRAIN_SEED is None:
+    #     cfg.value_function.TRAIN_SEED = random.randint(*SEEDRANGE)
 
-    if cfg.value_function.EVAL_SEED is None:
-        cfg.value_function.EVAL_SEED = random.randint(*SEEDRANGE)
+    # if cfg.value_function.EVAL_SEED is None:
+    #     cfg.value_function.EVAL_SEED = random.randint(*SEEDRANGE)
 
     print(OmegaConf.to_yaml(cfg, resolve=True))
     wandb_logger = Logger(cfg)
