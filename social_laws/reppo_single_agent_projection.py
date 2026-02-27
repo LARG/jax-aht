@@ -439,7 +439,9 @@ def train_reppo_agent(config, env, q_env, train_rng,
                             )
 
                             pi = jax.lax.stop_gradient(pi)
-                            target_entropy = config["TARGET_ENTROPY_MULT"] * jnp.log(config["NUM_ACTIONS"])
+                            # target_entropy = config["TARGET_ENTROPY_MULT"] * jnp.log(config["NUM_ACTIONS"])
+                            # Normalize based on available actions
+                            target_entropy = config["TARGET_ENTROPY_MULT"] * jnp.log(minibatch.avail_actions.sum(axis=-1)).mean()
                             alpha = jnp.exp(params["log_alpha"])
                             alpha_loss = jnp.sum(
                                 pi.probs * (-alpha * (pi.logits + target_entropy)),
