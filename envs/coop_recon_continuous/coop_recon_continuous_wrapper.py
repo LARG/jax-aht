@@ -1,5 +1,6 @@
 from functools import partial
 from typing import Dict, Any, Tuple, Optional
+import os
 
 import chex
 import jax
@@ -29,19 +30,21 @@ class CoopReconContinuousWrapper(BaseEnv):
         **kwargs: Keyword arguments.
             share_rewards (bool): Whether to share rewards between agents. Defaults to False.
             dt (float): Time step for physics. Defaults to 0.05.
-            max_speed (float): Maximum agent speed. Defaults to 0.2.
-            detection_radius (float): Radius for detection actions. Defaults to 0.15.
-            horizon (int): Maximum episode length. Defaults to 30.
+            max_speed (float): Maximum agent speed. Defaults to 1.0. (increased speed, used to be 0.2)
+            detection_radius (float): Radius for detection actions. Defaults to 0.2. (increased radius, used to be 0.15)
+            horizon (int): Maximum episode length. Defaults to 40. (increased horizon, used to be 30)
     """
 
     def __init__(self, **kwargs):
         self.share_rewards = kwargs.get('share_rewards', False)
         self.dt = kwargs.get('dt', 0.05)
-        self.max_speed = kwargs.get('max_speed', 0.2)
-        self.detection_radius = kwargs.get('detection_radius', 0.15)
-        self.horizon = kwargs.get('horizon', 30)
+        self.max_speed = kwargs.get('max_speed', 1.0)
+        self.detection_radius = kwargs.get('detection_radius', 0.2)
+        self.horizon = kwargs.get('horizon', 40)
 
-        self._render = False #kwargs.get('render', False)
+        self._render = kwargs.get('render', False)
+        self._render_name = kwargs.get('render_name', "coop_recon_continuous")
+        self._render_dir = kwargs.get('render_dir', "render")
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
 
@@ -49,32 +52,19 @@ class CoopReconContinuousWrapper(BaseEnv):
         self.agents = ["agent_0", "agent_1"]
         self.name = "CoopReconContinuous"
 
-        # Observation: [x1, y1, vx1, vy1, x2, y2, vx2, vy2, goal_x, goal_y, water, life, pic]
-        self.observation_spaces = {
-            agent: jaxmarl_spaces.Box(
-                low=jnp.array([0, 0, -1, -1, 0, 0, -1, -1, 0, 0, 0, 0, 0], dtype=jnp.float32),
-                high=jnp.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=jnp.float32),
-                shape=(13,),
-                dtype=jnp.float32
-            )
-            for agent in self.agents
-        }
-
-        # Observation: [x1, y1, vx1, vy1, x2, y2, vx2, vy2, goal_x, goal_y, water, life, pic]
-        # Observation Full: [x1, y1, vx1, vy1, x2, y2, vx2, vy2, goal_x, goal_y, water, life, pic]
+        obs_size = 16 if self._ego_centric_obs else 18
+        # Observation Box bounds simplified for dynamically sized array
         self.observation_spaces = {}
         self.observation_full_spaces = {}
         for agent_idx, agent in enumerate(self.agents):
             obs_space = jaxmarl_spaces.Box(
-                low=jnp.array([0, 0, -1, -1, 0, 0, -1, -1, 0, 0, 0, 0, 0], dtype=jnp.float32),
-                high=jnp.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=jnp.float32),
-                shape=(13,),
+                low=-1.0, high=1.0,
+                shape=(obs_size,),
                 dtype=jnp.float32
             )
             obs_full_space = jaxmarl_spaces.Box(
-                low=jnp.array([0, 0, -1, -1, 0, 0, -1, -1, 0, 0, 0, 0, 0], dtype=jnp.float32),
-                high=jnp.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=jnp.float32),
-                shape=(13,),
+                low=-1.0, high=1.0,
+                shape=(18,),
                 dtype=jnp.float32
             )
             self.observation_spaces[agent] = obs_space
@@ -90,10 +80,10 @@ class CoopReconContinuousWrapper(BaseEnv):
         # Action to velocity mapping (stored as jax array)
         self.action_to_vel = jnp.array([
             [0, 0],      # 0: noop
-            [0, 0.1],    # 1: north
-            [0, -0.1],   # 2: south
-            [0.1, 0],    # 3: east
-            [-0.1, 0],   # 4: west
+            [0, 0.5],    # 1: north
+            [0, -0.5],   # 2: south
+            [0.5, 0],    # 3: east
+            [-0.5, 0],   # 4: west
             [0, 0],      # 5: detect water
             [0, 0],      # 6: detect life
             [0, 0],      # 7: picture
@@ -112,17 +102,39 @@ class CoopReconContinuousWrapper(BaseEnv):
         """
         key, pos_key, goal_key = jax.random.split(key, 3)
 
-        # Random initial positions for both agents
-        positions = jax.random.uniform(pos_key, shape=(2, 2), minval=0.0, maxval=1.0)
+        # Random initial positions with spatial partitioning
+        key_x0, key_y0, key_x1, key_y1 = jax.random.split(pos_key, 4)
+        
+        pos_x_0 = jax.random.uniform(key_x0, shape=(1,), minval=0.0, maxval=0.49)
+        pos_y_0 = jax.random.uniform(key_y0, shape=(1,), minval=0.0, maxval=1.0)
+        
+        pos_x_1 = jax.random.uniform(key_x1, shape=(1,), minval=0.51, maxval=1.0)
+        pos_y_1 = jax.random.uniform(key_y1, shape=(1,), minval=0.0, maxval=1.0)
+        
+        positions = jnp.stack([
+            jnp.concatenate([pos_x_0, pos_y_0]),
+            jnp.concatenate([pos_x_1, pos_y_1])
+        ])
+        
         velocities = jnp.zeros((2, 2), dtype=jnp.float32)
 
-        # Random goal position
-        goal_pos = jax.random.uniform(goal_key, shape=(2,), minval=0.0, maxval=1.0)
+        # Random goal positions (One for each agent per PI specs)
+        key_gx0, key_gy0, key_gx1, key_gy1 = jax.random.split(goal_key, 4)
+        goal_x_0 = jax.random.uniform(key_gx0, shape=(1,), minval=0.0, maxval=0.49)
+        goal_y_0 = jax.random.uniform(key_gy0, shape=(1,), minval=0.0, maxval=1.0)
+        
+        goal_x_1 = jax.random.uniform(key_gx1, shape=(1,), minval=0.51, maxval=1.0)
+        goal_y_1 = jax.random.uniform(key_gy1, shape=(1,), minval=0.0, maxval=1.0)
+        
+        goal_pos = jnp.stack([
+            jnp.concatenate([goal_x_0, goal_y_0]),
+            jnp.concatenate([goal_x_1, goal_y_1])
+        ])
 
-        # Task state
-        detected_water = jnp.array(False)
-        detected_life = jnp.array(False)
-        picture_taken = jnp.array(False)
+        # Task state arrays (shape 2 for 2 goals)
+        detected_water = jnp.array([False, False])
+        detected_life = jnp.array([False, False])
+        picture_taken = jnp.array([False, False])
         timestep = jnp.array(0, dtype=jnp.int32)
 
         env_state = CoopReconEnvState(
@@ -181,7 +193,17 @@ class CoopReconContinuousWrapper(BaseEnv):
 
         # Update positions
         new_positions = env_state.positions + new_velocities * self.dt
-        new_positions = jnp.clip(new_positions, 0.0, 1.0)
+        
+        # Apply spatial partitioning Constraints
+        # Agent 0: x in [0.0, 0.5]
+        # Agent 1: x in [0.5, 1.0]
+        new_pos_x = jnp.array([
+            jnp.clip(new_positions[0, 0], 0.0, 0.49),
+            jnp.clip(new_positions[1, 0], 0.51, 1.0)
+        ])
+        new_pos_y = jnp.clip(new_positions[:, 1], 0.0, 1.0)
+        
+        new_positions = jnp.stack([new_pos_x, new_pos_y], axis=1)
 
         # Process detection/picture actions and compute rewards
         key_water, key_life = jax.random.split(key, 2)
@@ -280,11 +302,17 @@ class CoopReconContinuousWrapper(BaseEnv):
             rewards: Dictionary of rewards for each agent
         """
         # Compute distances to goal
-        dists_to_goal = jnp.linalg.norm(positions - goal_pos[None, :], axis=1)  # (2,)
-        at_goal = dists_to_goal < self.detection_radius  # (2,)
+        dists_to_goal = jnp.linalg.norm(positions[:, None, :] - goal_pos[None, :, :], axis=-1)  # (2 agents, 2 goals)
+        at_goal = dists_to_goal < self.detection_radius  # (2, 2)
+        
+        # Opaque wall at x=0.5: line of sight cannot penetrate the geographic boundary
+        is_agent_left = positions[:, 0] < 0.5
+        is_goal_left = goal_pos[:, 0] < 0.5
+        same_side = is_agent_left[:, None] == is_goal_left[None, :]
+        at_goal = at_goal & same_side
 
-        # Initialize rewards with step penalty
-        reward_values = jnp.full(self.num_agents, -0.1, dtype=jnp.float32)
+        # Initialize rewards with step penalty (-0.01 to match PyTorch)
+        reward_values = jnp.full(self.num_agents, -0.01, dtype=jnp.float32)
 
         # Split keys for each agent
         key_water_0, key_water_1 = jax.random.split(key_water)
@@ -293,28 +321,34 @@ class CoopReconContinuousWrapper(BaseEnv):
         life_keys = jnp.array([key_life_0, key_life_1])
 
         # Vectorized detection checks
-        is_detect_water = (actions == 5) & at_goal & ~detected_water  # (2,)
-        is_detect_life = (actions == 6) & at_goal & detected_water & ~detected_life  # (2,)
-        is_picture = (actions == 7) & detected_life & ~picture_taken  # (2,)
+        w_action = (actions == 5)[:, None] # (2 agents, 1)
+        l_action = (actions == 6)[:, None] # (2 agents, 1)
+        p_action = (actions == 7)[:, None] # (2 agents, 1)
+        
+        is_detect_water = w_action & at_goal & ~detected_water[None, :]
+        is_detect_life  = l_action & at_goal & detected_water[None, :] & ~detected_life[None, :]
+        is_picture      = p_action & at_goal & detected_life[None, :]  & ~picture_taken[None, :]
 
-        # Stochastic success for water and life detection (vectorized)
-        water_success = jax.vmap(lambda k: jax.random.bernoulli(k, 0.8))(water_keys)  # (2,)
-        life_success = jax.vmap(lambda k: jax.random.bernoulli(k, 0.8))(life_keys)  # (2,)
+        # Stochastic success for water and life detection (vectorized over agents)
+        water_success = jax.vmap(lambda k: jax.random.bernoulli(k, 0.8))(water_keys)[:, None]  # (2, 1)
+        life_success = jax.vmap(lambda k: jax.random.bernoulli(k, 0.8))(life_keys)[:, None]    # (2, 1)
 
         # Determine which detections succeeded
-        water_detected = is_detect_water & water_success  # (2,)
-        life_detected = is_detect_life & life_success  # (2,)
-        picture_succeeded = is_picture  # (2,)
+        water_detected = is_detect_water & water_success  # (2 agents, 2 goals)
+        life_detected = is_detect_life & life_success     # (2 agents, 2 goals)
+        picture_succeeded = is_picture                    # (2 agents, 2 goals)
 
-        # Update global state (any agent can trigger these)
-        new_detected_water = detected_water | jnp.any(water_detected)
-        new_detected_life = detected_life | jnp.any(life_detected)
-        new_picture_taken = picture_taken | jnp.any(picture_succeeded)
+        # Update global state (any agent can trigger these on any goal)
+        new_detected_water = detected_water | jnp.any(water_detected, axis=0) # (2 goals,)
+        new_detected_life = detected_life | jnp.any(life_detected, axis=0)    # (2 goals,)
+        new_picture_taken = picture_taken | jnp.any(picture_succeeded, axis=0)# (2 goals,)
 
-        # Update rewards
-        reward_values = reward_values + jnp.where(water_detected, 1.0, 0.0)
-        reward_values = reward_values + jnp.where(life_detected, 1.0, 0.0)
-        reward_values = reward_values + jnp.where(picture_succeeded, 10.0, 0.0)
+        # Update rewards - Give agent i reward if they triggered the detection on any goal
+        reward_values = reward_values + jnp.sum(jnp.where(water_detected, 1.0, 0.0), axis=1)
+        reward_values = reward_values + jnp.sum(jnp.where(life_detected, 1.0, 0.0), axis=1)
+        reward_values = reward_values + jnp.sum(jnp.where(picture_succeeded, 10.0, 0.0), axis=1)
+        
+        # Collision penalty removed to match PyTorch implementation
 
         # Convert to dictionary
         rewards = {agent: reward_values[i] for i, agent in enumerate(self.agents)}
@@ -334,36 +368,51 @@ class CoopReconContinuousWrapper(BaseEnv):
 
         Returns:
             obs: Dictionary of observations for each agent
+            obs_full: Dictionary of full observations for each agent
         """
+        obs_dict = {}
         obs_full_dict = {}
         for agent_idx, agent in enumerate(self.agents):
             if self._ego_centric_obs:
-                obs_full_dict[agent] = jnp.concatenate([
-                    env_state.positions[agent_idx:agent_idx+1].flatten(),  # This agent
-                    env_state.positions[:agent_idx].flatten(),             # Agents before
-                    env_state.positions[agent_idx+1:].flatten(),           # Agents after
-                    env_state.velocities[agent_idx:agent_idx+1].flatten(), # This agent
-                    env_state.velocities[:agent_idx].flatten(),            # Agents before
-                    env_state.velocities[agent_idx+1:].flatten(),          # Agents after
-                    env_state.goal_pos,                                    # [goal_x, goal_y]
-                    jnp.array([
-                        env_state.detected_water.astype(jnp.float32),
-                        env_state.detected_life.astype(jnp.float32),
-                        env_state.picture_taken.astype(jnp.float32)
-                    ])
+                # Ego-centric observation for agent 0: relative pos to agent 1, own vel, other vel, goal pos, task states
+                # Ego-centric observation for agent 1: relative pos to agent 0, own vel, other vel, goal pos, task states
+                other_agent_idx = 1 - agent_idx
+                obs_dict[agent] = jnp.concatenate([
+                    env_state.positions[agent_idx] - env_state.positions[other_agent_idx], # Relative position
+                    env_state.velocities[agent_idx],                                       # Own velocity
+                    env_state.velocities[other_agent_idx],                                 # Other agent's velocity
+                    env_state.goal_pos.flatten(),                                          # [g1x, g1y, g2x, g2y]
+                    env_state.detected_water.astype(jnp.float32),                          # [w1, w2]
+                    env_state.detected_life.astype(jnp.float32),                           # [l1, l2]
+                    env_state.picture_taken.astype(jnp.float32)                            # [p1, p2]
                 ], dtype=jnp.float32)
             else:
-                obs_full_dict[agent] = jnp.concatenate([
-                    env_state.positions.flatten(),      # [x1, y1, x2, y2]
-                    env_state.velocities.flatten(),     # [vx1, vy1, vx2, vy2]
-                    env_state.goal_pos,                 # [goal_x, goal_y]
-                    jnp.array([
-                        env_state.detected_water.astype(jnp.float32),
-                        env_state.detected_life.astype(jnp.float32),
-                        env_state.picture_taken.astype(jnp.float32)
-                    ])
+                # Observation mapped to the agent's absolute identity: [OWN_POS, OTHER_POS]
+                # To prevent the shared MLP from having to learn asymmetric routing logic, 
+                # we also map goals and task states to an ego-centric [OWN, OTHER] frame of reference.
+                other_agent_idx = 1 - agent_idx
+                obs_dict[agent] = jnp.concatenate([
+                    env_state.positions[agent_idx],                                        # Own absolute position
+                    env_state.positions[other_agent_idx],                                  # Other agent's absolute position
+                    env_state.velocities[agent_idx],                                       # Own velocity
+                    env_state.velocities[other_agent_idx],                                 # Other agent's velocity
+                    env_state.goal_pos[agent_idx],                                         # Own goal
+                    env_state.goal_pos[other_agent_idx],                                   # Other goal
+                    jnp.array([env_state.detected_water[agent_idx], env_state.detected_water[other_agent_idx]], dtype=jnp.float32),
+                    jnp.array([env_state.detected_life[agent_idx], env_state.detected_life[other_agent_idx]], dtype=jnp.float32),
+                    jnp.array([env_state.picture_taken[agent_idx], env_state.picture_taken[other_agent_idx]], dtype=jnp.float32)
                 ], dtype=jnp.float32)
-        return obs_full_dict, obs_full_dict
+
+            # Full observation (same for both agents, always includes all global info)
+            obs_full_dict[agent] = jnp.concatenate([
+                env_state.positions.flatten(),      # [x1, y1, x2, y2]
+                env_state.velocities.flatten(),     # [vx1, vy1, vx2, vy2]
+                env_state.goal_pos.flatten(),       # [g1x, g1y, g2x, g2y]
+                env_state.detected_water.astype(jnp.float32),
+                env_state.detected_life.astype(jnp.float32),
+                env_state.picture_taken.astype(jnp.float32)
+            ], dtype=jnp.float32)
+        return obs_dict, obs_full_dict
 
     def _get_dones(self, env_state: CoopReconEnvState) -> Dict[str, bool]:
         """Compute done flags for each agent.
@@ -374,13 +423,15 @@ class CoopReconContinuousWrapper(BaseEnv):
         Returns:
             dones: Dictionary of done flags
         """
-        done = env_state.picture_taken | (env_state.timestep >= self.horizon)
+        done = jnp.all(env_state.picture_taken) | (env_state.timestep >= self.horizon)
         dones = {agent: done for agent in self.agents}
         dones["__all__"] = done
         return dones
 
     def _get_avail_actions(self, env_state: CoopReconEnvState) -> Dict[str, jnp.ndarray]:
-        """Get available actions for each agent (all actions always available).
+        """Get available actions for each agent.
+        Actions 0-4 (movement/noop) are always available.
+        Actions 5-7 (tasks) are dynamically masked based on distance and sequential state.
 
         Args:
             env_state: Current environment state
@@ -388,7 +439,28 @@ class CoopReconContinuousWrapper(BaseEnv):
         Returns:
             avail_actions: Dictionary of available action masks
         """
-        return {agent: jnp.ones(8, dtype=jnp.float32) for agent in self.agents}
+        dists_to_goal = jnp.linalg.norm(env_state.positions[:, None, :] - env_state.goal_pos[None, :, :], axis=-1)
+        at_goal = dists_to_goal < self.detection_radius
+        
+        # Opaque wall at x=0.5: line of sight cannot penetrate the geographic boundary
+        is_agent_left = env_state.positions[:, 0] < 0.5
+        is_goal_left = env_state.goal_pos[:, 0] < 0.5
+        same_side = is_agent_left[:, None] == is_goal_left[None, :]
+        at_goal = at_goal & same_side
+        
+        avail_actions = {}
+        for i, agent in enumerate(self.agents):
+            can_water = jnp.any(at_goal[i] & ~env_state.detected_water)
+            can_life = jnp.any(at_goal[i] & env_state.detected_water & ~env_state.detected_life)
+            can_pic = jnp.any(at_goal[i] & env_state.detected_life & ~env_state.picture_taken)
+            
+            mask = jnp.array([
+                True, True, True, True, True,  # 0-4: noop, directions
+                can_water, can_life, can_pic   # 5-7: conditional tasks
+            ], dtype=jnp.float32)
+            avail_actions[agent] = mask
+            
+        return avail_actions
 
     def observation_space(self, agent: str, observation_type: str = "agent") -> jaxmarl_spaces.Space:
         if observation_type == "agent":
@@ -424,8 +496,61 @@ class CoopReconContinuousWrapper(BaseEnv):
         pass
 
     def animate(self, states, dones, num_episodes, extra_dir=None, fps=1, loop_count=0, debug=False):
-        """
-        This method can be implemented to create animations from a sequence of states and dones.
-        For now, we can rely on the environment's built-in movie generator if available.
-        """
-        pass
+        if debug:
+            import logging
+            from envs.coop_recon_continuous.CoopReconContinuousViz import CoopReconContinuousViz
+            log = logging.getLogger(__name__)
+            try:
+                init_state, env_states = states
+                
+                base_dir = self._render_dir
+                if extra_dir is not None:
+                    base_dir = os.path.join(base_dir, extra_dir)
+                os.makedirs(base_dir, exist_ok=True)
+                
+                for ep in range(num_episodes):
+                    positions = env_states.positions[0, ep] # (max_steps, 2, 2)
+                    goals = env_states.goal_pos[0, ep] # (max_steps, 2, 2)
+                    water = env_states.detected_water[0, ep] # (max_steps, 2)
+                    life = env_states.detected_life[0, ep] # (max_steps, 2)
+                    picture = env_states.picture_taken[0, ep] # (max_steps, 2)
+                    
+                    viz = CoopReconContinuousViz()
+                    frames = []
+                    max_steps = positions.shape[0]
+                    
+                    for t in range(max_steps):
+                        pos_0 = positions[t, 0]
+                        pos_1 = positions[t, 1]
+                        g_0 = goals[t, 0]
+                        g_1 = goals[t, 1]
+                        
+                        w = [bool(water[t, 0]), bool(water[t, 1])]
+                        l = [bool(life[t, 0]), bool(life[t, 1])]
+                        p = [bool(picture[t, 0]), bool(picture[t, 1])]
+                        
+                        state_layout = {
+                            'agent_positions': [(pos_0[0], pos_0[1]), (pos_1[0], pos_1[1])],
+                            'goal_positions': [(g_0[0], g_0[1]), (g_1[0], g_1[1])],
+                            'detected_water': w,
+                            'detected_life': l,
+                            'picture_taken': p
+                        }
+                        
+                        frame = viz.render(state_layout)
+                        frames.append(frame)
+                        
+                        if bool(dones[0, ep, t]):
+                            break
+
+                    frames[0].save(
+                        os.path.join(base_dir, f"{self._render_name}_ep_{ep}.gif"),
+                        save_all=True,
+                        append_images=frames[1:],
+                        duration=1000 // fps,
+                        loop=loop_count
+                    )
+                log.info(f"Successfully saved {num_episodes} evaluation GIFs to {base_dir}")
+                
+            except Exception as e:
+                log.error(f"Diagnostic evaluation printing/rendering failed: {e}")

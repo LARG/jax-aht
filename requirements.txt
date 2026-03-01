@@ -8,7 +8,7 @@
 # pip install -e .
 
 # from jax ai stack v2025.2.5
-jax[cuda12]==0.5.3
+jax
 chex==0.1.88
 flax==0.10.2
 flashbax==0.1.3
