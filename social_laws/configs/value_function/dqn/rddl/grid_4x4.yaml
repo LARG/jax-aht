@@ -1,0 +1,7 @@
+defaults:
+  - dqn/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 6e6
+EPSILON_END: 0.05
+EPSILON_EXPLORATION_FRACTION: 0.4

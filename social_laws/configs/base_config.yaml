@@ -1,7 +1,7 @@
 defaults:
-  - task: rddl/grid_4x4 # task configs
-  - algorithm@algorithm: ppo/${task} # task-specific algorithm configs
-  - value_function@value_function: dqnppo/${task} # task-specific value function configs
+  - task: # rddl/grid_4x4 # task configs
+  - algorithm@algorithm: # ppo/${task} # task-specific algorithm configs
+  - value_function@value_function: # dqnppo/${task} # task-specific value function configs
   - hydra: hydra_simple
   - _self_         # Ensures that values in this file override imported ones if needed
 

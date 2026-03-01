@@ -1,11 +1,13 @@
 defaults:
-  - dqnppo/_base_
+  - dqn/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 3e6
+TOTAL_TIMESTEPS: 6e6
 EPSILON_END: 0.05
-EPSILON_EXPLORATION_FRACTION: 0.5
+EPSILON_EXPLORATION_FRACTION: 0.4
 
 TARGET_UPDATE_INTERVAL: 1
 TAU: 0.005
 LEARNING_STARTS: 1000
+BUFFER_SIZE: 100000
+BUFFER_BATCH_SIZE: 256

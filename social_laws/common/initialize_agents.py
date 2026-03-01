@@ -3,6 +3,9 @@ import jax
 from agents.dqn_actor_crtic_fqe_agent import DQNActorCriticFQEPolicy
 from agents.rnn_dqn_actor_crtic_fqe_agent import RNNDQNActorCriticFQEPolicy
 from agents.s5_dqn_actor_crtic_fqe_agent import S5DQNActorCriticFQEPolicy
+from agents.dqn_agent import DQNPolicy
+from agents.rnn_dqn_agent import RNNDQNPolicy
+from agents.s5_dqn_agent import S5DQNPolicy
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
 from agents.s5_actor_critic_agent import S5ActorCriticPolicy
@@ -94,6 +97,96 @@ def initialize_agent(algorithm_config, env, init_rng, agent_index, observation_t
         policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng, agent_index, observation_type=observation_type)
     else:
         raise ValueError(f"Unknown ACTOR_TYPE: {algorithm_config['ACTOR_TYPE']}")
+    return policy, init_params
+
+def initialize_dqn_agent(config, env, rng, agent_index, observation_type="agent"):
+    """Initialize the DQN agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        agent_index: int, index of the agent in the environment
+        observation_type: str, type of observation to use ("agent" or "full")
+    Returns:
+        policy: DQNPolicy, the policy object
+        params: dict, initial parameters for the policy
+    """
+
+    policy = DQNPolicy(
+        action_dim=env.action_space(env.agents[agent_index]).n,
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
+        epsilon_start=config["EPSILON_START"],
+        epsilon_finish=config["EPSILON_END"],
+        epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        epsilon_anneal_start=config.get("EPSILON_ANNEAL_START", 0),
+        hidden_dim=config.get("DQN_HIDDEN_DIM", 64)
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
+    return policy, init_params
+
+def initialize_rnn_dqn_agent(config, env, rng, agent_index, observation_type="agent"):
+    """Initialize the RNN DQN agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        agent_index: int, index of the agent in the environment
+        observation_type: str, type of observation to use ("agent" or "full")
+    Returns:
+        policy: RNNDQNPolicy, the policy object
+        params: dict, initial parameters for the policy
+    """
+
+    policy = RNNDQNPolicy(
+        action_dim=env.action_space(env.agents[agent_index]).n,
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
+        epsilon_start=config["EPSILON_START"],
+        epsilon_finish=config["EPSILON_END"],
+        epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        gru_hidden_dim=config.get("RNN_HIDDEN_DIM", 64),
+        init_scale=config.get("INIT_SCALE", 1.0),
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
+    return policy, init_params
+
+def initialize_s5_dqn_agent(config, env, rng, agent_index, observation_type="agent"):
+    """Initialize the S5 DQN agent with the given config.
+
+    Args:
+        config: dict, config for the agent
+        env: gymnasium environment
+        rng: jax.random.PRNGKey, random key for initialization
+        agent_index: int, index of the agent in the environment
+        observation_type: str, type of observation to use ("agent" or "full")
+    Returns:
+        policy: S5DQNPolicy, the policy object
+        params: dict, initial parameters for the policy
+    """
+
+    policy = S5DQNPolicy(
+        action_dim=env.action_space(env.agents[agent_index]).n,
+        obs_dim=env.observation_space(env.agents[agent_index], observation_type=observation_type).shape[0],
+        epsilon_start=config["EPSILON_START"],
+        epsilon_finish=config["EPSILON_END"],
+        epsilon_anneal_time=config["EPSILON_ANNEAL_TIME"],
+        d_model=config.get("S5_D_MODEL", 128),
+        ssm_size=config.get("S5_SSM_SIZE", 128),
+        ssm_n_layers=config.get("S5_N_LAYERS", 2),
+        blocks=config.get("S5_BLOCKS", 1),
+        s5_activation=config.get("S5_ACTIVATION", "full_glu"),
+        s5_do_norm=config.get("S5_DO_NORM", True),
+        s5_prenorm=config.get("S5_PRENORM", True),
+        s5_do_gtrxl_norm=config.get("S5_DO_GTRXL_NORM", True),
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
     return policy, init_params
 
 def initialize_dqn_actor_critic_fqe_agent(config, env, rng, actor_critic_policy, agent_index, observation_type="agent"):

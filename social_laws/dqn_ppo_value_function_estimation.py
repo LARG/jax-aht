@@ -174,6 +174,8 @@ def train_dqnppo_agent(config, env, train_rng,
                 q_next_target = policy.network.apply(
                     train_state.target_network_params, learn_batch.second.obs
                 )  # (batch_size, num_actions)
+                # NOTE: do NOT mask with -inf here — PPO probs already zero out unavailable
+                # actions, and -inf * 0 = NaN which corrupts the expectation.
                 q_next_target = jax.lax.stop_gradient(q_next_target)
 
                 # Get PPO policy probabilities for next state
@@ -183,7 +185,7 @@ def train_dqnppo_agent(config, env, train_rng,
                     learn_batch.second.done,
                     learn_batch.second.avail_actions,
                     policy.actor_critic.init_hstate(config["BUFFER_BATCH_SIZE"]),
-                    jax.random.PRNGKey(0) # Use dummy rng since with only need the policy
+                    jax.random.PRNGKey(0) # Use dummy rng since we only need the policy
                 )[2]
                 ppo_probs = ppo_pi.probs  # (batch_size, num_actions)
                 ppo_probs = jax.lax.stop_gradient(ppo_probs)

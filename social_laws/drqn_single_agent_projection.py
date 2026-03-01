@@ -24,7 +24,7 @@ from flax.struct import dataclass
 from typing import NamedTuple
 
 from social_laws.common.run_episodes import run_episodes_vmap
-from social_laws.common.initialize_agents import initialize_rnn_dqn_actor_critic_fqe_agent, initialize_s5_dqn_actor_critic_fqe_agent
+from social_laws.common.initialize_agents import initialize_rnn_dqn_agent, initialize_s5_dqn_agent
 from agents.q_network import DQNTrainState
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
@@ -54,9 +54,8 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def train_drqnppo_agent(config, env, train_rng,
+def train_drqn_agent(config, env, train_rng,
                        policy, init_params,
-                       ppo_policy, ppo_params,
                        agent_idx):
     '''
     Train DRQN-PPO value function estimation using the given initial parameters.
@@ -66,14 +65,12 @@ def train_drqnppo_agent(config, env, train_rng,
         env: gymnasium environment
         train_rng: jax.random.PRNGKey, random key for training
         policy: AgentPolicy, policy for the agent
-        ppo_policy: AgentPolicy, policy for the PPO agent used for value estimation
-        ppo_params: dict, parameters for the PPO policy used for value estimation
         init_params: dict, initial parameters for the agent
     '''
     # ------------------------------
     # Build the DRQN-PPO value function estimation training function
     # ------------------------------
-    def make_drqnppo_train(config):
+    def make_drqn_train(config):
         '''The controlled agent is based on the agent_idx parameter'''
         num_agents = env.num_agents
         assert num_agents == 2, "This snippet assumes exactly 2 agents."
@@ -95,7 +92,7 @@ def train_drqnppo_agent(config, env, train_rng,
             frac = 1.0 - (count / _total_grad_steps)
             return config["LR"] * jnp.maximum(frac, 0.0)  # clamp to avoid negative LR
 
-        def train(rng, agent_idx, ppo_params):
+        def train(rng, agent_idx):
             if config["ANNEAL_LR"]:
                 tx = optax.chain(
                     optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
@@ -182,11 +179,9 @@ def train_drqnppo_agent(config, env, train_rng,
             # Init hstates
             # Will return hstate for drqn and ppo policies
             init_hstate = policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
-            init_ppo_hstate = policy.actor_critic.init_hstate(config["NUM_CONTROLLED_ACTORS"])
-            init_hstates = (init_hstate, init_ppo_hstate)
 
             # DRQN Learning Phase
-            def _drqn_learn_phase(train_state, ppo_params, buffer_state, rng):
+            def _drqn_learn_phase(train_state, buffer_state, rng):
                 """Sample from buffer and update Q-network"""
                 rng, sample_rng = jax.random.split(rng, 2)
                 learn_batch = buffer.sample(buffer_state, sample_rng).experience
@@ -197,7 +192,8 @@ def train_drqnppo_agent(config, env, train_rng,
                     learn_batch,
                 )
 
-                # TODO: Is using dones correct? there is no next dones.
+                # TODO: Should qs be masked by available action
+                #       Is using dones correct? there is no next dones.
                 # Compute target Q-values using target network
                 q_next_target = policy.get_action_value_policy(
                     train_state.target_network_params, learn_batch.obs[1:],
@@ -205,28 +201,17 @@ def train_drqnppo_agent(config, env, train_rng,
                     policy.init_hstate(config['BUFFER_BATCH_SIZE']),
                     jax.random.PRNGKey(0) # Use dummy since we only need the qvals
                 )[1]
-                # NOTE: do NOT mask with -inf here — PPO probs already zero out unavailable
-                # actions, and -inf * 0 = NaN which corrupts the expectation.
                 q_next_target = jax.lax.stop_gradient(q_next_target)
-
-                # Get PPO policy probabilities for next state
-                ppo_pi = policy.actor_critic.get_action_value_policy(
-                    ppo_params,
-                    learn_batch.obs[1:],
-                    learn_batch.done[1:],
-                    learn_batch.avail_actions[1:],
-                    policy.actor_critic.init_hstate(config['BUFFER_BATCH_SIZE']),
-                    jax.random.PRNGKey(0) # Use dummy rng since with only need the policy
-                )[2]
-                ppo_probs = ppo_pi.probs  # (batch_size, num_actions)
-                ppo_probs = jax.lax.stop_gradient(ppo_probs)
-
-                # Compute expectation of Q-values under PPO policy
-                target_sum = jnp.sum(q_next_target * ppo_probs, axis=-1, keepdims=True).squeeze(-1)  # (batch_size,)
+                q_next_target = jnp.where(
+                    learn_batch.avail_actions[1:].astype(bool),
+                    q_next_target,
+                    jnp.full_like(q_next_target, -jnp.inf),
+                )
+                q_next_target = jnp.max(q_next_target, axis=-1)  # (batch_size,)
 
                 target = (
                     learn_batch.reward[:-1]
-                    + (1 - learn_batch.done[:-1]) * config["GAMMA"] * target_sum
+                    + (1 - learn_batch.done[:-1]) * config["GAMMA"] * q_next_target
                 )
 
                 def _drqn_loss_fn(params):
@@ -262,8 +247,7 @@ def train_drqnppo_agent(config, env, train_rng,
                 3. Add experience to replay buffer
                 4. Optionally perform DRQN update
                 """
-                train_state, buffer_state, env_state, prev_obs, prev_done, hstates, rng = runner_state
-                hstate, ppo_hstate = hstates
+                train_state, buffer_state, env_state, prev_obs, prev_done, hstate, rng = runner_state
                 rng, actor_rng, step_rng = jax.random.split(rng, 3)
 
                  # Get available actions for the agent from environment state
@@ -275,12 +259,12 @@ def train_drqnppo_agent(config, env, train_rng,
                 # as the recurrent states are automatically reset when done is True.
 
                 # Get actions from DRQN policy (uses actor-critic under the hood for exploration)
-                act, new_ppo_hstate = policy.get_actor_critic_action(
-                    params=ppo_params,  # Use PPO params for action selection
+                act, new_hstate = policy.get_action(
+                    params=train_state.params,
                     obs=get_agent_data(prev_obs, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
                     done=get_agent_data(prev_done, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
                     avail_actions=avail_actions,
-                    hstate=ppo_hstate,
+                    hstate=hstate,
                     rng=actor_rng,
                     env_state=env_state,
                     test_mode=False,
@@ -358,8 +342,7 @@ def train_drqnppo_agent(config, env, train_rng,
                     avail_actions=avail_actions
                 )
 
-                new_runner_state = (train_state, buffer_state, env_state_next, obs_next, done_next,
-                                    (hstate, new_ppo_hstate), rng)
+                new_runner_state = (train_state, buffer_state, env_state_next, obs_next, done_next, new_hstate, rng)
                 return new_runner_state, (transition, timestep)
 
             def _update_step(update_runner_state, unused):
@@ -376,12 +359,11 @@ def train_drqnppo_agent(config, env, train_rng,
                 init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
                 # Rollout (DRQN updates happen inside _env_step)
-                runner_state = (train_state, buffer_state, init_env_state, init_obs, init_done, init_hstates, rng)
+                runner_state = (train_state, buffer_state, init_env_state, init_obs, init_done, init_hstate, rng)
 
                 runner_state, (traj_batch, buffer_traj_batch) = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
-                (train_state, buffer_state, env_state, obs, done, hstates, rng) = runner_state
-
+                (train_state, buffer_state, env_state, obs, done, hstate, rng) = runner_state
                 # ADD ROLLOUT TO BUFFER
                 buffer_traj_batch = jax.tree.map(
                     lambda x: jnp.swapaxes(x, 0, 1)[
@@ -399,10 +381,9 @@ def train_drqnppo_agent(config, env, train_rng,
                 )
                 train_state, drqn_loss, q_vals_mean, td_target_mean, rng = jax.lax.cond(
                     is_learn_time,
-                    lambda ts, pp, bs, rng: _drqn_learn_phase(ts, pp, bs, rng),
-                    lambda ts, pp, bs, rng: (ts, jnp.nan, jnp.nan, jnp.nan, rng),  # Use NaN when not learning
+                    lambda ts, bs, rng: _drqn_learn_phase(ts, bs, rng),
+                    lambda ts, bs, rng: (ts, jnp.nan, jnp.nan, jnp.nan, rng),  # Use NaN when not learning
                     train_state,
-                    ppo_params,
                     buffer_state,
                     rng,
                 )
@@ -565,11 +546,11 @@ def train_drqnppo_agent(config, env, train_rng,
     rngs = jax.random.split(train_rng, config["NUM_TRAIN_SEEDS"])
 
     # Run training seeds in parallel using vmap
-    train_fn = make_drqnppo_train(config)
-    out = jax.vmap(train_fn, in_axes=(0, None, 0))(rngs, agent_idx, ppo_params)
+    train_fn = make_drqn_train(config)
+    out = jax.vmap(train_fn, in_axes=(0, None))(rngs, agent_idx)
     return out
 
-def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
+def run_training(config, wandb_logger, agent_idx=0):
     '''Run single agent projection training.
 
     Args:
@@ -583,7 +564,7 @@ def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
     env_kwargs = algorithm_config["ENV_KWARGS"].copy()
 
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
-    env_kwargs["render_dir"] = os.path.join("render", "drqnppo", f"agent_{agent_idx + 1}")
+    env_kwargs["render_dir"] = os.path.join("render", "drqn", f"agent_{agent_idx + 1}")
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
@@ -592,29 +573,22 @@ def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
 
     # Initialize agent
     if algorithm_config["NETWORK_TYPE"] == "rnn":
-        policy, init_params = initialize_rnn_dqn_actor_critic_fqe_agent(algorithm_config, env, init_rng, ppo_policy, agent_index=agent_idx)
+        policy, init_params = initialize_rnn_dqn_agent(algorithm_config, env, init_rng, agent_index=agent_idx)
     elif algorithm_config["NETWORK_TYPE"] == "s5":
-        policy, init_params = initialize_s5_dqn_actor_critic_fqe_agent(algorithm_config, env, init_rng, ppo_policy, agent_index=agent_idx)
+        policy, init_params = initialize_s5_dqn_agent(algorithm_config, env, init_rng, agent_index=agent_idx)
     else:
         raise ValueError(f"Unknown NETWORK_TYPE: {algorithm_config['NETWORK_TYPE']}")
 
-    # Squeeze PPO params to remove leading dimension for compatibility with single-agent training
-    # ppo_params = jax.tree.map(lambda x: x.squeeze(axis=0), ppo_params)
-
-    # [item.shape for item in jax.tree_leaves(ppo_params)] # debug print to check shapes of PPO params
-
-    log.info(f"Starting value function estimation training for agent {agent_idx}...")
+    log.info(f"Starting single agent projection training for agent {agent_idx}...")
     start_time = time.perf_counter()
 
     # Run the training
-    out = train_drqnppo_agent(
+    out = train_drqn_agent(
         config=algorithm_config,
         env=env,
         train_rng=train_rng,
         policy=policy,
         init_params=init_params,
-        ppo_policy=ppo_policy,
-        ppo_params=ppo_params,
         agent_idx=agent_idx
     )
 
@@ -624,11 +598,11 @@ def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
     seconds, rem = divmod(rem, 1)
     milliseconds = int(rem * 1000)
     microseconds = int((rem * 1_000_000) % 1000)
-    log.info(f"Value Function Estimation Training completed for agent {agent_idx} in {elapsed_time:.2f}s")
-    log.info(f"Value Function Estimation Training completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
+    log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {elapsed_time:.2f}s")
+    log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
     # process and log metrics
-    log.info(f"Starting value function estimation logging for agent {agent_idx}...")
+    log.info(f"Starting single agent projection logging for agent {agent_idx}...")
     start_time = time.perf_counter()
     metric_names = get_metric_names(config["ENV_NAME"])
     log_metrics(env, config, out, wandb_logger, metric_names, agent_idx)
@@ -638,8 +612,8 @@ def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
     seconds, rem = divmod(rem, 1)
     milliseconds = int(rem * 1000)
     microseconds = int((rem * 1_000_000) % 1000)
-    log.info(f"Value Function Estimation Logging completed for agent {agent_idx} in {elapsed_time:.2f}s")
-    log.info(f"Value Function Estimation Logging completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
+    log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {elapsed_time:.2f}s")
+    log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
     return out["final_params"], policy, init_params
 
@@ -690,15 +664,15 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
         for stat_name, stat_data in train_stats.items():
             # second dimension contains the mean and std of the metric
             stat_mean = stat_data[step, 0]
-            logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/{stat_name}", stat_mean, train_step=step, commit=True)
+            logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/{stat_name}", stat_mean, train_step=step, commit=True)
 
-        logger.log_item(f"Eval/ValueFunction/Agent_{agent_idx + 1}_Proj/Return", average_agent_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/ValueFunction/Agent_{agent_idx + 1}_Proj/CheckpointReturn", average_ckpt_agent_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/TD_Loss", average_drqn_losses[step], train_step=step, commit=True)
-        logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/Q_Values_Mean", average_q_vals_mean[step], train_step=step, commit=True)
-        logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/TD_Target_Mean", average_td_target_mean[step], train_step=step, commit=True)
-        logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/Timesteps", average_timesteps[step], train_step=step, commit=True)
-        logger.log_item(f"Train/ValueFunction/Agent_{agent_idx + 1}_Proj/N_Updates", average_n_updates[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/Return", average_agent_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/CheckpointReturn", average_ckpt_agent_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/TD_Loss", average_drqn_losses[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/Q_Values_Mean", average_q_vals_mean[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/TD_Target_Mean", average_td_target_mean[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/Timesteps", average_timesteps[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/N_Updates", average_n_updates[step], train_step=step, commit=True)
         logger.commit()
 
     # Saving artifacts
@@ -714,13 +688,13 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
 
         for eval_ep in range(num_episodes):
             logger.log_video(
-                tag=f"Videos/ValueFunction/Agent_{agent_idx + 1}_Proj/Agent_{agent_idx}_Episode_{eval_ep}",
+                tag=f"Videos/Agent_{agent_idx + 1}_Proj/Agent_{agent_idx}_Episode_{eval_ep}",
                 path=os.path.join(env._render_dir, f"{env._render_name}_ep_{eval_ep}.gif")
             )
 
-    out_savepath = save_train_run(train_out, savedir, savename=f"DRQN_PPO_Agent_{agent_idx + 1}_Proj_Train_Run")
+    out_savepath = save_train_run(train_out, savedir, savename=f"DRQN_Agent_{agent_idx + 1}_Proj_Train_Run")
     if config["logger"]["log_train_out"]:
-        logger.log_artifact(name=f"DRQN_PPO_Agent_{agent_idx + 1}_Proj_Train_Run", path=out_savepath, type_name="single_agent_projection_value_function_train_run")
+        logger.log_artifact(name=f"DRQN_Agent_{agent_idx + 1}_Proj_Train_Run", path=out_savepath, type_name="single_agent_proj_train_run")
         # Cleanup locally logged out file
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)
