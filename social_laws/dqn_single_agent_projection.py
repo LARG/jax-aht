@@ -108,7 +108,7 @@ def train_dqn_agent(config, env, train_rng,
             train_state = DQNTrainState.create(
                 apply_fn=policy.network.apply,
                 params=init_params,
-                target_network_params=jax.tree_map(lambda x: jnp.copy(x), init_params),
+                target_network_params=jax.tree.map(lambda x: jnp.copy(x), init_params),
                 tx=tx,
                 timesteps=0,
                 n_updates=0,

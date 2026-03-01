@@ -4,16 +4,9 @@ import os
 from random import seed
 
 import jaxmarl
-try:
-    import jumanji
-    from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
-except ImportError:
-    jumanji = None
-    LbfGenerator = None
-except Exception:
-    # Catch other initialization errors (like pkg_resources missing)
-    jumanji = None
-    LbfGenerator = None
+import jumanji
+from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
+
 
 def process_default_args(env_kwargs: dict, default_args: dict):
     '''Helper function to process generator and viewer args for Jumanji environments.

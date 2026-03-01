@@ -7,8 +7,10 @@
 # Or install directly from pyproject.toml:
 # pip install -e .
 
+setuptools<=80.9.0
+
 # from jax ai stack v2025.2.5
-jax
+jax[cuda12]==0.5.3
 chex==0.1.88
 flax==0.10.2
 flashbax==0.1.3
