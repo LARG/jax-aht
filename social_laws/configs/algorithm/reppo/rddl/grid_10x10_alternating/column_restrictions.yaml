@@ -11,7 +11,7 @@ NUM_MINIBATCHES: 128 # minibatches per epoch
 
 LR: 0.0003
 
-TARGET_ENTROPY_MULT: 0.01 # sum (action probabilities) * log(action probabilities), max entropy
+TARGET_ENTROPY_MULT: 0.1 # sum (action probabilities) * log(action probabilities), max entropy
 GAMMA: 0.99
 VMIN: -400 # -400 with step penalty, -300 without step penalty # Env dependent, (1 / (1 - gamma)) * min_reward
 VMAX: 100 # Env dependent, (1 / (1 - gamma)) * max_reward

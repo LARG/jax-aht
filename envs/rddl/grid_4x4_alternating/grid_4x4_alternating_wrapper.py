@@ -53,6 +53,8 @@ class Grid4x4AlternatingWrapper(BaseEnv):
         self.num_agents = len(self.rddl_agent_names)
         self.agents = [f"agent_{i}" for i in range(self.num_agents)]
 
+        self.num_obstacles = int(sum(self.env.model.non_fluents['OBSTACLE']))
+
         controllable = self.env.model.non_fluents['CONTROLLABLE']
         self.uncontrolled_agents_exist = not all(controllable)
         self.controllable = {}
@@ -127,7 +129,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
         env_state, timestep = self.env.step(state.env_state, actions_rddl)
         avail_actions = self._extract_avail_actions(env_state)
         state_st = WrappedEnvState(env_state, jnp.zeros(self.num_agents), avail_actions, env_state.timestep)
-        obs_st = self._extract_observations(timestep.observation)
+        obs_st = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
         reward = self._extract_rewards(timestep.reward)
         done = self._extract_dones(timestep)
         info = self._extract_infos(timestep)
@@ -163,7 +165,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
         """Returns the step count of the environment."""
         return state.step
 
-    def _extract_observations(self, observation):
+    def _extract_observations(self, observation, obstacles):
         '''Extract per-agent observations and flatten them into arrays'''
         if self.vectorized:
             obs_agent = {}
@@ -202,6 +204,10 @@ class Grid4x4AlternatingWrapper(BaseEnv):
                     obs_full_values.append(goal_at_reordered.flatten())
                     obs_full_values.append(goal_reached_reordered)
 
+                    if self.num_obstacles > 0:
+                        obs_agent_values.append(obstacles.flatten())
+                        obs_full_values.append(obstacles.flatten())
+
                     obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
                     obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
                 else:
@@ -216,6 +222,10 @@ class Grid4x4AlternatingWrapper(BaseEnv):
                     obs_full_values.append(agent_at)
                     obs_full_values.append(observation['goal-at'].flatten())
                     obs_full_values.append(goal_reached)
+
+                    if self.num_obstacles > 0:
+                        obs_agent_values.append(obstacles.flatten())
+                        obs_full_values.append(obstacles.flatten())
 
                     obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
                     obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
@@ -294,6 +304,10 @@ class Grid4x4AlternatingWrapper(BaseEnv):
                 else:
                     obs_size += math.prod(space[key].shape)
                     obs_full_size += math.prod(space[key].shape)
+
+            if self.num_obstacles > 0:
+                obs_size += math.prod(space['goal-at'].shape[1:])
+                obs_full_size += math.prod(space['goal-at'].shape[1:])
 
             # Create Box space
             observation_space = jaxmarl_spaces.Box(
@@ -588,26 +602,51 @@ class Grid4x4AlternatingWrapper(BaseEnv):
 
         num_x = len(self._xpos_list)
         num_y = len(self._ypos_list)
-        obstacle_mask = jnp.array(self.env.init_values['OBSTACLE'])
 
         # Initialize arrays
         agent_at = jnp.zeros_like(env_state.obs['agent-at'])
         goal_at = jnp.zeros_like(env_state.obs['goal-at'])
         goal = jnp.zeros_like(env_state.subs['GOAL'])
+        obstacle = jnp.zeros_like(env_state.subs['OBSTACLE'])
 
         # Create position arrays to store (x, y) for each agent
         goal_positions = jnp.zeros((self.num_agents, 2), dtype=jnp.int32)
         agent_positions = jnp.zeros((self.num_agents, 2), dtype=jnp.int32)
 
+        occupied = jnp.array(obstacle)
+
+        # Randomize obstacle positions if there are obstacles
+        if self.num_obstacles > 0:
+            def sample_obstacle(carry, _):
+                key, obstacle_arr, occupied_arr = carry
+                key, subkey = jax.random.split(key)
+
+                flat_occupied = occupied_arr.flatten()
+                flat_probs = jnp.logical_not(flat_occupied).astype(jnp.float32)
+                flat_probs = flat_probs / jnp.sum(flat_probs)
+
+                pos_idx = jax.random.choice(subkey, num_x * num_y, p=flat_probs)
+                obs_x = pos_idx // num_y
+                obs_y = pos_idx % num_y
+
+                obstacle_arr = obstacle_arr.at[obs_x, obs_y].set(True)
+                occupied_arr = occupied_arr.at[obs_x, obs_y].set(True)
+                return (key, obstacle_arr, occupied_arr), None
+
+            (key, obstacle, occupied), _ = jax.lax.scan(
+                sample_obstacle,
+                (key, obstacle, occupied),
+                None,
+                length=self.num_obstacles
+            )
+
         # Valid position masks (ensure JAX arrays)
-        valid_pos_mask = jnp.logical_not(obstacle_mask)
+        valid_pos_mask = jnp.logical_not(occupied)
         valid_goal_mask = jnp.where(
             (self._restriction_type != -1) & self.limit_goals_to_inner_grid,
             valid_pos_mask.at[0, :].set(False).at[-1, :].set(False).at[:, 0].set(False).at[:, -1].set(False),
             valid_pos_mask
         )
-
-        occupied = jnp.array(obstacle_mask)
 
         # Sample goal positions using scan
         def sample_goal(carry, agent_idx):
@@ -682,7 +721,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
                         key, agent_at_arr, agent_pos_arr, occupied = carry
 
                         blocking_pos = (agent_pos_arr[uncontrolled_idx, 0], agent_pos_arr[uncontrolled_idx, 1])
-                        is_blocking = self._would_block_path_jax(agent_pos, goal_pos, blocking_pos, obstacle_mask)
+                        is_blocking = self._would_block_path_jax(agent_pos, goal_pos, blocking_pos, obstacle)
 
                         # Resample with while loop if blocking
                         def resample_loop(loop_carry):
@@ -706,7 +745,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
                             occupied = occupied.at[new_x, new_y].set(True)
 
                             new_blocking_pos = (new_x, new_y)
-                            still_blocking = self._would_block_path_jax(agent_pos, goal_pos, new_blocking_pos, obstacle_mask)
+                            still_blocking = self._would_block_path_jax(agent_pos, goal_pos, new_blocking_pos, obstacle)
 
                             return (key, agent_at_arr, agent_pos_arr, occupied, iter_count + 1, still_blocking)
 
@@ -752,7 +791,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
 
         # Update environment state
         obs = {**env_state.obs, 'goal-at': goal_at, 'agent-at': agent_at}
-        subs = {**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal}
+        subs = {**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal, 'OBSTACLE': obstacle}
 
         env_state = env_state.replace(obs=obs, state=obs, subs=subs)
         timestep = timestep.replace(observation=obs)

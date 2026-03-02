@@ -72,21 +72,29 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
         self._path_history = {agent: [] for agent in self._agents}
         self._render_count = 0
 
-    def build_nonfluents_layout(self):
+    def build_nonfluents_layout(self, subs):
         """Extract non-fluent information from the model."""
         obstacles = []
         controllable = {}  # {agent: bool}
 
         non_fluents = self._model.ground_vars_with_values(self._model.non_fluents)
 
+        obstacles_non_fluents = dict(self._model.ground_var_with_values('OBSTACLE', subs['OBSTACLE']))
+
         for k, v in non_fluents.items():
             var, objects = self._model.parse_grounded(k)
 
-            if var == 'OBSTACLE' and v:
-                obstacles.append(tuple(objects))
-            elif var == 'CONTROLLABLE':
+            # if var == 'OBSTACLE' and v:
+            #     obstacles.append(tuple(objects))
+            if var == 'CONTROLLABLE':
                 agent = objects[0]
                 controllable[agent] = v
+
+        for k, v in obstacles_non_fluents.items():
+            var, objects = self._model.parse_grounded(k)
+
+            if v:
+                obstacles.append(tuple(objects))
 
         return {
             'obstacles': obstacles,
@@ -403,7 +411,7 @@ class Grid4x4MultiAgentVisualizer(BaseViz):
             PIL Image of the rendered visualization
         """
         # Extract layouts
-        nonfluent_layout = self.build_nonfluents_layout()
+        nonfluent_layout = self.build_nonfluents_layout(subs)
 
         state_layout = self.build_states_layout(state)
 

@@ -1,0 +1,15 @@
+ENV_NAME: rddl/grid_10x10_alternating
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 10
+ENV_KWARGS: {domain: "toroidal/grid_10x10_alternating_domain.rddl",
+             instance: "toroidal/grid_10x10_alternating_instance22.rddl",
+             render: true,
+             render_name: "grid_10x10_alternating_toroidal_full_restrictions_w_obstacles",
+             render_dir: "render",
+             stochastic_movement_prob: 0.4,
+             enforce_action_constraints: true,
+             vectorized: true,
+             ego_centric_obs: true}
+TASK_NAME: rddl/grid_10x10_alternating/toroidal_full_restric_w_obstacles
+SINGLE_AGENT_1_PROJECTION: "toroidal/grid_10x10_alternating_instance00.rddl"
+SINGLE_AGENT_2_PROJECTION: "toroidal/grid_10x10_alternating_instance11.rddl"
