@@ -1444,7 +1444,10 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         eval_render_optimal_dones = train_out['render_outs'][1][4]['__all__']
         eval_render_worst_case_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
         eval_render_worst_case_dones = train_out['render_outs'][0][4]['__all__']
-        num_episodes = eval_render_worst_case_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
+        if hasattr(eval_render_worst_case_env_state, 'state') and 'agent-at' in eval_render_worst_case_env_state.state:
+            num_episodes = eval_render_worst_case_env_state.state['agent-at'].shape[1] # (num_train_seeds, num_eval_episodes, num_max_timesteps, num_agents_per_game, ...)
+        else:
+            num_episodes = eval_render_worst_case_env_state.positions.shape[1]
         optimal_env.animate((eval_render_init_env_state, eval_render_optimal_env_state), eval_render_optimal_dones, num_episodes, extra_dir="Optimal", debug=True)
         env.animate((eval_render_init_env_state, eval_render_worst_case_env_state), eval_render_worst_case_dones, num_episodes, extra_dir="WorstCase", debug=True)
 
