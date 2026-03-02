@@ -784,7 +784,7 @@
 
                 <p>You are invited to be part of a research study. Your participation is voluntary, and it is totally up to you to decide whether you want to participate. Even if you decide to be part of the study now, you can change your mind and stop at any time.</p>
 
-                <p>If you agree to take part in this study, you will be asked to play several games of Level-Based Foraging with an AI partner. We expect that this study will take about 10 minutes.</p>
+                <p>If you agree to take part in this study, you will be asked to play several games (2 warmup games, 8 main games) of Level-Based Foraging with an AI partner. Each game should take less than 1 minute.</p>
 
                 <h3>Contact Information</h3>
                 <p>If you have any questions, concerns, or complaints about this research now or in the future, you may contact <em>Prof. Peter Stone, pstone@cs.utexas.edu</em>.</p>
@@ -1037,6 +1037,7 @@
         let lastAIAction = null;
         let actionAnimationTimer = null;
         let actionAnimationAlpha = 1.0;
+        let actionInProgress = false;
         let sessionComplete = false;
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -1102,12 +1103,12 @@
             document.body.style.overflow = ''; // Restore scrolling
             
             if (dontShowAgain) {
-                localStorage.setItem('lbf_hide_welcome', 'true');
+                sessionStorage.setItem('lbf_hide_welcome', 'true');
             }
         }
 
         function shouldShowWelcomeModal() {
-            return localStorage.getItem('lbf_hide_welcome') !== 'true';
+            return sessionStorage.getItem('lbf_hide_welcome') !== 'true';
         }
 
         // Loading Spinner Functions
@@ -1219,6 +1220,7 @@
 
         // Keyboard controls
         document.addEventListener('keydown', function(event) {
+            if (event.repeat) return; // Ignore held-down key repeats
             if (replayMode) return; // Disable keyboard controls in replay mode
             if (sessionComplete) return; // Disable during finish screen
             if (!gameState || gameState.done) return;
@@ -1308,6 +1310,8 @@
 
         async function executeAction(action) {
             if (!gameState || gameState.done) return;
+            if (actionInProgress) return;
+            actionInProgress = true;
             
             try {
                 const response = await fetch('/api/step', {
@@ -1349,12 +1353,14 @@
                             gameLabel = `Game ${idx - numWarmup + 1} of ${gameState.total_games - numWarmup}`;
                         }
                         showLoadingSpinner('Loading Next Game...', gameLabel);
-                        setTimeout(hideLoadingSpinner, 600);
+                        setTimeout(hideLoadingSpinner, 150);
                     }
                 }
             } catch (error) {
                 console.error('Error executing action:', error);
                 showMessage('Error executing action. Please try again.', 'warning');
+            } finally {
+                actionInProgress = false;
             }
         }
 

@@ -7,7 +7,6 @@ import sys
 import json
 import time
 import random
-from functools import wraps
 from flask import Flask, render_template, jsonify, request, session
 from flask_cors import CORS
 import jax
@@ -17,7 +16,6 @@ import asyncio
 import uuid
 import threading
 from asyncio import run_coroutine_threadsafe
-from werkzeug.utils import secure_filename
 
 # Add parent directory to path to import project modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -41,20 +39,6 @@ DOWN = 2
 LEFT = 3
 RIGHT = 4
 LOAD = 5
-
-def simple_timer(func):
-    """
-    Simple timing decorator that always runs.
-    Prints execution time for the function.
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        elapsed_time = time.time() - start_time
-        print(f"⏱️  {func.__name__} took {elapsed_time:.4f}s")
-        return result
-    return wrapper
 
 class GameSession:
     """Manages a single game session with environment state and agent state."""
@@ -84,11 +68,6 @@ class GameSession:
         self.env = make_env(env_name="lbf", env_kwargs=env_args)
         
         # Initialize heuristic agent (agent 1 - computer)
-        # self.ai_agent = SequentialFruitAgent(
-        #     grid_size=grid_size, 
-        #     num_fruits=num_fruits, 
-        #     ordering_strategy='nearest_agent'
-        # )
         self.ai_agent = self._choose_agent()
         
         # Initialize JAX random key
@@ -226,25 +205,13 @@ class GameSession:
 
                 levels = []
 
-                # Guarantee 1: one fruit collectable by a single agent
-                # (fruit level <= min agent level, so either agent can solo it)
-                solo_level = int(np.random.randint(1, max(2, min_agent + 1)))
-                levels.append(solo_level)
+                # Guarantee 1: each agent can solo one fruit at least
+                levels.append(agent_level_list[0])  # Solo for agent 0
+                levels.append(agent_level_list[1])  # Solo for agent 1
 
-                # Guarantee 2: one fruit that CAN'T be collected even together
-                # (fruit level > combined agent levels)
-                uncollectable_level = combined + int(np.random.randint(1, max(2, combined + 1)))
-                levels.append(uncollectable_level)
-
-                # Guarantee 3: remaining fruits are collectable by agents together
-                # (fruit level <= combined). Mix of solo-able and cooperation-required.
+                # Guarantee 2: remaining fruits need to require both agents
                 for _ in range(num - 2):
-                    if max_agent < combined and np.random.random() < 0.5:
-                        # Cooperation required (need both agents adjacent): level in (max_agent, combined]
-                        lvl = int(np.random.randint(max_agent + 1, combined + 1))
-                    else:
-                        # Solo-able by at least one agent: level in [1, max_agent]
-                        lvl = int(np.random.randint(1, max(2, max_agent + 1)))
+                    lvl = sum(agent_level_list)
                     levels.append(lvl)
 
                 np.random.shuffle(levels)
@@ -366,8 +333,6 @@ class GameSession:
         if not self.episode_history:
             return None
         
-        # Add timestamp for uniqueness
-        import time
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         
         episode_data = {
@@ -405,7 +370,6 @@ class ReplaySession:
         self.trajectory = episode_data['trajectory']
         self.current_step = 0
         self.is_playing = False
-        self.playback_speed = 1.0  # Steps per second
         
     def get_current_state(self):
         """Get the current replay state."""
@@ -484,7 +448,6 @@ class ReplaySession:
 # Number of warmup games at the start of each session
 NUM_WARMUP_GAMES = 2
 NUM_REAL_GAMES = 8
-TOTAL_GAMES = NUM_WARMUP_GAMES + NUM_REAL_GAMES
 
 
 class MultiGameSession:
@@ -521,7 +484,7 @@ class MultiGameSession:
     def step(self, human_action):
         cur = self._current()
         prev_idx = self.current_idx
-        state = cur.step(human_action)
+        cur.step(human_action)
         # If current finished, advance to next game
         if cur.done and self.current_idx < len(self.games) - 1:
             self.current_idx += 1
@@ -563,14 +526,6 @@ class MultiGameSession:
                 if p:
                     paths.append(p)
         return paths
-
-
-def get_game(grid_size=7, levels_mode='same'):
-    max_steps = 50
-    num_fruits = 4 if grid_size == 7 else 6
-    env_kwargs = {}
-    game = GameSession(str(uuid.uuid4()), max_steps, grid_size, num_fruits, env_kwargs=env_kwargs, levels_mode=levels_mode)
-    return game
 
 
 # -- PREWARMING -- 
@@ -862,7 +817,6 @@ def exit_replay():
     return jsonify({"success": True})
 
 
-global BACKGROUND_LOOP
 BACKGROUND_LOOP = asyncio.new_event_loop()
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
