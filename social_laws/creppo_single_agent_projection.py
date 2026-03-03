@@ -23,7 +23,7 @@ import numpy as np
 import optax
 import hydra
 
-from flax.linen import softmax
+from flax.linen import softmax, log_softmax
 
 from social_laws.common.initialize_agents import initialize_creppo_agent
 from social_laws.common.run_episodes_creppo import run_episodes_vmap
@@ -216,8 +216,7 @@ def train_creppo_agent(config, env, train_rng,
                 )
 
                 q_probs = softmax(
-                    next_q["q_values"]
-                    / jnp.exp(train_state.q_network_train_state.params["log_alpha"]),
+                    next_q["policy_logits"],
                     axis=-1,
                 )
                 next_values = jnp.sum(
@@ -226,7 +225,7 @@ def train_creppo_agent(config, env, train_rng,
                 )
 
                 # TODO: Prev or next avail actions?
-                entropy = -jnp.sum(jnp.where(next_avail_actions, q_probs * jnp.log(q_probs + 1e-8), 0), axis=-1) / next_avail_actions.sum(-1)
+                entropy = -jnp.sum(jnp.where(next_avail_actions, q_probs * jnp.log(q_probs + 1e-8), 0), axis=-1) * config["NUM_ACTIONS"] / next_avail_actions.sum(-1)
 
                 # Store agent_idx data in transition
                 transition = Transition(
@@ -305,17 +304,17 @@ def train_creppo_agent(config, env, train_rng,
                     rng=next_rng
                 )
 
-                next_pi_probs = softmax(next_pi["q_values"], axis=-1)
+                next_pi_probs = softmax(next_pi["policy_logits"], axis=-1)
 
                 next_pi_ent: jax.Array = -jnp.sum(
                     jnp.where(traj_batch.next_avail_actions[-1], next_pi_probs * jnp.log(next_pi_probs + 1e-8), 0), axis=-1
-                ) / traj_batch.next_avail_actions[-1].sum(-1)
+                ) * config["NUM_ACTIONS"] / traj_batch.next_avail_actions[-1].sum(-1)
 
                 next_logp = jnp.concatenate(
                     [traj_batch.action_logp[1:], next_pi_ent[None]], axis=0
                 )
 
-                soft_reward = traj_batch.reward - config["GAMMA"] * next_logp * jnp.exp(
+                soft_reward = traj_batch.reward + config["GAMMA"] * next_logp * jnp.exp(
                     train_state.q_network_train_state.params["log_alpha"]
                 )
 
@@ -370,10 +369,7 @@ def train_creppo_agent(config, env, train_rng,
                             )
                             pi = jax.lax.stop_gradient(
                                 distrax.Categorical(
-                                    logits=critic_out["q_values"]
-                                    / jnp.exp(
-                                        train_state.q_network_train_state.params["log_alpha"]
-                                    )
+                                    logits=critic_out["policy_logits"]
                                 )
                             )
 
@@ -382,10 +378,9 @@ def train_creppo_agent(config, env, train_rng,
 
                             pi_entropy = -jnp.sum(
                                 jnp.where(minibatch.avail_actions, pi.probs * jnp.log(pi.probs + 1e-8), 0), axis=-1
-                            ) / minibatch.avail_actions.sum(-1)
-                            alpha_loss = -alpha * (target_entropy - pi_entropy)
+                            ) * config["NUM_ACTIONS"] / minibatch.avail_actions.sum(-1)
+                            alpha_loss = -alpha * jax.lax.stop_gradient(target_entropy - pi_entropy)
                             loss = optax.softmax_cross_entropy(logits, target_cat)
-                            old_temp = jax.lax.stop_gradient(jnp.exp(train_state.target_train_state.params["log_alpha"]))
                             old_critic_out = policy.q_network.apply(
                                 {
                                     "params": train_state.target_train_state.params,
@@ -394,10 +389,10 @@ def train_creppo_agent(config, env, train_rng,
                                 (minibatch.obs, minibatch.avail_actions),
                                 train=False,
                             )
-                            old_q_probs = old_critic_out["q_values"] / old_temp
+                            old_q_probs = old_critic_out["policy_logits"]
                             kl = jnp.sum(
-                                jnp.where(minibatch.avail_actions, old_q_probs * (jnp.log(old_q_probs + 1e-8) - jnp.log(pi.probs + 1e-8)), 0), axis=-1
-                            ) / minibatch.avail_actions.sum(-1)
+                                jnp.where(minibatch.avail_actions, softmax(old_q_probs, axis=-1) * (log_softmax(old_q_probs + 1e-8, axis=-1) - log_softmax(critic_out["policy_logits"] + 1e-8, axis=-1)), 0), axis=-1
+                            ) * config["NUM_ACTIONS"] / minibatch.avail_actions.sum(-1)
                             if config["KL_BOUND"] is not None:
                                 loss = jnp.where(
                                     jax.lax.stop_gradient(kl) < config["KL_BOUND"], loss, jnp.zeros_like(loss)

@@ -34,7 +34,7 @@ class QNetwork(nn.Module):
 
     @nn.compact
     def __call__(self, x: jnp.ndarray, train: bool):
-        self.param(
+        log_alpha = self.param(
             "log_alpha", nn.initializers.constant(jnp.log(self.init_alpha)), (1,)
         )
 
@@ -86,4 +86,5 @@ class QNetwork(nn.Module):
             "logits": logits,
             "probs": probs,
             "q_values": masked_values,
+            "policy_logits": masked_values / jnp.exp(log_alpha),
         }
