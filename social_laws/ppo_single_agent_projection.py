@@ -478,10 +478,11 @@ def run_training(config, wandb_logger, agent_idx=0):
     algorithm_config = dict(config["algorithm"])
 
     # Create only one environment instance
-    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs = dict(algorithm_config["ENV_KWARGS"])
 
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
     env_kwargs["render_dir"] = os.path.join("render", "ppo", f"agent_{agent_idx + 1}")
+    env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as active agent takes their picture
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
