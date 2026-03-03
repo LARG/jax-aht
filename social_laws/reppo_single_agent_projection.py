@@ -56,10 +56,10 @@ def train_reppo_agent(config, env, q_env, train_rng,
     def make_reppo_train(config):
         '''The controlled agent is based on the agent_idx parameter'''
         num_agents = env.num_agents
-        assert num_agents == 2, "This snippet assumes exactly 2 agents."
+        # assert num_agents == 2, "This snippet assumes exactly 2 agents."
 
-        config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
-        config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
+        # config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
+        # config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
         config["NUM_UPDATES_DECAY"] = (config["TOTAL_TIMESTEPS_DECAY"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"])

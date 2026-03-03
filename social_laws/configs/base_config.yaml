@@ -14,6 +14,7 @@ NUM_EVAL_EPISODES: ${task.NUM_EVAL_EPISODES}
 # partner configs are specified in each algorithm _base_ config file
 # note that ppo_ego and ppo_br support different types of partner configs
 algorithm:
+  USE_SAME_SEED: false
   TRAIN_SEED:
   EVAL_SEED:
   NUM_EVAL_EPISODES: ${NUM_EVAL_EPISODES}
@@ -22,6 +23,7 @@ algorithm:
   ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
 
 value_function:
+  USE_SAME_SEED: false
   NUM_TRAIN_SEEDS: ${algorithm.NUM_TRAIN_SEEDS}
   TRAIN_SEED:
   EVAL_SEED:

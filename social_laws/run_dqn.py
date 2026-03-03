@@ -20,13 +20,24 @@ SEEDRANGE = (1, int(1e9))
 def run_training(cfg):
     '''Runs the agent training.'''
 
-    if cfg.algorithm.TRAIN_SEED is None:
-        cfg.algorithm.TRAIN_SEED = random.randint(*SEEDRANGE)
-        cfg.value_function.TRAIN_SEED = cfg.algorithm.TRAIN_SEED
+    if cfg.algorithm.USE_SAME_SEED:
+        if cfg.algorithm.TRAIN_SEED is None:
+            cfg.algorithm.TRAIN_SEED = random.randint(*SEEDRANGE)
+            cfg.value_function.TRAIN_SEED = cfg.algorithm.TRAIN_SEED
+            cfg.algorithm.EVAL_SEED = cfg.algorithm.TRAIN_SEED
+            cfg.value_function.EVAL_SEED = cfg.algorithm.TRAIN_SEED
+        else:
+            cfg.value_function.TRAIN_SEED = cfg.algorithm.TRAIN_SEED
+            cfg.algorithm.EVAL_SEED = cfg.algorithm.TRAIN_SEED
+            cfg.value_function.EVAL_SEED = cfg.algorithm.TRAIN_SEED
+    else:
+        if cfg.algorithm.TRAIN_SEED is None:
+            cfg.algorithm.TRAIN_SEED = random.randint(*SEEDRANGE)
+            cfg.value_function.TRAIN_SEED = cfg.algorithm.TRAIN_SEED
 
-    if cfg.algorithm.EVAL_SEED is None:
-        cfg.algorithm.EVAL_SEED = random.randint(*SEEDRANGE)
-        cfg.value_function.EVAL_SEED = cfg.algorithm.EVAL_SEED
+        if cfg.algorithm.EVAL_SEED is None:
+            cfg.algorithm.EVAL_SEED = random.randint(*SEEDRANGE)
+            cfg.value_function.EVAL_SEED = cfg.algorithm.EVAL_SEED
 
     # if cfg.value_function.TRAIN_SEED is None:
     #     cfg.value_function.TRAIN_SEED = random.randint(*SEEDRANGE)
