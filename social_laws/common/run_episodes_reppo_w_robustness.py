@@ -66,16 +66,11 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
 
     init_reward = {k: jnp.zeros((1)) for i, k in enumerate(env.agents)}
 
-    agent_0_params, agent_1_params = agent_params
-    agent_0_policy, agent_1_policy = agent_policies
-    agent_0_optimal_params, agent_1_optimal_params = optimal_params
-    agent_0_optimal_policy, agent_1_optimal_policy = optimal_policies
+    num_agents = len(env.agents)
 
     # Initialize hidden states. Agent id is passed as part of the hstate initialization to support heuristic agents.
-    agent_0_init_hstate = agent_0_policy.init_hstate(1, aux_info={"agent_id": 0})
-    agent_1_init_hstate = agent_1_policy.init_hstate(1, aux_info={"agent_id": 1})
-    agent_0_optimal_init_hstate = agent_0_optimal_policy.init_hstate(1, aux_info={"agent_id": 0})
-    agent_1_optimal_init_hstate = agent_1_optimal_policy.init_hstate(1, aux_info={"agent_id": 1})
+    init_hstates = [agent_policies[i].init_hstate(1, aux_info={"agent_id": i}) for i in range(num_agents)]
+    optimal_init_hstates = [optimal_policies[i].init_hstate(1, aux_info={"agent_id": i}) for i in range(num_agents)]
 
     # Create functions to get agent-specific data based on agent_idx
     # This avoids indexing with traced values
@@ -89,90 +84,64 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
         branches = [lambda d=data_dict, k=agent_key, v=value: {**d, k: v} for agent_key in env.agents]
         return jax.lax.switch(idx, branches)
 
-    # Get available actions for the agent from environment state
+    # Per-agent obs/done for worst-case env
     avail_actions = env.get_avail_actions(init_env_state.env_state)
     avail_actions = jax.lax.stop_gradient(avail_actions)
-    avail_actions_0 = get_agent_data(avail_actions, 0).astype(jnp.float32)
-    avail_actions_1 = get_agent_data(avail_actions, 1).astype(jnp.float32)
+    init_avail_per_agent = [get_agent_data(avail_actions, i).astype(jnp.float32) for i in range(num_agents)]
 
-    init_obs_0 = get_agent_data(init_obs, 0).reshape(1, 1, -1)
-    init_obs_1 = get_agent_data(init_obs, 1).reshape(1, 1, -1)
-    init_obs_full_0 = get_agent_data(init_obs_full, 0).reshape(1, 1, -1)
-    init_obs_full_1 = get_agent_data(init_obs_full, 1).reshape(1, 1, -1)
+    init_obs_per_agent = [get_agent_data(init_obs, i).reshape(1, 1, -1) for i in range(num_agents)]
+    init_obs_full_per_agent = [get_agent_data(init_obs_full, i).reshape(1, 1, -1) for i in range(num_agents)]
+    init_done_per_agent = [get_agent_data(init_done, i).reshape(1, 1) for i in range(num_agents)]
 
-    init_done_0 = get_agent_data(init_done, 0).reshape(1, 1)
-    init_done_1 = get_agent_data(init_done, 1).reshape(1, 1)
-
+    # Per-agent obs/done for optimal env
     opt_avail_actions = env.get_avail_actions(init_opt_env_state.env_state)
     opt_avail_actions = jax.lax.stop_gradient(opt_avail_actions)
-    opt_avail_actions_0 = get_agent_data(opt_avail_actions, 0).astype(jnp.float32)
-    opt_avail_actions_1 = get_agent_data(opt_avail_actions, 1).astype(jnp.float32)
 
-    init_opt_obs_0 = get_agent_data(init_opt_obs, 0).reshape(1, 1, -1)
-    init_opt_obs_1 = get_agent_data(init_opt_obs, 1).reshape(1, 1, -1)
-    init_opt_obs_full_0 = get_agent_data(init_opt_obs_full, 0).reshape(1, 1, -1)
-    init_opt_obs_full_1 = get_agent_data(init_opt_obs_full, 1).reshape(1, 1, -1)
+    init_opt_avail_per_agent = [get_agent_data(opt_avail_actions, i).astype(jnp.float32) for i in range(num_agents)]
+    init_opt_obs_per_agent = [get_agent_data(init_opt_obs, i).reshape(1, 1, -1) for i in range(num_agents)]
+    init_opt_done_per_agent = [get_agent_data(init_opt_done, i).reshape(1, 1) for i in range(num_agents)]
 
-    init_opt_done_0 = get_agent_data(init_opt_done, 0).reshape(1, 1)
-    init_opt_done_1 = get_agent_data(init_opt_done, 1).reshape(1, 1)
-
-    # Restrict available actions based on value function
-    optimal_restricted_avail_actions_0, optimal_critic_hstate_0 = _get_optimal_restricted_avail_actions(
-        obs=init_obs_0,
-        done=init_done_0,
-        avail_actions=avail_actions_0,
-        hstate=agent_0_optimal_init_hstate[1],
-        optimal_params=agent_0_optimal_params,
-        optimal_policy=agent_0_optimal_policy,
-        epsilon_optimal=epsilon_optimal
-    )
-    optimal_restricted_avail_actions_1, optimal_critic_hstate_1 = _get_optimal_restricted_avail_actions(
-        obs=init_obs_1,
-        done=init_done_1,
-        avail_actions=avail_actions_1,
-        hstate=agent_1_optimal_init_hstate[1],
-        optimal_params=agent_1_optimal_params,
-        optimal_policy=agent_1_optimal_policy,
-        epsilon_optimal=epsilon_optimal
-    )
+    # Restrict available actions based on optimal critic for each agent
+    optimal_restricted_avail_actions = []
+    optimal_critic_hstates = []
+    for i in range(num_agents):
+        restricted_i, hstate_i = _get_optimal_restricted_avail_actions(
+            obs=init_opt_obs_per_agent[i],
+            done=init_opt_done_per_agent[i],
+            avail_actions=init_opt_avail_per_agent[i],
+            hstate=optimal_init_hstates[i][1], # use critic hstate for restriction
+            optimal_params=optimal_params[i],
+            optimal_policy=optimal_policies[i],
+            epsilon_optimal=epsilon_optimal
+        )
+        optimal_restricted_avail_actions.append(restricted_i)
+        optimal_critic_hstates.append(hstate_i)
 
     # Do one step to get a dummy info structure
-    rng, act0_rng, act1_rng, step_rng = jax.random.split(rng, 4)
+    rng, *act_rngs, step_rng = jax.random.split(rng, num_agents + 2)
 
     ###########################################
     #                Worst Case               #
     ###########################################
 
-    # Get agent 0 action
-    act_0, hstate_0 = agent_0_policy.get_action(
-        params=(agent_0_params['actor']["params"], agent_0_params['actor']["batch_stats"]),
-        obs=init_obs_full_0 if use_full_obs else init_obs_0,
-        done=init_done_0,
-        avail_actions=optimal_restricted_avail_actions_0,
-        hstate=agent_0_init_hstate[0],
-        rng=act0_rng,
-        aux_obs=None,
-        env_state=init_env_state,
-        test_mode=agent_test_mode
-    )
-    act_0 = act_0.squeeze(axis=0)
+    acts = []
+    actor_hstates = []
+    for i in range(num_agents):
+        act_i, hstate_i = agent_policies[i].get_action(
+            params=(agent_params[i]['actor']["params"], agent_params[i]['actor']["batch_stats"]),
+            obs=init_obs_full_per_agent[i] if use_full_obs else init_obs_per_agent[i],
+            done=init_done_per_agent[i],
+            avail_actions=optimal_restricted_avail_actions[i],
+            hstate=init_hstates[i][0], # use actor hstate for action selection
+            rng=act_rngs[i],
+            aux_obs=None,
+            env_state=init_env_state,
+            test_mode=agent_test_mode
+        )
+        acts.append(act_i.squeeze(axis=0))
+        actor_hstates.append(hstate_i)
 
-    # Get agent 1 action
-    act_1, hstate_1 = agent_1_policy.get_action(
-        params=(agent_1_params['actor']["params"], agent_1_params['actor']["batch_stats"]),
-        obs=init_obs_full_1 if use_full_obs else init_obs_1,
-        done=init_done_1,
-        avail_actions=optimal_restricted_avail_actions_1,
-        hstate=agent_1_init_hstate[0],
-        rng=act1_rng,
-        aux_obs=None,
-        env_state=init_env_state,
-        test_mode=agent_test_mode
-    )
-    act_1 = act_1.squeeze(axis=0)
-
-    both_actions = [act_0, act_1]
-    env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
+    env_act = {k: acts[i] for i, k in enumerate(env.agents)}
     env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
     obs, env_state, reward, done, info = env.step(step_rng, init_env_state, env_act)
 
@@ -180,36 +149,29 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
     #               Optimal Case              #
     ###########################################
 
-    # Get optimal action based on agent_idx using JAX switch
-    def get_agent_0_optimal():
-        act, hstate = agent_0_optimal_policy.get_action(
-            params=(agent_0_optimal_params['actor']["params"], agent_0_optimal_params['actor']["batch_stats"]),
-            obs=init_opt_obs_0,
-            done=init_opt_done_0,
-            avail_actions=opt_avail_actions_0,
-            hstate=agent_0_optimal_init_hstate[0],
-            rng=act0_rng,
-            aux_obs=None,
-            env_state=init_opt_env_state,
-            test_mode=agent_test_mode
-        )
-        return act.squeeze(axis=0), (hstate, hstate)
+    def make_get_optimal_agent(agent_i):
+        def get_optimal_agent_i():
+            act, hstate_next = optimal_policies[agent_i].get_action(
+                params=(optimal_params[agent_i]['actor']["params"], optimal_params[agent_i]['actor']["batch_stats"]),
+                obs=init_opt_obs_per_agent[agent_i],
+                done=init_opt_done_per_agent[agent_i],
+                avail_actions=init_opt_avail_per_agent[agent_i],
+                hstate=optimal_init_hstates[agent_i][0], # use actor hstate for action selection
+                rng=act_rngs[agent_i],
+                aux_obs=None,
+                env_state=init_opt_env_state,
+                test_mode=agent_test_mode
+            )
+            # Build output hstate tuple: updated slot for agent_i, initial for all others
+            # hstates_out = tuple(
+            #     hstate_next if j == agent_i else optimal_init_hstates[j][0]
+            #     for j in range(num_agents)
+            # )
+            # return act.squeeze(axis=0), hstates_out
+            return act.squeeze(axis=0), hstate_next
+        return get_optimal_agent_i
 
-    def get_agent_1_optimal():
-        act, hstate = agent_1_optimal_policy.get_action(
-            params=(agent_1_optimal_params['actor']["params"], agent_1_optimal_params['actor']["batch_stats"]),
-            obs=init_opt_obs_1,
-            done=init_opt_done_1,
-            avail_actions=opt_avail_actions_1,
-            hstate=agent_1_optimal_init_hstate[0],
-            rng=act1_rng,
-            aux_obs=None,
-            env_state=init_opt_env_state,
-            test_mode=agent_test_mode
-        )
-        return act.squeeze(axis=0), (hstate, hstate)
-
-    optimal_act, optimal_hstate = jax.lax.switch(agent_idx, [get_agent_0_optimal, get_agent_1_optimal])
+    optimal_act, optimal_hstates = jax.lax.switch(agent_idx, [make_get_optimal_agent(i) for i in range(num_agents)])
 
     optimal_env_act = {k: jnp.zeros_like(optimal_act) for i, k in enumerate(optimal_env.agents)}
     optimal_env_act = set_agent_data(optimal_env_act, agent_idx, optimal_act)
@@ -223,83 +185,63 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
     #          Worst Case Scan                #
     ###########################################
     worst_ep_ts = 1
-    worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot, (hstate_0, hstate_1, optimal_critic_hstate_0, optimal_critic_hstate_1), info)
+    worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot,
+                        actor_hstates, optimal_critic_hstates, info)
     def worst_scan_step(carry, _):
         def take_worst_step(carry_step):
-            ep_ts, env_state, (obs, obs_full), rng, done, reward, act_onehot, hstate, last_info = carry_step
-            hstate_0, hstate_1, optimal_critic_hstate_0, optimal_critic_hstate_1 = hstate
-            # Get available actions for the agent from environment state
+            ep_ts, env_state, (obs, obs_full), rng, done, reward, act_onehot, hstates, optimal_critic_hstates, last_info = carry_step
+
             avail_actions = env.get_avail_actions(env_state.env_state)
             avail_actions = jax.lax.stop_gradient(avail_actions)
-            avail_actions_0 = get_agent_data(avail_actions, 0).astype(jnp.float32)
-            avail_actions_1 = get_agent_data(avail_actions, 1).astype(jnp.float32)
+            avail_per_agent = [get_agent_data(avail_actions, i).astype(jnp.float32) for i in range(num_agents)]
 
-            obs_0 = get_agent_data(obs, 0).reshape(1, 1, -1)
-            obs_1 = get_agent_data(obs, 1).reshape(1, 1, -1)
-            obs_full_0 = get_agent_data(obs_full, 0).reshape(1, 1, -1)
-            obs_full_1 = get_agent_data(obs_full, 1).reshape(1, 1, -1)
+            obs_per_agent = [get_agent_data(obs, i).reshape(1, 1, -1) for i in range(num_agents)]
+            obs_full_per_agent = [get_agent_data(obs_full, i).reshape(1, 1, -1) for i in range(num_agents)]
+            done_per_agent = [get_agent_data(done, i).reshape(1, 1) for i in range(num_agents)]
 
-            done_0 = get_agent_data(done, 0).reshape(1, 1)
-            done_1 = get_agent_data(done, 1).reshape(1, 1)
+            # Restrict available actions via optimal critic for each agent
+            opt_restricted_avail_actions = []
+            new_opt_critic_hstates = []
+            for i in range(num_agents):
+                restricted_i, new_critic_hstate_i = _get_optimal_restricted_avail_actions(
+                    obs=obs_per_agent[i],
+                    done=done_per_agent[i],
+                    avail_actions=avail_per_agent[i],
+                    hstate=optimal_critic_hstates[i],
+                    optimal_params=optimal_params[i],
+                    optimal_policy=optimal_policies[i],
+                    epsilon_optimal=epsilon_optimal
+                )
+                opt_restricted_avail_actions.append(restricted_i)
+                new_opt_critic_hstates.append(new_critic_hstate_i)
 
-            # Restrict available actions based on value function
-            optimal_restricted_avail_actions_0, optimal_critic_hstate_next_0 = _get_optimal_restricted_avail_actions(
-                obs=obs_0,
-                done=done_0,
-                avail_actions=avail_actions_0,
-                hstate=optimal_critic_hstate_0,
-                optimal_params=agent_0_optimal_params,
-                optimal_policy=agent_0_optimal_policy,
-                epsilon_optimal=epsilon_optimal
-            )
-            optimal_restricted_avail_actions_1, optimal_critic_hstate_next_1 = _get_optimal_restricted_avail_actions(
-                obs=obs_1,
-                done=done_1,
-                avail_actions=avail_actions_1,
-                hstate=optimal_critic_hstate_1,
-                optimal_params=agent_1_optimal_params,
-                optimal_policy=agent_1_optimal_policy,
-                epsilon_optimal=epsilon_optimal
-            )
+            rng, *act_rngs, step_rng = jax.random.split(rng, num_agents + 2)
 
-            rng, act0_rng, act1_rng, step_rng = jax.random.split(rng, 4)
+            acts = []
+            new_actor_hstates = []
+            for i in range(num_agents):
+                act_i, new_hstate_i = agent_policies[i].get_action(
+                    params=(agent_params[i]['actor']["params"], agent_params[i]['actor']["batch_stats"]),
+                    obs=obs_full_per_agent[i] if use_full_obs else obs_per_agent[i],
+                    done=done_per_agent[i],
+                    avail_actions=opt_restricted_avail_actions[i],
+                    hstate=hstates[i],
+                    rng=act_rngs[i],
+                    aux_obs=None,
+                    env_state=env_state,
+                    test_mode=agent_test_mode
+                )
+                acts.append(act_i.squeeze(axis=0))
+                new_actor_hstates.append(new_hstate_i)
 
-            # Get agent 0 action
-            act_0, hstate_next_0 = agent_0_policy.get_action(
-                params=(agent_0_params['actor']["params"], agent_0_params['actor']["batch_stats"]),
-                obs=obs_full_0 if use_full_obs else obs_0,
-                done=done_0,
-                avail_actions=optimal_restricted_avail_actions_0,
-                hstate=hstate_0,
-                rng=act0_rng,
-                aux_obs=None,
-                env_state=env_state,
-                test_mode=agent_test_mode
-            )
-            act_0 = act_0.squeeze(axis=0)
-
-            # Get agent 1 action
-            act_1, hstate_next_1 = agent_1_policy.get_action(
-                params=(agent_1_params['actor']["params"], agent_1_params['actor']["batch_stats"]),
-                obs=obs_full_1 if use_full_obs else obs_1,
-                done=done_1,
-                avail_actions=optimal_restricted_avail_actions_1,
-                hstate=hstate_1,
-                rng=act1_rng,
-                aux_obs=None,
-                env_state=env_state,
-                test_mode=agent_test_mode
-            )
-            act_1 = act_1.squeeze(axis=0)
-
-            both_actions = [act_0, act_1]
-            env_act = {k: both_actions[i] for i, k in enumerate(env.agents)}
+            env_act = {k: acts[i] for i, k in enumerate(env.agents)}
             env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
             obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
 
-            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, (hstate_next_0, hstate_next_1, optimal_critic_hstate_next_0, optimal_critic_hstate_next_1), info_next)
+            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot,
+                    new_actor_hstates, new_opt_critic_hstates, info_next)
 
-        ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry
+        ep_ts, env_state, obs, rng, done, reward, act_onehot, hstates, optimal_critic_hstates, last_info = carry
         output = carry
         new_carry = jax.lax.cond(
             done["__all__"],
@@ -317,62 +259,52 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
     #          Optimal Case Scan              #
     ###########################################
     optimal_ep_ts = 1
-    optimal_init_carry = (optimal_ep_ts, optimal_env_state, optimal_obs, rng, optimal_done, optimal_reward, optimal_env_act_onehot, optimal_hstate, optimal_info)
+    optimal_init_carry = (optimal_ep_ts, optimal_env_state, optimal_obs, rng, optimal_done, optimal_reward, optimal_env_act_onehot, optimal_hstates, optimal_info)
     def optimal_scan_step(carry, _):
         def take_optimal_step(carry_step):
-            ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry_step
-            hstate_0, hstate_1 = hstate
+            ep_ts, env_state, obs, rng, done, reward, act_onehot, hstates, last_info = carry_step
 
-            # Get available actions for the agent from environment state
             avail_actions = env.get_avail_actions(env_state.env_state)
             avail_actions = jax.lax.stop_gradient(avail_actions)
-            avail_actions_0 = get_agent_data(avail_actions, 0).astype(jnp.float32)
-            avail_actions_1 = get_agent_data(avail_actions, 1).astype(jnp.float32)
+            avail_per_agent = [get_agent_data(avail_actions, i).astype(jnp.float32) for i in range(num_agents)]
 
-            obs_0 = get_agent_data(obs, 0).reshape(1, 1, -1)
-            obs_1 = get_agent_data(obs, 1).reshape(1, 1, -1)
+            obs_per_agent = [get_agent_data(obs, i).reshape(1, 1, -1) for i in range(num_agents)]
+            done_per_agent = [get_agent_data(done, i).reshape(1, 1) for i in range(num_agents)]
 
-            rng, act0_rng, act1_rng, step_rng = jax.random.split(rng, 4)
+            rng, *act_rngs, step_rng = jax.random.split(rng, num_agents + 2)
 
-            # Get optimal action based on agent_idx using JAX switch
-            def get_agent_0_optimal_step():
-                act, hstate_next = agent_0_optimal_policy.get_action(
-                    params=(agent_0_optimal_params['actor']["params"], agent_0_optimal_params['actor']["batch_stats"]),
-                    obs=obs_0,
-                    done=get_agent_data(done, 0).reshape(1, 1),
-                    avail_actions=avail_actions_0,
-                    hstate=hstate_0,
-                    rng=act0_rng,
-                    aux_obs=None,
-                    env_state=env_state,
-                    test_mode=agent_test_mode
-                )
-                return act.squeeze(axis=0), (hstate_next, hstate_next)
+            def make_optimal_step_fn(agent_i):
+                def optimal_step_fn():
+                    act, hstate_next = optimal_policies[agent_i].get_action(
+                        params=(optimal_params[agent_i]['actor']["params"], optimal_params[agent_i]['actor']["batch_stats"]),
+                        obs=obs_per_agent[agent_i],
+                        done=done_per_agent[agent_i],
+                        avail_actions=avail_per_agent[agent_i],
+                        hstate=hstates,
+                        rng=act_rngs[agent_i],
+                        aux_obs=None,
+                        env_state=env_state,
+                        test_mode=agent_test_mode
+                    )
+                    # Only the ego agent's hstate is updated; others carry forward unchanged
+                    # hstates_out = tuple(
+                    #     hstate_next if j == agent_i else hstates[j]
+                    #     for j in range(num_agents)
+                    # )
+                    # return act.squeeze(axis=0), hstates_out
+                    return act.squeeze(axis=0), hstate_next
+                return optimal_step_fn
 
-            def get_agent_1_optimal_step():
-                act, hstate_next = agent_1_optimal_policy.get_action(
-                    params=(agent_1_optimal_params['actor']["params"], agent_1_optimal_params['actor']["batch_stats"]),
-                    obs=obs_1,
-                    done=get_agent_data(done, 1).reshape(1, 1),
-                    avail_actions=avail_actions_1,
-                    hstate=hstate_1,
-                    rng=act1_rng,
-                    aux_obs=None,
-                    env_state=env_state,
-                    test_mode=agent_test_mode
-                )
-                return act.squeeze(axis=0), (hstate_next, hstate_next)
-
-            act, hstate_next = jax.lax.switch(agent_idx, [get_agent_0_optimal_step, get_agent_1_optimal_step])
+            act, hstates_next = jax.lax.switch(agent_idx, [make_optimal_step_fn(i) for i in range(num_agents)])
 
             env_act = {k: jnp.zeros_like(act) for i, k in enumerate(optimal_env.agents)}
             env_act = set_agent_data(env_act, agent_idx, act)
             env_act_onehot = {k: jax.nn.one_hot(env_act[optimal_env.agents[i]], optimal_env.action_space(optimal_env.agents[i]).n) for i, k in enumerate(optimal_env.agents)}
             (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = optimal_env.step(step_rng, env_state, env_act)
 
-            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, hstate_next, info_next)
+            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, hstates_next, info_next)
 
-        ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, last_info = carry
+        ep_ts, env_state, obs, rng, done, reward, act_onehot, hstates, last_info = carry
         output = carry
         new_carry = jax.lax.cond(
             done["__all__"],
