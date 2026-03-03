@@ -1,0 +1,24 @@
+defaults:
+  - creppo/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 12e6
+TOTAL_TIMESTEPS_DECAY: 12e6
+
+NUM_ENVS: 40 # parallel environments
+NUM_EPOCHS: 4 # number of epochs per update
+NUM_MINIBATCHES: 128 # minibatches per epoch
+
+LR: 0.0003
+
+TARGET_ENTROPY_MULT: 0.1 # sum (action probabilities) * log(action probabilities), max entropy
+GAMMA: 0.99
+VMIN: -400 # -400 with step penalty, -300 without step penalty # Env dependent, (1 / (1 - gamma)) * min_reward
+VMAX: 100 # Env dependent, (1 / (1 - gamma)) * max_reward
+
+ANNEAL_LR: false
+
+S5_D_MODEL: 128
+S5_SSM_SIZE: 128
+S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+FC_N_LAYERS: 3

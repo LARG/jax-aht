@@ -1,0 +1,36 @@
+# @package algorithm
+# ^ tells hydra to place these value directly under algorithm key
+ALG: creppo
+ACTOR_TYPE: mlp
+NUM_TRAIN_SEEDS: 1
+NUM_CHECKPOINTS: 5
+TOTAL_TIMESTEPS: 5e7 # with 4 frame skip correpsnds to 200M frames
+TOTAL_TIMESTEPS_DECAY: 5e7 # will be used for decay functions (epsilon and lr)
+NUM_ENVS: 20 # parallel environments
+NUM_EPOCHS: 4 # number of epochs per update
+NUM_MINIBATCHES: 128 # minibatches per epoch
+NORM_TYPE: "layer_norm" # layer_norm or batch_norm
+LR: 0.0003
+MAX_GRAD_NORM: 10
+GAMMA: 0.99
+LAMBDA: 0.65
+NUM_BINS: 51
+VMIN: -10 # Env dependent, (1 / (1 - gamma)) * min_reward
+VMAX: 10 # Env dependent, (1 / (1 - gamma)) * max_reward
+INIT_ALPHA: 0.01
+INIT_LAGRANGIAN: 0.01
+KL_BOUND: 0.1
+TARGET_ENTROPY_MULT: 0.5
+TEMP_START: 1.0
+TEMP_FINISH: 1.0
+TEMP_DECAY: 0.1 # ratio of total updates
+MIN_IS_WEIGHT: 0.5
+MAX_IS_WEIGHT: 1.0
+ANNEAL_LR: false # LR_LINEAR_DECAY
+
+FIXED_EVAL: false
+TRAIN_EVAL: true
+
+JOINT_USE_FULL_OBS: true
+JOINT_CENTRALIZED: false
+EPSILON_OPTIMAL: 1e-2 # Tolerance for near-optimal actions
