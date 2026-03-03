@@ -104,7 +104,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
         reset_key, randomize_key = jax.random.split(key)
         env_state, timestep = self.env.reset(reset_key)
         env_state, timestep = self._randomize_initial_positions(randomize_key, env_state, timestep)
-        obs = self._extract_observations(timestep.observation)
+        obs = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
         state = WrappedEnvState(env_state,
                                 jnp.zeros(self.num_agents),
                                 self._extract_avail_actions(env_state),

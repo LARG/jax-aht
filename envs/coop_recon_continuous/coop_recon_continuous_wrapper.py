@@ -41,6 +41,9 @@ class CoopReconContinuousWrapper(BaseEnv):
         self.max_speed = kwargs.get('max_speed', 1.0)
         self.detection_radius = kwargs.get('detection_radius', 0.2)
         self.horizon = kwargs.get('horizon', 40)
+        # "any": done when ANY picture taken (use for SAP — frozen agent never takes a pic)
+        # "all": done when ALL pictures taken (use for joint — both agents must complete)
+        self.done_condition = kwargs.get('done_condition', 'all')
 
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "coop_recon_continuous")
@@ -423,7 +426,10 @@ class CoopReconContinuousWrapper(BaseEnv):
         Returns:
             dones: Dictionary of done flags
         """
-        done = jnp.all(env_state.picture_taken) | (env_state.timestep >= self.horizon)
+        if self.done_condition == 'any':
+            done = jnp.any(env_state.picture_taken) | (env_state.timestep >= self.horizon)
+        else:  # 'all'
+            done = jnp.all(env_state.picture_taken) | (env_state.timestep >= self.horizon)
         dones = {agent: done for agent in self.agents}
         dones["__all__"] = done
         return dones
@@ -450,16 +456,23 @@ class CoopReconContinuousWrapper(BaseEnv):
         
         avail_actions = {}
         for i, agent in enumerate(self.agents):
+            # Once this agent's own goal's picture is taken, force noop (stop moving)
+            agent_done = env_state.picture_taken[i]
+
             can_water = jnp.any(at_goal[i] & ~env_state.detected_water)
             can_life = jnp.any(at_goal[i] & env_state.detected_water & ~env_state.detected_life)
             can_pic = jnp.any(at_goal[i] & env_state.detected_life & ~env_state.picture_taken)
-            
-            mask = jnp.array([
+
+            full_mask = jnp.array([
                 True, True, True, True, True,  # 0-4: noop, directions
                 can_water, can_life, can_pic   # 5-7: conditional tasks
             ], dtype=jnp.float32)
+            noop_mask = jnp.array([True, False, False, False, False, False, False, False], dtype=jnp.float32)
+
+            # If agent's own goal is done, force noop; otherwise use full mask
+            mask = jnp.where(agent_done, noop_mask, full_mask)
             avail_actions[agent] = mask
-            
+
         return avail_actions
 
     def observation_space(self, agent: str, observation_type: str = "agent") -> jaxmarl_spaces.Space:

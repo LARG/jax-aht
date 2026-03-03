@@ -51,10 +51,10 @@ def train_ppo_agent(config, env, train_rng,
     def make_ppo_train(config):
         '''The controlled agent is based on the agent_idx parameter'''
         num_agents = env.num_agents
-        assert num_agents == 2, "This snippet assumes exactly 2 agents."
+        # assert num_agents == 2, "This snippet assumes exactly 2 agents."
 
-        config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
-        config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
+        # config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
+        # config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
 
@@ -341,7 +341,7 @@ def train_ppo_agent(config, env, train_rng,
                     lambda x: jnp.zeros((num_ckpts,) + x.shape, x.dtype),
                     params_pytree)
 
-            max_episode_steps = config["ROLLOUT_LENGTH"]
+            max_episode_steps = env.horizon # config["ROLLOUT_LENGTH"]
 
             def _update_step_with_ckpt(state_with_ckpt, unused):
                 (update_state, checkpoint_array, ckpt_idx, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
@@ -478,10 +478,11 @@ def run_training(config, wandb_logger, agent_idx=0):
     algorithm_config = dict(config["algorithm"])
 
     # Create only one environment instance
-    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs = dict(algorithm_config["ENV_KWARGS"])
 
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
     env_kwargs["render_dir"] = os.path.join("render", "ppo", f"agent_{agent_idx + 1}")
+    env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as active agent takes their picture
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
