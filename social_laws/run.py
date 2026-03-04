@@ -54,6 +54,15 @@ def run_training(cfg):
     print(OmegaConf.to_yaml(cfg, resolve=True))
     wandb_logger = Logger(cfg)
 
+    agent_policies = []
+    agent_init_params = []
+    agent_params = []
+    agent_vf_policies = []
+    agent_vf_init_params = []
+    agent_vf_params = []
+    joint_policies = []
+    joint_init_params = []
+    joint_params = []
     # Single agent projection training
     # Creates what is effectively the optimal policy for a single agent in the environment
     if cfg["algorithm"]["ALG"] == "ppo":
@@ -64,82 +73,94 @@ def run_training(cfg):
             assert cfg["algorithm"]["ACTOR_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the PPO policy actor type must be s5 or rnn."
             assert cfg["value_function"]["NETWORK_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the DRQN network type must be s5 or rnn."
 
-        agent_0_params, agent_0_policy, agent_0_init_params = run_ppo_training(cfg, wandb_logger, agent_idx=0)
-        agent_1_params, agent_1_policy, agent_1_init_params = run_ppo_training(cfg, wandb_logger, agent_idx=1)
+        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+            agent_param, agent_policy, agent_init_param = run_ppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_policies.append(agent_policy)
+            agent_init_params.append(agent_init_param)
+            agent_params.append(agent_param)
 
         # Value function estimation for joint policies
         # Creates value functions for joint policies for all agents in the environment
         # conditioned on their single agent projections
         if cfg["value_function"]["ALG"] == "dqnppo":
-            agent_0_vf_params, agent_0_vf, agent_0_vf_init_params = run_dqnppo_value_estimation(cfg, wandb_logger, agent_0_params, agent_0_policy, agent_idx=0)
-            agent_1_vf_params, agent_1_vf, agent_1_vf_init_params = run_dqnppo_value_estimation(cfg, wandb_logger, agent_1_params, agent_1_policy, agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_vf_param, agent_vf, agent_vf_init_param = run_dqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
+                agent_vf_params.append(agent_vf_param)
+                agent_vf_policies.append(agent_vf)
+                agent_vf_init_params.append(agent_vf_init_param)
         elif cfg["value_function"]["ALG"] == "drqnppo":
-            agent_0_vf_params, agent_0_vf, agent_0_vf_init_params = run_drqnppo_value_estimation(cfg, wandb_logger, agent_0_params, agent_0_policy, agent_idx=0)
-            agent_1_vf_params, agent_1_vf, agent_1_vf_init_params = run_drqnppo_value_estimation(cfg, wandb_logger, agent_1_params, agent_1_policy, agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_vf_param, agent_vf, agent_vf_init_param = run_drqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
+                agent_vf_params.append(agent_vf_param)
+                agent_vf_policies.append(agent_vf)
+                agent_vf_init_params.append(agent_vf_init_param)
 
     elif cfg["algorithm"]["ALG"] == "reppo":
-        agent_0_params, agent_0_policy, agent_0_init_params = run_reppo_training(cfg, wandb_logger, agent_idx=0)
-        agent_1_params, agent_1_policy, agent_1_init_params = run_reppo_training(cfg, wandb_logger, agent_idx=1)
+        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+            agent_param, agent_policy, agent_init_param = run_reppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_policies.append(agent_policy)
+            agent_init_params.append(agent_init_param)
+            agent_params.append(agent_param)
 
     elif cfg["algorithm"]["ALG"] == "creppo":
-        agent_0_params, agent_0_policy, agent_0_init_params = run_creppo_training(cfg, wandb_logger, agent_idx=0)
-        agent_1_params, agent_1_policy, agent_1_init_params = run_creppo_training(cfg, wandb_logger, agent_idx=1)
+        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+            agent_param, agent_policy, agent_init_param = run_creppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_policies.append(agent_policy)
+            agent_init_params.append(agent_init_param)
+            agent_params.append(agent_param)
 
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment
     # conditioned on their single agent projections
     if cfg["algorithm"]["ALG"] == "ppo":
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-            joint_0_params, joint_0_policy, joint_0_init_params = run_ppo_joint_centralized_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        (agent_0_vf_params, agent_1_vf_params),
-                                                                                        (agent_0_vf, agent_1_vf),
-                                                                                        agent_idx=0)
-            joint_1_params, joint_1_policy, joint_1_init_params = run_ppo_joint_centralized_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        (agent_0_vf_params, agent_1_vf_params),
-                                                                                        (agent_0_vf, agent_1_vf),
-                                                                                        agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_ppo_joint_centralized_training(cfg, wandb_logger,
+                                                                                            agent_params,
+                                                                                            agent_policies,
+                                                                                            agent_vf_params,
+                                                                                            agent_vf_policies,
+                                                                                            agent_idx=agent_idx)
+                joint_policies.append(joint_policy)
+                joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
         else:
-            joint_0_params, joint_0_policies, joint_0_init_params = run_ppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        (agent_0_vf_params, agent_1_vf_params),
-                                                                                        (agent_0_vf, agent_1_vf),
-                                                                                        agent_idx=0)
-            joint_1_params, joint_1_policies, joint_1_init_params = run_ppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        (agent_0_vf_params, agent_1_vf_params),
-                                                                                        (agent_0_vf, agent_1_vf),
-                                                                                        agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_ppo_joint_training(cfg, wandb_logger,
+                                                                                    agent_params,
+                                                                                    agent_policies,
+                                                                                    agent_vf_params,
+                                                                                    agent_vf_policies,
+                                                                                    agent_idx=agent_idx)
+                joint_policies.append(joint_policy)
+                joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
+
     elif cfg["algorithm"]["ALG"] == "reppo":
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
             pass
         else:
-            joint_0_params, joint_0_policies, joint_0_init_params = run_reppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=0)
-            joint_1_params, joint_1_policies, joint_1_init_params = run_reppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_reppo_joint_training(cfg, wandb_logger,
+                                                                                      agent_params,
+                                                                                      agent_policies,
+                                                                                      agent_idx=agent_idx)
+                joint_policies.append(joint_policy)
+                joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
 
     elif cfg["algorithm"]["ALG"] == "creppo":
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
             pass
         else:
-            joint_0_params, joint_0_policies, joint_0_init_params = run_creppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=0)
-            joint_1_params, joint_1_policies, joint_1_init_params = run_creppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_creppo_joint_training(cfg, wandb_logger,
+                                                                                      agent_params,
+                                                                                      agent_policies,
+                                                                                      agent_idx=agent_idx)
+                joint_policies.append(joint_policy)
+                joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
 
     # Cleanup
     wandb_logger.close()

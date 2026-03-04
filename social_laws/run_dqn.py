@@ -48,42 +48,55 @@ def run_training(cfg):
     print(OmegaConf.to_yaml(cfg, resolve=True))
     wandb_logger = Logger(cfg)
 
+    agent_policies = []
+    agent_init_params = []
+    agent_params = []
+    joint_policies = []
+    joint_init_params = []
+    joint_params = []
     # Single agent projection training
     # Creates what is effectively the optimal policy for a single agent in the environment
     if cfg["value_function"]["ALG"] == "dqn":
         assert cfg["algorithm"]["ACTOR_TYPE"] == "mlp", "For DQN single agent projection, the Joint PPO policy actor type must be MLP."
 
-        agent_0_params, agent_0_policy, agent_0_init_params = run_dqn_training(cfg, wandb_logger, agent_idx=0)
-        agent_1_params, agent_1_policy, agent_1_init_params = run_dqn_training(cfg, wandb_logger, agent_idx=1)
+        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+            agent_param, agent_policy, agent_init_param = run_dqn_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_policies.append(agent_policy)
+            agent_init_params.append(agent_init_param)
+            agent_params.append(agent_param)
 
     elif cfg["value_function"]["ALG"] == "drqn":
         assert cfg["algorithm"]["ACTOR_TYPE"] in ["s5", "rnn"], "For DRQN single agent projection, the Joint PPO policy actor type must be s5 or rnn."
 
-        agent_0_params, agent_0_policy, agent_0_init_params = run_drqn_training(cfg, wandb_logger, agent_idx=0)
-        agent_1_params, agent_1_policy, agent_1_init_params = run_drqn_training(cfg, wandb_logger, agent_idx=1)
+        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+            agent_param, agent_policy, agent_init_param = run_drqn_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_policies.append(agent_policy)
+            agent_init_params.append(agent_init_param)
+            agent_params.append(agent_param)
 
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment
     # conditioned on their single agent projections
     if cfg["algorithm"]["ALG"] == "ppo":
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-            joint_0_params, joint_0_policy, joint_0_init_params = run_ppo_joint_centralized_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=0)
-            joint_1_params, joint_1_policy, joint_1_init_params = run_ppo_joint_centralized_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_ppo_joint_centralized_training(cfg, wandb_logger,
+                                                                                            agent_params,
+                                                                                            agent_policies,
+                                                                                            agent_idx=agent_idx)
+                joint_policies.append(joint_policy)
+                joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
+
         else:
-            joint_0_params, joint_0_policies, joint_0_init_params = run_ppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=0)
-            joint_1_params, joint_1_policies, joint_1_init_params = run_ppo_joint_training(cfg, wandb_logger,
-                                                                                        (agent_0_params, agent_1_params),
-                                                                                        (agent_0_policy, agent_1_policy),
-                                                                                        agent_idx=1)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_ppo_joint_training(cfg, wandb_logger,
+                                                                                    agent_params,
+                                                                                    agent_policies,
+                                                                                    agent_idx=agent_idx)
+                joint_policies.append(joint_policy)
+                joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
 
     # Cleanup
     wandb_logger.close()

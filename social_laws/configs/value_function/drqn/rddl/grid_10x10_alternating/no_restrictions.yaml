@@ -2,7 +2,13 @@ defaults:
   - drqn/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 12e6
+TOTAL_TIMESTEPS: 10e6
 NUM_ENVS: 24
 EPSILON_END: 0.05
 EPSILON_EXPLORATION_FRACTION: 0.5
+
+TARGET_UPDATE_INTERVAL: 1
+TAU: 0.005
+LEARNING_STARTS: 1000
+# BUFFER_SIZE: 100000
+BUFFER_BATCH_SIZE: 256

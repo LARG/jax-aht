@@ -92,7 +92,7 @@ domain grid_10x10_alternating {
 		//  0 = Both column and row restrictions (default)
 		//  1 = Only column restrictions (rows unrestricted)
 		//  2 = Only row restrictions (columns unrestricted)
-		RESTRICTION-MODE : {non-fluent, int, default = 0};
+		RESTRICTION-MODE : {non-fluent, int, default = -1};
 
 		TOROIDAL : {non-fluent, bool, default = true};
 

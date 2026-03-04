@@ -312,7 +312,9 @@ def initialize_reppo_mlp_agent(config, env, rng, agent_index, observation_type="
         init_alpha=config.get("INIT_ALPHA", 1.0),
         init_lagrangian=config.get("INIT_LAGRANGIAN", 1.0),
         min_is_weight=config.get("MIN_IS_WEIGHT", 0.1),
-        max_is_weight=config.get("MAX_IS_WEIGHT", 10.0)
+        max_is_weight=config.get("MAX_IS_WEIGHT", 10.0),
+        hidden_size=config.get("HIDDEN_SIZE", 128),
+        num_layers=config.get("NUM_LAYERS", 2)
     )
 
     rng, init_rng = jax.random.split(rng)

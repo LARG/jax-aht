@@ -45,7 +45,8 @@ class MLPREPPOPolicy(AgentPolicy):
     def __init__(self, action_dim, obs_dim,
                  norm_type, norm_input, num_bins, v_min, v_max,
                  init_alpha, init_lagrangian,
-                 min_is_weight, max_is_weight):
+                 min_is_weight, max_is_weight,
+                 hidden_size=128, num_layers=2):
         """
         Args:
             action_dim: int, dimension of the action space
@@ -61,12 +62,16 @@ class MLPREPPOPolicy(AgentPolicy):
                                   norm_input=norm_input,
                                   num_bins=num_bins,
                                   v_min=v_min,
-                                  v_max=v_max)
+                                  v_max=v_max,
+                                  hidden_size=hidden_size,
+                                  num_layers=num_layers)
         self.actor = Actor(action_dim,
                            norm_type=norm_type,
                            norm_input=norm_input,
                            init_alpha=init_alpha,
-                           init_lagrangian=init_lagrangian)
+                           init_lagrangian=init_lagrangian,
+                           hidden_size=hidden_size,
+                           num_layers=num_layers)
 
 
     @partial(jax.jit, static_argnums=(0,))

@@ -11,6 +11,8 @@ ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
 TASK_NAME: ${task.TASK_NAME}
 NUM_EVAL_EPISODES: ${task.NUM_EVAL_EPISODES}
 
+NUM_EXPT_AGENTS: 2
+
 # partner configs are specified in each algorithm _base_ config file
 # note that ppo_ego and ppo_br support different types of partner configs
 algorithm:
