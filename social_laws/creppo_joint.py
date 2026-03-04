@@ -770,8 +770,9 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     VMAX = algorithm_config["VMAX"]
 
     algorithm_config = algorithm_config.copy()
-    algorithm_config["VMIN"] = VMAX * -1
-    algorithm_config["VMAX"] = VMIN * -1
+    algorithm_config["VMIN"] = algorithm_config.get("JOINT_VMIN", VMAX * -1)
+    algorithm_config["VMAX"] = algorithm_config.get("JOINT_VMAX", VMIN * -1)
+
     # algorithm_config["TARGET_ENTROPY_MULT"] = algorithm_config["TARGET_ENTROPY_MULT"] * -1
 
     # Create only one environment instance

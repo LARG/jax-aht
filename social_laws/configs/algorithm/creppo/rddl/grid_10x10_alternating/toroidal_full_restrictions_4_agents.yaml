@@ -19,6 +19,8 @@ VMAX: 1 # Env dependent, (1 / (1 - gamma)) * max_reward
 JOINT_VMIN: -1 # -400 with step penalty, -300 without step penalty # Env dependent, (1 / (1 - gamma)) * min_reward
 JOINT_VMAX: 130 # Env dependent, (1 / (1 - gamma)) * max_reward
 
+KL_BOUND: 0.1
+
 ANNEAL_LR: false
 
 S5_D_MODEL: 128
