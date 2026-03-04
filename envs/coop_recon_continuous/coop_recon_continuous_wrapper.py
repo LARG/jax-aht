@@ -44,6 +44,8 @@ class CoopReconContinuousWrapper(BaseEnv):
         # "any": done when ANY picture taken (use for SAP — frozen agent never takes a pic)
         # "all": done when ALL pictures taken (use for joint — both agents must complete)
         self.done_condition = kwargs.get('done_condition', 'all')
+        # Gaussian movement noise std as a fraction of max step size 
+        self.movement_noise_std = kwargs.get('movement_noise_std', 0.0)
 
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "coop_recon_continuous")
@@ -196,6 +198,12 @@ class CoopReconContinuousWrapper(BaseEnv):
 
         # Update positions
         new_positions = env_state.positions + new_velocities * self.dt
+
+        # Add Gaussian movement noise. The noise scaled by dt so movement_noise_std is a fraction of max step size.
+        # for example: movement_noise_std=0.1 → actual std = 0.1 * dt = 0.005 units (10% of max step 0.05)
+        key, key_noise = jax.random.split(key)
+        noise = jax.random.normal(key_noise, shape=new_positions.shape) * self.movement_noise_std * self.dt
+        new_positions = new_positions + noise
         
         # Apply spatial partitioning Constraints
         # Agent 0: x in [0.0, 0.5]

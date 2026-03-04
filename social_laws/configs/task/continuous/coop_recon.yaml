@@ -8,6 +8,7 @@ ENV_KWARGS:
     render_name: "coop_recon_continuous",
     render_dir: "render",
     ego_centric_obs: false,
+    movement_noise_std: 0.1,  # set noise to 10% of max step size
   }
 TASK_NAME: continuous/coop_recon
 SINGLE_AGENT_1_PROJECTION: ""
