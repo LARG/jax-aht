@@ -384,8 +384,8 @@ class Grid10x10Wrapper(BaseEnv):
         obstacle_mask = self.env.init_values['OBSTACLE']  # Shape: (num_x, num_y)
 
         # Initialize position arrays
-        agent_at = jnp.zeros_like(env_state.obs['agent-at']) # Shape: (num_agents, num_x, num_y)
-        goal_at = jnp.zeros_like(env_state.obs['goal-at']) # Shape: (num_agents, num_x, num_y)
+        agent_at = jnp.zeros_like(timestep.observation['agent-at']) # Shape: (num_agents, num_x, num_y)
+        goal_at = jnp.zeros_like(timestep.observation['goal-at']) # Shape: (num_agents, num_x, num_y)
         goal = jnp.zeros_like(env_state.subs['GOAL'])  # Shape: (num_agents, num_x, num_y)
 
         # Create a mask for occupied positions (start with obstacles)
@@ -448,11 +448,11 @@ class Grid10x10Wrapper(BaseEnv):
             occupied = occupied.at[goal_x, goal_y].set(True)
 
         # Update environment state - create new dicts with updated values
-        obs = {**env_state.obs, 'goal-at': goal_at, 'agent-at': agent_at}
-        subs = {**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal}
+        # obs = {**timestep.observation, 'goal-at': goal_at, 'agent-at': agent_at}
+        # subs = {**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal}
 
-        env_state = env_state.replace(obs=obs, state=obs, subs=subs)
-        timestep = timestep.replace(observation=obs)
+        env_state = env_state.replace(subs={**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal})
+        timestep = timestep.replace(observation={**timestep.observation, 'goal-at': goal_at, 'agent-at': agent_at})
 
         return env_state, timestep
 
@@ -485,7 +485,7 @@ class Grid10x10Wrapper(BaseEnv):
             return None
 
         # Extract state dictionary from EnvState
-        state = env_state.state
+        state = self.env.get_state(env_state)
 
         # Always convert to grounded format for visualizers
         # (JAX env internally uses vectorized representation)
@@ -496,7 +496,7 @@ class Grid10x10Wrapper(BaseEnv):
                  for k, v in state.items()}
 
         # Call visualizer's render method
-        image = self.env._visualizer.render(state, env_state.actions, env_state.subs)
+        image = self.env._visualizer.render(state, env_state.subs)
 
         # Save frame to movie generator if enabled
         if save_frame and self.env._movie_generator is not None and image is not None:

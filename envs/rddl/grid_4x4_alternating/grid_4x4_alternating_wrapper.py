@@ -604,8 +604,8 @@ class Grid4x4AlternatingWrapper(BaseEnv):
         num_y = len(self._ypos_list)
 
         # Initialize arrays
-        agent_at = jnp.zeros_like(env_state.obs['agent-at'])
-        goal_at = jnp.zeros_like(env_state.obs['goal-at'])
+        agent_at = jnp.zeros_like(timestep.observation['agent-at'])
+        goal_at = jnp.zeros_like(timestep.observation['goal-at'])
         goal = jnp.zeros_like(env_state.subs['GOAL'])
         obstacle = jnp.zeros_like(env_state.subs['OBSTACLE'])
 
@@ -790,11 +790,11 @@ class Grid4x4AlternatingWrapper(BaseEnv):
         key, agent_at, agent_positions, occupied = resample_if_needed((key, agent_at, agent_positions, occupied))
 
         # Update environment state
-        obs = {**env_state.obs, 'goal-at': goal_at, 'agent-at': agent_at}
-        subs = {**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal, 'OBSTACLE': obstacle}
+        # obs = {**timestep.observation, 'goal-at': goal_at, 'agent-at': agent_at}
+        # subs = {**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal, 'OBSTACLE': obstacle}
 
-        env_state = env_state.replace(obs=obs, state=obs, subs=subs)
-        timestep = timestep.replace(observation=obs)
+        env_state = env_state.replace(subs={**env_state.subs, 'agent-at': agent_at, 'goal-at': goal_at, 'GOAL': goal, 'OBSTACLE': obstacle})
+        timestep = timestep.replace(observation={**timestep.observation, 'goal-at': goal_at, 'agent-at': agent_at})
 
         return env_state, timestep
 
@@ -827,7 +827,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
             return None
 
         # Extract state dictionary from EnvState
-        state = env_state.state
+        state = self.env.get_state(env_state)
 
         # Always convert to grounded format for visualizers
         # (JAX env internally uses vectorized representation)
@@ -838,7 +838,7 @@ class Grid4x4AlternatingWrapper(BaseEnv):
                  for k, v in state.items()}
 
         # Call visualizer's render method
-        image = self.env._visualizer.render(state, env_state.actions, env_state.subs)
+        image = self.env._visualizer.render(state, env_state.subs)
 
         # Save frame to movie generator if enabled
         if save_frame and self.env._movie_generator is not None and image is not None:

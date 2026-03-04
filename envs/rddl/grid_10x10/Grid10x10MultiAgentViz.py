@@ -260,7 +260,7 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
                              marker='o', markersize=3,
                              markerfacecolor=path_color, markeredgecolor='none')
 
-    def add_legend_and_title(self, state_layout, nonfluent_layout, actions=None, subs=None):
+    def add_legend_and_title(self, state_layout, nonfluent_layout, subs=None):
         """Add legend and title to the visualization."""
         # Create legend elements
         legend_elements = []
@@ -290,14 +290,14 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
                        fontsize=self._fontsize - 1)
 
         # Add actions display below legend
-        if actions is not None:
+        if subs is not None:
             action_mapping = {0: 'NOOP', 1: 'WEST', 2: 'EAST', 3: 'NORTH', 4: 'SOUTH'}
             actions_text = "Actions:\n"
 
             # Parse actions from the state format
             # Actions come in format like {'move': [0, 2]} where values are action indices
-            if 'move' in actions:
-                move_actions = actions['move']
+            if 'move' in subs:
+                move_actions = subs['move']
                 for agent_idx, action_val in enumerate(move_actions):
                     if agent_idx < len(self._agents):
                         action_name = action_mapping.get(int(action_val), f'Unknown({action_val})')
@@ -369,13 +369,12 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
         img = Image.fromarray(data)
         return img
 
-    def render(self, state, actions, subs):
+    def render(self, state, subs):
         """
         Main render method called by the environment.
 
         Args:
             state: Dictionary of current state values
-            actions: Dictionary of current actions taken by agents
             subs: Dictionary of current subs values (e.g., effective actions)
             PIL Image of the rendered visualization
         """
@@ -399,7 +398,7 @@ class Grid10x10MultiAgentVisualizer(BaseViz):
         self.render_paths()
 
         # Add legend and title
-        self.add_legend_and_title(state_layout, nonfluent_layout, actions, subs)
+        self.add_legend_and_title(state_layout, nonfluent_layout, subs)
 
         # Convert to image
         img = self.convert2img(self._fig, self._ax)
