@@ -17,7 +17,7 @@ from social_laws.ppo_joint_centralized import run_training as run_ppo_joint_cent
 from social_laws.reppo_single_agent_projection import run_training as run_reppo_training
 from social_laws.reppo_joint import run_training as run_reppo_joint_training
 from social_laws.creppo_single_agent_projection import run_training as run_creppo_training
-# from social_laws.creppo_joint import run_training as run_creppo_joint_training
+from social_laws.creppo_joint import run_training as run_creppo_joint_training
 
 SEEDRANGE = (1, int(1e9))
 
@@ -128,18 +128,18 @@ def run_training(cfg):
                                                                                         (agent_0_policy, agent_1_policy),
                                                                                         agent_idx=1)
 
-    # elif cfg["algorithm"]["ALG"] == "creppo":
-    #     if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-    #         pass
-    #     else:
-    #         joint_0_params, joint_0_policies, joint_0_init_params = run_creppo_joint_training(cfg, wandb_logger,
-    #                                                                                     (agent_0_params, agent_1_params),
-    #                                                                                     (agent_0_policy, agent_1_policy),
-    #                                                                                     agent_idx=0)
-    #         joint_1_params, joint_1_policies, joint_1_init_params = run_creppo_joint_training(cfg, wandb_logger,
-    #                                                                                     (agent_0_params, agent_1_params),
-    #                                                                                     (agent_0_policy, agent_1_policy),
-    #                                                                                     agent_idx=1)
+    elif cfg["algorithm"]["ALG"] == "creppo":
+        if cfg["algorithm"]["JOINT_CENTRALIZED"]:
+            pass
+        else:
+            joint_0_params, joint_0_policies, joint_0_init_params = run_creppo_joint_training(cfg, wandb_logger,
+                                                                                        (agent_0_params, agent_1_params),
+                                                                                        (agent_0_policy, agent_1_policy),
+                                                                                        agent_idx=0)
+            joint_1_params, joint_1_policies, joint_1_init_params = run_creppo_joint_training(cfg, wandb_logger,
+                                                                                        (agent_0_params, agent_1_params),
+                                                                                        (agent_0_policy, agent_1_policy),
+                                                                                        agent_idx=1)
 
     # Cleanup
     wandb_logger.close()

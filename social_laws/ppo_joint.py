@@ -432,7 +432,7 @@ def train_ppo_joint_agents(config, env, optimal_env, train_rng,
 
                 # Single PPO update
                 new_update_state, metric = _update_step(update_state, None)
-                (agent_ts, rng, rng_eval, update_steps) = new_update_state
+                (train_states, rng, rng_eval, update_steps) = new_update_state
 
                 # update steps is 1-indexed because it was incremented at the end of the update step
                 to_store = jnp.logical_or(jnp.equal(jnp.mod(update_steps-1, ckpt_and_eval_interval), 0),
@@ -441,7 +441,7 @@ def train_ppo_joint_agents(config, env, optimal_env, train_rng,
                 def store_and_eval_ckpt(args):
                     ckpt_arrs, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
                     new_ckpt_arrs = [
-                        jax.tree.map(lambda c_arr, p: c_arr.at[cidx].set(p), ckpt_arrs[i], agent_ts[i].params)
+                        jax.tree.map(lambda c_arr, p: c_arr.at[cidx].set(p), ckpt_arrs[i], train_states[i].params)
                         for i in range(num_agents)
                     ]
                     rng_eval, ckpt_eval_eps_last_infos = _run_eval(rng_eval)
@@ -465,7 +465,7 @@ def train_ppo_joint_agents(config, env, optimal_env, train_rng,
 
                 metric["ckpt_eval_ep_last_info"] = ckpt_eval_eps_last_infos
                 metric["eval_ep_last_info"] = eval_eps_last_infos
-                return ((agent_ts, rng, rng_eval, update_steps),
+                return ((train_states, rng, rng_eval, update_steps),
                          checkpoint_arrays, ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
 
             def init_ckpt_array(params_pytree):

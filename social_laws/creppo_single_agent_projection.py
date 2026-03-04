@@ -77,13 +77,6 @@ def train_creppo_agent(config, env, train_rng,
             * config["NUM_MINIBATCHES"]
             * config["NUM_EPOCHS"],
         )
-        temp_scheduler = optax.linear_schedule(
-            init_value=config["TEMP_START"],
-            end_value=config["TEMP_FINISH"],
-            transition_steps=(config["NUM_UPDATES_DECAY"])
-            * config["NUM_MINIBATCHES"]
-            * config["NUM_EPOCHS"],
-        )
 
         def train(rng, agent_idx):
             original_seed = rng
@@ -388,7 +381,7 @@ def train_creppo_agent(config, env, train_rng,
                                 },
                                 (minibatch.obs, minibatch.avail_actions),
                                 train=False,
-                            )
+                            ) # TODO: Deal with recurrent network
                             old_q_probs = old_critic_out["policy_logits"]
                             kl = jnp.sum(
                                 jnp.where(minibatch.avail_actions, softmax(old_q_probs, axis=-1) * (log_softmax(old_q_probs + 1e-8, axis=-1) - log_softmax(critic_out["policy_logits"] + 1e-8, axis=-1)), 0), axis=-1
