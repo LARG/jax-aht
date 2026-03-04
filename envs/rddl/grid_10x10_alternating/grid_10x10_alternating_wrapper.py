@@ -11,6 +11,8 @@ import jax.numpy as jnp
 import numpy as np
 import pyRDDLGym_jax
 
+from copy import deepcopy
+
 # from pyRDDLGym.core.visualizer.movie import MovieGenerator
 from pyRDDLGym_jax.core.env import JaxRDDLEnv, EnvState
 from jumanji import specs as jumanji_specs
@@ -39,6 +41,10 @@ class Grid10x10AlternatingWrapper(BaseEnv):
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "grid_10x10")
         self._render_dir = kwargs.get('render_dir', "grid_10x10")
+        self._single_task = kwargs.get('single_task', False)
+
+        self._init_env_state = None
+        self._init_timestep = None
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
 
@@ -99,11 +105,21 @@ class Grid10x10AlternatingWrapper(BaseEnv):
             for agent_idx, agent in enumerate(self.agents)
         }
 
+        if self._single_task:
+            _single_task_seed = jax.random.PRNGKey(kwargs.get('single_task_seed', 0))
+            reset_key, randomize_key = jax.random.split(_single_task_seed)
+            env_state, timestep = self.env.reset(reset_key)
+            self._init_env_state, self._init_timestep = self._randomize_initial_positions(randomize_key, env_state, timestep)
+
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey):
         reset_key, randomize_key = jax.random.split(key)
         env_state, timestep = self.env.reset(reset_key)
-        env_state, timestep = self._randomize_initial_positions(randomize_key, env_state, timestep)
+        if self._single_task:
+            env_state = deepcopy(self._init_env_state)
+            timestep = deepcopy(self._init_timestep)
+        else:
+            env_state, timestep = self._randomize_initial_positions(randomize_key, env_state, timestep)
         obs = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
         state = WrappedEnvState(env_state,
                                 jnp.zeros(self.num_agents),

@@ -13,3 +13,4 @@ ENV_KWARGS: {domain: "grid_4x4_domain.rddl",
 TASK_NAME: rddl/grid_4x4
 SINGLE_AGENT_1_PROJECTION: "grid_4x4_instance0.rddl"
 SINGLE_AGENT_2_PROJECTION: "grid_4x4_instance1.rddl"
+ALPHA_COST: false

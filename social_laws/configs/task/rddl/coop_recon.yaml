@@ -11,8 +11,4 @@ ENV_KWARGS: {domain: "coop_recon_domain.rddl",
 TASK_NAME: rddl/coop_recon
 SINGLE_AGENT_1_PROJECTION: "coop_recon_instance.rddl"
 SINGLE_AGENT_2_PROJECTION: "coop_recon_instance.rddl"
-
-logger:
-  entity: jeffreychen287
-  project: coop-recon-test
-  mode: offline
+ALPHA_COST: false

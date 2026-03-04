@@ -189,7 +189,8 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "stochastic_movement_prob": 0.0,
             "enforce_action_constraints": True,
             "vectorized": True,
-            "ego_centric_obs": False
+            "ego_centric_obs": False,
+            "single_task": False
         }
 
         from pyRDDLGym_jax.core.env import JaxRDDLEnv

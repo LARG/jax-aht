@@ -13,3 +13,4 @@ ENV_KWARGS: {domain: "grid_10x10_alternating_domain.rddl",
 TASK_NAME: rddl/grid_10x10_alternating
 SINGLE_AGENT_1_PROJECTION: "grid_10x10_alternating_instance0.rddl"
 SINGLE_AGENT_2_PROJECTION: "grid_10x10_alternating_instance1.rddl"
+ALPHA_COST: false

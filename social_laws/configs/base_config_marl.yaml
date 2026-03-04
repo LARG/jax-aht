@@ -1,7 +1,6 @@
 defaults:
   - task: # rddl/grid_4x4 # task configs
   - algorithm@algorithm: # ppo/${task} # task-specific algorithm configs
-  - value_function@value_function: # dqnppo/${task} # task-specific value function configs
   - hydra: hydra_simple
   - _self_         # Ensures that values in this file override imported ones if needed
 
@@ -10,8 +9,6 @@ ENV_KWARGS: ${task.ENV_KWARGS}
 ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
 TASK_NAME: ${task.TASK_NAME}
 NUM_EVAL_EPISODES: ${task.NUM_EVAL_EPISODES}
-
-NUM_EXPT_AGENTS: 2
 
 # partner configs are specified in each algorithm _base_ config file
 # note that ppo_ego and ppo_br support different types of partner configs
@@ -23,17 +20,6 @@ algorithm:
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
   ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
-  ALPHA_COST: ${task.ALPHA_COST}
-
-value_function:
-  USE_SAME_SEED: false
-  NUM_TRAIN_SEEDS: ${algorithm.NUM_TRAIN_SEEDS}
-  TRAIN_SEED:
-  EVAL_SEED:
-  NUM_EVAL_EPISODES: ${NUM_EVAL_EPISODES}
-  ENV_NAME: ${ENV_NAME}
-  ENV_KWARGS: ${ENV_KWARGS}
-  ALPHA_COST: ${task.ALPHA_COST}
 
 label: "default_label"
 name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.ACTOR_TYPE}/${label}

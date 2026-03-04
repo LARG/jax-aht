@@ -9,7 +9,8 @@ ENV_KWARGS: {domain: "toroidal/grid_10x10_alternating_domain.rddl",
              stochastic_movement_prob: 0.4,
              enforce_action_constraints: true,
              vectorized: true,
-             ego_centric_obs: true}
+             ego_centric_obs: true,
+             single_task: true}
 TASK_NAME: rddl/grid_10x10_alternating/toroidal_full_restrictions
 SINGLE_AGENT_1_PROJECTION: "toroidal/4_agents/grid_10x10_alternating_instance0.rddl"
 SINGLE_AGENT_2_PROJECTION: "toroidal/4_agents/grid_10x10_alternating_instance1.rddl"

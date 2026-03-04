@@ -13,3 +13,4 @@ ENV_KWARGS: {domain: "toroidal/grid_10x10_alternating_domain.rddl",
 TASK_NAME: rddl/grid_10x10_alternating/toroidal_full_restric_w_obstacles
 SINGLE_AGENT_1_PROJECTION: "toroidal/grid_10x10_alternating_instance00.rddl"
 SINGLE_AGENT_2_PROJECTION: "toroidal/grid_10x10_alternating_instance11.rddl"
+ALPHA_COST: true
