@@ -122,7 +122,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         # create the JAX RDDL Grid4x4 environment
         rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/grid_4x4', env_kwargs_copy["domain"]),
                               instance=os.path.join(os.path.dirname(__file__), 'rddl/grid_4x4', env_kwargs_copy["instance"]),
-                              vectorized=env_kwargs_copy["vectorized"])
+                              vectorized=env_kwargs_copy["vectorized"], randomizable_nonfluents=["GOAL", "OBSTACLE"])
         env = Grid4x4Wrapper(rddl_env, **env_kwargs_copy)
 
     elif env_name == 'rddl/grid_4x4_alternating':
@@ -149,7 +149,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         # create the JAX RDDL Grid4x4 environment
         rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/grid_4x4_alternating', env_kwargs_copy["domain"]),
                               instance=os.path.join(os.path.dirname(__file__), 'rddl/grid_4x4_alternating', env_kwargs_copy["instance"]),
-                              vectorized=env_kwargs_copy["vectorized"])
+                              vectorized=env_kwargs_copy["vectorized"], randomizable_nonfluents=["GOAL", "OBSTACLE"])
         env = Grid4x4AlternatingWrapper(rddl_env, **env_kwargs_copy)
 
     elif env_name == 'rddl/grid_10x10':
@@ -176,7 +176,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         # create the JAX RDDL Grid10x10 environment
         rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/grid_10x10', env_kwargs_copy["domain"]),
                               instance=os.path.join(os.path.dirname(__file__), 'rddl/grid_10x10', env_kwargs_copy["instance"]),
-                              vectorized=env_kwargs_copy["vectorized"])
+                              vectorized=env_kwargs_copy["vectorized"], randomizable_nonfluents=["GOAL", "OBSTACLE"])
         env = Grid10x10Wrapper(rddl_env, **env_kwargs_copy)
 
     elif env_name == 'rddl/grid_10x10_alternating':
@@ -203,7 +203,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         # create the JAX RDDL Grid10x10 environment
         rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/grid_10x10_alternating', env_kwargs_copy["domain"]),
                               instance=os.path.join(os.path.dirname(__file__), 'rddl/grid_10x10_alternating', env_kwargs_copy["instance"]),
-                              vectorized=env_kwargs_copy["vectorized"])
+                              vectorized=env_kwargs_copy["vectorized"], randomizable_nonfluents=["GOAL", "OBSTACLE"])
         env = Grid10x10AlternatingWrapper(rddl_env, **env_kwargs_copy)
 
     elif env_name == 'rddl/pizza':
