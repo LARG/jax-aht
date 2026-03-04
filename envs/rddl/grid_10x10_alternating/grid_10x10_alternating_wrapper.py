@@ -166,69 +166,80 @@ class Grid10x10AlternatingWrapper(BaseEnv):
         return state.step
 
     def _extract_observations(self, observation, obstacles):
-        '''Extract per-agent observations and flatten them into arrays'''
+        '''Extract per-agent observations as normalized (x, y) coordinates.
+
+        Each agent/goal position is encoded as 2 floats in [0, 1] instead of a
+        flat one-hot grid vector.  Obstacle positions are similarly encoded as
+        num_obstacles * 2 floats (sorted by flat grid index for determinism).
+        '''
         if self.vectorized:
+            num_x = len(self._xpos_list)
+            num_y = len(self._ypos_list)
+
+            def grid_to_xy(arr_2d):
+                """One-hot 2D grid → integer (x, y) coordinates as floats, shape (2,)."""
+                flat_idx = jnp.argmax(arr_2d.flatten())
+                x = (flat_idx // num_y).astype(jnp.float32)
+                y = (flat_idx % num_y).astype(jnp.float32)
+                return jnp.stack([x, y])
+
+            # Shared quantities (same for all agents)
+            # All agent positions: (num_agents * 2,)
+            all_agent_xy = jnp.concatenate(
+                [grid_to_xy(observation['agent-at'][i]) for i in range(self.num_agents)]
+            )
+            # All goal positions: (num_agents * 2,)
+            all_goal_xy = jnp.concatenate(
+                [grid_to_xy(observation['goal-at'][i]) for i in range(self.num_agents)]
+            )
+            # Goal-reached flags: (num_agents,)
+            goal_reached = observation['goal-reached'].astype(jnp.float32)
+
+            # Obstacle coordinates: (num_obstacles * 2,)
+            # Sort by flat index so the ordering is deterministic across episodes.
+            if self.num_obstacles > 0:
+                flat_obs = obstacles.flatten()
+                sentinel = num_x * num_y  # out-of-bounds sentinel for non-obstacle cells
+                masked = jnp.where(flat_obs, jnp.arange(flat_obs.size, dtype=jnp.int32), sentinel)
+                sorted_idx = jnp.sort(masked)[:self.num_obstacles]
+                obs_x = (sorted_idx // num_y).astype(jnp.float32)
+                obs_y = (sorted_idx %  num_y).astype(jnp.float32)
+                obstacle_xy = jnp.stack([obs_x, obs_y], axis=-1).flatten()  # (num_obstacles * 2,)
+
             obs_agent = {}
             obs_full = {}
             for agent_idx, agent in enumerate(self.agents):
-                obs_agent_values = []
-                obs_full_values = []
-
                 if self._ego_centric_obs:
-                    # Ego-centric: reorder so this agent's information comes first
-                    # Reorder agent-at: put agent_idx first, then others
-                    agent_at_reordered = jnp.concatenate([
-                        observation['agent-at'][agent_idx:agent_idx+1],  # This agent
-                        observation['agent-at'][:agent_idx],             # Agents before
-                        observation['agent-at'][agent_idx+1:]            # Agents after
-                    ], axis=0).flatten()
+                    # Reorder so this agent's information comes first
+                    other = [j for j in range(self.num_agents) if j != agent_idx]
+                    order = [agent_idx] + other
 
-                    goal_at_reordered = jnp.concatenate([
-                        observation['goal-at'][agent_idx:agent_idx+1],  # This agent
-                        observation['goal-at'][:agent_idx],             # Agents before
-                        observation['goal-at'][agent_idx+1:]            # Agents after
-                    ], axis=0)
+                    agent_xy_ego = jnp.concatenate(
+                        [grid_to_xy(observation['agent-at'][i]) for i in order]
+                    )
+                    goal_xy_ego = jnp.concatenate(
+                        [grid_to_xy(observation['goal-at'][i]) for i in order]
+                    )
+                    goal_reached_ego = jnp.concatenate([
+                        goal_reached[agent_idx:agent_idx+1],
+                        goal_reached[:agent_idx],
+                        goal_reached[agent_idx+1:]
+                    ])
 
-                    # Reorder goal-reached: put agent_idx first, then others
-                    goal_reached_reordered = jnp.concatenate([
-                        observation['goal-reached'][agent_idx:agent_idx+1],  # This agent
-                        observation['goal-reached'][:agent_idx],             # Agents before
-                        observation['goal-reached'][agent_idx+1:]            # Agents after
-                    ], axis=0).flatten()
-
-                    obs_agent_values.append(agent_at_reordered)
-                    obs_agent_values.append(goal_at_reordered[0].flatten())
-                    obs_agent_values.append(goal_reached_reordered)
-
-                    obs_full_values.append(agent_at_reordered)
-                    obs_full_values.append(goal_at_reordered.flatten())
-                    obs_full_values.append(goal_reached_reordered)
-
-                    if self.num_obstacles > 0:
-                        obs_agent_values.append(obstacles.flatten())
-                        obs_full_values.append(obstacles.flatten())
-
-                    obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
-                    obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
+                    # Partial obs: own goal only; full obs: all goals
+                    agent_vals = [agent_xy_ego, grid_to_xy(observation['goal-at'][agent_idx]), goal_reached_ego]
+                    full_vals  = [agent_xy_ego, goal_xy_ego, goal_reached_ego]
                 else:
-                    # Non-ego-centric: keep original ordering
-                    agent_at = observation['agent-at'].flatten()
-                    goal_reached = observation['goal-reached'].flatten()
-                    obs_agent_values.append(agent_at)
-                    obs_agent_values.append(observation['goal-at'][agent_idx].flatten())
-                    obs_agent_values.append(goal_reached)
+                    agent_vals = [all_agent_xy, grid_to_xy(observation['goal-at'][agent_idx]), goal_reached]
+                    full_vals  = [all_agent_xy, all_goal_xy, goal_reached]
 
-                    # Full observation include all goal positions
-                    obs_full_values.append(agent_at)
-                    obs_full_values.append(observation['goal-at'].flatten())
-                    obs_full_values.append(goal_reached)
+                if self.num_obstacles > 0:
+                    agent_vals.append(obstacle_xy)
+                    full_vals.append(obstacle_xy)
 
-                    if self.num_obstacles > 0:
-                        obs_agent_values.append(obstacles.flatten())
-                        obs_full_values.append(obstacles.flatten())
+                obs_agent[agent] = jnp.concatenate(agent_vals).astype(self.observation_spaces[agent].dtype)
+                obs_full[agent]  = jnp.concatenate(full_vals).astype(self.observation_spaces[agent].dtype)
 
-                    obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
-                    obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
             return obs_agent, obs_full
         else:
             raise NotImplementedError("Non-vectorized observations not implemented yet.")
@@ -290,38 +301,35 @@ class Grid10x10AlternatingWrapper(BaseEnv):
             raise NotImplementedError("Non-vectorized avail_actions not implemented yet.")
 
     def _convert_rddl_obs_spec_to_jaxmarl_space(self, space: pyRDDLGym_jax.core.spaces.Dict):
-        """Converts the observation spec for each agent to a JaxMARL space."""
-        # Remove collision indicators from the space
+        """Converts the observation spec for each agent to a JaxMARL space.
+
+        Observation layout (coordinate-based):
+          Agent obs:  all agent (x,y) [num_agents*2]
+                    + own goal (x,y)  [2]
+                    + all goal-reached [num_agents]
+                    + obstacle (x,y)s [num_obstacles*2]  (if any)
+          Full obs:   all agent (x,y) [num_agents*2]
+                    + all goals (x,y) [num_agents*2]
+                    + all goal-reached [num_agents]
+                    + obstacle (x,y)s [num_obstacles*2]  (if any)
+        """
         if self.vectorized:
-            obs_size = 0
-            obs_full_size = 0
-            for key in space.keys():
-                if 'collision' in key:
-                    pass
-                elif 'goal-at' in key:
-                    obs_size += math.prod(space[key].shape[1:])
-                    obs_full_size += math.prod(space[key].shape)
-                else:
-                    obs_size += math.prod(space[key].shape)
-                    obs_full_size += math.prod(space[key].shape)
+            obs_size      = self.num_agents * 2 + 2           + self.num_agents
+            obs_full_size = self.num_agents * 2 + self.num_agents * 2 + self.num_agents
 
             if self.num_obstacles > 0:
-                obs_size += math.prod(space['goal-at'].shape[1:])
-                obs_full_size += math.prod(space['goal-at'].shape[1:])
+                obs_size      += self.num_obstacles * 2
+                obs_full_size += self.num_obstacles * 2
 
-            # Create Box space
+            num_x = len(self._xpos_list)
+            num_y = len(self._ypos_list)
+            obs_high = max(num_x, num_y) - 1
+
             observation_space = jaxmarl_spaces.Box(
-                low=0,
-                high=1,
-                shape=(obs_size,),
-                dtype=jnp.float32
+                low=0, high=obs_high, shape=(obs_size,), dtype=jnp.float32
             )
-
             observation_full_space = jaxmarl_spaces.Box(
-                low=0,
-                high=1,
-                shape=(obs_full_size,),
-                dtype=jnp.float32
+                low=0, high=obs_high, shape=(obs_full_size,), dtype=jnp.float32
             )
         else:
             raise NotImplementedError("Non-vectorized observation spaces not implemented yet.")
