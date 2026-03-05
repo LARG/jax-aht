@@ -1,9 +1,12 @@
 defaults:
   - task: lbf # overcooked-v1/cramped_room # task configs
-  - global_heldout_settings # global settings for heldout evaluation
-  - global_heldout_br # best responses to global heldout set
+  # - global_heldout_settings # defines the heldout_set variable
+  - global_validation_settings # defines the heldout_set variable
   - hydra: hydra_simple
   - _self_
+
+# Set best response set to heldout set
+# best_response_set: ${heldout_set}
 
 ENV_NAME: ${task.ENV_NAME}
 ENV_KWARGS: ${task.ENV_KWARGS}

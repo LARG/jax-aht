@@ -1,20 +1,18 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="comedi"
+algo="ippo"
 label="val_teammates"
 num_seeds=3
 seed=39852
-train_ego="false"
-run_heldout_eval="false"
 wandb_mode="online"
 
 # Create log directory if it doesn't exist
-mkdir -p results/teammate_generation_logs/${algo}/${label}
+mkdir -p results/marl_logs/${algo}/${label}
 
 # Get current timestamp for log file
 timestamp=$(date +"%Y%m%d_%H%M%S")
-log_file="results/teammate_generation_logs/${algo}/${label}/experiment_${timestamp}.log"
+log_file="results/marl_logs/${algo}/${label}/experiment_${timestamp}.log"
 
 # Tasks to run
 tasks=(
@@ -41,11 +39,9 @@ failure_count=0
 for task in "${tasks[@]}"; do
     log "Starting task: ${algo}/${task}"
     
-    if python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
+    if python marl/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
         algorithm.NUM_SEEDS="${num_seeds}" \
         algorithm.TRAIN_SEED="${seed}" \
-        train_ego="${train_ego}" \
-        run_heldout_eval="${run_heldout_eval}" \
         logger.mode="${wandb_mode}" \
         2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
@@ -69,3 +65,4 @@ else
     log "All tasks completed successfully!"
     exit 0
 fi
+

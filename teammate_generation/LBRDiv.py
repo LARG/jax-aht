@@ -1091,7 +1091,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
             wandb.plot.line_series(xs=xs, ys=array_data, keys=lm_keys,
             title=array_name, xname="train_step")
         )
-        wandb.commit()
+    logger.commit()
 
     ### Log artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
