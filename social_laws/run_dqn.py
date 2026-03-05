@@ -45,6 +45,10 @@ def run_training(cfg):
     # if cfg.value_function.EVAL_SEED is None:
     #     cfg.value_function.EVAL_SEED = random.randint(*SEEDRANGE)
 
+    if cfg.task.get("ENV_KWARGS", {}).get("single_task", False):
+        with open_dict(cfg):
+            cfg.task.ENV_KWARGS.single_task_seed = cfg.algorithm.TRAIN_SEED
+
     print(OmegaConf.to_yaml(cfg, resolve=True))
     wandb_logger = Logger(cfg)
 

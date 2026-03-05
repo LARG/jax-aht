@@ -5,7 +5,7 @@ os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 
 import hydra
 import random
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, open_dict
 
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
@@ -50,6 +50,10 @@ def run_training(cfg):
 
     # if cfg.value_function.EVAL_SEED is None:
     #     cfg.value_function.EVAL_SEED = random.randint(*SEEDRANGE)
+
+    if cfg.task.get("ENV_KWARGS", {}).get("single_task", False):
+        with open_dict(cfg):
+            cfg.task.ENV_KWARGS.single_task_seed = cfg.algorithm.TRAIN_SEED
 
     print(OmegaConf.to_yaml(cfg, resolve=True))
     wandb_logger = Logger(cfg)
@@ -171,3 +175,68 @@ if __name__ == '__main__':
 
 # PYTHONPATH=/home/rolando/GitHub/SOCIAL_LAWS_JAHT XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_4x4 algorithm=ppo/rddl/grid_4x4 value_function=dqnppo/rddl/grid_4x4
 # PYTHONPATH=/home/rolando/GitHub/SOCIAL_LAWS_JAHT JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10 algorithm=ppo/rddl/grid_10x10 value_function=dqnppo/rddl/grid_10x10 algorithm.ACTOR_TYPE=s5
+
+
+# Different Seed
+
+# PPO
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# PPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# CREPPO
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# CREPPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+
+# Same Seed
+
+# PPO
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# PPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# CREPPO
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# CREPPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+
+# Recon
+
+# Different Seed
+
+# PPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=ppo/continuous/coop_recon value_function=dqnppo/continuous/coop_recon algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# CREPPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=creppo/continuous/coop_recon algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# Same Seed
+
+# PPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=ppo/continuous/coop_recon value_function=dqnppo/continuous/coop_recon algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+
+# CREPPO social laws (full restrictions)
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=creppo/continuous/coop_recon algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100

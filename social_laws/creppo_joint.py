@@ -895,7 +895,7 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
     all_ckpt_optimal_returns = all_ckpt_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_optimal_returns = all_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
 
-    if config.get("ALPHA_COST", False):
+    if config["algorithm"].get("ALPHA_COST", False):
         all_ckpt_alpha_returns = all_ckpt_optimal_returns / all_ckpt_worst_case_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
         all_alpha_returns = all_optimal_returns / all_worst_case_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
     else:
