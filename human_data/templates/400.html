@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>400 Bad Request</title>
+    <style>
+      body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; padding: 2rem; background:#f7f7fb; color:#202124 }
+      .card { background: white; border-radius:8px; padding:1.5rem; max-width:720px; margin:2rem auto; box-shadow: 0 6px 18px rgba(18, 22, 27, 0.06); }
+      h1 { margin:0 0 .5rem; font-size:1.5rem }
+      p { margin:.5rem 0 }
+      a.button { display:inline-block; margin-top:1rem; padding:.5rem .9rem; background:#2563eb; color:white; text-decoration:none; border-radius:6px }
+      .meta { color:#6b7280; font-size:.9rem }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>400 — Bad Request</h1>
+      <p>Sorry, the server couldn't understand that request.</p>
+      {% if error %}
+      <p class="meta">Details: {{ error }}</p>
+      {% endif %}
+      <a class="button" href="/">Return to game</a>
+    </div>
+  </body>
+</html>

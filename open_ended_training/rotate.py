@@ -510,6 +510,7 @@ def train_regret_maximizing_partners(config, env,
                             total_xsp_objective = jnp.array(0.0) # no PG loss term on ego rollouts from conf-br states
                             total_sxp_objective = config["SP_WEIGHT"] * gae_sxp
 
+                        # This is the ROTATE objective!
                         # optimize per-state regret on ego and sp rollouts, return on sxp, and nothing on xsp
                         elif config["CONF_OBJ_TYPE"] == "sreg-xp_sreg-sp_ret-sxp":
                             xp_return_to_go_xp_data = value_xp_on_xp_data + gae_xp
