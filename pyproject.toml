@@ -30,6 +30,7 @@ dependencies = [
     "orbax-checkpoint==0.11.1",
     "orbax-export==0.0.6",
     # Core dependencies
+    "pandas==2.3.0",
     "numpy",
     "gymnax",
     "distrax",

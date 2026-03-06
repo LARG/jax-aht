@@ -5,7 +5,7 @@ entity: aht-project
 project: aht-parameter-sweep
 metric:
   goal: maximize
-  name: Train/Partner_returned_episode_returns
+  name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
 parameters:
   algorithm.PARTNER_POP_SIZE:
