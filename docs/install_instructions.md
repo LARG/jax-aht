@@ -97,7 +97,20 @@ On macOS, CUDA is not used. If you see CPU devices from `jax.devices()`, that is
 
 ## If video export fails
 
-Some evaluation and test scripts save `.mp4` files through the `ffmpeg` executable. Install it separately if needed:
+Some evaluation and test scripts save `.mp4` files through the `ffmpeg` executable. Install it separately if needed.
+
+On macOS:
 ```
 brew install ffmpeg
+```
+
+On Ubuntu/Debian:
+```
+sudo apt-get update
+sudo apt-get install -y ffmpeg
+```
+
+Verify it is available with:
+```
+ffmpeg -version
 ```
