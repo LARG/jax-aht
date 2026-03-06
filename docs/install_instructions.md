@@ -4,16 +4,22 @@ Instructions were tested on 9/4/25 with a fresh install w/Python 3.11.
 1. Create a conda environment: 
 
 Command to install in specific directory with prefix:
- ```conda create --prefix <path_of_choice>/<your_env_name> python=3.11```
+```bash
+conda create --prefix <path_of_choice>/<your_env_name> python=3.11
+```
 
 Command to install in default conda env location: 
-```conda create --name your_env_name python=3.11```
+```bash
+conda create --name your_env_name python=3.11
+```
 
 2. Activate your conda environment:
-```conda activate your_env_name```
+```bash
+conda activate your_env_name
+```
 
 3. Navigate to the repository directory and install in development mode:
-```
+```bash
 cd /path/to/jax-aht
 pip install -e .
 ```
@@ -30,10 +36,14 @@ You should see something like the following output:env--list
 ```pip install --upgrade "jax[cuda12]"```
 
 5. Download evaluation data to get the evaluation agents:
-```python download_eval_data.py```
+```bash
+python download_eval_data.py
+```
 
 6. Test the installation by running our IPPO implementation: 
-```python marl/run.py task=lbf algorithm=ippo/lbf```
+```bash
+python marl/run.py task=lbf algorithm=ippo/lbf
+```
 
 
 # Alternative Manual Installation
@@ -43,7 +53,7 @@ If you prefer the manual setup or encounter issues with the pip installation:
 1. Follow steps 1-2 above
 2. Install packages manually: `pip install -r requirements.txt`
 3. Add project path to PYTHONPATH as a conda env var:
-```
+```bash
 conda env config vars set PYTHONPATH=/path/to/repository/directory
 
 # deactivate and reactivate to apply changes
@@ -54,19 +64,21 @@ conda activate your_env_name
 echo $PYTHONPATH
 ```
 
-*if for some reason you need to remove the conda env var, you can run 
-```conda env config vars unset PYTHONPATH```
+*If for some reason you need to remove the conda env var, you can run:
+```bash
+conda env config vars unset PYTHONPATH
+```
 4. Follow remaining installation steps from Step 4 onwards. 
 
 # Troubleshooting
 
 We provide some basic troubleshooting guidance.
  
-## If the installed CUDA library is not found: 
+## If the installed CUDA library is not found:
 
 You may have a CUDA library installed elsewhere, check with `echo $LD_LIBRARY_PATH`. 
 If the output is not empty, use:
-```
+```bash
 export LD_LIBRARY_PATH="" #so that it defaults to the pip-installed CUDA.
 conda env config vars set LD_LIBRARY_PATH= #so that it unsets the LD_LIBRARY_PATH when the conda environment is activated.
 ```
