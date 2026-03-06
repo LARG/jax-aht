@@ -1,14 +1,14 @@
 ENV_NAME: continuous/coop_recon
 ROLLOUT_LENGTH: 128
 NUM_EVAL_EPISODES: 10
-ENV_KWARGS:
-  {
+ENV_KWARGS: {
     instance: "",
     render: true,
     render_name: "coop_recon_continuous",
     render_dir: "render",
     ego_centric_obs: false,
-    movement_noise_std: 0.1,  # set noise to 10% of max step size
+    movement_noise_std: 0.1, # set noise to 10% of max step size
+    done_condition: "all", # default: episode ends when all agents are done
   }
 TASK_NAME: continuous/coop_recon
 SINGLE_AGENT_1_PROJECTION: ""
