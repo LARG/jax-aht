@@ -122,7 +122,7 @@ def run_single_episode(rng, env, agent_params, agent_policy,
         # Return the final info (which includes the episode return via LogWrapper).
         return final_carry[-1]
 
-def run_episodes(rng, env, agent_idx, agent_param, agent_policy,
+def run_episodes(rng, env, agent_param, agent_policy,
                  max_episode_steps, num_eps, render=False, agent_test_mode=False):
     '''Run num_eps episodes sequentially using scan.'''
     # Create episode-specific RNGs
@@ -132,7 +132,7 @@ def run_episodes(rng, env, agent_idx, agent_param, agent_policy,
     # Define scan function to run episodes sequentially
     def scan_episode(carry, ep_rng):
         all_out = run_single_episode(
-            ep_rng, env, agent_idx, agent_param, agent_policy,
+            ep_rng, env, agent_param, agent_policy,
             max_episode_steps, render, agent_test_mode
         )
         return carry, all_out

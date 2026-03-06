@@ -8,8 +8,7 @@ import os
 import numpy as np
 
 from common.wandb_visualizations import Logger
-from social_laws.ippo import run_ippo
-from social_laws.common.run_episodes_ippo import run_episodes_vmap
+from social_laws.ippo import run_training as run_ippo
 
 SEEDRANGE = (1, int(1e9))
 
@@ -37,44 +36,14 @@ def ippo(config):
     wandb_logger = Logger(config)
 
     if config.algorithm["ALG"] == "ippo":
-        out, env, policy = run_ippo(config, wandb_logger)
+        params, policy, init_params = run_ippo(config, wandb_logger)
     else:
         raise NotImplementedError(f"Algorithm {config['ALG']} not implemented.")
 
-    eval_rng = jax.random.PRNGKey(config.algorithm.EVAL_SEED)
-    eval_out = run_episodes_vmap(eval_rng, env,
-                                agent_param=jax.tree.map(lambda x: x.squeeze(axis=0), out['final_params']),
-                                agent_policy=policy,
-                                max_episode_steps=env.horizon,
-                                num_eps=100,
-                                render=True)
-
-    all_returns = np.asarray(eval_out[2]["returned_episode_returns"])
-    for num_episode in range(all_returns.shape[0]):
-        wandb_logger.log_item(f"Eval/EpisodeReturns", all_returns[num_episode, :].sum(), train_step=num_episode, commit=True)
-        for i, agent in enumerate(env.agents):
-            wandb_logger.log_item(f"Eval/EpisodeReturns/{agent}", all_returns[num_episode, i], train_step=num_episode, commit=True)
-
-    # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
-    # eval_out[0] = stacked carry (9-tuple); eval_out[1] = init_env_state (LogEnvState)
-    # animate() expects (seed, episode, ...) shapes, so we add a seed dim via [None]
-    eval_render_init_env_state = jax.tree.map(lambda x: x[None], eval_out[1].env_state.env_state)  # (1, num_eps, ...)
-    eval_render_env_state = jax.tree.map(lambda x: x[None], eval_out[0][-1]['pre_reset_state'].env_state)  # (1, num_eps, max_steps, ...)
-    eval_render_dones = np.array(eval_out[0][4]['__all__'])[None]  # (1, num_eps, max_steps)
-    env.animate((eval_render_init_env_state, eval_render_env_state), eval_render_dones, 5, debug=True)
-
-    for eval_ep in range(5):
-        wandb_logger.log_video(
-            tag=f"Videos/Eval/Episode_{eval_ep}",
-            path=os.path.join(env._render_dir, f"{env._render_name}_ep_{eval_ep}.gif")
-        )
-
     wandb_logger.close()
 
-    return out
-
 if __name__ == "__main__":
-    out = ippo()
+    ippo()
 
 # label="marl_comparison" logger.project=RLC-2026
 
