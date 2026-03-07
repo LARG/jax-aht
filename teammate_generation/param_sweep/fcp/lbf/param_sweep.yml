@@ -8,6 +8,8 @@ metric:
   name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
 parameters:
+  algorithm.ACTIVATION:
+    values: ["tanh", "relu"]
   algorithm.PARTNER_POP_SIZE:
     values: [10, 20, 30]
   algorithm.LR:
