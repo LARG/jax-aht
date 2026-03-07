@@ -31,4 +31,11 @@ command:
   - ${program}
   - task=lbf
   - algorithm=fcp/lbf
+  - train_ego=true
+  - run_heldout_eval=true
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - algorithm.NUM_ENVS=512
+  - algorithm.ego_train_algorithm.NUM_ENVS=512
+  - label="param_sweep"
   - ${args_no_hyphens}
