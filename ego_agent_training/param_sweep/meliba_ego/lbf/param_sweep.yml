@@ -8,6 +8,8 @@ metric:
   name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
 parameters:
+  algorithm.TOTAL_TIMESTEPS:
+    values: [6e7]
   algorithm.EGO_ACTOR_TYPE:
     values: ["mlp", "s5"]
   algorithm.LR:
