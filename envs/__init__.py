@@ -5,13 +5,21 @@ import jaxmarl
 import jumanji
 from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
 
-def process_default_args(env_kwargs: dict, default_args: dict):
+def process_default_args(env_kwargs: dict, default_args: dict, ignore_keys: list = []):
     '''Helper function to process generator and viewer args for Jumanji environments. 
     If env_args and default_args have any key overlap, overwrite 
     args in default_args with those in env_args, deleting those in env_args
     '''
     env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
     default_args_copy = dict(copy.deepcopy(default_args))
+
+    # remove ignore_keys from env_kwargs and default_args
+    for key in ignore_keys:
+        if key in env_kwargs_copy:
+            del env_kwargs_copy[key]
+        if key in default_args_copy:
+            del default_args_copy[key]
+
     for key in env_kwargs:
         if key in default_args:
             default_args_copy[key] = env_kwargs[key]
@@ -19,26 +27,30 @@ def process_default_args(env_kwargs: dict, default_args: dict):
     return default_args_copy, env_kwargs_copy
 
 def make_env(env_name: str, env_kwargs: dict = {}):
-    if env_name in ['lbf', 'lbf-reward-shaping', 'lbf-levels', 'lbf-12x12', 'lbf-12x12-levels']:
-        # if no gridsize is specified, 7x7 is implied (with 3 fruit)
-        # 12x12 with 6 fruits
-        # if levels is not specified, same level for all food is implied
-        
-        env_settings = {
-            'lbf': {"grid_size": 7, "num_food": 3},
-            'lbf-reward-shaping': {"grid_size": 7, "num_food": 3},
-            'lbf-levels': {"grid_size": 7, "num_food": 3},
-            'lbf-12x12': {"grid_size": 12, "num_food": 6},
-            'lbf-12x12-levels': {"grid_size": 12, "num_food": 6},
-        }
+    if env_name in ['lbf', 'lbf-reward-shaping']:
+        # LBF options can be passed as kwargs with sensible defaults
+        #   grid_size (int): default 7
+        #   num_food (int): default 3
+        #   different_levels (bool): default False
 
-        chosen = env_settings[env_name]
+        # Standard configs used in human_data collection
+        # 1. grid_size=7, num_food=3, different_levels=False (default)
+        # 2. grid_size=7, num_food=3, different_levels=True
+        # 3. grid_size=12, num_food=6, different_levels=False
+        # 4. grid_size=12, num_food=6, different_levels=True
+
+        # Ex: task.ENV_KWARGS.grid_size=12 task.ENV_KWARGS.num_food=6
+
+
+        grid_size = env_kwargs.get("grid_size", 7)
+        num_food = env_kwargs.get("num_food", 3)
+        different_levels = env_kwargs.get("different_levels", False)
 
         default_generator_args = {
-            "grid_size": chosen["grid_size"],
-            "fov": chosen["grid_size"], 
+            "grid_size": grid_size,
+            "fov": grid_size, 
             "num_agents": 2,
-            "num_food": chosen["num_food"], 
+            "num_food": num_food, 
             "max_agent_level": 2,
             "force_coop": True,
         }
@@ -48,10 +60,19 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
         from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
 
-        generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args)
-        viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args)
+        ignore_keys = ["different_levels"]
+        generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args, ignore_keys)
+        viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args, ignore_keys)
+
+        # Use a different generator when food levels should vary
+        if different_levels:
+            from envs.lbf.different_levels_generator import DifferentLevelsGenerator
+            generator = DifferentLevelsGenerator(**generator_args)
+        else:
+            generator = LbfGenerator(**generator_args)
+
         env = jumanji.make('LevelBasedForaging-v0', 
-                            generator=LbfGenerator(**generator_args),
+                            generator=generator,
                             **env_kwargs_copy,
                             viewer=AdHocLBFViewer(grid_size=generator_args["grid_size"],
                                                   **viewer_args))
