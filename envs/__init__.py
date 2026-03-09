@@ -19,12 +19,26 @@ def process_default_args(env_kwargs: dict, default_args: dict):
     return default_args_copy, env_kwargs_copy
 
 def make_env(env_name: str, env_kwargs: dict = {}):
-    if env_name in ['lbf', 'lbf-reward-shaping']:
+    if env_name in ['lbf', 'lbf-reward-shaping', 'lbf-levels', 'lbf-12x12', 'lbf-12x12-levels']:
+        # if no gridsize is specified, 7x7 is implied (with 3 fruit)
+        # 12x12 with 6 fruits
+        # if levels is not specified, same level for all food is implied
+        
+        env_settings = {
+            'lbf': {"grid_size": 7, "num_food": 3},
+            'lbf-reward-shaping': {"grid_size": 7, "num_food": 3},
+            'lbf-levels': {"grid_size": 7, "num_food": 3},
+            'lbf-12x12': {"grid_size": 12, "num_food": 6},
+            'lbf-12x12-levels': {"grid_size": 12, "num_food": 6},
+        }
+
+        chosen = env_settings[env_name]
+
         default_generator_args = {
-            "grid_size": 7,
-            "fov": 7, 
+            "grid_size": chosen["grid_size"],
+            "fov": chosen["grid_size"], 
             "num_agents": 2,
-            "num_food": 3, 
+            "num_food": chosen["num_food"], 
             "max_agent_level": 2,
             "force_coop": True,
         }
