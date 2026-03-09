@@ -873,7 +873,7 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     # Create only one environment instance
     env_kwargs = algorithm_config["ENV_KWARGS"].copy()
     env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
-    env_kwargs["done_condition"] = "any"  # Terminate when focal agent finishes (mirrors optimal_env semantics)
+    env_kwargs["done_condition"] = f"agent_{agent_idx}"  # End only when focal agent finishes; adversary cannot exploit early termination
 
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)

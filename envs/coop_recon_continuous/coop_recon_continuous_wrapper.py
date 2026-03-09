@@ -436,6 +436,12 @@ class CoopReconContinuousWrapper(BaseEnv):
         """
         if self.done_condition == 'any':
             done = jnp.any(env_state.picture_taken) | (env_state.timestep >= self.horizon)
+        elif self.done_condition == 'agent_0':
+            # Episode ends only when focal agent 0 completes (used for joint worst-case eval)
+            done = env_state.picture_taken[0] | (env_state.timestep >= self.horizon)
+        elif self.done_condition == 'agent_1':
+            # Episode ends only when focal agent 1 completes (used for joint worst-case eval)
+            done = env_state.picture_taken[1] | (env_state.timestep >= self.horizon)
         else:  # 'all'
             done = jnp.all(env_state.picture_taken) | (env_state.timestep >= self.horizon)
         dones = {agent: done for agent in self.agents}
