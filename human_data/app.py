@@ -23,6 +23,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from envs import make_env
 from agents.lbf import SequentialFruitAgent
 from agents.lbf import GreedyHeuristicAgent
+from common.agent_loader_from_config import initialize_rl_agent_from_config
+from evaluation.heldout_evaluator import extract_params
 
 app = Flask(__name__)
 app.secret_key = '<FILL_THIS_IN>'  # Change this in production
@@ -31,6 +33,109 @@ CORS(app)
 # Global game state storage (in production, use Redis or similar)
 game_sessions = {}
 replay_sessions = {}
+
+
+# -- RL POLICY AGENT SUPPORT --
+
+class RLPolicyAgentWrapper:
+    """Wraps an AgentPolicy + params to match the heuristic BaseAgent interface
+    so GameSession can use RL policy agents interchangeably with heuristic agents."""
+
+    def __init__(self, policy, params, test_mode=False, name="rl_agent"):
+        self.policy = policy
+        self.params = params
+        self.test_mode = test_mode
+        self._name = name
+
+    def init_agent_state(self, agent_id):
+        return self.policy.init_hstate(1, aux_info={"agent_id": agent_id})
+
+    def get_action(self, obs, env_state, agent_state, rng):
+        obs_reshaped = obs.reshape(1, 1, -1)
+        done = jnp.zeros((1, 1), dtype=bool)
+        avail_actions = env_state.avail_actions["agent_1"].astype(jnp.float32)
+        action, new_hstate = self.policy.get_action(
+            params=self.params,
+            obs=obs_reshaped,
+            done=done,
+            avail_actions=avail_actions,
+            hstate=agent_state,
+            rng=rng,
+            env_state=env_state,
+            test_mode=self.test_mode,
+        )
+        return action.squeeze(), new_hstate
+
+    def get_name(self):
+        return self._name
+
+
+# Pool of loaded RL agents for 7x7 default grid (populated at startup)
+RL_AGENTS_7x7 = []
+
+# Configs for RL teammates matching eval_teammates/lbf in global_heldout_settings.yaml
+_RL_AGENT_CONFIGS = [
+    {
+        "name": "ippo_mlp",
+        "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
+        "actor_type": "mlp",
+        "ckpt_key": "final_params",
+        "idx_list": [0],
+        "test_mode": False,
+    },
+    {
+        "name": "ippo_mlp_s2c0",
+        "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
+        "actor_type": "mlp",
+        "ckpt_key": "final_params",
+        "idx_list": [[2, 0]],
+        "test_mode": False,
+    },
+    {
+        "name": "brdiv-conf1",
+        "path": "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run",
+        "actor_type": "actor_with_conditional_critic",
+        "ckpt_key": "final_params_conf",
+        "idx_list": [0, 1, 2],
+        "POP_SIZE": 5,
+        "test_mode": False,
+    },
+    {
+        "name": "brdiv-conf2",
+        "path": "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run",
+        "actor_type": "actor_with_conditional_critic",
+        "ckpt_key": "final_params_conf",
+        "idx_list": [0, 1],
+        "POP_SIZE": 3,
+        "test_mode": False,
+    },
+]
+
+
+def load_rl_agents():
+    """Load all RL policy agents for the default 7x7 LBF grid. Called once at startup."""
+    # Create a dummy env with default training settings to initialise policy networks
+    env = make_env(env_name="lbf", env_kwargs={
+        "grid_size": 7, "num_agents": 2, "num_food": 3,
+    })
+    rng = jax.random.PRNGKey(0)
+
+    for cfg in _RL_AGENT_CONFIGS:
+        cfg = dict(cfg)  # copy so we don't mutate the template
+        name = cfg.pop("name")
+        test_mode = cfg.pop("test_mode")
+
+        rng, init_rng = jax.random.split(rng)
+        policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
+            cfg, name, env, init_rng
+        )
+        params_list, idx_labels = extract_params(params, init_params, idx_labels)
+
+        for i, p in enumerate(params_list):
+            label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
+            RL_AGENTS_7x7.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
+
+    print(f"Loaded {len(RL_AGENTS_7x7)} RL policy agents for 7x7 grid")
 
 # Action constants
 NOOP = 0
@@ -90,19 +195,26 @@ class GameSession:
         self._warmup_jit_compilation()
     
     def _choose_agent(self):
+        # For 7x7 same-level games, allow RL policy agents alongside heuristic agents
+        if self.grid_size == 7 and self.levels_mode == 'same' and RL_AGENTS_7x7:
+            roll = random.random()
+            if roll < 0.33:
+                agent = random.choice(RL_AGENTS_7x7)
+                print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
+                return agent
+
         if random.random() < 0.5:
             return SequentialFruitAgent(
-                grid_size=self.grid_size, 
-                num_fruits=self.num_fruits, 
+                grid_size=self.grid_size,
+                num_fruits=self.num_fruits,
                 ordering_strategy=random.choice(SequentialFruitAgent.VALID_ORDERING_STRATEGIES)
             )
         else:
             return GreedyHeuristicAgent(
-                grid_size=self.grid_size, 
-                num_fruits=self.num_fruits, 
+                grid_size=self.grid_size,
+                num_fruits=self.num_fruits,
                 heuristic=random.choice(GreedyHeuristicAgent.VALID_HEURISTICS)
             )
-        
 
     def _warmup_jit_compilation(self):
         """
@@ -837,6 +949,10 @@ if __name__ == '__main__':
     print("=" * 60)
     
     threading.Thread(target=start_background_loop, args=(BACKGROUND_LOOP,), daemon=True).start()
+
+    # Load RL policy agents from checkpoints (once at startup)
+    print("[Startup] Loading RL policy agents...")
+    load_rl_agents()
 
     # Start background prewarming loop
     print("[Startup] Starting background prewarming loop...")
