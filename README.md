@@ -87,6 +87,12 @@ Our modularization is restricted to environments, agents, and populations, which
 ## 🚀 Installation Guide
 
 Follow instructions at [docs/install_instructions.md](docs/install_instructions.md) to install the necessary libraries.
+The default install path remains Linux/CUDA-first:
+```bash
+pip install -e .
+```
+
+On macOS, the platform-specific dependency path automatically installs CPU JAX instead of the CUDA build.
 
 Evaluating trained agents against the heldout evaluation set requires downloading the evaluation agents.
 We also provide the best returns achieved against each evaluation agent in our experiments.
