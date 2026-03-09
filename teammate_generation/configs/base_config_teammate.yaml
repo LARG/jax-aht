@@ -11,8 +11,8 @@ ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
 TASK_NAME: ${task.TASK_NAME}
 
 # training settings
-train_ego: false # whether to train the ego agent
-run_heldout_eval: false # whether to run a heldout evaluation of the ego agent
+train_ego: true # whether to train the ego agent
+run_heldout_eval: true # whether to run a heldout evaluation of the ego agent
 
 # teammate generation settings
 algorithm:

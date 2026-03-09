@@ -9,7 +9,6 @@ CLIP_EPS: 0.01 # 0.1
 ENT_COEF: 0.05
 ego_train_algorithm: 
   TOTAL_TIMESTEPS: 6e7
-  LR: 5e-5
-  ENT_COEF: .001
-  CLIP_EPS: 0.1
-  UPDATE_EPOCHS: 10
+  LR: 1e-3
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.05

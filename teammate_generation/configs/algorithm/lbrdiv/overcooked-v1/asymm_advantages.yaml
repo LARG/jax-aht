@@ -2,7 +2,7 @@ defaults:
   - lbrdiv/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 4.5e7
+TOTAL_TIMESTEPS: 1e8
 PARTNER_POP_SIZE: 3
 NUM_ENVS: 64
 TOLERANCE_FACTOR: 10.0 # require that SP - XP > TOLERANCE_FACTOR

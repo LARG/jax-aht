@@ -12,7 +12,6 @@ COMEDI_ALPHA: 0.2 # weight on XP return
 COMEDI_BETA: 0.4 # weight on SXP return
 ego_train_algorithm: 
   TOTAL_TIMESTEPS: 3e7
-  LR: 5e-5
-  ENT_COEF: 1e-4
-  CLIP_EPS: 0.1
-  ANNEAL_LR: false
+  LR: 1e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.05
