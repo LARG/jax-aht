@@ -2,13 +2,16 @@
 program: teammate_generation/run.py
 name: brdiv-overcooked-v1-coord_ring
 project: aht-parameter-sweep
-method: bayes
+method: grid # bayes
 entity: aht-project
 metric:
   goal: maximize
   name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
+# 432 Combinations: grid search possible instead of bayes
 parameters:
+  algorithm.ego_train_algorithm.NUM_ENVS:
+    values: [512]
   algorithm.PARTNER_POP_SIZE:
     values: [3, 5, 10]
   algorithm.NUM_ENVS: # affects XP return estimation
@@ -30,5 +33,4 @@ command:
   - run_heldout_eval=true
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
-  - algorithm.ego_train_algorithm.NUM_ENVS=512
   - ${args_no_hyphens}
