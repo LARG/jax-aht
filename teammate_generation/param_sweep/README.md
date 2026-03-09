@@ -9,8 +9,7 @@ This guide explains how to run hyperparameter sweeps using Weights & Biases.
 From the repository root, run:
 
 ```
-PYTHONPATH=<PATH_TO_REPO_DIR>/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb sweep teammate_generation/param_sweep/fcp/param_sweep.yml
-# PYTHONPATH=/home/rolando/GitHub/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb agent fernandezr-the-university-of-texas-at-austin/PARAM_SWEEP-teammate_generation/8frmov0u
+PYTHONPATH=<PATH_TO_REPO_DIR>/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb sweep teammate_generation/param_sweep/fcp/lbf/param_sweep.yml
 ```
 
 This will create a sweep and output a sweep ID like: `entity/project/sweep_id`

@@ -1,5 +1,5 @@
 program: teammate_generation/run.py
-name: fcp-lbf
+name: CoMeDi-lbf
 method: bayes
 entity: aht-project
 project: aht-parameter-sweep
@@ -13,7 +13,7 @@ parameters:
   algorithm.PARTNER_POP_SIZE:
     values: [10, 20, 30]
   algorithm.LR:
-    values: [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
+    values: [1e-5, 1e-4, 5e-4, 1e-3, 1e-2]
   algorithm.UPDATE_EPOCHS:
     values: [10, 15, 20]
   algorithm.NUM_MINIBATCHES:
@@ -25,14 +25,18 @@ parameters:
   algorithm.CLIP_EPS:
     values: [0.5, 0.3, 0.2, 0.1, 0.01, 0.02, 0.03, 0.04, 0.05]
   algorithm.ENT_COEF:
-    values: [0.05, 0.04, 0.03, 0.02, 0.01]
+    values: [0.05, 0.04, 0.03, 0.02, 0.01, 0.005, 0.001]
+  algorithm.COMEDI_ALPHA:
+    values: [0.2, 0.4, 0.6, 0.8, 1.0]
+  algorithm.COMEDI_BETA:
+    values: [0.1, 0.2, 0.3, 0.4, 0.5]
 
 command:
   - ${env}
   - python
   - ${program}
   - task=lbf
-  - algorithm=fcp/lbf
+  - algorithm=comedi/lbf
   - train_ego=true
   - run_heldout_eval=true
   - local_logger.save_train_out=false

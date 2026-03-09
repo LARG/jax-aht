@@ -1,5 +1,5 @@
-program: teammate_generation/run.py
-name: fcp-lbf
+program: ego_agent_training/run.py
+name: liam_ego-lbf
 method: bayes
 entity: aht-project
 project: aht-parameter-sweep
@@ -8,36 +8,43 @@ metric:
   name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
 parameters:
-  algorithm.ACTIVATION:
-    values: ["tanh", "relu"]
-  algorithm.PARTNER_POP_SIZE:
-    values: [10, 20, 30]
+  algorithm.TOTAL_TIMESTEPS:
+    values: [6e7]
+  algorithm.EGO_ACTOR_TYPE:
+    values: ["mlp", "s5"]
+  algorithm.ENCODER_TYPE:
+    values: ["lstm", "rnn"]
   algorithm.LR:
-    values: [1e-6, 1e-5, 1e-4, 1e-3, 1e-2]
+    values: [3e-5, 1e-5, 3e-4, 3e-3, 3e-2]
+  algorithm.ENCODER_DECODER_LR:
+    values: [7e-5, 1e-5, 7e-4, 7e-3, 7e-2]
   algorithm.UPDATE_EPOCHS:
-    values: [10, 15, 20]
+    values: [5, 10, 15, 20]
   algorithm.NUM_MINIBATCHES:
     values: [4, 8]
   algorithm.GAMMA:
     values: [0.95, 0.99]
   algorithm.GAE_LAMBDA:
     values: [0.9, 0.95, 0.98]
+  algorithm.MAX_GRAD_NORM:
+    values: [1.0, 0.5]
   algorithm.CLIP_EPS:
     values: [0.5, 0.3, 0.2, 0.1, 0.01, 0.02, 0.03, 0.04, 0.05]
   algorithm.ENT_COEF:
-    values: [0.05, 0.04, 0.03, 0.02, 0.01]
+    values: [0.1, 0.05, 0.01, 0.001, 0.0001]
 
 command:
   - ${env}
   - python
   - ${program}
   - task=lbf
-  - algorithm=fcp/lbf
-  - train_ego=true
+  - algorithm=liam_ego/lbf
   - run_heldout_eval=true
+  - logger.project=aht-parameter-sweep
+  - logger.entity=aht-project
+  - logger.mode=online
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
-  - algorithm.NUM_ENVS=512
-  - algorithm.ego_train_algorithm.NUM_ENVS=512
+  - algorithm.NUM_ENVS=1024
   - label="param_sweep"
   - ${args_no_hyphens}

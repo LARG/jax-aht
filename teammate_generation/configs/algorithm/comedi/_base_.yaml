@@ -19,6 +19,7 @@ ACTOR_TYPE: actor_with_conditional_critic
 NUM_ARGMAX_ROLLOUT_EPS: 20
 COMEDI_ALPHA: 1.0
 COMEDI_BETA: 0.5
+ACTIVATION: tanh
 ego_train_algorithm:
   EGO_ACTOR_TYPE: s5
   S5_D_MODEL: 16
@@ -26,7 +27,7 @@ ego_train_algorithm:
   S5_ACTOR_CRITIC_HIDDEN_DIM: 64
   FC_N_LAYERS: 2
   TOTAL_TIMESTEPS: 1e7
-  NUM_CHECKPOINTS: 5 
+  NUM_CHECKPOINTS: 5
   NUM_ENVS: 8
   LR: 1e-4
   UPDATE_EPOCHS: 15
