@@ -4,7 +4,7 @@ ALG: comedi
 TOTAL_TIMESTEPS_PER_ITERATION: 1e7  # this is split between 4 types of rollouts used by comedi each iteration
 NUM_CHECKPOINTS: 5
 PARTNER_POP_SIZE: 4
-NUM_ENVS: 48 # Controls amount of data collected per PPO update
+NUM_ENVS: 512 # Controls amount of data collected per PPO update
 LR: 1e-4
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 8
