@@ -87,8 +87,7 @@ _RL_AGENT_CONFIGS = [
         "name": "ippo_mlp_s2c0",
         "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
         "actor_type": "mlp",
-        "ckpt_key": "final_params",
-        "idx_list": [[2, 0]],
+        "idx_list": [[2, 0]],  # seed 2, checkpoint 0 — needs "checkpoints" key (default)
         "test_mode": False,
     },
     {
@@ -114,26 +113,39 @@ _RL_AGENT_CONFIGS = [
 
 def load_rl_agents():
     """Load all RL policy agents for the default 7x7 LBF grid. Called once at startup."""
+    import logging
+
     # Create a dummy env with default training settings to initialise policy networks
     env = make_env(env_name="lbf", env_kwargs={
         "grid_size": 7, "num_agents": 2, "num_food": 3,
     })
     rng = jax.random.PRNGKey(0)
+    cpu = jax.devices('cpu')[0]
 
-    for cfg in _RL_AGENT_CONFIGS:
-        cfg = dict(cfg)  # copy so we don't mutate the template
-        name = cfg.pop("name")
-        test_mode = cfg.pop("test_mode")
+    # Suppress orbax "Device cuda:0 not found" errors when loading GPU checkpoints on CPU
+    root_logger = logging.getLogger()
+    prev_level = root_logger.level
+    root_logger.setLevel(logging.CRITICAL)
 
-        rng, init_rng = jax.random.split(rng)
-        policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
-            cfg, name, env, init_rng
-        )
-        params_list, idx_labels = extract_params(params, init_params, idx_labels)
+    try:
+        for cfg in _RL_AGENT_CONFIGS:
+            cfg = dict(cfg)  # copy so we don't mutate the template
+            name = cfg.pop("name")
+            test_mode = cfg.pop("test_mode")
 
-        for i, p in enumerate(params_list):
-            label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
-            RL_AGENTS_7x7.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
+            rng, init_rng = jax.random.split(rng)
+            policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
+                cfg, name, env, init_rng
+            )
+            # Ensure all params are on CPU
+            params = jax.tree.map(lambda x: jax.device_put(x, cpu), params)
+            params_list, idx_labels = extract_params(params, init_params, idx_labels)
+
+            for i, p in enumerate(params_list):
+                label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
+                RL_AGENTS_7x7.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
+    finally:
+        root_logger.setLevel(prev_level)
 
     print(f"Loaded {len(RL_AGENTS_7x7)} RL policy agents for 7x7 grid")
 
@@ -153,15 +165,17 @@ class GameSession:
         self.session_id = session_id
         self.max_steps = max_steps
         self.grid_size = grid_size
-        self.num_fruits = 4 if grid_size == 7 else 6  # Override num_fruits based on grid size
+        self.num_fruits = 3 if grid_size == 7 else 6  # Override num_fruits based on grid size
         # env_kwargs and levels_mode control underlying generator behavior and post-reset level assignment
         self.env_kwargs = env_kwargs or {}
         # levels_mode: 'same' -> all fruits have same level (default behavior)
         #              'different' -> fruits have a mix of levels (some uncollectable / single-collectable)
         self.levels_mode = levels_mode
-        
-        # Initialize environment
-        # Merge provided env_kwargs with common args
+
+        # Choose agent first — RL agents need num_food=3 (their training default)
+        self.ai_agent = self._choose_agent()
+
+        # Initialize environment with (possibly overridden) num_fruits
         env_args = dict(self.env_kwargs)
         env_args.update({
             "time_limit": max_steps,
@@ -171,9 +185,6 @@ class GameSession:
             "highlight_agent_idx": 0
         })
         self.env = make_env(env_name="lbf", env_kwargs=env_args)
-        
-        # Initialize heuristic agent (agent 1 - computer)
-        self.ai_agent = self._choose_agent()
         
         # Initialize JAX random key
         self.rng = jax.random.PRNGKey(np.random.randint(0, 1000000))
@@ -197,8 +208,7 @@ class GameSession:
     def _choose_agent(self):
         # For 7x7 same-level games, allow RL policy agents alongside heuristic agents
         if self.grid_size == 7 and self.levels_mode == 'same' and RL_AGENTS_7x7:
-            roll = random.random()
-            if roll < 0.33:
+            if random.random() < 1.0:
                 agent = random.choice(RL_AGENTS_7x7)
                 print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
                 return agent
@@ -657,9 +667,9 @@ def generate_session_configs(num_warmup=NUM_WARMUP_GAMES, num_real=NUM_REAL_GAME
     """
     base_configs = [
         {"grid_size": 7, "levels_mode": "same"},
-        {"grid_size": 7, "levels_mode": "different"},
-        {"grid_size": 12, "levels_mode": "same"},
-        {"grid_size": 12, "levels_mode": "different"},
+        # {"grid_size": 7, "levels_mode": "different"},
+        # {"grid_size": 12, "levels_mode": "same"},
+        # {"grid_size": 12, "levels_mode": "different"},
     ]
     
     # Warmup: pick randomly from base configs
@@ -699,10 +709,10 @@ async def prewarm_games():
                         
                         # Keep at least 2 prewarmed for this config
                         if len(PREWARMED_GAMES_POOL[config_key]) < 2:
-                            print(f"🔥 Prewarming {grid_size}x{grid_size} ({levels_mode})...")
+                            print(f"Prewarming {grid_size}x{grid_size} ({levels_mode})...")
                             gs = GameSession(str(uuid.uuid4()), 50, grid_size, 3, env_kwargs={}, levels_mode=levels_mode)
                             PREWARMED_GAMES_POOL[config_key].append(gs)
-                            print(f"✅ {grid_size}x{grid_size} ({levels_mode}) ready")
+                            print(f"{grid_size}x{grid_size} ({levels_mode}) ready")
             
             await asyncio.sleep(0.5)  # Check regularly but don't spin
         except Exception as e:

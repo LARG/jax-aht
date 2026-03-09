@@ -48,14 +48,28 @@ def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None)
         raise ValueError(f"Invalid custom loader name: {custom_loader_cfg['name']}")
 
 def load_train_run(path):
-    '''Load checkpoints from orbax checkpoint. 
+    '''Load checkpoints from orbax checkpoint.
     Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
     # determine whether path is relative or absolute
     if not os.path.isabs(path):
         path = os.path.join(REPO_PATH, path)
     # load the checkpoint
     checkpointer = orbax.checkpoint.PyTreeCheckpointer()
-    restored = checkpointer.restore(path)
+    try:
+        restored = checkpointer.restore(path)
+    except ValueError as e:
+        if "sharding" in str(e):
+            # Checkpoint was saved on GPU but we're on a CPU-only machine.
+            # Re-restore with explicit CPU sharding for every leaf.
+            cpu_sharding = jax.sharding.SingleDeviceSharding(jax.devices('cpu')[0])
+            target = checkpointer.metadata(path)
+            restore_args = jax.tree.map(
+                lambda _: orbax.checkpoint.ArrayRestoreArgs(sharding=cpu_sharding),
+                target,
+            )
+            restored = checkpointer.restore(path, restore_args=restore_args)
+        else:
+            raise
     # convert pytree leaves from np arrays to jax arrays
     restored = jax.tree_util.tree_map(
         lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,
