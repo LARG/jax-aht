@@ -5,20 +5,13 @@ import jaxmarl
 import jumanji
 from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
 
-def process_default_args(env_kwargs: dict, default_args: dict, ignore_keys: list = []):
+def process_default_args(env_kwargs: dict, default_args: dict):
     '''Helper function to process generator and viewer args for Jumanji environments. 
     If env_args and default_args have any key overlap, overwrite 
     args in default_args with those in env_args, deleting those in env_args
     '''
     env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
     default_args_copy = dict(copy.deepcopy(default_args))
-
-    # remove ignore_keys from env_kwargs and default_args
-    for key in ignore_keys:
-        if key in env_kwargs_copy:
-            del env_kwargs_copy[key]
-        if key in default_args_copy:
-            del default_args_copy[key]
 
     for key in env_kwargs:
         if key in default_args:
@@ -41,6 +34,10 @@ def make_env(env_name: str, env_kwargs: dict = {}):
 
         # Ex: task.ENV_KWARGS.grid_size=12 task.ENV_KWARGS.num_food=6
 
+        from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
+        from envs.lbf.different_levels_generator import DifferentLevelsGenerator
+        from envs.lbf.lbf_wrapper import LBFWrapper
+        from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
 
         grid_size = env_kwargs.get("grid_size", 7)
         num_food = env_kwargs.get("num_food", 3)
@@ -56,20 +53,15 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         }
         default_viewer_args = {"highlight_agent_idx": 0} # None to disable highlighting
 
-        from envs.lbf.lbf_wrapper import LBFWrapper
-        from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
-        from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
-
         ignore_keys = ["different_levels"]
-        generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args, ignore_keys)
-        viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args, ignore_keys)
+        generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args)
+        viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args)
 
-        # Use a different generator when food levels should vary
-        if different_levels:
-            from envs.lbf.different_levels_generator import DifferentLevelsGenerator
-            generator = DifferentLevelsGenerator(**generator_args)
-        else:
-            generator = LbfGenerator(**generator_args)
+        # remove "different_levels" from env_kwargs_copy since it's not an argument for the environment
+        if "different_levels" in env_kwargs_copy:
+            del env_kwargs_copy["different_levels"]
+        
+        generator = DifferentLevelsGenerator(**generator_args) if different_levels else LbfGenerator(**generator_args)
 
         env = jumanji.make('LevelBasedForaging-v0', 
                             generator=generator,
