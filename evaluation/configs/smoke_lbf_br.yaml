@@ -1,0 +1,36 @@
+defaults:
+  - task: lbf
+  - hydra: hydra_simple
+  - _self_
+
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+TASK_NAME: ${task.TASK_NAME}
+
+name: ${TASK_NAME}/heldout_xp_matrix/smoke_lbf_br
+label: smoke_lbf_br
+
+global_heldout_settings:
+  EVAL_SEED: 34957
+  MAX_EPISODE_STEPS: ${task.ROLLOUT_LENGTH}
+  NUM_EVAL_EPISODES: 16
+  AGGREGATE_STAT: mean
+  NORMALIZE_RETURNS: false
+
+heldout_set:
+  lbf:
+    ippo_mlp:
+      path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: false
+
+best_response_set:
+  lbf:
+    br_for_ippo_mlp_0:
+      path: "results/TODO/lbf/ippo_mlp_0/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true

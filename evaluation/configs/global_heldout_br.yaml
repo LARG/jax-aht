@@ -1,0 +1,100 @@
+# @package _global_
+# Best-response policies for the held-out teammate set.
+
+best_response_set:
+  lbf:
+    br_for_ippo_mlp_0:
+      path: "results/TODO/lbf/ippo_mlp_0/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_s2c0_2_0:
+      path: "results/TODO/lbf/ippo_mlp_s2c0_2_0/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf1_0:
+      path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [0]
+      POP_SIZE: 5
+      test_mode: false
+
+    br_for_brdiv_conf1_1:
+      path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [1]
+      POP_SIZE: 5
+      test_mode: false
+
+    br_for_brdiv_conf1_2:
+      path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [2]
+      POP_SIZE: 5
+      test_mode: false
+
+    br_for_brdiv_conf2_0:
+      path: "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [0]
+      POP_SIZE: 3
+      test_mode: false
+
+    br_for_brdiv_conf2_1:
+      path: "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [1]
+      POP_SIZE: 3
+      test_mode: false
+
+    br_for_seq_agent_lexi:
+      path: "results/TODO/lbf/seq_agent_lexi/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_rlexi:
+      path: "results/TODO/lbf/seq_agent_rlexi/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_col:
+      path: "results/TODO/lbf/seq_agent_col/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_rcol:
+      path: "results/TODO/lbf/seq_agent_rcol/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_nearest:
+      path: "results/TODO/lbf/seq_agent_nearest/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_farthest:
+      path: "results/TODO/lbf/seq_agent_farthest/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true

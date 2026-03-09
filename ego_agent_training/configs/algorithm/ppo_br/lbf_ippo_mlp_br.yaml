@@ -1,0 +1,11 @@
+defaults:
+  - ppo_br/lbf
+  - _self_
+
+partner_agent:
+  ippo_mlp:
+    path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
+    actor_type: mlp
+    ckpt_key: final_params
+    idx_list: [0]
+    test_mode: false
