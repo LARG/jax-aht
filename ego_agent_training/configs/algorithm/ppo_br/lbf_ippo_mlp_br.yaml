@@ -1,5 +1,5 @@
 defaults:
-  - ppo_br/lbf
+  - /algorithm/ppo_br/lbf@_here_
   - _self_
 
 partner_agent:
