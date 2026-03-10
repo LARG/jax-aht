@@ -1,7 +1,7 @@
 # jax-aht
 
-Welcome to JaxAHT! This is a Jax-based benchmark repository for Ad Hoc Teamwork.
-For a quick introduction to the benchmark, please see our [Colab tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
+Welcome to JaxAHT! This is a JAX-based benchmark repository for Ad Hoc Teamwork.
+For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
 
 If you find this repository useful for your research, please cite,
@@ -78,7 +78,7 @@ Our modularization is restricted to environments, agents, and populations, which
   - [🤖 Agents](#-agents)
   - [🚶Loading Teammates](#-loading-teammates)
   - [🌳 Environments](#-environments)
-    - [Level-Based-Foraging (LBF)](#lbf)
+    - [Level-Based Foraging (LBF)](#lbf)
     - [Overcooked-v1](#overcooked-v1)
 - [📄 License](#-license)
 - [🔗 See Also](#-see-also)
@@ -97,11 +97,11 @@ On macOS, the platform-specific dependency path automatically installs CPU JAX i
 Evaluating trained agents against the heldout evaluation set requires downloading the evaluation agents.
 We also provide the best returns achieved against each evaluation agent in our experiments.
 Directories containing both data can be obtained by running the provided data download script:
-```python
+```bash
 python download_eval_data.py
 ```
 ## ▶️ Getting Started:
-For a quick introduction to the benchmark, please see our [Colab tutorial notebook](docs/JaxAHT_Tutorial.ipynb).
+For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
 Algorithms are sorted into four main directories in this codebase.
 
@@ -110,7 +110,7 @@ Algorithms are sorted into four main directories in this codebase.
 - `open_ended_training/`: contains open-ended AHT algorithms
 - `teammate_generation/`: contains teammate generation algorithms.
 
-Each contains a `run.py`, that serves as an entry point.
+Each contains a `run.py` that serves as an entry point.
 We provide an `experiments.sh` for open-ended and teammate generation methods that runs the algorithm specified
 at the top of the `experiments.sh`, on LBF and Overcooked tasks.
 
@@ -140,7 +140,7 @@ The project structure is described here. Additional notes about some folders are
 - `ego_agent_training/`: All ego agent learning implementations (PPO, LIAM, and MeLIBA).
 - `marl/`: MARL algorithm implementations. Currently only supports IPPO.
 - `open_ended_training/`: Open-ended learning methods (ROTATE, PAIRED, Minimax Return).
-- `teammate_generation/`: Teammate generation algorithms (BRDiv, FCP, CoMeDi).
+- `teammate_generation/`: Teammate generation algorithms (BRDiv, FCP, LBRDiv, CoMeDi).
 - `tests/`: Test scripts used during development.
 
 ### 💡Algorithm Implementations
@@ -171,7 +171,7 @@ following subdirectories:
 - `configs/task/`: Contains environment configs necessary to specify a task.
 
 Given an algorithm and task, Hydra retrieves the appropriate configs from the subdirectories above
-and merges them into the *master config* found in `configs/base_config_<method_type>.yaml` (e.g., `configs/base_config_teammate_generation.yaml`).
+and merges them into the *master config* found in `configs/base_config_<method_type>.yaml` (e.g., `configs/base_config_teammate.yaml`).
 The algorithm and task may be manually specified by modifying the master config, or by using
 Hydra's command line argument support.
 
@@ -208,7 +208,7 @@ and the LBF heuristic agents by running, `python tests/test_lbf_agents.py`.
 
 Certain workflows within this project (namely, ego agent training, heldout evaluation) require teammate policies as inputs. The user may provide these teammate policies by specifying a *partner config* that may point to heuristic or RL-based partner policies.
 
-By default, the heldout evaluation workflow uses the downloaded evaluation teammates, and the corresponding partner config is specified at `evaluation/configs/global_heldout_settings.yaml` --- thus, no intervention from the user is necessary to perform heldout evaluations.
+By default, the heldout evaluation workflow uses the downloaded evaluation teammates, and the corresponding partner config is specified at `evaluation/configs/global_heldout_settings.yaml`, so no intervention from the user is necessary to perform heldout evaluations.
 
 However, the ego agent training workflow **requires** the user to specify a partner agent config.
 A quick example of how to run an ego agent training algorithm with particular partner config is provided in our tutorial notebook.
@@ -218,7 +218,7 @@ More details on how to specify the partner config are provided at the top of the
 ### 🌳 Environments
 #### Level-Based Foraging (LBF)
 This codebase uses the Jumanji LBF implementation. The wrapper for the Jumanji LBF environment is stored in the `envs/` directory, at `envs/lbf/lbf_wrapper.py`. A corresponding test script is stored at `tests/test_lbf_wrapper.py`.
-`
+
 #### Overcooked-v1
 We made some modifications to the JaxMARL Overcooked environment to improve the functionality and ensure environments are solvable.
 
