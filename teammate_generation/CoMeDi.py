@@ -19,6 +19,7 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import wandb
+from jax.experimental import io_callback
 
 from agents.mlp_actor_critic_agent import ActorWithConditionalCriticPolicy
 from agents.initialize_agents import initialize_actor_with_conditional_critic
@@ -35,6 +36,56 @@ from marl.ppo_utils import Transition, unbatchify, _create_minibatches
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
+def _log_comedi_intermediate_metrics(logger, metric, xp_eval_returns, sp_eval_returns, seed_idx, population_stage):
+    step = int(np.asarray(metric["update_steps"]).item())
+    context = (
+        f"Seed_{int(np.asarray(seed_idx).item())}/"
+        f"PopulationStage_{int(np.asarray(population_stage).item())}"
+    )
+
+    loss_scalars = {
+        "ConfPGLossSP": float(np.asarray(metric["pg_loss_conf_sp"], dtype=np.float32).mean()),
+        "ConfPGLossXP": float(np.asarray(metric["pg_loss_conf_xp"], dtype=np.float32).mean()),
+        "ConfPGLossMP": float(np.asarray(metric["pg_loss_conf_mp"], dtype=np.float32).mean()),
+        "ConfValLossSP": float(np.asarray(metric["value_loss_conf_sp"], dtype=np.float32).mean()),
+        "ConfValLossXP": float(np.asarray(metric["value_loss_conf_xp"], dtype=np.float32).mean()),
+        "ConfValLossMP": float(np.asarray(metric["value_loss_conf_mp"], dtype=np.float32).mean()),
+        "EntropySP": float(np.asarray(metric["entropy_conf_sp"], dtype=np.float32).mean()),
+        "EntropyXP": float(np.asarray(metric["entropy_conf_xp"], dtype=np.float32).mean()),
+        "EntropyMP": float(np.asarray(metric["entropy_conf_mp"], dtype=np.float32).mean()),
+    }
+    for name, value in loss_scalars.items():
+        logger.log_item(f"Losses/Intermediate/{context}/{name}", value, train_step=step, commit=False)
+    logger.commit()
+
+    reward_scalars = {
+        "AverageRewardEgo": float(np.asarray(metric["average_rewards_ego"], dtype=np.float32).mean()),
+        "AverageRewardBRSP": float(np.asarray(metric["average_rewards_br_sp"], dtype=np.float32).mean()),
+        "AverageRewardBRMP2": float(np.asarray(metric["average_rewards_br_mp2"], dtype=np.float32).mean()),
+    }
+    for name, value in reward_scalars.items():
+        logger.log_item(f"Train/Intermediate/{context}/{name}", value, train_step=step, commit=False)
+    logger.commit()
+
+    xp_returns = np.asarray(xp_eval_returns["returned_episode_returns"], dtype=np.float32)
+    valid_population_size = max(1, min(int(np.asarray(population_stage).item()), xp_returns.shape[0]))
+    logger.log_item(
+        f"Eval/Intermediate/{context}/AvgSPReturnCurve",
+        float(np.asarray(sp_eval_returns["returned_episode_returns"], dtype=np.float32).mean()),
+        train_step=step,
+        commit=False,
+    )
+    logger.log_item(
+        f"Eval/Intermediate/{context}/AvgXPReturnCurve",
+        float(xp_returns[:valid_population_size].mean()),
+        train_step=step,
+        commit=False,
+    )
+    logger.commit()
+    return np.int32(0)
+
+
 class ResetTransition(NamedTuple):
     '''Stores extra information for resetting agents to a point in some trajectory.'''
     env_state: LogEnvState
@@ -45,7 +96,7 @@ class ResetTransition(NamedTuple):
     conf_hstate: jnp.ndarray
     partner_hstate: jnp.ndarray
 
-def train_comedi_partners(train_rng, env, config):
+def train_comedi_partners(train_rng, seed_idx, env, config, wandb_logger):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -964,6 +1015,25 @@ def train_comedi_partners(train_rng, env, config):
                         skip_ckpt,
                         (checkpoint_array, store_and_eval_rng, ckpt_idx, xp_eval_returns, sp_eval_returns)
                     )
+                    if wandb_logger is not None:
+                        io_callback(
+                            lambda callback_metric, callback_xp_eval_returns, callback_sp_eval_returns,
+                                   callback_seed_idx, callback_population_stage: _log_comedi_intermediate_metrics(
+                                wandb_logger,
+                                callback_metric,
+                                callback_xp_eval_returns,
+                                callback_sp_eval_returns,
+                                callback_seed_idx,
+                                callback_population_stage,
+                            ),
+                            jax.ShapeDtypeStruct((), jnp.int32),
+                            metric,
+                            xp_eval_returns,
+                            sp_eval_returns,
+                            seed_idx,
+                            new_update_runner_state[-1],
+                            ordered=False,
+                        )
 
                     return (new_update_runner_state, checkpoint_array,
                             ckpt_idx, xp_eval_returns, sp_eval_returns), (metric, xp_eval_returns, sp_eval_returns)
@@ -1043,12 +1113,19 @@ def run_comedi(config, wandb_logger):
 
     # Create a vmapped version of train_comedi_partners
     with jax.disable_jit(False):
+        seed_ids = jnp.arange(algorithm_config["NUM_SEEDS"])
         vmapped_train_fn = jax.jit(
             jax.vmap(
-                partial(train_comedi_partners, env=env, config=algorithm_config)
+                partial(
+                    train_comedi_partners,
+                    env=env,
+                    config=algorithm_config,
+                    wandb_logger=wandb_logger,
+                ),
+                in_axes=(0, 0),
             )
         )
-        out = vmapped_train_fn(rngs)
+        out = vmapped_train_fn(rngs, seed_ids)
 
     end = time.time()
     log.info(f"CoMeDi training complete in {end - start} seconds")
