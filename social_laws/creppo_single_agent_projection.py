@@ -647,7 +647,19 @@ def run_training(config, wandb_logger, agent_idx=0):
 
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
     env_kwargs["render_dir"] = os.path.join("render", "creppo", f"agent_{agent_idx + 1}")
-    env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as active agent takes their picture
+
+    if algorithm_config.get("SAP_DOMAIN_RANDOMIZE_PARTNER", False):
+        # When randomizing partner task state, we MUST use focal-agent done_condition.
+        # With done_condition="any", if partner starts with picture_taken=True (from
+        # randomization), the episode would terminate after step 1 since jnp.any(picture_taken)
+        # is already True. Using agent_{idx} ensures only the focal agent's completion matters.
+        env_kwargs["done_condition"] = f"agent_{agent_idx}"
+        env_kwargs["sap_domain_randomize_partner"] = True
+        env_kwargs["sap_focal_agent_idx"] = agent_idx
+        log.info(f"SAP domain randomization ENABLED for agent {agent_idx} (partner task state randomized at reset).")
+    else:
+        env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as active agent takes their picture
+
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 

@@ -43,9 +43,17 @@ class CoopReconContinuousWrapper(BaseEnv):
         self.horizon = kwargs.get('horizon', 40)
         # "any": done when ANY picture taken (use for SAP — frozen agent never takes a pic)
         # "all": done when ALL pictures taken (use for joint — both agents must complete)
+        # "agent_0" / "agent_1": done when focal agent takes photo (use for worst-case joint eval)
         self.done_condition = kwargs.get('done_condition', 'all')
         # Gaussian movement noise std as a fraction of max step size 
         self.movement_noise_std = kwargs.get('movement_noise_std', 0.0)
+
+        # SAP Domain Randomization: randomize partner task state at each reset.
+        # Forces the focal agent to train on diverse partner states (water/life/picture)
+        # so its Q-values are robust when the partner plays actively in worst-case eval.
+        # Set sap_focal_agent_idx to know which agent's partner state to randomize.
+        self.sap_domain_randomize_partner = kwargs.get('sap_domain_randomize_partner', False)
+        self.sap_focal_agent_idx = kwargs.get('sap_focal_agent_idx', 0)
 
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "coop_recon_continuous")
@@ -105,7 +113,7 @@ class CoopReconContinuousWrapper(BaseEnv):
             obs: Dictionary of observations for each agent
             state: Wrapped environment state
         """
-        key, pos_key, goal_key = jax.random.split(key, 3)
+        key, pos_key, goal_key, partner_state_key = jax.random.split(key, 4)
 
         # Random initial positions with spatial partitioning
         key_x0, key_y0, key_x1, key_y1 = jax.random.split(pos_key, 4)
@@ -140,6 +148,22 @@ class CoopReconContinuousWrapper(BaseEnv):
         detected_water = jnp.array([False, False])
         detected_life = jnp.array([False, False])
         picture_taken = jnp.array([False, False])
+
+        # SAP Domain Randomization: randomize partner's task state so the focal agent
+        # trains on diverse partner observations (water/life/picture taken at various stages).
+        # Partner task states are sampled in progression order: water -> life -> photo,
+        # each conditioned on the previous so the state is physically consistent.
+        # NOTE: This is a Python-level `if` — safe because `self` is static under JIT.
+        if self.sap_domain_randomize_partner:
+            partner_idx = 1 - self.sap_focal_agent_idx
+            key_pw, key_pl, key_pp = jax.random.split(partner_state_key, 3)
+            # Progressive sampling: life requires water; photo requires life.
+            partner_water = jax.random.bernoulli(key_pw, p=0.5)
+            partner_life  = partner_water & jax.random.bernoulli(key_pl, p=0.5)
+            partner_pic   = partner_life  & jax.random.bernoulli(key_pp, p=0.5)
+            detected_water = detected_water.at[partner_idx].set(partner_water)
+            detected_life  = detected_life.at[partner_idx].set(partner_life)
+            picture_taken  = picture_taken.at[partner_idx].set(partner_pic)
         timestep = jnp.array(0, dtype=jnp.int32)
 
         env_state = CoopReconEnvState(

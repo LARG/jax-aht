@@ -34,3 +34,10 @@ TRAIN_EVAL: true
 JOINT_USE_FULL_OBS: true
 JOINT_CENTRALIZED: false
 EPSILON_OPTIMAL: 1e-2 # Tolerance for near-optimal actions
+
+# SAP Domain Randomization: randomize partner task state (water/life/picture) at each
+# SAP episode reset, forcing the focal agent to learn Q-values that are robust to any
+# partner completion state. Addresses the OOD observation gap between SAP training
+# (noop partner, flags always False) and worst-case eval (active partner, flags flip True).
+# Enable with: algorithm.SAP_DOMAIN_RANDOMIZE_PARTNER=true
+SAP_DOMAIN_RANDOMIZE_PARTNER: false
