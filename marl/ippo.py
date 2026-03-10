@@ -345,10 +345,15 @@ def run_ippo(config, logger):
     num_updates = (
         algorithm_config["TOTAL_TIMESTEPS"] // algorithm_config["ROLLOUT_LENGTH"] // algorithm_config["NUM_ENVS"]
     )
+    num_seeds = algorithm_config["NUM_SEEDS"]
     pbar = tqdm(total=num_updates, desc="IPPO Training", unit="update")
+    pbar._call_count = 0
 
     def update_progress_bar():
-        pbar.update(1)
+        # vmap causes this to be called NUM_SEEDS times per update step
+        pbar._call_count += 1
+        if pbar._call_count % num_seeds == 0:
+            pbar.update(1)
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
