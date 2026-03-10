@@ -23,7 +23,6 @@ from jax.experimental import io_callback
 
 from agents.mlp_actor_critic_agent import ActorWithConditionalCriticPolicy
 from agents.population_interface import AgentPopulation
-from common.intermediate_logging import log_brdiv_intermediate_metrics
 from common.plot_utils import get_metric_names
 from common.run_episodes import run_episodes
 from common.save_load_utils import save_train_run
@@ -33,6 +32,42 @@ from marl.ppo_utils import unbatchify, _create_minibatches
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+def _log_brdiv_intermediate_metrics(logger, metric, seed_idx):
+    step = int(np.asarray(metric["update_steps"]).item())
+    seed_prefix = f"Seed_{int(np.asarray(seed_idx).item())}"
+
+    loss_scalars = {
+        "ConfPGLoss": float(np.asarray(metric["pg_loss_conf_agent"], dtype=np.float32).mean()),
+        "BRPGLoss": float(np.asarray(metric["pg_loss_br_agent"], dtype=np.float32).mean()),
+        "ConfValLoss": float(np.asarray(metric["value_loss_conf_agent"], dtype=np.float32).mean()),
+        "BRValLoss": float(np.asarray(metric["value_loss_br_agent"], dtype=np.float32).mean()),
+        "ConfEntropy": float(np.asarray(metric["entropy_conf"], dtype=np.float32).mean()),
+        "BREntropy": float(np.asarray(metric["entropy_br"], dtype=np.float32).mean()),
+    }
+    for name, value in loss_scalars.items():
+        logger.log_item(f"Losses/Intermediate/{seed_prefix}/{name}", value, train_step=step, commit=False)
+    logger.commit()
+
+    pair_returns = np.asarray(metric["eval_ep_last_info"]["returned_episode_returns"], dtype=np.float32)
+    all_conf_ids, all_br_ids = _get_all_ids(int(round(np.sqrt(pair_returns.shape[0]))))
+    sp_mask = all_conf_ids == all_br_ids
+    logger.log_item(
+        f"Eval/Intermediate/{seed_prefix}/AvgSPReturnCurve",
+        float(pair_returns[sp_mask].mean()),
+        train_step=step,
+        commit=False,
+    )
+    logger.log_item(
+        f"Eval/Intermediate/{seed_prefix}/AvgXPReturnCurve",
+        float(pair_returns[~sp_mask].mean()) if np.any(~sp_mask) else float(pair_returns[sp_mask].mean()),
+        train_step=step,
+        commit=False,
+    )
+    logger.commit()
+    return np.int32(0)
+
 
 class XPTransition(NamedTuple):
     done: jnp.ndarray
@@ -628,7 +663,7 @@ def train_brdiv_partners(train_rng, seed_idx, env, config, conf_policy, br_polic
                 metric["eval_ep_last_info"] = eval_ep_last_info # return of confederate
                 if wandb_logger is not None:
                     io_callback(
-                        lambda callback_metric, callback_seed_idx: log_brdiv_intermediate_metrics(
+                        lambda callback_metric, callback_seed_idx: _log_brdiv_intermediate_metrics(
                             wandb_logger, callback_metric, callback_seed_idx
                         ),
                         jax.ShapeDtypeStruct((), jnp.int32),

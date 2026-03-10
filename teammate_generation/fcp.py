@@ -12,7 +12,6 @@ import hydra
 import numpy as np
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.population_interface import AgentPopulation
-from common.intermediate_logging import log_ippo_intermediate_metrics
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from marl.ippo import make_train as make_ppo_train
@@ -21,6 +20,31 @@ from common.save_load_utils import save_train_run
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+def _log_ippo_intermediate_metrics(logger, metric, metric_names, update_step, seed_idx=None, partner_idx=None):
+    mask = np.asarray(metric["returned_episode"], dtype=bool)
+    denom = int(mask.sum())
+    prefix = "Train/Intermediate"
+    if seed_idx is not None:
+        prefix = f"{prefix}/Seed_{int(np.asarray(seed_idx).item())}"
+    if partner_idx is not None:
+        prefix = f"{prefix}/Partner_{int(np.asarray(partner_idx).item())}"
+
+    for metric_name in metric_names:
+        values = np.asarray(metric[metric_name], dtype=np.float32)
+        if denom == 0:
+            stat = 0.0
+        else:
+            stat = float(np.where(mask, values, 0.0).sum() / denom)
+        logger.log_item(
+            f"{prefix}/{metric_name}",
+            stat,
+            train_step=int(np.asarray(update_step).item()),
+            commit=False,
+        )
+    logger.commit()
+    return np.int32(0)
 
 
 def get_fcp_population(config, out, env):
@@ -56,7 +80,7 @@ def train_fcp_partners(rng, seed_idx, env, algorithm_config, wandb_logger, metri
         return make_ppo_train(
             algorithm_config,
             env,
-            log_callback=lambda metric, update_step, callback_seed_idx, callback_partner_idx: log_ippo_intermediate_metrics(
+            log_callback=lambda metric, update_step, callback_seed_idx, callback_partner_idx: _log_ippo_intermediate_metrics(
                 wandb_logger,
                 metric,
                 metric_names,
