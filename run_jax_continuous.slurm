@@ -2,7 +2,7 @@
 #SBATCH -J jax_coop_recon_creppo
 #SBATCH -o jax_coop_recon_creppo_%j.out
 #SBATCH -e jax_coop_recon_creppo_%j.err
-#SBATCH -p gh
+#SBATCH -p h100
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --cpus-per-task=16
