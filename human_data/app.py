@@ -70,84 +70,139 @@ class RLPolicyAgentWrapper:
         return self._name
 
 
-# Pool of loaded RL agents for 7x7 default grid (populated at startup)
-RL_AGENTS_7x7 = []
+# Pool of loaded RL agents per game variant (populated at startup)
+# Key: (grid_size, levels_mode) -> list of RLPolicyAgentWrapper
+RL_AGENTS = {}
 
-# Configs for RL teammates matching eval_teammates/lbf in global_heldout_settings.yaml
-_RL_AGENT_CONFIGS = [
-    {
-        "name": "ippo_mlp",
-        "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
-        "actor_type": "mlp",
-        "ckpt_key": "final_params",
-        "idx_list": [0],
-        "test_mode": False,
-    },
-    {
-        "name": "ippo_mlp_s2c0",
-        "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
-        "actor_type": "mlp",
-        "idx_list": [[2, 0]],  # seed 2, checkpoint 0 — needs "checkpoints" key (default)
-        "test_mode": False,
-    },
-    {
-        "name": "brdiv-conf1",
-        "path": "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run",
-        "actor_type": "actor_with_conditional_critic",
-        "ckpt_key": "final_params_conf",
-        "idx_list": [0, 1, 2],
-        "POP_SIZE": 5,
-        "test_mode": False,
-    },
-    {
-        "name": "brdiv-conf2",
-        "path": "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run",
-        "actor_type": "actor_with_conditional_critic",
-        "ckpt_key": "final_params_conf",
-        "idx_list": [0, 1],
-        "POP_SIZE": 3,
-        "test_mode": False,
-    },
-]
+# Configs for RL teammates stored in human_data/teammates/, keyed by (grid_size, levels_mode)
+_RL_AGENT_CONFIGS = {
+    (7, "same"): [
+        {
+            "name": "ippo_mlp",
+            "path": "human_data/teammates/ippo-lbf-7/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+        {
+            "name": "ippo_mlp_s2c0",
+            "path": "human_data/teammates/ippo-lbf-7/saved_train_run",
+            "actor_type": "mlp",
+            "idx_list": [[2, 0]],  # seed 2, checkpoint 0 — needs "checkpoints" key (default)
+            "test_mode": False,
+        },
+        {
+            "name": "brdiv-conf1",
+            "path": "human_data/teammates/brdiv-lbf-7-1/saved_train_run",
+            "actor_type": "actor_with_conditional_critic",
+            "ckpt_key": "final_params_conf",
+            "idx_list": [0, 1, 2],
+            "POP_SIZE": 5,
+            "test_mode": False,
+        },
+        {
+            "name": "brdiv-conf2",
+            "path": "human_data/teammates/brdiv-lbf-7-2/saved_train_run",
+            "actor_type": "actor_with_conditional_critic",
+            "ckpt_key": "final_params_conf",
+            "idx_list": [0, 1],
+            "POP_SIZE": 3,
+            "test_mode": False,
+        },
+    ],
+    (7, "different"): [
+        {
+            "name": "ippo_mlp_7_levels",
+            "path": "human_data/teammates/ippo-lbf-7-levels/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+    ],
+    # (12, "same"): [
+    #     {
+    #         "name": "ippo_mlp_12",
+    #         "path": "human_data/teammates/ippo-lbf-12/saved_train_run",
+    #         "actor_type": "mlp",
+    #         "ckpt_key": "final_params",
+    #         "idx_list": [0],
+    #         "test_mode": False,
+    #     },
+    # ],
+    # (12, "different"): [
+    #     {
+    #         "name": "ippo_mlp_12_levels",
+    #         "path": "human_data/teammates/ippo-lbf-12-levels/saved_train_run",
+    #         "actor_type": "mlp",
+    #         "ckpt_key": "final_params",
+    #         "idx_list": [0],
+    #         "test_mode": False,
+    #     },
+    # ],
+}
+
+
+_rl_load_lock = threading.Lock()
+_rl_load_rng = jax.random.PRNGKey(0)
+
+
+def _load_rl_agents_for_variant(variant_key):
+    """Load RL agents for a single (grid_size, levels_mode) variant. Thread-safe, idempotent."""
+    global _rl_load_rng
+    import logging
+
+    if variant_key in RL_AGENTS:
+        return  # Already loaded
+
+    with _rl_load_lock:
+        if variant_key in RL_AGENTS:
+            return  # Double-check after acquiring lock
+
+        grid_size, levels_mode = variant_key
+        cfg_list = _RL_AGENT_CONFIGS.get(variant_key, [])
+        if not cfg_list:
+            RL_AGENTS[variant_key] = []
+            return
+
+        cpu = jax.devices('cpu')[0]
+        num_food = 3 if grid_size == 7 else 6
+        env = make_env(env_name="lbf", env_kwargs={
+            "grid_size": grid_size, "num_agents": 2, "num_food": num_food,
+        })
+
+        root_logger = logging.getLogger()
+        prev_level = root_logger.level
+        root_logger.setLevel(logging.CRITICAL)
+
+        agents = []
+        try:
+            for cfg in cfg_list:
+                cfg = dict(cfg)
+                name = cfg.pop("name")
+                test_mode = cfg.pop("test_mode")
+
+                _rl_load_rng, init_rng = jax.random.split(_rl_load_rng)
+                policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
+                    cfg, name, env, init_rng
+                )
+                params = jax.tree.map(lambda x: jax.device_put(x, cpu), params)
+                params_list, idx_labels = extract_params(params, init_params, idx_labels)
+
+                for i, p in enumerate(params_list):
+                    label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
+                    agents.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
+        finally:
+            root_logger.setLevel(prev_level)
+
+        RL_AGENTS[variant_key] = agents
+        print(f"Loaded {len(agents)} RL policy agents for {grid_size}x{grid_size} ({levels_mode})")
 
 
 def load_rl_agents():
-    """Load all RL policy agents for the default 7x7 LBF grid. Called once at startup."""
-    import logging
-
-    # Create a dummy env with default training settings to initialise policy networks
-    env = make_env(env_name="lbf", env_kwargs={
-        "grid_size": 7, "num_agents": 2, "num_food": 3,
-    })
-    rng = jax.random.PRNGKey(0)
-    cpu = jax.devices('cpu')[0]
-
-    # Suppress orbax "Device cuda:0 not found" errors when loading GPU checkpoints on CPU
-    root_logger = logging.getLogger()
-    prev_level = root_logger.level
-    root_logger.setLevel(logging.CRITICAL)
-
-    try:
-        for cfg in _RL_AGENT_CONFIGS:
-            cfg = dict(cfg)  # copy so we don't mutate the template
-            name = cfg.pop("name")
-            test_mode = cfg.pop("test_mode")
-
-            rng, init_rng = jax.random.split(rng)
-            policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
-                cfg, name, env, init_rng
-            )
-            # Ensure all params are on CPU
-            params = jax.tree.map(lambda x: jax.device_put(x, cpu), params)
-            params_list, idx_labels = extract_params(params, init_params, idx_labels)
-
-            for i, p in enumerate(params_list):
-                label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
-                RL_AGENTS_7x7.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
-    finally:
-        root_logger.setLevel(prev_level)
-
-    print(f"Loaded {len(RL_AGENTS_7x7)} RL policy agents for 7x7 grid")
+    """Eagerly load RL agents for the (7, 'same') variant at startup. Others load lazily on first use."""
+    _load_rl_agents_for_variant((7, "same"))
 
 # Action constants
 NOOP = 0
@@ -206,10 +261,14 @@ class GameSession:
         self._warmup_jit_compilation()
     
     def _choose_agent(self):
-        # For 7x7 same-level games, allow RL policy agents alongside heuristic agents
-        if self.grid_size == 7 and self.levels_mode == 'same' and RL_AGENTS_7x7:
+        # Ensure RL agents for this variant are loaded (lazy, thread-safe)
+        variant_key = (self.grid_size, self.levels_mode)
+        if variant_key not in RL_AGENTS:
+            _load_rl_agents_for_variant(variant_key)
+        rl_pool = RL_AGENTS.get(variant_key, [])
+        if rl_pool:
             if random.random() < 1.0:
-                agent = random.choice(RL_AGENTS_7x7)
+                agent = random.choice(rl_pool)
                 print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
                 return agent
 
@@ -667,9 +726,9 @@ def generate_session_configs(num_warmup=NUM_WARMUP_GAMES, num_real=NUM_REAL_GAME
     """
     base_configs = [
         {"grid_size": 7, "levels_mode": "same"},
-        # {"grid_size": 7, "levels_mode": "different"},
-        # {"grid_size": 12, "levels_mode": "same"},
-        # {"grid_size": 12, "levels_mode": "different"},
+        {"grid_size": 7, "levels_mode": "different"},
+        {"grid_size": 12, "levels_mode": "same"},
+        {"grid_size": 12, "levels_mode": "different"},
     ]
     
     # Warmup: pick randomly from base configs

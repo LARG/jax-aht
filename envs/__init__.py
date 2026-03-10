@@ -12,6 +12,7 @@ def process_default_args(env_kwargs: dict, default_args: dict):
     '''
     env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
     default_args_copy = dict(copy.deepcopy(default_args))
+
     for key in env_kwargs:
         if key in default_args:
             default_args_copy[key] = env_kwargs[key]
@@ -20,24 +21,50 @@ def process_default_args(env_kwargs: dict, default_args: dict):
 
 def make_env(env_name: str, env_kwargs: dict = {}):
     if env_name in ['lbf', 'lbf-reward-shaping']:
+        # LBF options can be passed as kwargs with sensible defaults
+        #   grid_size (int): default 7
+        #   num_food (int): default 3
+        #   different_levels (bool): default False
+
+        # Standard configs used in human_data collection
+        # 1. grid_size=7, num_food=3, different_levels=False (default)
+        # 2. grid_size=7, num_food=3, different_levels=True
+        # 3. grid_size=12, num_food=6, different_levels=False
+        # 4. grid_size=12, num_food=6, different_levels=True
+
+        # Ex: task.ENV_KWARGS.grid_size=12 task.ENV_KWARGS.num_food=6
+
+        from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
+        from envs.lbf.different_levels_generator import DifferentLevelsGenerator
+        from envs.lbf.lbf_wrapper import LBFWrapper
+        from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
+
+        grid_size = env_kwargs.get("grid_size", 7)
+        num_food = env_kwargs.get("num_food", 3)
+        different_levels = env_kwargs.get("different_levels", False)
+
         default_generator_args = {
-            "grid_size": 7,
-            "fov": 7, 
+            "grid_size": grid_size,
+            "fov": grid_size, 
             "num_agents": 2,
-            "num_food": 3, 
+            "num_food": num_food, 
             "max_agent_level": 2,
             "force_coop": True,
         }
         default_viewer_args = {"highlight_agent_idx": 0} # None to disable highlighting
 
-        from envs.lbf.lbf_wrapper import LBFWrapper
-        from envs.lbf.reward_shaping_lbf_wrapper import RewardShapingLBFWrapper
-        from envs.lbf.adhoc_lbf_viewer import AdHocLBFViewer
-
+        ignore_keys = ["different_levels"]
         generator_args, env_kwargs_copy = process_default_args(env_kwargs, default_generator_args)
         viewer_args, env_kwargs_copy = process_default_args(env_kwargs_copy, default_viewer_args)
+
+        # remove "different_levels" from env_kwargs_copy since it's not an argument for the environment
+        if "different_levels" in env_kwargs_copy:
+            del env_kwargs_copy["different_levels"]
+        
+        generator = DifferentLevelsGenerator(**generator_args) if different_levels else LbfGenerator(**generator_args)
+
         env = jumanji.make('LevelBasedForaging-v0', 
-                            generator=LbfGenerator(**generator_args),
+                            generator=generator,
                             **env_kwargs_copy,
                             viewer=AdHocLBFViewer(grid_size=generator_args["grid_size"],
                                                   **viewer_args))
