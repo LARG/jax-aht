@@ -1,0 +1,4 @@
+[34m[1mwandb[39m[22m: Detected [agents] in use.
+[34m[1mwandb[39m[22m: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+[34m[1mwandb[39m[22m: For more information, check out the docs at: https://weave-docs.wandb.ai/
+[34m[1mwandb[39m[22m: Adding directory to artifact (/scratch/cluster/jyliu/Documents/jax-aht/results/lbf/ippo/default_label/2026-03-09_14-59-16/saved_train_run)... Done. 2.3s
