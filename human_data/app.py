@@ -70,84 +70,140 @@ class RLPolicyAgentWrapper:
         return self._name
 
 
-# Pool of loaded RL agents for 7x7 default grid (populated at startup)
-RL_AGENTS_7x7 = []
+# Pool of loaded RL agents per game variant (populated at startup)
+# Key: (grid_size, different_levels) -> list of RLPolicyAgentWrapper
+RL_AGENTS = {}
 
-# Configs for RL teammates matching eval_teammates/lbf in global_heldout_settings.yaml
-_RL_AGENT_CONFIGS = [
-    {
-        "name": "ippo_mlp",
-        "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
-        "actor_type": "mlp",
-        "ckpt_key": "final_params",
-        "idx_list": [0],
-        "test_mode": False,
-    },
-    {
-        "name": "ippo_mlp_s2c0",
-        "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
-        "actor_type": "mlp",
-        "idx_list": [[2, 0]],  # seed 2, checkpoint 0 — needs "checkpoints" key (default)
-        "test_mode": False,
-    },
-    {
-        "name": "brdiv-conf1",
-        "path": "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run",
-        "actor_type": "actor_with_conditional_critic",
-        "ckpt_key": "final_params_conf",
-        "idx_list": [0, 1, 2],
-        "POP_SIZE": 5,
-        "test_mode": False,
-    },
-    {
-        "name": "brdiv-conf2",
-        "path": "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run",
-        "actor_type": "actor_with_conditional_critic",
-        "ckpt_key": "final_params_conf",
-        "idx_list": [0, 1],
-        "POP_SIZE": 3,
-        "test_mode": False,
-    },
-]
+# Configs for RL teammates stored in human_data/teammates/, keyed by (grid_size, different_levels)
+_RL_AGENT_CONFIGS = {
+    (7, False): [
+        {
+            "name": "ippo_mlp",
+            "path": "human_data/teammates/ippo-lbf-7/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+        {
+            "name": "ippo_mlp_s2c0",
+            "path": "human_data/teammates/ippo-lbf-7/saved_train_run",
+            "actor_type": "mlp",
+            "idx_list": [[2, 0]],  # seed 2, checkpoint 0 — needs "checkpoints" key (default)
+            "test_mode": False,
+        },
+        {
+            "name": "brdiv-conf1",
+            "path": "human_data/teammates/brdiv-lbf-7-1/saved_train_run",
+            "actor_type": "actor_with_conditional_critic",
+            "ckpt_key": "final_params_conf",
+            "idx_list": [0, 1, 2],
+            "POP_SIZE": 5,
+            "test_mode": False,
+        },
+        {
+            "name": "brdiv-conf2",
+            "path": "human_data/teammates/brdiv-lbf-7-2/saved_train_run",
+            "actor_type": "actor_with_conditional_critic",
+            "ckpt_key": "final_params_conf",
+            "idx_list": [0, 1],
+            "POP_SIZE": 3,
+            "test_mode": False,
+        },
+    ],
+    (7, True): [
+        {
+            "name": "ippo_mlp_7_levels",
+            "path": "human_data/teammates/ippo-lbf-7-levels/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+    ],
+    # (12, "same"): [
+    #     {
+    #         "name": "ippo_mlp_12",
+    #         "path": "human_data/teammates/ippo-lbf-12/saved_train_run",
+    #         "actor_type": "mlp",
+    #         "ckpt_key": "final_params",
+    #         "idx_list": [0],
+    #         "test_mode": False,
+    #     },
+    # ],
+    # (12, "different"): [
+    #     {
+    #         "name": "ippo_mlp_12_levels",
+    #         "path": "human_data/teammates/ippo-lbf-12-levels/saved_train_run",
+    #         "actor_type": "mlp",
+    #         "ckpt_key": "final_params",
+    #         "idx_list": [0],
+    #         "test_mode": False,
+    #     },
+    # ],
+}
+
+
+_rl_load_lock = threading.Lock()
+_rl_load_rng = jax.random.PRNGKey(0)
+
+
+def _load_rl_agents_for_variant(variant_key):
+    """Load RL agents for a single (grid_size, different_levels) variant. Thread-safe, idempotent."""
+    global _rl_load_rng
+    import logging
+
+    if variant_key in RL_AGENTS:
+        return  # Already loaded
+
+    with _rl_load_lock:
+        if variant_key in RL_AGENTS:
+            return  # Double-check after acquiring lock
+
+        grid_size, different_levels = variant_key
+        cfg_list = _RL_AGENT_CONFIGS.get(variant_key, [])
+        if not cfg_list:
+            RL_AGENTS[variant_key] = []
+            return
+
+        cpu = jax.devices('cpu')[0]
+        num_food = 3 if grid_size == 7 else 6
+        env = make_env(env_name="lbf", env_kwargs={
+            "grid_size": grid_size, "num_agents": 2, "num_food": num_food,
+            "different_levels": different_levels,
+        })
+
+        root_logger = logging.getLogger()
+        prev_level = root_logger.level
+        root_logger.setLevel(logging.CRITICAL)
+
+        agents = []
+        try:
+            for cfg in cfg_list:
+                cfg = dict(cfg)
+                name = cfg.pop("name")
+                test_mode = cfg.pop("test_mode")
+
+                _rl_load_rng, init_rng = jax.random.split(_rl_load_rng)
+                policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
+                    cfg, name, env, init_rng
+                )
+                params = jax.tree.map(lambda x: jax.device_put(x, cpu), params)
+                params_list, idx_labels = extract_params(params, init_params, idx_labels)
+
+                for i, p in enumerate(params_list):
+                    label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
+                    agents.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
+        finally:
+            root_logger.setLevel(prev_level)
+
+        RL_AGENTS[variant_key] = agents
+        print(f"Loaded {len(agents)} RL policy agents for {grid_size}x{grid_size} (different_levels={different_levels})")
 
 
 def load_rl_agents():
-    """Load all RL policy agents for the default 7x7 LBF grid. Called once at startup."""
-    import logging
-
-    # Create a dummy env with default training settings to initialise policy networks
-    env = make_env(env_name="lbf", env_kwargs={
-        "grid_size": 7, "num_agents": 2, "num_food": 3,
-    })
-    rng = jax.random.PRNGKey(0)
-    cpu = jax.devices('cpu')[0]
-
-    # Suppress orbax "Device cuda:0 not found" errors when loading GPU checkpoints on CPU
-    root_logger = logging.getLogger()
-    prev_level = root_logger.level
-    root_logger.setLevel(logging.CRITICAL)
-
-    try:
-        for cfg in _RL_AGENT_CONFIGS:
-            cfg = dict(cfg)  # copy so we don't mutate the template
-            name = cfg.pop("name")
-            test_mode = cfg.pop("test_mode")
-
-            rng, init_rng = jax.random.split(rng)
-            policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
-                cfg, name, env, init_rng
-            )
-            # Ensure all params are on CPU
-            params = jax.tree.map(lambda x: jax.device_put(x, cpu), params)
-            params_list, idx_labels = extract_params(params, init_params, idx_labels)
-
-            for i, p in enumerate(params_list):
-                label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
-                RL_AGENTS_7x7.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
-    finally:
-        root_logger.setLevel(prev_level)
-
-    print(f"Loaded {len(RL_AGENTS_7x7)} RL policy agents for 7x7 grid")
+    """Eagerly load RL agents for the (7, 'same') variant at startup. Others load lazily on first use."""
+    _load_rl_agents_for_variant((7, False))
 
 # Action constants
 NOOP = 0
@@ -159,30 +215,25 @@ LOAD = 5
 
 class GameSession:
     """Manages a single game session with environment state and agent state."""
-    
-    def __init__(self, session_id, max_steps=50, grid_size=7, num_fruits=3, env_kwargs: dict = None, levels_mode: str = 'same', is_warmup: bool = False):
+
+    def __init__(self, session_id, max_steps=50, env_kwargs: dict = None, is_warmup: bool = False):
         self.is_warmup = is_warmup
         self.session_id = session_id
         self.max_steps = max_steps
-        self.grid_size = grid_size
-        self.num_fruits = 3 if grid_size == 7 else 6  # Override num_fruits based on grid size
-        # env_kwargs and levels_mode control underlying generator behavior and post-reset level assignment
         self.env_kwargs = env_kwargs or {}
-        # levels_mode: 'same' -> all fruits have same level (default behavior)
-        #              'different' -> fruits have a mix of levels (some uncollectable / single-collectable)
-        self.levels_mode = levels_mode
+        self.grid_size = self.env_kwargs.get("grid_size", 7)
+        self.num_fruits = self.env_kwargs.get("num_food", 3 if self.grid_size == 7 else 6)
+        self.different_levels = self.env_kwargs.get("different_levels", False)
 
-        # Choose agent first — RL agents need num_food=3 (their training default)
+        # Choose agent first
         self.ai_agent = self._choose_agent()
 
-        # Initialize environment with (possibly overridden) num_fruits
+        # Initialize environment
         env_args = dict(self.env_kwargs)
         env_args.update({
             "time_limit": max_steps,
-            "grid_size": grid_size,
             "num_agents": 2,
-            "num_food": self.num_fruits,
-            "highlight_agent_idx": 0
+            "highlight_agent_idx": 0,
         })
         self.env = make_env(env_name="lbf", env_kwargs=env_args)
         
@@ -206,10 +257,14 @@ class GameSession:
         self._warmup_jit_compilation()
     
     def _choose_agent(self):
-        # For 7x7 same-level games, allow RL policy agents alongside heuristic agents
-        if self.grid_size == 7 and self.levels_mode == 'same' and RL_AGENTS_7x7:
+        # Ensure RL agents for this variant are loaded (lazy, thread-safe)
+        variant_key = (self.grid_size, self.different_levels)
+        if variant_key not in RL_AGENTS:
+            _load_rl_agents_for_variant(variant_key)
+        rl_pool = RL_AGENTS.get(variant_key, [])
+        if rl_pool:
             if random.random() < 1.0:
-                agent = random.choice(RL_AGENTS_7x7)
+                agent = random.choice(rl_pool)
                 print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
                 return agent
 
@@ -298,75 +353,7 @@ class GameSession:
         self.end_time = None
 
         self.episode_history = []
-        # Optionally adjust food levels according to levels_mode
-        try:
-            food_levels = self.state.env_state.food_items.level
-            # Build new levels depending on mode
-            if self.levels_mode == 'same':
-                # set all food levels to combined agent level (current default behaviour in many setups)
-                try:
-                    agent_levels = self.state.env_state.agents.level
-                    combined = int(jnp.sum(agent_levels)) if hasattr(agent_levels, 'shape') else int(sum(agent_levels))
-                except Exception:
-                    combined = int(2)
-                new_levels = jnp.full_like(food_levels, combined)
-            else:
-                # 'different' mode: guarantee variety in fruit collectability
-                # 1. At least one fruit collectable by one agent alone
-                # 2. At least one fruit that can't be collected even by both agents together
-                # 3. All remaining fruits can be collected by the agents together
-                num = int(food_levels.shape[0]) if hasattr(food_levels, 'shape') else len(food_levels)
 
-                # Determine agent level info
-                try:
-                    agent_levels = self.state.env_state.agents.level
-                    agent_level_list = [int(l) for l in agent_levels]
-                    combined = sum(agent_level_list)
-                    min_agent = min(agent_level_list)
-                    max_agent = max(agent_level_list)
-                except Exception:
-                    combined = 2
-                    min_agent = 1
-                    max_agent = 1
-
-                levels = []
-
-                # Guarantee 1: each agent can solo one fruit at least
-                levels.append(agent_level_list[0])  # Solo for agent 0
-                levels.append(agent_level_list[1])  # Solo for agent 1
-
-                # Guarantee 2: remaining fruits need to require both agents
-                for _ in range(num - 2):
-                    lvl = sum(agent_level_list)
-                    levels.append(lvl)
-
-                np.random.shuffle(levels)
-                new_levels = jnp.array(levels)
-
-            # Try to replace nested dataclasses safely
-            try:
-                # Try flax dataclass .replace on food_items
-                food_items = self.state.env_state.food_items
-                try:
-                    new_food_items = food_items.replace(level=new_levels)
-                except Exception:
-                    # fallback: try attribute assignment
-                    setattr(food_items, 'level', new_levels)
-                    new_food_items = food_items
-
-                try:
-                    # Replace env_state using .replace if available
-                    self.state = self.state.replace(env_state=self.state.env_state.replace(food_items=new_food_items))
-                except Exception:
-                    # fallback: assign attribute directly
-                    setattr(self.state.env_state, 'food_items', new_food_items)
-            except Exception:
-                # If any of the above fails, continue without modifying levels
-                pass
-        except Exception:
-            # If env state doesn't have food_items or unexpected shape, ignore
-            pass
-        
         return self.get_state_dict()
     
     def step(self, human_action):
@@ -459,7 +446,7 @@ class GameSession:
             "state": state_data,
             "grid_size": self.grid_size,
             "num_fruits": self.num_fruits,
-            "levels_mode": self.levels_mode
+            "different_levels": self.different_levels
         }
     
     def save_episode(self, player_name="Anonymous"):
@@ -614,7 +601,7 @@ class MultiGameSession:
             return  # Already loaded
         
         cfg = self.config_list[idx]
-        game = get_or_create_game(cfg['grid_size'], cfg['levels_mode'])
+        game = get_or_create_game(cfg)
         game.session_id = self.session_id
         game.is_warmup = (idx < self.num_warmup)
         self.games[idx] = game
@@ -657,7 +644,7 @@ class MultiGameSession:
         state['num_warmup'] = self.num_warmup
         state['is_warmup'] = self.current_idx < self.num_warmup
         state['session_complete'] = self.session_complete
-        state['game_configs'] = [{'grid_size': cfg['grid_size'], 'num_fruits': cfg.get('num_fruits', 3), 'levels_mode': cfg['levels_mode']} for cfg in self.config_list]
+        state['game_configs'] = self.config_list
         return state
 
     def save_all(self, player_name='Anonymous'):
@@ -670,71 +657,71 @@ class MultiGameSession:
         return paths
 
 
-# -- PREWARMING -- 
-# Prewarm a pool of games; each config type (grid_size, levels_mode) is prewarmed independently.
+# -- PREWARMING --
+# Prewarm a pool of games; each env_kwargs config is prewarmed independently.
 # User gets a prewarmed game if available from the pool, otherwise created on-demand.
-# This allows user to play immediately without waiting for all 4 games to prewarm.
 
-PREWARMED_GAMES_POOL = {}  # {(grid_size, levels_mode): [GameSession, ...]}
+PREWARMED_GAMES_POOL = {}  # {config_key: [GameSession, ...]}
 PREWARMING_LOCK = threading.Lock()
 
+# The 4 base env_kwargs configurations
+BASE_ENV_CONFIGS = [
+    {"grid_size": 7, "num_food": 3, "different_levels": False},
+    {"grid_size": 7, "num_food": 3, "different_levels": True},
+    {"grid_size": 12, "num_food": 6, "different_levels": False},
+    {"grid_size": 12, "num_food": 6, "different_levels": True},
+]
+
+def _config_key(env_kwargs):
+    """Hashable key for an env_kwargs dict."""
+    return (env_kwargs.get("grid_size", 7), env_kwargs.get("different_levels", False))
+
 def generate_session_configs(num_warmup=NUM_WARMUP_GAMES, num_real=NUM_REAL_GAMES):
-    """Generate the full list of game configs for a session.
-    
+    """Generate the full list of game configs (env_kwargs dicts) for a session.
+
     Returns a list of dicts: first `num_warmup` are warmup, rest are real games.
     Warmup games use randomly chosen configs.
     Real games use 2 copies of each of the 4 base configs, shuffled.
     """
-    base_configs = [
-        {"grid_size": 7, "levels_mode": "same"},
-        # {"grid_size": 7, "levels_mode": "different"},
-        # {"grid_size": 12, "levels_mode": "same"},
-        # {"grid_size": 12, "levels_mode": "different"},
-    ]
-    
     # Warmup: pick randomly from base configs
-    warmup = [random.choice(base_configs).copy() for _ in range(num_warmup)]
-    
+    warmup = [random.choice(BASE_ENV_CONFIGS).copy() for _ in range(num_warmup)]
+
     # Real games: 2 copies of each base config, shuffled
-    real = [cfg.copy() for cfg in base_configs for _ in range(num_real // len(base_configs))]
+    real = [cfg.copy() for cfg in BASE_ENV_CONFIGS for _ in range(num_real // len(BASE_ENV_CONFIGS))]
     # If num_real isn't perfectly divisible, pad with random picks
     while len(real) < num_real:
-        real.append(random.choice(base_configs).copy())
+        real.append(random.choice(BASE_ENV_CONFIGS).copy())
     random.shuffle(real)
-    
+
     return warmup + real
 
-def get_or_create_game(grid_size, levels_mode):
+def get_or_create_game(env_kwargs):
     """Get a prewarmed game or create one on-demand."""
-    config_key = (grid_size, levels_mode)
+    key = _config_key(env_kwargs)
     with PREWARMING_LOCK:
-        if config_key in PREWARMED_GAMES_POOL and PREWARMED_GAMES_POOL[config_key]:
-            return PREWARMED_GAMES_POOL[config_key].pop(0)
-    
+        if key in PREWARMED_GAMES_POOL and PREWARMED_GAMES_POOL[key]:
+            return PREWARMED_GAMES_POOL[key].pop(0)
+
     # Fallback: create on-demand
-    return GameSession(str(uuid.uuid4()), 50, grid_size, 3, env_kwargs={}, levels_mode=levels_mode)
+    return GameSession(str(uuid.uuid4()), 50, env_kwargs=env_kwargs)
 
 async def prewarm_games():
     """Continuously prewarm games in background, keeping a pool of each config type."""
     while True:
         try:
-            # Cycle through all 4 config types to keep a pool
-            for grid_size in [7, 12]:
-                for levels_mode in ['same', 'different']:
-                    config_key = (grid_size, levels_mode)
-                    with PREWARMING_LOCK:
-                        # Initialize pool for this config if needed
-                        if config_key not in PREWARMED_GAMES_POOL:
-                            PREWARMED_GAMES_POOL[config_key] = []
-                        
-                        # Keep at least 2 prewarmed for this config
-                        if len(PREWARMED_GAMES_POOL[config_key]) < 2:
-                            print(f"Prewarming {grid_size}x{grid_size} ({levels_mode})...")
-                            gs = GameSession(str(uuid.uuid4()), 50, grid_size, 3, env_kwargs={}, levels_mode=levels_mode)
-                            PREWARMED_GAMES_POOL[config_key].append(gs)
-                            print(f"{grid_size}x{grid_size} ({levels_mode}) ready")
-            
-            await asyncio.sleep(0.5)  # Check regularly but don't spin
+            for cfg in BASE_ENV_CONFIGS:
+                key = _config_key(cfg)
+                with PREWARMING_LOCK:
+                    if key not in PREWARMED_GAMES_POOL:
+                        PREWARMED_GAMES_POOL[key] = []
+
+                    if len(PREWARMED_GAMES_POOL[key]) < 2:
+                        print(f"Prewarming {cfg}...")
+                        gs = GameSession(str(uuid.uuid4()), 50, env_kwargs=cfg.copy())
+                        PREWARMED_GAMES_POOL[key].append(gs)
+                        print(f"{cfg} ready")
+
+            await asyncio.sleep(0.5)
         except Exception as e:
             print(f"Error prewarming: {e}")
             await asyncio.sleep(2)
@@ -756,7 +743,7 @@ def new_game():
     
     # Only get/create the FIRST game immediately
     first_cfg = conf_list[0]
-    first_game = get_or_create_game(first_cfg['grid_size'], first_cfg['levels_mode'])
+    first_game = get_or_create_game(first_cfg)
     
     # Create MultiGameSession with lazy loading for remaining games
     multi = MultiGameSession(session_id, conf_list, first_game=first_game, num_warmup=NUM_WARMUP_GAMES)

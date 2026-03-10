@@ -1,0 +1,4 @@
+- task=lbf
+- +task.ENV_KWARGS.grid_size=12
+- +task.ENV_KWARGS.num_food=6
+- algorithm=ippo/lbf

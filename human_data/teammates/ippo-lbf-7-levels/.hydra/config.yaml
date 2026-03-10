@@ -1,0 +1,51 @@
+task:
+  ENV_NAME: lbf
+  ROLLOUT_LENGTH: 128
+  ENV_KWARGS:
+    grid_size: 7
+    num_food: 3
+    different_levels: true
+  TASK_NAME: lbf
+algorithm:
+  ALG: ippo
+  TOTAL_TIMESTEPS: 5000000.0
+  ACTOR_TYPE: mlp
+  NUM_CHECKPOINTS: 5
+  GAMMA: 0.99
+  GAE_LAMBDA: 0.95
+  VF_COEF: 0.5
+  MAX_GRAD_NORM: 1.0
+  ANNEAL_LR: true
+  SEED: 12345
+  LR: 0.0001
+  NUM_ENVS: 16
+  UPDATE_EPOCHS: 15
+  NUM_MINIBATCHES: 4
+  CLIP_EPS: 0.03
+  ENT_COEF: 0.01
+  NUM_SEEDS: 3
+  TRAIN_SEED: 20374
+  ENV_NAME: ${ENV_NAME}
+  ENV_KWARGS: ${ENV_KWARGS}
+  ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
+TASK_NAME: ${task.TASK_NAME}
+label: default_label
+name: ${TASK_NAME}/${algorithm.ALG}/${label}
+logger:
+  project: aht-benchmark
+  entity: aht-project
+  tags:
+  - ${algorithm.ALG}
+  - ${TASK_NAME}
+  - seed=${algorithm.TRAIN_SEED}
+  - ${label}
+  mode: offline
+  verbose: false
+  log_train_out: true
+  log_eval_out: true
+local_logger:
+  save_train_out: true
+  save_eval_out: true
