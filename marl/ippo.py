@@ -258,7 +258,7 @@ def make_train(config, env, logger, progress_callback=None):
                     progress_callback()
 
             # metrics: (ROLLOUT_LENGTH, NUM_ACTORS)
-            # jax.experimental.io_callback(callback, None, metric)
+            jax.experimental.io_callback(callback, None, metric)
 
             rng = update_state[-1]
             update_steps += 1
@@ -361,7 +361,8 @@ def run_ippo(config, logger):
 
     pbar.close()
 
-    # log_metrics(config, out, logger)
+    # option for if you want to disable intermediate metrics logging
+    log_artifacts(config, out, logger)
 
     return out
 
@@ -375,26 +376,8 @@ def log_metrics_intermediate(train_stats, logger):
         logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
     logger.commit()
 
-def log_metrics(config, out, logger):
+def log_artifacts(config, out, logger):
     '''Save train run output and log to wandb as artifact.'''    
-    train_metrics = out["metrics"]
-    metric_names = get_metric_names(config["ENV_NAME"])
-    train_stats = get_stats(train_metrics, metric_names)
-
-    # each key in train_stats is a metric name, and the value is an array of shape (num_seeds, num_updates, num_agents_per_game)
-    # where the last dimension contains the mean and std of the metric
-    train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
-
-    # Log metrics for each update step
-    num_updates = train_metrics["returned_episode"].shape[1] # shape is (num_seeds, num_updates, rollout_len, num_envs*num_agents_per_game)
-    for step in range(num_updates):
-        for stat_name, stat_data in train_stats.items():
-            # second dimension contains the mean and std of the metric
-            stat_mean = stat_data[step, 0]
-            logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
-
-    logger.commit()
-
     # save artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     out_savepath = save_train_run(out, savedir, savename="saved_train_run")
