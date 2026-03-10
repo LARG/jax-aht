@@ -5,7 +5,7 @@
 #SBATCH -p h100
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=96
 #SBATCH -t 06:00:00
 #SBATCH --mail-user=jeffreychen287@gmail.com
 #SBATCH --mail-type=all
