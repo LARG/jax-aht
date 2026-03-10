@@ -58,6 +58,9 @@ class CoopReconContinuousWrapper(BaseEnv):
 
         # Phase A: collision detection (no reward penalty — dead-end termination only)
         self.collision_radius = kwargs.get('collision_radius', 0.05)
+        # Goal minimum separation.
+        # Must be > detection_radius (0.2) so goals are always unambiguously distinct.
+        self.min_sep_goal = kwargs.get('min_sep_goal', 0.30)
 
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "coop_recon_continuous")
@@ -154,16 +157,26 @@ class CoopReconContinuousWrapper(BaseEnv):
         # PHASE A: Goals span the full grid (goal allocation social law).
         # Agent i is always assigned to goal i (by index).
         # ==============================================================
-        key_gx0, key_gy0, key_gx1, key_gy1 = jax.random.split(goal_key, 4)
-        goal_x_0 = jax.random.uniform(key_gx0, shape=(1,), minval=0.01, maxval=0.99)
-        goal_y_0 = jax.random.uniform(key_gy0, shape=(1,), minval=0.01, maxval=0.99)
-        goal_x_1 = jax.random.uniform(key_gx1, shape=(1,), minval=0.01, maxval=0.99)
-        goal_y_1 = jax.random.uniform(key_gy1, shape=(1,), minval=0.01, maxval=0.99)
+        # Sample goal_0 uniformly; reject goal_1 if too close to goal_0.
+        # jax.lax.while_loop is JIT-safe and terminates quickly:
+        # P(|goal_1 - goal_0| >= 0.30) >= ~91% per trial on a unit grid.
+        key, key_g0, key_g1_init = jax.random.split(goal_key, 3)
+        goal_0 = jax.random.uniform(key_g0, shape=(2,), minval=0.01, maxval=0.99)
+        goal_1_init = jax.random.uniform(key_g1_init, shape=(2,), minval=0.01, maxval=0.99)
 
-        goal_pos = jnp.stack([
-            jnp.concatenate([goal_x_0, goal_y_0]),
-            jnp.concatenate([goal_x_1, goal_y_1])
-        ])
+        def _goal1_too_close(carry):
+            k, g1 = carry
+            return jnp.linalg.norm(g1 - goal_0) < self.min_sep_goal
+
+        def _resample_goal1(carry):
+            k, _ = carry
+            k, subk = jax.random.split(k)
+            g1 = jax.random.uniform(subk, shape=(2,), minval=0.01, maxval=0.99)
+            return k, g1
+
+        _, goal_1 = jax.lax.while_loop(_goal1_too_close, _resample_goal1, (key, goal_1_init))
+
+        goal_pos = jnp.stack([goal_0, goal_1])
 
         # ==============================================================
         # OPAQUE WALL version — kept for easy revert:
