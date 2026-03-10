@@ -29,7 +29,7 @@ heldout_set:
 best_response_set:
   lbf:
     br_for_ippo_mlp_0:
-      path: "results/TODO/lbf/ippo_mlp_0/ego_train_run"
+      path: "results/lbf/ppo_br_s5/ippo_mlp_0_serious/2026-03-09_14-37-49/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
