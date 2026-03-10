@@ -1419,8 +1419,8 @@
                 try {
                     const idx = gameState.current_game_index || 0;
                     const configs = gameState.game_configs || [];
-                    const cfg = configs[idx] || {grid_size: gameState.grid_size || 7, levels_mode: gameState.levels_mode || 'same'};
-                    if (cfgLabel) cfgLabel.textContent = `${cfg.grid_size}x${cfg.grid_size} • ${cfg.levels_mode}`;
+                    const cfg = configs[idx] || {grid_size: gameState.grid_size || 7, different_levels: gameState.different_levels || false};
+                    if (cfgLabel) cfgLabel.textContent = `${cfg.grid_size}x${cfg.grid_size} • ${cfg.different_levels ? 'different levels' : 'same levels'}`;
                 } catch (e) {
                     if (cfgLabel) cfgLabel.textContent = '';
                 }
