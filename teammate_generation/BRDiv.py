@@ -19,9 +19,11 @@ import numpy as np
 import optax
 from flax.training.train_state import TrainState
 import wandb
+from jax.experimental import io_callback
 
 from agents.mlp_actor_critic_agent import ActorWithConditionalCriticPolicy
 from agents.population_interface import AgentPopulation
+from common.intermediate_logging import log_brdiv_intermediate_metrics
 from common.plot_utils import get_metric_names
 from common.run_episodes import run_episodes
 from common.save_load_utils import save_train_run
@@ -72,7 +74,7 @@ def gather_params(partner_params_pytree, idx_vec):
 
     return jax.tree.map(gather_leaf, partner_params_pytree)
 
-def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
+def train_brdiv_partners(train_rng, seed_idx, env, config, conf_policy, br_policy, wandb_logger):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -624,6 +626,16 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 checkpoint_array_conf, checkpoint_array_br, eval_ep_last_info = checkpoint_array_and_infos
 
                 metric["eval_ep_last_info"] = eval_ep_last_info # return of confederate
+                if wandb_logger is not None:
+                    io_callback(
+                        lambda callback_metric, callback_seed_idx: log_brdiv_intermediate_metrics(
+                            wandb_logger, callback_metric, callback_seed_idx
+                        ),
+                        jax.ShapeDtypeStruct((), jnp.int32),
+                        metric,
+                        seed_idx,
+                        ordered=False,
+                    )
 
                 return ((train_state_conf, train_state_br,
                          last_env_state, last_obs, last_done, last_conf_h, last_br_h, rng, update_steps),
@@ -744,12 +756,21 @@ def run_brdiv(config, wandb_logger):
 
     # Create a vmapped version of train_brdiv_partners
     with jax.disable_jit(False):
+        seed_ids = jnp.arange(algorithm_config["NUM_SEEDS"])
         vmapped_train_fn = jax.jit(
             jax.vmap(
-                partial(train_brdiv_partners, env=env, config=algorithm_config, conf_policy=conf_policy, br_policy=br_policy)
+                partial(
+                    train_brdiv_partners,
+                    env=env,
+                    config=algorithm_config,
+                    conf_policy=conf_policy,
+                    br_policy=br_policy,
+                    wandb_logger=wandb_logger,
+                ),
+                in_axes=(0, 0),
             )
         )
-        out = vmapped_train_fn(rngs)
+        out = vmapped_train_fn(rngs, seed_ids)
 
     end = time.time()
     log.info(f"BRDiv training complete in {end - start} seconds")

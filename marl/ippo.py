@@ -10,6 +10,7 @@ import jax
 import jax.numpy as jnp
 import optax
 from flax.training.train_state import TrainState
+from jax.experimental import io_callback
 
 from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, \
     initialize_rnn_agent, initialize_pseudo_actor_with_double_critic, initialize_pseudo_actor_with_conditional_critic
@@ -33,7 +34,7 @@ def initialize_agent(actor_type, algorithm_config, env, init_rng):
         policy, init_params = initialize_pseudo_actor_with_conditional_critic(algorithm_config, env, init_rng)
     return policy, init_params
 
-def make_train(config, env):
+def make_train(config, env, log_callback=None, log_callback_args=()):
     config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
     config["NUM_UPDATES"] = (
         config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
@@ -250,6 +251,15 @@ def make_train(config, env):
             train_state = update_state[0]
             metric = traj_batch.info
             metric["update_steps"] = update_steps
+            if log_callback is not None:
+                io_callback(
+                    log_callback,
+                    jax.ShapeDtypeStruct((), jnp.int32),
+                    metric,
+                    update_steps,
+                    *log_callback_args,
+                    ordered=False,
+                )
             
             rng = update_state[-1]
             update_steps += 1

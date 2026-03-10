@@ -7,10 +7,12 @@ import logging
 from functools import partial
 
 import jax
+import jax.numpy as jnp
 import hydra
 import numpy as np
 from agents.mlp_actor_critic_agent import MLPActorCriticPolicy
 from agents.population_interface import AgentPopulation
+from common.intermediate_logging import log_ippo_intermediate_metrics
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from marl.ippo import make_train as make_ppo_train
@@ -45,11 +47,28 @@ def get_fcp_population(config, out, env):
 
     return flattened_partner_params, partner_population
 
-def train_fcp_partners(rng, env, algorithm_config):
+def train_fcp_partners(rng, seed_idx, env, algorithm_config, wandb_logger, metric_names):
     '''Single seed of training an FCP pool.'''
     rngs = jax.random.split(rng, algorithm_config["PARTNER_POP_SIZE"])
-    train_jit = jax.jit(jax.vmap(make_ppo_train(algorithm_config, env)))
-    out = train_jit(rngs)
+    partner_ids = jnp.arange(algorithm_config["PARTNER_POP_SIZE"])
+
+    def train_single_partner(partner_rng, partner_idx):
+        return make_ppo_train(
+            algorithm_config,
+            env,
+            log_callback=lambda metric, update_step, callback_seed_idx, callback_partner_idx: log_ippo_intermediate_metrics(
+                wandb_logger,
+                metric,
+                metric_names,
+                update_step,
+                seed_idx=callback_seed_idx,
+                partner_idx=callback_partner_idx,
+            ),
+            log_callback_args=(seed_idx, partner_idx),
+        )(partner_rng)
+
+    train_jit = jax.jit(jax.vmap(train_single_partner, in_axes=(0, 0)))
+    out = train_jit(rngs, partner_ids)
     return out
 
 def run_fcp(config, wandb_logger):
@@ -63,15 +82,24 @@ def run_fcp(config, wandb_logger):
 
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
     env = LogWrapper(env)
+    metric_names = get_metric_names(algorithm_config["ENV_NAME"])
 
     start_time = time.time()
     with jax.disable_jit(False):
+        seed_ids = jnp.arange(algorithm_config["NUM_SEEDS"])
         vmapped_train_fn = jax.jit(
             jax.vmap(
-            partial(train_fcp_partners, env=env, algorithm_config=algorithm_config)
+            partial(
+                train_fcp_partners,
+                env=env,
+                algorithm_config=algorithm_config,
+                wandb_logger=wandb_logger,
+                metric_names=metric_names,
+            ),
+            in_axes=(0, 0),
             )
         )
-        out = vmapped_train_fn(rngs)
+        out = vmapped_train_fn(rngs, seed_ids)
     end_time = time.time()
     log.info(f"Training FCP partners took {end_time - start_time:.2f} seconds.")
 

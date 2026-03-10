@@ -19,11 +19,13 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import wandb
+from jax.experimental import io_callback
 
 from agents.mlp_actor_critic_agent import ActorWithConditionalCriticPolicy
 from agents.initialize_agents import initialize_actor_with_conditional_critic
 from agents.population_interface import AgentPopulation
 from agents.population_buffer import BufferedPopulation
+from common.intermediate_logging import log_comedi_intermediate_metrics
 from common.save_load_utils import save_train_run
 from common.plot_utils import get_metric_names
 from common.run_episodes import run_episodes
@@ -45,7 +47,7 @@ class ResetTransition(NamedTuple):
     conf_hstate: jnp.ndarray
     partner_hstate: jnp.ndarray
 
-def train_comedi_partners(train_rng, env, config):
+def train_comedi_partners(train_rng, seed_idx, env, config, wandb_logger):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -964,6 +966,25 @@ def train_comedi_partners(train_rng, env, config):
                         skip_ckpt,
                         (checkpoint_array, store_and_eval_rng, ckpt_idx, xp_eval_returns, sp_eval_returns)
                     )
+                    if wandb_logger is not None:
+                        io_callback(
+                            lambda callback_metric, callback_xp_eval_returns, callback_sp_eval_returns,
+                                   callback_seed_idx, callback_population_stage: log_comedi_intermediate_metrics(
+                                wandb_logger,
+                                callback_metric,
+                                callback_xp_eval_returns,
+                                callback_sp_eval_returns,
+                                callback_seed_idx,
+                                callback_population_stage,
+                            ),
+                            jax.ShapeDtypeStruct((), jnp.int32),
+                            metric,
+                            xp_eval_returns,
+                            sp_eval_returns,
+                            seed_idx,
+                            new_update_runner_state[-1],
+                            ordered=False,
+                        )
 
                     return (new_update_runner_state, checkpoint_array,
                             ckpt_idx, xp_eval_returns, sp_eval_returns), (metric, xp_eval_returns, sp_eval_returns)
@@ -1043,12 +1064,19 @@ def run_comedi(config, wandb_logger):
 
     # Create a vmapped version of train_comedi_partners
     with jax.disable_jit(False):
+        seed_ids = jnp.arange(algorithm_config["NUM_SEEDS"])
         vmapped_train_fn = jax.jit(
             jax.vmap(
-                partial(train_comedi_partners, env=env, config=algorithm_config)
+                partial(
+                    train_comedi_partners,
+                    env=env,
+                    config=algorithm_config,
+                    wandb_logger=wandb_logger,
+                ),
+                in_axes=(0, 0),
             )
         )
-        out = vmapped_train_fn(rngs)
+        out = vmapped_train_fn(rngs, seed_ids)
 
     end = time.time()
     log.info(f"CoMeDi training complete in {end - start} seconds")
