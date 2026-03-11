@@ -25,6 +25,5 @@ partner_agent:
   ippo_mlp_s2c0:
     path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
     actor_type: mlp
-    ckpt_key: final_params
     idx_list: [[2, 0]]
     test_mode: false
