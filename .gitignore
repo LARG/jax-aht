@@ -8,6 +8,8 @@ results*/
 results*/*
 eval_teammates/
 eval_teammates/*
+val_teammates/
+val_teammates/*
 .vscode/
 .vscode/*
 
