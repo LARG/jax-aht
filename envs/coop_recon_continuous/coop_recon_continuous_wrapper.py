@@ -397,7 +397,17 @@ class CoopReconContinuousWrapper(BaseEnv):
         # Compute distances to goal
         dists_to_goal = jnp.linalg.norm(positions[:, None, :] - goal_pos[None, :, :], axis=-1)  # (2 agents, 2 goals)
         at_goal = dists_to_goal < self.detection_radius  # (2, 2)
-        
+
+        # ==============================================================
+        # GOAL-ALLOCATION SOCIAL LAW (Phase A, PI guidance):
+        # Agent i may only perform task actions (water/life/picture) at goal i.
+        # Movement actions remain unrestricted.
+        # agent_goal_mask[i, j] = True iff agent i is assigned to goal j.
+        # For 2 agents: agent 0 → goal 0, agent 1 → goal 1.
+        # ==============================================================
+        agent_goal_mask = jnp.eye(self.num_agents, dtype=bool)  # (2, 2)
+        at_goal = at_goal & agent_goal_mask
+
         # ==============================================================
         # PHASE A: Same-side (opaque wall) check removed.
         # Agents may now interact with their assigned goal anywhere in the grid.
@@ -550,22 +560,33 @@ class CoopReconContinuousWrapper(BaseEnv):
             avail_actions: Dictionary of available action masks
         """
         dists_to_goal = jnp.linalg.norm(env_state.positions[:, None, :] - env_state.goal_pos[None, :, :], axis=-1)
-        at_goal = dists_to_goal < self.detection_radius
-        
-        # Opaque wall at x=0.5: line of sight cannot penetrate the geographic boundary
-        is_agent_left = env_state.positions[:, 0] < 0.5
-        is_goal_left = env_state.goal_pos[:, 0] < 0.5
-        same_side = is_agent_left[:, None] == is_goal_left[None, :]
-        at_goal = at_goal & same_side
-        
+        at_goal = dists_to_goal < self.detection_radius  # (2 agents, 2 goals)
+
+        # ==============================================================
+        # GOAL-ALLOCATION SOCIAL LAW: restrict task-action availability
+        # to each agent's own assigned goal (agent i → goal i only).
+        # ==============================================================
+        agent_goal_mask = jnp.eye(self.num_agents, dtype=bool)  # (2, 2)
+        at_goal = at_goal & agent_goal_mask
+
+        # ==============================================================
+        # OPAQUE WALL version — kept for easy revert:
+        # is_agent_left = env_state.positions[:, 0] < 0.5
+        # is_goal_left = env_state.goal_pos[:, 0] < 0.5
+        # same_side = is_agent_left[:, None] == is_goal_left[None, :]
+        # at_goal = at_goal & same_side
+        # ==============================================================
+
         avail_actions = {}
         for i, agent in enumerate(self.agents):
             # Once this agent's own goal's picture is taken, force noop (stop moving)
             agent_done = env_state.picture_taken[i]
 
-            can_water = jnp.any(at_goal[i] & ~env_state.detected_water)
-            can_life = jnp.any(at_goal[i] & env_state.detected_water & ~env_state.detected_life)
-            can_pic = jnp.any(at_goal[i] & env_state.detected_life & ~env_state.picture_taken)
+            # Check only agent i's own goal (column i after mask, so at_goal[i, i])
+            at_own_goal = at_goal[i, i]
+            can_water = at_own_goal & ~env_state.detected_water[i]
+            can_life  = at_own_goal & env_state.detected_water[i] & ~env_state.detected_life[i]
+            can_pic   = at_own_goal & env_state.detected_life[i]  & ~env_state.picture_taken[i]
 
             full_mask = jnp.array([
                 True, True, True, True, True,  # 0-4: noop, directions

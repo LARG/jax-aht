@@ -27,6 +27,6 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
     algorithm.TOTAL_TIMESTEPS=20000000 \
     algorithm.FIXED_EVAL=true \
     algorithm.SAP_DOMAIN_RANDOMIZE_PARTNER=true \
-    label=jax_coop_recon_v18_phaseA_creppo_h100
+    label=jax_coop_recon_v19_phaseA_creppo_h100
 
 echo "Training complete."
