@@ -1,0 +1,12 @@
+defaults:
+  - cole/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS_PER_ITERATION: 6e6
+PARTNER_POP_SIZE: 10
+LR: 5e-4
+UPDATE_EPOCHS: 15
+CLIP_EPS: 0.05
+ENT_COEF: 0.001
+COMEDI_ALPHA: 0.2 # weight on XP return
+COMEDI_BETA: 0.4 # weight on SXP return

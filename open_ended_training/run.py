@@ -8,6 +8,7 @@ from common.wandb_visualizations import Logger
 from open_ended_training.rotate import run_rotate
 from open_ended_minimax import run_minimax
 from paired import run_paired
+from cole import run_cole
 
 @hydra.main(version_base=None, config_path="configs", config_name="base_config_oel")
 def run_training(cfg):
@@ -16,6 +17,8 @@ def run_training(cfg):
 
     if cfg.algorithm["ALG"] == "rotate":
         ego_policy, final_ego_params, init_ego_params = run_rotate(cfg, wandb_logger)
+    elif cfg.algorithm["ALG"] == "cole":
+        ego_policy, final_ego_params, init_ego_params = run_cole(cfg, wandb_logger)
     elif cfg.algorithm["ALG"] == "open_ended_minimax":
         ego_policy, final_ego_params, init_ego_params = run_minimax(cfg, wandb_logger)
     elif cfg.algorithm["ALG"] == "paired":
