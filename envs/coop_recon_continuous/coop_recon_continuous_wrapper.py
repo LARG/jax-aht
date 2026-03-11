@@ -399,7 +399,7 @@ class CoopReconContinuousWrapper(BaseEnv):
         at_goal = dists_to_goal < self.detection_radius  # (2, 2)
 
         # ==============================================================
-        # GOAL-ALLOCATION SOCIAL LAW (Phase A, PI guidance):
+        # GOAL-ALLOCATION SOCIAL LAW (Phase A):
         # Agent i may only perform task actions (water/life/picture) at goal i.
         # Movement actions remain unrestricted.
         # agent_goal_mask[i, j] = True iff agent i is assigned to goal j.
