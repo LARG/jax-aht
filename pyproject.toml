@@ -22,7 +22,8 @@ classifiers = [
 
 dependencies = [
     # JAX AI stack v2025.2.5
-    "jax[cuda12]==0.5.3",
+    "jax[cuda12]==0.5.3; platform_system == 'Linux'",
+    "jax==0.5.3; platform_system == 'Darwin'",
     "chex==0.1.88",
     "flax==0.10.2",
     "ml_dtypes==0.4.0",
@@ -36,7 +37,6 @@ dependencies = [
     "distrax",
     "safetensors",
     "moviepy",
-    "ffmpeg",
     "prettytable",
     "rliable",
     "matplotlib",
@@ -44,6 +44,7 @@ dependencies = [
     "omegaconf",
     "hydra-core",
     "huggingface-hub",
+    "setuptools<81",
     # Environment dependencies
     "jumanji==1.1.0",
     "jaxmarl==0.0.7",
