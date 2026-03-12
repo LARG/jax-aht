@@ -6,7 +6,7 @@
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --cpus-per-task=112
-#SBATCH -t 06:00:00
+#SBATCH -t 12:00:00
 #SBATCH --mail-user=jeffreychen287@gmail.com
 #SBATCH --mail-type=all
 
@@ -19,9 +19,9 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
     task=continuous/coop_recon \
     algorithm=creppo/continuous/coop_recon \
     logger.mode=offline \
-    algorithm.TOTAL_TIMESTEPS=20000000 \
+    algorithm.TOTAL_TIMESTEPS=40000000 \
     algorithm.FIXED_EVAL=true \
     algorithm.SAP_DOMAIN_RANDOMIZE_PARTNER=true \
-    label=jax_coop_recon_v19_phaseA_creppo
+    label=jax_coop_recon_v20_phaseA_40M_creppo
 
 echo "Training complete."
