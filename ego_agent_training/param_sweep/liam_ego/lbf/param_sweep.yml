@@ -7,14 +7,12 @@ metric:
   goal: maximize
   name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
-# 2250 Combinations: bayes search recommended over grid
+# 1125 Combinations: bayes search recommended over grid
 parameters:
   algorithm.TOTAL_TIMESTEPS:
     values: [7e6]
   algorithm.NUM_ENVS:
     values: [256]
-  algorithm.ACTIVATION:
-    values: ["tanh", "relu"]
   algorithm.LR:
     values: [3e-5, 1e-5, 3e-4, 3e-3, 3e-2]
   algorithm.ENCODER_DECODER_LR:
@@ -29,6 +27,8 @@ parameters:
   #   values: ["mlp", "s5"]
   # algorithm.ENCODER_TYPE:
   #   values: ["lstm", "rnn"]
+  # algorithm.ACTIVATION:
+  #   values: ["tanh", "relu"]
   # algorithm.UPDATE_EPOCHS:
   #   values: [5, 10, 15, 20]
   # algorithm.NUM_MINIBATCHES:

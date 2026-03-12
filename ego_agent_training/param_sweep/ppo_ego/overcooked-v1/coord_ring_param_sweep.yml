@@ -48,6 +48,5 @@ command:
   - logger.mode=online
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
-  - algorithm.NUM_ENVS=1024
   - label="param_sweep"
   - ${args_no_hyphens}
