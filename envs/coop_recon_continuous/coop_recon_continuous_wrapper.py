@@ -58,6 +58,9 @@ class CoopReconContinuousWrapper(BaseEnv):
 
         # Phase A: collision detection (no reward penalty — dead-end termination only)
         self.collision_radius = kwargs.get('collision_radius', 0.05)
+        # When False, collision is detected but does NOT end the episode.
+        # Set to False for the no-collision-deadend ablation (v23).
+        self.use_collision_deadend = kwargs.get('use_collision_deadend', True)
         # Goal minimum separation.
         # Must be > detection_radius (0.2) so goals are always unambiguously distinct.
         self.min_sep_goal = kwargs.get('min_sep_goal', 0.30)
@@ -293,9 +296,14 @@ class CoopReconContinuousWrapper(BaseEnv):
         # ==============================================================
 
         # Phase A: collision detection — dead-end if agents are within collision_radius.
+        # use_collision_deadend=False disables termination (v23 ablation: no dead-end).
         dist_between = jnp.linalg.norm(new_positions[0] - new_positions[1])
         collision = dist_between < self.collision_radius
-        new_collision_happened = env_state.collision_happened | collision
+        new_collision_happened = jax.lax.cond(
+            self.use_collision_deadend,
+            lambda: env_state.collision_happened | collision,  # normal: latch True on collision
+            lambda: jnp.array(False),                         # ablation: never trigger dead-end
+        )
 
         # Process detection/picture actions and compute rewards
         key_water, key_life = jax.random.split(key, 2)
