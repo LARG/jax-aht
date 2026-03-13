@@ -15,9 +15,10 @@ source /scratch/11079/jeffreychen287/jax-aht/venv/bin/activate
 export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 
-# v23 ablation: NO collision dead-end (agents can collide without episode terminating)
-# Hypothesis: does the dead-end state actually help agents learn to avoid collisions,
-# or does it just hurt worst-case return? Compare alpha vs v19 (with dead-end).
+# v23 ablation: NO step penalty (step_penalty=0.0)
+# Hypothesis: without negative step returns on collision episodes,
+# does alpha improve? Addresses team member concern about negative returns.
+# Collision dead-end is still active.
 /scratch/11079/jeffreychen287/jax-aht/venv/bin/python social_laws/run.py \
     task=continuous/coop_recon \
     algorithm=creppo/continuous/coop_recon \
@@ -25,7 +26,7 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
     algorithm.TOTAL_TIMESTEPS=20000000 \
     algorithm.FIXED_EVAL=true \
     algorithm.SAP_DOMAIN_RANDOMIZE_PARTNER=true \
-    'task.ENV_KWARGS.use_collision_deadend=false' \
-    label=jax_coop_recon_v23_phaseA_nocollision_creppo
+    'task.ENV_KWARGS.step_penalty=0.0' \
+    label=jax_coop_recon_v23_phaseA_nostep_creppo
 
 echo "Training complete."

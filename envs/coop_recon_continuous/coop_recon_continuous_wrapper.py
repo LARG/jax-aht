@@ -58,9 +58,8 @@ class CoopReconContinuousWrapper(BaseEnv):
 
         # Phase A: collision detection (no reward penalty — dead-end termination only)
         self.collision_radius = kwargs.get('collision_radius', 0.05)
-        # When False, collision is detected but does NOT end the episode.
-        # Set to False for the no-collision-deadend ablation (v23).
-        self.use_collision_deadend = kwargs.get('use_collision_deadend', True)
+        # Step penalty per timestep. Set to 0.0 to ablate step penalty effect (v23).
+        self.step_penalty = kwargs.get('step_penalty', -0.01)
         # Goal minimum separation.
         # Must be > detection_radius (0.2) so goals are always unambiguously distinct.
         self.min_sep_goal = kwargs.get('min_sep_goal', 0.30)
@@ -296,14 +295,9 @@ class CoopReconContinuousWrapper(BaseEnv):
         # ==============================================================
 
         # Phase A: collision detection — dead-end if agents are within collision_radius.
-        # use_collision_deadend=False disables termination (v23 ablation: no dead-end).
         dist_between = jnp.linalg.norm(new_positions[0] - new_positions[1])
         collision = dist_between < self.collision_radius
-        new_collision_happened = jax.lax.cond(
-            self.use_collision_deadend,
-            lambda: env_state.collision_happened | collision,  # normal: latch True on collision
-            lambda: jnp.array(False),                         # ablation: never trigger dead-end
-        )
+        new_collision_happened = env_state.collision_happened | collision
 
         # Process detection/picture actions and compute rewards
         key_water, key_life = jax.random.split(key, 2)
@@ -427,8 +421,8 @@ class CoopReconContinuousWrapper(BaseEnv):
         # same_side = is_agent_left[:, None] == is_goal_left[None, :]
         # at_goal = at_goal & same_side
 
-        # Initialize rewards with step penalty (-0.01 to match PyTorch)
-        reward_values = jnp.full(self.num_agents, -0.01, dtype=jnp.float32)
+        # Initialize rewards with step penalty (configurable; default -0.01 to match PyTorch)
+        reward_values = jnp.full(self.num_agents, self.step_penalty, dtype=jnp.float32)
 
         # Split keys for each agent
         key_water_0, key_water_1 = jax.random.split(key_water)
