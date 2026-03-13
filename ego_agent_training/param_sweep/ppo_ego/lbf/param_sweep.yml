@@ -44,6 +44,7 @@ command:
   - logger.project=aht-parameter-sweep
   - logger.entity=aht-project
   - logger.mode=online
+  - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - algorithm.NUM_ENVS=1024

@@ -33,6 +33,7 @@ command:
   - algorithm=lbrdiv/overcooked-v1/coord_ring
   - train_ego=true
   - run_heldout_eval=true
+  - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - ${args_no_hyphens}
