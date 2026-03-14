@@ -26,7 +26,7 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
     algorithm.TOTAL_TIMESTEPS=20000000 \
     algorithm.FIXED_EVAL=true \
     algorithm.SAP_DOMAIN_RANDOMIZE_PARTNER=true \
-    'task.ENV_KWARGS.step_penalty=0.0' \
+    '+task.ENV_KWARGS.step_penalty=0.0' \
     label=jax_coop_recon_v23_phaseA_nostep_creppo
 
 echo "Training complete."
