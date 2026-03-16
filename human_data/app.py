@@ -121,26 +121,26 @@ _RL_AGENT_CONFIGS = {
             "test_mode": False,
         },
     ],
-    # (12, "same"): [
-    #     {
-    #         "name": "ippo_mlp_12",
-    #         "path": "human_data/teammates/ippo-lbf-12/saved_train_run",
-    #         "actor_type": "mlp",
-    #         "ckpt_key": "final_params",
-    #         "idx_list": [0],
-    #         "test_mode": False,
-    #     },
-    # ],
-    # (12, "different"): [
-    #     {
-    #         "name": "ippo_mlp_12_levels",
-    #         "path": "human_data/teammates/ippo-lbf-12-levels/saved_train_run",
-    #         "actor_type": "mlp",
-    #         "ckpt_key": "final_params",
-    #         "idx_list": [0],
-    #         "test_mode": False,
-    #     },
-    # ],
+    (12, False): [
+        {
+            "name": "ippo_mlp_12",
+            "path": "human_data/teammates/ippo-lbf-12/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+    ],
+    (12, True): [
+        {
+            "name": "ippo_mlp_12_levels",
+            "path": "human_data/teammates/ippo-lbf-12-levels/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+    ],
 }
 
 
@@ -190,9 +190,12 @@ def _load_rl_agents_for_variant(variant_key):
                 )
                 params = jax.tree.map(lambda x: jax.device_put(x, cpu), params)
                 params_list, idx_labels = extract_params(params, init_params, idx_labels)
+                del init_params
 
                 for i, p in enumerate(params_list):
                     label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
+                    param_bytes = sum(x.nbytes for x in jax.tree.leaves(p))
+                    print(f"  Agent '{label}': {param_bytes / 1024:.1f} KB ({len(jax.tree.leaves(p))} arrays)")
                     agents.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
         finally:
             root_logger.setLevel(prev_level)
@@ -203,7 +206,14 @@ def _load_rl_agents_for_variant(variant_key):
 
 def load_rl_agents():
     """Eagerly load RL agents for the (7, 'same') variant at startup. Others load lazily on first use."""
-    _load_rl_agents_for_variant((7, False))
+    # _load_rl_agents_for_variant((7, False))
+    _load_rl_agents_for_variant((7, True))
+    _load_rl_agents_for_variant((12, True))
+    exit()
+    # _load_rl_agents_for_variant((12, False))
+    _load_rl_agents_for_variant((12, True))
+
+
 
 # Action constants
 NOOP = 0
@@ -265,7 +275,7 @@ class GameSession:
         if rl_pool:
             if random.random() < 1.0:
                 agent = random.choice(rl_pool)
-                print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
+                # print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
                 return agent
 
         if random.random() < 0.5:
@@ -286,7 +296,7 @@ class GameSession:
         Pre-compile JAX functions by doing warmup steps.
         This ensures the first actual game step is fast.
         """
-        print(f"🔥 Warming up JIT compilation for session {self.session_id[:8]}...")
+        # print(f"🔥 Warming up JIT compilation for session {self.session_id[:8]}...")
         warmup_start = time.time()
         
         # Save current state
@@ -334,7 +344,7 @@ class GameSession:
         self.rng = saved_rng
         
         warmup_time = time.time() - warmup_start
-        print(f"✅ JIT compilation complete ({warmup_time:.2f}s)")
+        # print(f"✅ JIT compilation complete ({warmup_time:.2f}s)")
     
     def reset(self):
         """Reset the game environment."""
@@ -696,10 +706,10 @@ async def prewarm_games():
                         PREWARMED_GAMES_POOL[key] = []
 
                     if len(PREWARMED_GAMES_POOL[key]) < 2:
-                        print(f"Prewarming {cfg}...")
+                        # print(f"Prewarming {cfg}...")
                         gs = GameSession(str(uuid.uuid4()), 50, env_kwargs=cfg.copy())
                         PREWARMED_GAMES_POOL[key].append(gs)
-                        print(f"{cfg} ready")
+                        # print(f"{cfg} ready")
 
             await asyncio.sleep(0.5)
         except Exception as e:

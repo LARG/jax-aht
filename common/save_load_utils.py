@@ -32,12 +32,13 @@ def save_train_run(out, savedir, savename):
     return savepath
 
 def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None):
-    '''Load checkpoints from orbax checkpoint. 
+    '''Load checkpoints from orbax checkpoint.
     Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
-    restored = load_train_run(path)
     if custom_loader_cfg is None:
-        return restored[ckpt_key]
+        return _load_partial(path, ckpt_key)
     elif custom_loader_cfg["name"] == "open_ended":
+        # Open-ended loader needs the full checkpoint
+        restored = load_train_run(path)
         partner_out, ego_out = restored
         out = ego_out if custom_loader_cfg["type"] == "ego" else partner_out
         if ckpt_key == "final_buffer":
@@ -47,21 +48,43 @@ def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None)
     else:
         raise ValueError(f"Invalid custom loader name: {custom_loader_cfg['name']}")
 
-def load_train_run(path):
-    '''Load checkpoints from orbax checkpoint.
-    Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
-    # determine whether path is relative or absolute
+def _load_partial(path, ckpt_key):
+    '''Load only a single top-level key from an orbax checkpoint, avoiding OOM
+    from loading the entire pytree (e.g. skipping metrics).'''
     if not os.path.isabs(path):
         path = os.path.join(REPO_PATH, path)
-    # load the checkpoint
+
     checkpointer = orbax.checkpoint.PyTreeCheckpointer()
+    cpu_sharding = jax.sharding.SingleDeviceSharding(jax.devices('cpu')[0])
+    meta = checkpointer.metadata(path)
+
+    if ckpt_key not in meta:
+        raise KeyError(f"Key '{ckpt_key}' not found in checkpoint. Available keys: {list(meta.keys())}")
+
+    subtree_meta = meta[ckpt_key]
+    item = {ckpt_key: jax.tree.map(
+        lambda m: np.empty(m.shape, dtype=m.dtype) if hasattr(m, 'shape') else m,
+        subtree_meta,
+    )}
+    transforms = {ckpt_key: orbax.checkpoint.Transform()}
+    restore_args = {ckpt_key: jax.tree.map(
+        lambda _: orbax.checkpoint.ArrayRestoreArgs(sharding=cpu_sharding),
+        subtree_meta,
+    )}
+
+    restored = checkpointer.restore(path, item=item, transforms=transforms, restore_args=restore_args)
+    return restored[ckpt_key]
+
+def load_train_run(path):
+    '''Load full checkpoint from orbax. Use load_checkpoints() when you only need one key.'''
+    if not os.path.isabs(path):
+        path = os.path.join(REPO_PATH, path)
+    checkpointer = orbax.checkpoint.PyTreeCheckpointer()
+    cpu_sharding = jax.sharding.SingleDeviceSharding(jax.devices('cpu')[0])
     try:
         restored = checkpointer.restore(path)
     except ValueError as e:
         if "sharding" in str(e):
-            # Checkpoint was saved on GPU but we're on a CPU-only machine.
-            # Re-restore with explicit CPU sharding for every leaf.
-            cpu_sharding = jax.sharding.SingleDeviceSharding(jax.devices('cpu')[0])
             target = checkpointer.metadata(path)
             restore_args = jax.tree.map(
                 lambda _: orbax.checkpoint.ArrayRestoreArgs(sharding=cpu_sharding),
@@ -70,9 +93,10 @@ def load_train_run(path):
             restored = checkpointer.restore(path, restore_args=restore_args)
         else:
             raise
-    # convert pytree leaves from np arrays to jax arrays
+    # convert pytree leaves from np arrays to jax arrays on CPU
+    cpu = jax.devices('cpu')[0]
     restored = jax.tree_util.tree_map(
-        lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,
+        lambda x: jax.device_put(x, cpu) if isinstance(x, np.ndarray) else x,
         restored
     )
     return restored
