@@ -185,6 +185,7 @@ def _load_rl_agents_for_variant(variant_key):
                 test_mode = cfg.pop("test_mode")
 
                 _rl_load_rng, init_rng = jax.random.split(_rl_load_rng)
+                cfg["custom_loader"] = {"name": "partial_load"}
                 policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
                     cfg, name, env, init_rng
                 )
@@ -210,9 +211,6 @@ def load_rl_agents():
     _load_rl_agents_for_variant((7, True))
     _load_rl_agents_for_variant((12, True))
     _load_rl_agents_for_variant((12, False))
-    # _load_rl_agents_for_variant((12, True))
-
-
 
 # Action constants
 NOOP = 0
@@ -809,7 +807,7 @@ def step():
         "success": True,
         "state": state,
         "human_action": last_step["human_action"] if last_step else None,
-        "ai_action": last_step["ai_action"] if last_step else None
+        "ai_action": last_step["ai_action"] if last_step else None,
         "state": state,
         "human_action": last_step["human_action"] if last_step else None,
         "ai_action": last_step["ai_action"] if last_step else None

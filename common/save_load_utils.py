@@ -35,7 +35,8 @@ def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None)
     '''Load checkpoints from orbax checkpoint.
     Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
     if custom_loader_cfg is None:
-        return _load_partial(path, ckpt_key)
+        restored = load_train_run(path)
+        return restored[ckpt_key]
     elif custom_loader_cfg["name"] == "open_ended":
         # Open-ended loader needs the full checkpoint
         restored = load_train_run(path)
@@ -45,6 +46,8 @@ def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None)
             return out["final_buffer"]["params"]
         else:
             return out[ckpt_key]
+    elif custom_loader_cfg["name"] == "partial_load":
+        return _load_partial(path, ckpt_key)
     else:
         raise ValueError(f"Invalid custom loader name: {custom_loader_cfg['name']}")
 
@@ -76,27 +79,17 @@ def _load_partial(path, ckpt_key):
     return restored[ckpt_key]
 
 def load_train_run(path):
-    '''Load full checkpoint from orbax. Use load_checkpoints() when you only need one key.'''
+    '''Load checkpoints from orbax checkpoint. 
+    Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
+    # determine whether path is relative or absolute
     if not os.path.isabs(path):
         path = os.path.join(REPO_PATH, path)
+    # load the checkpoint
     checkpointer = orbax.checkpoint.PyTreeCheckpointer()
-    cpu_sharding = jax.sharding.SingleDeviceSharding(jax.devices('cpu')[0])
-    try:
-        restored = checkpointer.restore(path)
-    except ValueError as e:
-        if "sharding" in str(e):
-            target = checkpointer.metadata(path)
-            restore_args = jax.tree.map(
-                lambda _: orbax.checkpoint.ArrayRestoreArgs(sharding=cpu_sharding),
-                target,
-            )
-            restored = checkpointer.restore(path, restore_args=restore_args)
-        else:
-            raise
-    # convert pytree leaves from np arrays to jax arrays on CPU
-    cpu = jax.devices('cpu')[0]
+    restored = checkpointer.restore(path)
+    # convert pytree leaves from np arrays to jax arrays
     restored = jax.tree_util.tree_map(
-        lambda x: jax.device_put(x, cpu) if isinstance(x, np.ndarray) else x,
+        lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,
         restored
     )
     return restored
