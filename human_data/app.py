@@ -92,24 +92,24 @@ _RL_AGENT_CONFIGS = {
             "idx_list": [[2, 0]],  # seed 2, checkpoint 0 — needs "checkpoints" key (default)
             "test_mode": False,
         },
-        {
-            "name": "brdiv-conf1",
-            "path": "human_data/teammates/brdiv-lbf-7-1/saved_train_run",
-            "actor_type": "actor_with_conditional_critic",
-            "ckpt_key": "final_params_conf",
-            "idx_list": [0, 1, 2],
-            "POP_SIZE": 5,
-            "test_mode": False,
-        },
-        {
-            "name": "brdiv-conf2",
-            "path": "human_data/teammates/brdiv-lbf-7-2/saved_train_run",
-            "actor_type": "actor_with_conditional_critic",
-            "ckpt_key": "final_params_conf",
-            "idx_list": [0, 1],
-            "POP_SIZE": 3,
-            "test_mode": False,
-        },
+        # {
+        #     "name": "brdiv-conf1",
+        #     "path": "human_data/teammates/brdiv-lbf-7-1/saved_train_run",
+        #     "actor_type": "actor_with_conditional_critic",
+        #     "ckpt_key": "final_params_conf",
+        #     "idx_list": [0, 1, 2],
+        #     "POP_SIZE": 5,
+        #     "test_mode": False,
+        # },
+        # {
+        #     "name": "brdiv-conf2",
+        #     "path": "human_data/teammates/brdiv-lbf-7-2/saved_train_run",
+        #     "actor_type": "actor_with_conditional_critic",
+        #     "ckpt_key": "final_params_conf",
+        #     "idx_list": [0, 1],
+        #     "POP_SIZE": 3,
+        #     "test_mode": False,
+        # },
     ],
     (7, True): [
         {
@@ -206,12 +206,11 @@ def _load_rl_agents_for_variant(variant_key):
 
 def load_rl_agents():
     """Eagerly load RL agents for the (7, 'same') variant at startup. Others load lazily on first use."""
-    # _load_rl_agents_for_variant((7, False))
+    _load_rl_agents_for_variant((7, False))
     _load_rl_agents_for_variant((7, True))
     _load_rl_agents_for_variant((12, True))
-    exit()
-    # _load_rl_agents_for_variant((12, False))
-    _load_rl_agents_for_variant((12, True))
+    _load_rl_agents_for_variant((12, False))
+    # _load_rl_agents_for_variant((12, True))
 
 
 
@@ -273,7 +272,7 @@ class GameSession:
             _load_rl_agents_for_variant(variant_key)
         rl_pool = RL_AGENTS.get(variant_key, [])
         if rl_pool:
-            if random.random() < 1.0:
+            if random.random() < 0.33:
                 agent = random.choice(rl_pool)
                 # print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
                 return agent
@@ -578,6 +577,7 @@ class MultiGameSession:
         self.current_idx = 0
         self.num_warmup = num_warmup  # First N games are warmup
         self.session_complete = False  # True when all games are done
+        self.last_activity = time.time()
         
         # Set first game if provided (already prewarmed or created)
         if first_game:
@@ -601,6 +601,7 @@ class MultiGameSession:
         return self.games[self.current_idx]
 
     def step(self, human_action):
+        self.last_activity = time.time()
         cur = self._current()
         prev_idx = self.current_idx
         cur.step(human_action)
@@ -695,23 +696,37 @@ def get_or_create_game(env_kwargs):
     # Fallback: create on-demand
     return GameSession(str(uuid.uuid4()), 50, env_kwargs=env_kwargs)
 
+SESSION_TTL = 30 * 60  # 30 minutes
+
 async def prewarm_games():
     """Continuously prewarm games in background, keeping a pool of each config type."""
     while True:
         try:
+            # Clean up stale game and replay sessions
+            now = time.time()
+            stale = [sid for sid, gs in game_sessions.items()
+                     if hasattr(gs, 'last_activity') and now - gs.last_activity > SESSION_TTL]
+            for sid in stale:
+                del game_sessions[sid]
+            if stale:
+                print(f"Cleaned up {len(stale)} stale game session(s)")
+
+            stale_replays = [rid for rid, rs in replay_sessions.items()
+                             if hasattr(rs, 'last_activity') and now - rs.last_activity > SESSION_TTL]
+            for rid in stale_replays:
+                del replay_sessions[rid]
+
             for cfg in BASE_ENV_CONFIGS:
                 key = _config_key(cfg)
                 with PREWARMING_LOCK:
                     if key not in PREWARMED_GAMES_POOL:
                         PREWARMED_GAMES_POOL[key] = []
 
-                    if len(PREWARMED_GAMES_POOL[key]) < 2:
-                        # print(f"Prewarming {cfg}...")
+                    if len(PREWARMED_GAMES_POOL[key]) < 3:
                         gs = GameSession(str(uuid.uuid4()), 50, env_kwargs=cfg.copy())
                         PREWARMED_GAMES_POOL[key].append(gs)
-                        # print(f"{cfg} ready")
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(2.0)
         except Exception as e:
             print(f"Error prewarming: {e}")
             await asyncio.sleep(2)
@@ -809,6 +824,7 @@ def save_episode():
     # If this is a multi-game session, save all games
     if hasattr(game, 'save_all'):
         paths = game.save_all(player_name)
+        del game_sessions[session_id]
         if paths:
             names = [os.path.basename(p) for p in paths]
             return jsonify({"success": True, "message": f"Saved episodes: {', '.join(names)}"})
@@ -816,6 +832,7 @@ def save_episode():
             return jsonify({"success": False, "error": "No episode data to save"}), 400
     else:
         filepath = game.save_episode(player_name)
+        del game_sessions[session_id]
         if filepath:
             return jsonify({"success": True, "message": f"Episode saved to {os.path.basename(filepath)}"})
         else:
@@ -942,18 +959,6 @@ def start_background_loop(loop):
     loop.run_forever()
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("LBF Human Interaction Server")
-    print("=" * 60)
-    print("\nControls:")
-    print("  W/↑    : Move Up")
-    print("  S/↓    : Move Down")
-    print("  A/←    : Move Left")
-    print("  D/→    : Move Right")
-    print("  SPACE  : Load/Collect Food")
-    print("  Q      : No Operation (Wait)")
-    print("\nStarting server at http://localhost:8998")
-    print("=" * 60)
     
     threading.Thread(target=start_background_loop, args=(BACKGROUND_LOOP,), daemon=True).start()
 
