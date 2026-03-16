@@ -19,6 +19,12 @@ from social_laws.reppo_joint import run_training as run_reppo_joint_training
 from social_laws.creppo_single_agent_projection import run_training as run_creppo_training
 from social_laws.creppo_joint import run_training as run_creppo_joint_training
 
+from envs import make_env
+from envs.log_wrapper import LogWrapper
+from social_laws.common.run_single_agent_joint_eval import run_single_agent_joint_eval
+from social_laws.common.run_single_agent_reppo_joint_eval import run_single_agent_joint_eval as run_single_agent_reppo_joint_eval
+from social_laws.common.run_single_agent_creppo_joint_eval import run_single_agent_joint_eval as run_single_agent_creppo_joint_eval
+
 SEEDRANGE = (1, int(1e9))
 
 @hydra.main(version_base=None, config_path="configs", config_name="base_config")
@@ -61,6 +67,7 @@ def run_training(cfg):
     agent_policies = []
     agent_init_params = []
     agent_params = []
+    agent_eval_checkpoints = []
     agent_vf_policies = []
     agent_vf_init_params = []
     agent_vf_params = []
@@ -78,10 +85,22 @@ def run_training(cfg):
             assert cfg["value_function"]["NETWORK_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the DRQN network type must be s5 or rnn."
 
         for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param = run_ppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_ppo_training(cfg, wandb_logger, agent_idx=agent_idx)
             agent_policies.append(agent_policy)
             agent_init_params.append(agent_init_param)
             agent_params.append(agent_param)
+            agent_eval_checkpoints.append(eval_checkpoints)
+
+        env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
+        env_kwargs["render_dir"] = os.path.join("render", "ppo", "Joint_Eval")
+        env_kwargs["done_condition"] = "all"  # Joint eval: terminate as soon as all agents take their picture
+        env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
+        env = LogWrapper(env)
+
+        run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env, 
+                                    agent_eval_checkpoints, agent_policies, env.horizon, 
+                                    cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL, 
+                                    render=True, agent_test_mode=False)
 
         # Value function estimation for joint policies
         # Creates value functions for joint policies for all agents in the environment
@@ -101,17 +120,41 @@ def run_training(cfg):
 
     elif cfg["algorithm"]["ALG"] == "reppo":
         for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param = run_reppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_reppo_training(cfg, wandb_logger, agent_idx=agent_idx)
             agent_policies.append(agent_policy)
             agent_init_params.append(agent_init_param)
             agent_params.append(agent_param)
+            agent_eval_checkpoints.append(eval_checkpoints)
+
+        env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
+        env_kwargs["render_dir"] = os.path.join("render", "reppo", "Joint_Eval")
+        env_kwargs["done_condition"] = "all"  # Joint eval: terminate as soon as all agents take their picture
+        env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
+        env = LogWrapper(env)
+
+        run_single_agent_reppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env, 
+                                          agent_eval_checkpoints, agent_policies, env.horizon, 
+                                          cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL, 
+                                          render=True, agent_test_mode=True)
 
     elif cfg["algorithm"]["ALG"] == "creppo":
         for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param = run_creppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_creppo_training(cfg, wandb_logger, agent_idx=agent_idx)
             agent_policies.append(agent_policy)
             agent_init_params.append(agent_init_param)
             agent_params.append(agent_param)
+            agent_eval_checkpoints.append(eval_checkpoints)
+
+        env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
+        env_kwargs["render_dir"] = os.path.join("render", "creppo", "Joint_Eval")
+        env_kwargs["done_condition"] = "all"  # Joint eval: terminate as soon as all agents take their picture
+        env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
+        env = LogWrapper(env)
+
+        run_single_agent_creppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env, 
+                                           agent_eval_checkpoints, agent_policies, env.horizon, 
+                                           cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL, 
+                                           render=True, agent_test_mode=True)
 
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment

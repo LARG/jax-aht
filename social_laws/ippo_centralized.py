@@ -1,12 +1,6 @@
 '''
-Script for training a PPO agent for social laws single agent projection.
-Does not support training against heuristic partner agents.
-
-Command to run PPO single agent projection training:
-python social_laws/run.py algorithm=ppo/lbf task=lbf label=test_ppo_single_agent_projection
-
-Suggested debug command:
-python social_laws/run.py algorithm=ppo/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
+Based on the IPPO implementation from JaxMarl. Trains a parameter-shared, MLP IPPO agent on a
+fully cooperative multi-agent environment. Note that this code is only compatible with MLP policies.
 '''
 import os
 import shutil
@@ -21,22 +15,36 @@ import optax
 import hydra
 from flax.training.train_state import TrainState
 
-from social_laws.common.initialize_agents import initialize_agent
-from social_laws.common.run_episodes import run_episodes_vmap
+from social_laws.common.run_episodes_ippo_centralized import run_episodes_vmap
+from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, \
+    initialize_rnn_agent, initialize_pseudo_actor_with_double_critic, initialize_pseudo_actor_with_conditional_critic
 from common.plot_utils import get_stats, get_metric_names
 from common.save_load_utils import save_train_run
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from marl.ppo_utils import _create_minibatches, Transition, unbatchify
+from marl.ppo_utils import Transition, batchify, unbatchify, _create_minibatches
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+def initialize_agent(actor_type, algorithm_config, env, init_rng):
+    if actor_type == "s5":
+        policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng)
+    elif actor_type == "mlp":
+        policy, init_params = initialize_mlp_agent(algorithm_config, env, init_rng)
+    elif actor_type == "rnn":
+        policy, init_params = initialize_rnn_agent(algorithm_config, env, init_rng)
+    elif actor_type == "pseudo_actor_with_double_critic":
+        policy, init_params = initialize_pseudo_actor_with_double_critic(algorithm_config, env, init_rng)
+    elif actor_type == "pseudo_actor_with_conditional_critic":
+        policy, init_params = initialize_pseudo_actor_with_conditional_critic(algorithm_config, env, init_rng)
+    return policy, init_params
 
-def train_ppo_agent(config, env, train_rng,
-                    policy, init_params, agent_idx):
+
+def train_ippo_agent(config, env, train_rng,
+                    policy, init_params):
     '''
-    Train PPO single agent projection using the given initial parameters.
+    Train IPPO the given initial parameters.
 
     Args:
         config: dict, config for the training
@@ -46,27 +54,23 @@ def train_ppo_agent(config, env, train_rng,
         init_params: dict, initial parameters for the agent
     '''
     # ------------------------------
-    # Build the PPO single agent projection training function
+    # Build the IPPO training function
     # ------------------------------
-    def make_ppo_train(config):
-        '''The controlled agent is based on the agent_idx parameter'''
+    def make_ippo_train(config):
         num_agents = env.num_agents
-        # assert num_agents == 2, "This snippet assumes exactly 2 agents."
-
-        # config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
-        # config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
-
-        config["NUM_ACTIONS"] = env.action_space(f"agent_{agent_idx}").n
-        assert config["NUM_CONTROLLED_ACTORS"] % config["NUM_MINIBATCHES"] == 0, "NUM_CONTROLLED_ACTORS must be divisible by NUM_MINIBATCHES"
-        assert config["NUM_CONTROLLED_ACTORS"] >= config["NUM_MINIBATCHES"], "NUM_CONTROLLED_ACTORS must be >= NUM_MINIBATCHES"
+        config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
+        config["NUM_UPDATES"] = (
+            config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
+        )
+        config["MINIBATCH_SIZE"] = (
+            config["NUM_ACTORS"] * config["ROLLOUT_LENGTH"] // config["NUM_MINIBATCHES"]
+        )
 
         def linear_schedule(count):
             frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
             return config["LR"] * frac
 
-        def train(rng, agent_idx):
+        def train(rng):
             if config["ANNEAL_LR"]:
                 tx = optax.chain(
                     optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
@@ -84,20 +88,8 @@ def train_ppo_agent(config, env, train_rng,
                 tx=tx,
             )
 
-            # Create functions to get agent-specific data based on agent_idx
-            # This avoids indexing with traced values
-            def get_agent_data(data_dict, idx):
-                """Select data for agent based on index using switch for any number of agents"""
-                branches = [lambda d=data_dict, k=agent_key: d[k] for agent_key in env.agents]
-                return jax.lax.switch(idx, branches)
-
-            def set_agent_data(data_dict, idx, value):
-                """Set data for agent based on index using switch for any number of agents"""
-                branches = [lambda d=data_dict, k=agent_key, v=value: {**d, k: v} for agent_key in env.agents]
-                return jax.lax.switch(idx, branches)
-
             #  Init hstates
-            init_hstate = policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
+            init_hstate = policy.init_hstate(config["NUM_ACTORS"])
 
             def _env_step(runner_state, unused):
                 """
@@ -111,8 +103,11 @@ def train_ppo_agent(config, env, train_rng,
 
                  # Get available actions for the agent from environment state
                 avail_actions = env.get_avail_actions(env_state.env_state)
-                avail_actions = jax.lax.stop_gradient(avail_actions)
-                avail_actions = get_agent_data(avail_actions, agent_idx).astype(jnp.float32)
+                avail_actions = jax.lax.stop_gradient(batchify(avail_actions,
+                    env.agents, config["NUM_ACTORS"]).astype(jnp.float32))
+
+                prev_obs_batch = batchify(prev_obs, env.agents, config["NUM_ACTORS"])
+                prev_done_batch = batchify(prev_done, env.agents, config["NUM_ACTORS"])
 
                 # Note that we do not need to reset the hidden states for the agents
                 # as the recurrent states are automatically reset when done is True.
@@ -120,8 +115,8 @@ def train_ppo_agent(config, env, train_rng,
                 # Controlled Agent action, value, log_prob
                 act, val, pi, new_hstate = policy.get_action_value_policy(
                     params=train_state.params,
-                    obs=get_agent_data(prev_obs, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
-                    done=get_agent_data(prev_done, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
+                    obs=prev_obs_batch.reshape(1, config["NUM_ACTORS"], -1),
+                    done=prev_done_batch.reshape(1, config["NUM_ACTORS"]),
                     avail_actions=avail_actions,
                     hstate=hstate,
                     rng=actor_rng
@@ -132,56 +127,33 @@ def train_ppo_agent(config, env, train_rng,
                 logp = logp.squeeze(axis=0)
                 val = val.squeeze(axis=0)
 
-                # Combine actions into the env format
-                # No-op for uncontrolled agents - use JAX conditional for traced agent_idx
-                def make_combined_actions(idx, actions):
-                    """Create combined actions with controlled agent at position idx"""
-                    branches = []
-                    for i in range(num_agents):
-                        def make_branch(pos, a):
-                            # Create list with actions at position pos, zeros elsewhere
-                            parts = [jnp.zeros_like(a) if j != pos else a for j in range(num_agents)]
-                            return jnp.concatenate(parts, axis=0)
-                        branches.append(partial(make_branch, i))
-                    return jax.lax.switch(idx, branches, actions)
-
-                combined_actions = make_combined_actions(agent_idx, act)  # shape (num_agents*num_envs,)
-                env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS"], num_agents)
-                env_act = {k: v.flatten() for k, v in env_act.items()}
+                env_act = unbatchify(act, env.agents, config["NUM_ENVS"], env.num_agents)
+                env_act = {k:v.flatten() for k,v in env_act.items()}
 
                 # Step env
                 step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
                 (obs_next, obs_full_next), env_state_next, reward, done_next, info = jax.vmap(env.step, in_axes=(0,0,0))(
                     step_rngs, env_state, env_act
                 )
-                # note that num_actors = num_envs * num_agents
-                # Get agent_idx info from info dict, excluding certain keys
-                keys_to_exclude = {'pre_reset_state', 'pre_reset_obs'}  # Add any keys that shouldn't be indexed
 
-                def filter_agent_info(path, x):
-                    # Get the key name from the path
-                    key_name = path[-1].key if hasattr(path[-1], 'key') else None
-                    if key_name in keys_to_exclude or x.ndim <= 1:
-                        return x
-                    else:
-                        return x[:, agent_idx]
-
-                info = jax.tree_util.tree_map_with_path(filter_agent_info, info)
+                # Filter out rendering-only fields (pre_reset_state, pre_reset_obs) which
+                # have incompatible shapes for the per-actor reshape
+                info = {k: v for k, v in info.items() if k not in ('pre_reset_state', 'pre_reset_obs')}
+                info = jax.tree.map(lambda x: x.reshape((config["NUM_ACTORS"])), info)
 
                 # Store agent_idx data in transition
                 transition = Transition(
-                    done=get_agent_data(done_next, agent_idx), # shape (num_envs,)
+                    done=batchify(done_next, env.agents, config["NUM_ACTORS"]).squeeze(), # shape (num_envs,)
                     action=act, # shape (num_envs,)
                     value=val, # shape (num_envs,)
-                    reward=get_agent_data(reward, agent_idx), # shape (num_envs,)
+                    reward=batchify(reward, env.agents, config["NUM_ACTORS"]).squeeze(), # shape (num_envs,)
                     log_prob=logp, # shape (num_envs,)
-                    obs=get_agent_data(prev_obs, agent_idx), # shape (num_envs, obs_dim)
+                    obs=prev_obs_batch, # shape (num_envs, obs_dim)
                     info=info,
                     avail_actions=avail_actions # shape (num_envs, num_actions)
                 )
 
-                new_runner_state = (train_state, env_state_next, obs_next, done_next,
-                                    new_hstate, rng)
+                new_runner_state = (train_state, env_state_next, obs_next, done_next, new_hstate, rng)
                 return new_runner_state, transition
 
             def _calculate_gae(traj_batch, last_val):
@@ -265,7 +237,7 @@ def train_ppo_agent(config, env, train_rng,
             def _update_epoch(update_state, unused):
                 train_state, init_hstate, traj_batch, advantages, targets, rng = update_state
                 rng, perm_rng = jax.random.split(rng)
-                minibatches = _create_minibatches(traj_batch, advantages, targets, init_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
+                minibatches = _create_minibatches(traj_batch, advantages, targets, init_hstate, config["NUM_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
                 train_state, losses_and_grads = jax.lax.scan(
                     _update_minbatch, train_state, minibatches
                 )
@@ -294,14 +266,16 @@ def train_ppo_agent(config, env, train_rng,
 
                 # 2) advantage
                 # Get available actions for agent 0 from environment state
-                avail_actions_0 = get_agent_data(env.get_avail_actions(env_state.env_state), agent_idx).astype(jnp.float32)
+                avail_actions = env.get_avail_actions(env_state.env_state)
+                avail_actions = jax.lax.stop_gradient(batchify(avail_actions,
+                    env.agents, config["NUM_ACTORS"]).astype(jnp.float32))
 
                 # Get final value estimate for completed trajectory
                 _, last_val, _, _ = policy.get_action_value_policy(
                     params=train_state.params,
-                    obs=get_agent_data(obs, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
-                    done=get_agent_data(done, agent_idx).reshape(1, config["NUM_CONTROLLED_ACTORS"]),
-                    avail_actions=jax.lax.stop_gradient(avail_actions_0),
+                    obs=batchify(obs, env.agents, config["NUM_ACTORS"]).reshape(1, config["NUM_ACTORS"], -1),
+                    done=batchify(done, env.agents, config["NUM_ACTORS"]).reshape(1, config["NUM_ACTORS"]),
+                    avail_actions=avail_actions,
                     hstate=hstate,
                     rng=jax.random.PRNGKey(0)  # Dummy key since we're just extracting the value
                 )
@@ -331,7 +305,7 @@ def train_ppo_agent(config, env, train_rng,
                 new_runner_state = (train_state, rng, rng_eval, update_steps + 1)
                 return (new_runner_state, metric)
 
-            # PPO Update and Checkpoint saving
+            # IPPO Update and Checkpoint saving
             ckpt_and_eval_interval = config["NUM_UPDATES"] // max(1, config["NUM_CHECKPOINTS"] - 1)  # -1 because we store a ckpt at the last update
             num_ckpts = config["NUM_CHECKPOINTS"]
 
@@ -341,17 +315,12 @@ def train_ppo_agent(config, env, train_rng,
                     lambda x: jnp.zeros((num_ckpts,) + x.shape, x.dtype),
                     params_pytree)
 
-            def init_eval_ckpt_array(params_pytree):
-                return jax.tree.map(
-                    lambda x: jnp.zeros((int(config["NUM_UPDATES"])+1,) + x.shape, x.dtype),
-                    params_pytree)
-
             max_episode_steps = env.horizon # config["ROLLOUT_LENGTH"]
 
             def _update_step_with_ckpt(state_with_ckpt, unused):
-                (update_state, checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
+                (update_state, checkpoint_array, ckpt_idx, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
 
-                # Single PPO update
+                # Single IPPO update
                 new_update_state, metric = _update_step(
                     update_state,
                     None
@@ -364,14 +333,10 @@ def train_ppo_agent(config, env, train_rng,
 
 
                 def store_and_eval_ckpt(args):
-                    ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
+                    ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
                     new_ckpt_arr = jax.tree.map(
                         lambda c_arr, p: c_arr.at[cidx].set(p),
                         ckpt_arr, train_state.params
-                    )
-                    new_eval_ckpt_arr = jax.tree.map(
-                        lambda e_arr, p: e_arr.at[eval_cidx].set(p),
-                        eval_ckpt_arr, train_state.params
                     )
 
                     if config["FIXED_EVAL"]:
@@ -379,71 +344,57 @@ def train_ppo_agent(config, env, train_rng,
                     else:
                         rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                     ckpt_eval_eps_last_infos = run_episodes_vmap(
-                        eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
+                        eval_rng, env, agent_param=train_state.params, agent_policy=policy,
                         max_episode_steps=max_episode_steps,
                         num_eps=config["NUM_EVAL_EPISODES"])
-                    return (new_ckpt_arr, cidx + 1, new_eval_ckpt_arr, eval_cidx + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
+                    return (new_ckpt_arr, cidx + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
 
                 def skip_ckpt_and_eval(args):
-                    ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
-                    new_eval_ckpt_arr = jax.tree.map(
-                        lambda e_arr, p: e_arr.at[eval_cidx].set(p),
-                        eval_ckpt_arr, train_state.params
-                    )
                     def do_eval(eval_args):
-                        ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
+                        ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
                         if config["FIXED_EVAL"]:
                             eval_rng = rng_eval
                         else:
                             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                         eval_eps_last_infos = run_episodes_vmap(
-                            eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
+                            eval_rng, env, agent_param=train_state.params, agent_policy=policy,
                             max_episode_steps=max_episode_steps,
                             num_eps=config["NUM_EVAL_EPISODES"])
-                        return (ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+                        return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
 
                     def skip_eval(eval_args):
                         return eval_args
 
-                    (ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos) = jax.lax.cond(
+                    (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos) = jax.lax.cond(
                         config["TRAIN_EVAL"],
                         do_eval,
                         skip_eval,
-                        (ckpt_arr, cidx, new_eval_ckpt_arr, eval_cidx + 1, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info)
+                        args
                     )
 
-                    return (ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+                    return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
 
-                (checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, rng, rng_eval, ckpt_eval_eps_last_infos, eval_eps_last_infos) = jax.lax.cond(
-                    to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
+                (checkpoint_array, ckpt_idx, rng, rng_eval, ckpt_eval_eps_last_infos, eval_eps_last_infos) = jax.lax.cond(
+                    to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array, ckpt_idx, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
                 )
 
                 metric["ckpt_eval_ep_last_info"] = ckpt_eval_eps_last_infos
                 metric["eval_ep_last_info"] = eval_eps_last_infos
                 return ((train_state, rng, rng_eval, update_steps),
-                         checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
+                         checkpoint_array, ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
 
             checkpoint_array = init_ckpt_array(train_state.params)
-            eval_checkpoint_array = init_eval_ckpt_array(train_state.params)
             ckpt_idx = 0
-            eval_ckpt_idx = 0
-
-            # Store initial params in eval checkpoint array
-            eval_checkpoint_array = jax.tree.map(
-                lambda e_arr, p: e_arr.at[eval_ckpt_idx].set(p),
-                eval_checkpoint_array, train_state.params
-            )
-            eval_ckpt_idx = eval_ckpt_idx + 1
 
             rng, rng_train = jax.random.split(rng, 2)
 
-            rng_eval = jax.random.PRNGKey(config["EVAL_SEED"])# + agent_idx)# + 14)
+            rng_eval = jax.random.PRNGKey(config["EVAL_SEED"])
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
             if config["FIXED_EVAL"]:
                 eval_rng = rng_eval
 
             # Init eval return infos
-            eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
+            eval_eps_last_infos = run_episodes_vmap(eval_rng, env,
                                     agent_param=train_state.params, agent_policy=policy,
                                     max_episode_steps=max_episode_steps,
                                     num_eps=config["NUM_EVAL_EPISODES"])
@@ -452,7 +403,7 @@ def train_ppo_agent(config, env, train_rng,
             update_steps = 0
 
             update_runner_state = (train_state, rng_train, rng_eval, update_steps)
-            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, eval_eps_last_infos, eval_eps_last_infos)
+            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos, eval_eps_last_infos)
 
             state_with_ckpt, metrics = jax.lax.scan(
                 _update_step_with_ckpt,
@@ -461,12 +412,11 @@ def train_ppo_agent(config, env, train_rng,
                 length=config["NUM_UPDATES"]
             )
 
-            (final_runner_state, checkpoint_array, final_ckpt_idx, eval_checkpoint_array, final_eval_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos) = state_with_ckpt
+            (final_runner_state, checkpoint_array, final_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos) = state_with_ckpt
             out = {
                 "final_params": final_runner_state[0].params,
                 "metrics": metrics,  # shape (NUM_UPDATES, ...)
                 "checkpoints": checkpoint_array,
-                "eval_checkpoints": eval_checkpoint_array,
             }
 
             if env._render:
@@ -477,7 +427,7 @@ def train_ppo_agent(config, env, train_rng,
                 else:
                     rng_eval, eval_rng = jax.random.split(rng_eval, 2)
                 params = final_runner_state[0].params
-                out["render_outs"] = run_episodes_vmap(eval_rng, env, agent_idx,
+                out["render_outs"] = run_episodes_vmap(eval_rng, env,
                                                     agent_param=params, agent_policy=policy,
                                                     max_episode_steps=env.horizon,
                                                     num_eps=5, render=True)
@@ -486,17 +436,17 @@ def train_ppo_agent(config, env, train_rng,
         return train
 
     # ------------------------------
-    # Actually run the PPO training
+    # Actually run the IPPO training
     # ------------------------------
     rngs = jax.random.split(train_rng, config["NUM_TRAIN_SEEDS"])
 
     # Run training seeds in parallel using vmap
-    train_fn = make_ppo_train(config)
-    out = jax.vmap(train_fn, in_axes=(0, None))(rngs, agent_idx)
+    train_fn = make_ippo_train(config)
+    out = jax.vmap(train_fn, in_axes=(0))(rngs)
     return out
 
-def run_training(config, wandb_logger, agent_idx=0):
-    '''Run single agent projection training.
+def run_training(config, wandb_logger):
+    '''Run IPPO training.
 
     Args:
         config: dict, config for the training
@@ -505,30 +455,25 @@ def run_training(config, wandb_logger, agent_idx=0):
 
     # Create only one environment instance
     env_kwargs = dict(algorithm_config["ENV_KWARGS"])
-
-    env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
-    env_kwargs["render_dir"] = os.path.join("render", "ppo", f"agent_{agent_idx + 1}")
-    env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as active agent takes their picture
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
-    rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])# + agent_idx)# + 7)
+    rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     _, init_rng, train_rng = jax.random.split(rng, 3)
 
     # Initialize agent
-    policy, init_params = initialize_agent(algorithm_config, env, init_rng, agent_index=agent_idx)
+    policy, init_params = initialize_agent(algorithm_config["ACTOR_TYPE"], algorithm_config, env, init_rng)
 
-    log.info(f"Starting single agent projection training for agent {agent_idx}...")
+    log.info(f"Starting IPPO training ...")
     start_time = time.perf_counter()
 
     # Run the training
-    out = train_ppo_agent(
+    out = train_ippo_agent(
         config=algorithm_config,
         env=env,
         train_rng=train_rng,
         policy=policy,
-        init_params=init_params,
-        agent_idx=agent_idx
+        init_params=init_params
     )
 
     elapsed_time = time.perf_counter() - start_time
@@ -537,26 +482,26 @@ def run_training(config, wandb_logger, agent_idx=0):
     seconds, rem = divmod(rem, 1)
     milliseconds = int(rem * 1000)
     microseconds = int((rem * 1_000_000) % 1000)
-    log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {elapsed_time:.2f}s")
-    log.info(f"Single Agent Projection Training completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
+    log.info(f"IPPO Training completed in {elapsed_time:.2f}s")
+    log.info(f"IPPO Training completed in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
     # process and log metrics
-    log.info(f"Starting single agent projection logging for agent {agent_idx}...")
+    log.info(f"Starting IPPO logging ...")
     start_time = time.perf_counter()
     metric_names = get_metric_names(config["ENV_NAME"])
-    log_metrics(env, config, out, wandb_logger, metric_names, agent_idx)
+    log_metrics(env, config, out, wandb_logger, metric_names)
     elapsed_time = time.perf_counter() - start_time
     hours, rem = divmod(elapsed_time, 3600)
     minutes, rem = divmod(rem, 60)
     seconds, rem = divmod(rem, 1)
     milliseconds = int(rem * 1000)
     microseconds = int((rem * 1_000_000) % 1000)
-    log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {elapsed_time:.2f}s")
-    log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
+    log.info(f"IPPO Logging completed in {elapsed_time:.2f}s")
+    log.info(f"IPPO Logging completed in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
-    return out["final_params"], policy, init_params, out["eval_checkpoints"]
+    return out["final_params"], policy, init_params
 
-def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: int):
+def log_metrics(env, config, train_out, logger, metric_names: tuple):
     """Process training metrics and log them using the provided logger.
 
     Args:
@@ -565,7 +510,6 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
         train_out: dict, the logs from training
         logger: Logger, instance to log metrics
         metric_names: tuple, names of metrics to extract from training logs
-        agent_idx: int, index of the trained agent
     """
     train_metrics = train_out["metrics"]
 
@@ -579,13 +523,14 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     all_agent__actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
     all_agent_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
     all_agent_grad_norms = np.asarray(train_metrics["avg_grad_norm"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
+
     # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
     all_ckpt_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_ckpt_agent_returns = all_ckpt_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
-    all_agent_returns = all_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
-    average_ckpt_agent_rets_per_iter = np.mean(all_ckpt_agent_returns, axis=(0, 2)) # shape (num_updates,)
-    average_agent_rets_per_iter = np.mean(all_agent_returns, axis=(0, 2)) # shape (num_updates,)
+    average_ckpt_rets_per_iter = np.mean(np.sum(all_ckpt_returns, axis=(3)), axis=(0, 2)) # shape (num_updates,)
+    average_rets_per_iter = np.mean(np.sum(all_returns, axis=(3)), axis=(0, 2)) # shape (num_updates,)
+    average_ckpt_agent_rets_per_iter = np.mean(all_ckpt_returns, axis=(0, 2)) # shape (num_updates,)
+    average_agent_rets_per_iter = np.mean(all_returns, axis=(0, 2)) # shape (num_updates,)
 
     # Process loss metrics - average across train seeds, partners and minibatches dims
     # Loss metrics shape should be (n_train_seeds, num_updates, ...)
@@ -595,19 +540,24 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
     average_agent_grad_norms = np.mean(all_agent_grad_norms, axis=(0, 2, 3)) # shape (num_updates,)
 
     # Log metrics for each update step
+    num_agents = env.num_agents
     num_updates = len(average_agent_value_losses)
     for step in range(num_updates):
         for stat_name, stat_data in train_stats.items():
             # second dimension contains the mean and std of the metric
             stat_mean = stat_data[step, 0]
-            logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/{stat_name}", stat_mean, train_step=step, commit=True)
+            logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
 
-        logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/Return", average_agent_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Agent_{agent_idx + 1}_Proj/CheckpointReturn", average_ckpt_agent_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/ValueLoss", average_agent_value_losses[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/ActorLoss", average_agent_actor_losses[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/EntropyLoss", average_agent_entropy_losses[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Agent_{agent_idx + 1}_Proj/GradNorm", average_agent_grad_norms[step], train_step=step, commit=True)
+        for agent_id in range(num_agents):
+             logger.log_item(f"Eval/Agent_{agent_id}/Return", average_agent_rets_per_iter[step, agent_id], train_step=step, commit=True)
+             logger.log_item(f"Eval/Agent_{agent_id}/CheckpointReturn", average_ckpt_agent_rets_per_iter[step, agent_id], train_step=step, commit=True)
+
+        logger.log_item(f"Eval/Return", average_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/CheckpointReturn", average_ckpt_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Train/ValueLoss", average_agent_value_losses[step], train_step=step, commit=True)
+        logger.log_item(f"Train/ActorLoss", average_agent_actor_losses[step], train_step=step, commit=True)
+        logger.log_item(f"Train/EntropyLoss", average_agent_entropy_losses[step], train_step=step, commit=True)
+        logger.log_item(f"Train/GradNorm", average_agent_grad_norms[step], train_step=step, commit=True)
         logger.commit()
 
     # Saving artifacts
@@ -623,13 +573,13 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: 
 
         for eval_ep in range(num_episodes):
             logger.log_video(
-                tag=f"Videos/Agent_{agent_idx + 1}_Proj/Agent_{agent_idx}_Episode_{eval_ep}",
+                tag=f"Videos/Episode_{eval_ep}",
                 path=os.path.join(env._render_dir, f"{env._render_name}_ep_{eval_ep}.gif")
             )
 
-    out_savepath = save_train_run(train_out, savedir, savename=f"PPO_Agent_{agent_idx + 1}_Proj_Train_Run")
+    out_savepath = save_train_run(train_out, savedir, savename=f"IPPO_Agent_Train_Run")
     if config["logger"]["log_train_out"]:
-        logger.log_artifact(name=f"PPO_Agent_{agent_idx + 1}_Proj_Train_Run", path=out_savepath, type_name="single_agent_proj_train_run")
+        logger.log_artifact(name=f"IPPO_Agent_Train_Run", path=out_savepath, type_name="train_run")
         # Cleanup locally logged out file
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)

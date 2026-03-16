@@ -414,7 +414,7 @@ def train_ppo_joint_agents(config, env, optimal_env, train_rng,
                     eval_rng = rng_eval
                 else:
                     rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                return eval_rng, run_episodes_vmap(
+                return rng_eval, run_episodes_vmap(
                     eval_rng, env, optimal_env, agent_idx,
                     agent_params=[train_state.params for train_state in train_states],
                     agent_policies=joint_policies,
@@ -480,6 +480,8 @@ def train_ppo_joint_agents(config, env, optimal_env, train_rng,
 
             rng_eval = jax.random.PRNGKey(config["EVAL_SEED"])# + agent_idx)# + 42)
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
+            if config["FIXED_EVAL"]:
+                eval_rng = rng_eval
 
             # Init eval return infos
             rng_eval, eval_eps_last_infos = _run_eval(eval_rng)

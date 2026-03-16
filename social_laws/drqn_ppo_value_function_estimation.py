@@ -516,7 +516,8 @@ def train_drqnppo_agent(config, env, train_rng,
 
             rng_eval = jax.random.PRNGKey(config["EVAL_SEED"])# + agent_idx)# + 14)
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-
+            if config["FIXED_EVAL"]:
+                eval_rng = rng_eval
 
             # Init eval return infos
             eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,

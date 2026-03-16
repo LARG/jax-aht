@@ -422,10 +422,15 @@ def train_drqn_agent(config, env, train_rng,
                     lambda x: jnp.zeros((num_ckpts,) + x.shape, x.dtype),
                     params_pytree)
 
+            def init_eval_ckpt_array(params_pytree):
+                return jax.tree.map(
+                    lambda x: jnp.zeros((int(config["NUM_UPDATES"]) + 1,) + x.shape, x.dtype),
+                    params_pytree)
+
             max_episode_steps = env.horizon # config["ROLLOUT_LENGTH"]
 
             def _update_step_with_ckpt(state_with_ckpt, unused):
-                (update_state, checkpoint_array, ckpt_idx, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
+                (update_state, checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, init_ckpt_eval_last_info, init_eval_last_info) = state_with_ckpt
 
                 # Single DRQN update step
                 new_update_state, metric = _update_step(
@@ -440,10 +445,14 @@ def train_drqn_agent(config, env, train_rng,
 
 
                 def store_and_eval_ckpt(args):
-                    ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
+                    ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
                     new_ckpt_arr = jax.tree.map(
                         lambda c_arr, p: c_arr.at[cidx].set(p),
                         ckpt_arr, train_state.params
+                    )
+                    new_eval_ckpt_arr = jax.tree.map(
+                        lambda e_arr, p: e_arr.at[eval_cidx].set(p),
+                        eval_ckpt_arr, train_state.params
                     )
 
                     if config["FIXED_EVAL"]:
@@ -454,11 +463,16 @@ def train_drqn_agent(config, env, train_rng,
                         eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
                         max_episode_steps=max_episode_steps,
                         num_eps=config["NUM_EVAL_EPISODES"], agent_test_mode=True)  # Use test mode for eval
-                    return (new_ckpt_arr, cidx + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
+                    return (new_ckpt_arr, cidx + 1, new_eval_ckpt_arr, eval_cidx + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
 
                 def skip_ckpt_and_eval(args):
+                    ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = args
+                    new_eval_ckpt_arr = jax.tree.map(
+                        lambda e_arr, p: e_arr.at[eval_cidx].set(p),
+                        eval_ckpt_arr, train_state.params
+                    )
                     def do_eval(eval_args):
-                        ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
+                        ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info = eval_args
                         if config["FIXED_EVAL"]:
                             eval_rng = rng_eval
                         else:
@@ -467,37 +481,47 @@ def train_drqn_agent(config, env, train_rng,
                             eval_rng, env, agent_idx, agent_param=train_state.params, agent_policy=policy,
                             max_episode_steps=max_episode_steps,
                             num_eps=config["NUM_EVAL_EPISODES"], agent_test_mode=True)  # Use test mode for eval
-                        return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+                        return (ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
 
                     def skip_eval(eval_args):
                         return eval_args
 
-                    (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos) = jax.lax.cond(
+                    (ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos) = jax.lax.cond(
                         config["TRAIN_EVAL"],
                         do_eval,
                         skip_eval,
-                        args
+                        (ckpt_arr, cidx, new_eval_ckpt_arr, eval_cidx + 1, rng, rng_eval, prev_ckpt_eval_ret_info, prev_eval_ret_info)
                     )
 
-                    return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
+                    return (ckpt_arr, cidx, eval_ckpt_arr, eval_cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
 
-                (checkpoint_array, ckpt_idx, rng, rng_eval, ckpt_eval_eps_last_infos, eval_eps_last_infos) = jax.lax.cond(
-                    to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array, ckpt_idx, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
+                (checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, rng, rng_eval, ckpt_eval_eps_last_infos, eval_eps_last_infos) = jax.lax.cond(
+                    to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
                 )
 
                 metric["ckpt_eval_ep_last_info"] = ckpt_eval_eps_last_infos
                 metric["eval_ep_last_info"] = eval_eps_last_infos
                 return ((train_state, buffer_state, rng, rng_eval, update_steps),
-                         checkpoint_array, ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
+                         checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
 
             checkpoint_array = init_ckpt_array(train_state.params)
+            eval_checkpoint_array = init_eval_ckpt_array(train_state.params)
             ckpt_idx = 0
+            eval_ckpt_idx = 0
+
+            # Store initial params in eval checkpoint array
+            eval_checkpoint_array = jax.tree.map(
+                lambda e_arr, p: e_arr.at[eval_ckpt_idx].set(p),
+                eval_checkpoint_array, train_state.params
+            )
+            eval_ckpt_idx = eval_ckpt_idx + 1
 
             rng, rng_train = jax.random.split(rng, 2)
 
             rng_eval = jax.random.PRNGKey(config["EVAL_SEED"])# + agent_idx)# + 14)
             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-
+            if config["FIXED_EVAL"]:
+                eval_rng = rng_eval
 
             # Init eval return infos
             eval_eps_last_infos = run_episodes_vmap(eval_rng, env, agent_idx,
@@ -509,7 +533,7 @@ def train_drqn_agent(config, env, train_rng,
             update_steps = 0
 
             update_runner_state = (train_state, buffer_state, rng_train, rng_eval, update_steps)
-            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos, eval_eps_last_infos)
+            state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_checkpoint_array, eval_ckpt_idx, eval_eps_last_infos, eval_eps_last_infos)
 
             state_with_ckpt, metrics = jax.lax.scan(
                 _update_step_with_ckpt,
@@ -518,11 +542,12 @@ def train_drqn_agent(config, env, train_rng,
                 length=config["NUM_UPDATES"]
             )
 
-            (final_runner_state, checkpoint_array, final_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos) = state_with_ckpt
+            (final_runner_state, checkpoint_array, final_ckpt_idx, eval_checkpoint_array, final_eval_ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos) = state_with_ckpt
             out = {
                 "final_params": final_runner_state[0].params,
                 "metrics": metrics,  # shape (NUM_UPDATES, ...)
                 "checkpoints": checkpoint_array,
+                "eval_checkpoints": eval_checkpoint_array
             }
 
             if env._render:
@@ -615,7 +640,7 @@ def run_training(config, wandb_logger, agent_idx=0):
     log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {elapsed_time:.2f}s")
     log.info(f"Single Agent Projection Logging completed for agent {agent_idx} in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
-    return out["final_params"], policy, init_params
+    return out["final_params"], policy, init_params, out["eval_checkpoints"]
 
 def log_metrics(env, config, train_out, logger, metric_names: tuple, agent_idx: int):
     """Process training metrics and log them using the provided logger.

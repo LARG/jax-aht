@@ -5,7 +5,7 @@ os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 
 import hydra
 import random
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, open_dict
 
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
@@ -13,6 +13,10 @@ from social_laws.dqn_single_agent_projection import run_training as run_dqn_trai
 from social_laws.drqn_single_agent_projection import run_training as run_drqn_training
 from social_laws.ppo_joint_from_dqn import run_training as run_ppo_joint_training
 from social_laws.ppo_joint_from_dqn_centralized import run_training as run_ppo_joint_centralized_training
+
+from envs import make_env
+from envs.log_wrapper import LogWrapper
+from social_laws.common.run_single_agent_joint_eval import run_single_agent_joint_eval
 
 SEEDRANGE = (1, int(1e9))
 
@@ -55,6 +59,7 @@ def run_training(cfg):
     agent_policies = []
     agent_init_params = []
     agent_params = []
+    agent_eval_checkpoints = []
     joint_policies = []
     joint_init_params = []
     joint_params = []
@@ -64,19 +69,43 @@ def run_training(cfg):
         assert cfg["algorithm"]["ACTOR_TYPE"] == "mlp", "For DQN single agent projection, the Joint PPO policy actor type must be MLP."
 
         for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param = run_dqn_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_dqn_training(cfg, wandb_logger, agent_idx=agent_idx)
             agent_policies.append(agent_policy)
             agent_init_params.append(agent_init_param)
             agent_params.append(agent_param)
+            agent_eval_checkpoints.append(eval_checkpoints)
+
+        env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
+        env_kwargs["render_dir"] = os.path.join("render", "dqn", "Joint_Eval")
+        env_kwargs["done_condition"] = "all"  # Joint eval: terminate as soon as all agents take their picture
+        env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
+        env = LogWrapper(env)
+
+        run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env, 
+                                    agent_eval_checkpoints, agent_policies, env.horizon, 
+                                    cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL, 
+                                    render=True, agent_test_mode=True)
 
     elif cfg["value_function"]["ALG"] == "drqn":
         assert cfg["algorithm"]["ACTOR_TYPE"] in ["s5", "rnn"], "For DRQN single agent projection, the Joint PPO policy actor type must be s5 or rnn."
 
         for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param = run_drqn_training(cfg, wandb_logger, agent_idx=agent_idx)
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_drqn_training(cfg, wandb_logger, agent_idx=agent_idx)
             agent_policies.append(agent_policy)
             agent_init_params.append(agent_init_param)
             agent_params.append(agent_param)
+            agent_eval_checkpoints.append(eval_checkpoints)
+
+        env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
+        env_kwargs["render_dir"] = os.path.join("render", "drqn", "Joint_Eval")
+        env_kwargs["done_condition"] = "all"  # Joint eval: terminate as soon as all agents take their picture
+        env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
+        env = LogWrapper(env)
+
+        run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env, 
+                                    agent_eval_checkpoints, agent_policies, env.horizon, 
+                                    cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL, 
+                                    render=True, agent_test_mode=True)
 
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment
