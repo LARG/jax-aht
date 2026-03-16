@@ -21,3 +21,4 @@ __pycache__/
 *.pyc
 dist/
 build/
+docs/creppo_runbook.md

@@ -14,13 +14,14 @@ from envs.base_env import BaseEnv, WrappedEnvState
 @dataclass
 class CoopReconEnvState:
     """Internal state for the cooperative reconnaissance environment."""
-    positions: jnp.ndarray  # (2, 2) - agent positions [x, y]
-    velocities: jnp.ndarray  # (2, 2) - agent velocities [vx, vy]
-    goal_pos: jnp.ndarray  # (2,) - goal position
-    detected_water: jnp.ndarray  # scalar bool
-    detected_life: jnp.ndarray  # scalar bool
-    picture_taken: jnp.ndarray  # scalar bool
-    timestep: jnp.ndarray  # scalar int
+    positions: jnp.ndarray        # (2, 2) - agent positions [x, y]
+    velocities: jnp.ndarray       # (2, 2) - agent velocities [vx, vy]
+    goal_pos: jnp.ndarray         # (2, 2) - goal positions per agent
+    detected_water: jnp.ndarray   # (2,) bool
+    detected_life: jnp.ndarray    # (2,) bool
+    picture_taken: jnp.ndarray    # (2,) bool
+    timestep: jnp.ndarray         # scalar int
+    collision_happened: jnp.ndarray  # scalar bool — True once agents collide (dead-end state)
 
 
 class CoopReconContinuousWrapper(BaseEnv):
@@ -43,9 +44,25 @@ class CoopReconContinuousWrapper(BaseEnv):
         self.horizon = kwargs.get('horizon', 40)
         # "any": done when ANY picture taken (use for SAP — frozen agent never takes a pic)
         # "all": done when ALL pictures taken (use for joint — both agents must complete)
+        # "agent_0" / "agent_1": done when focal agent takes photo (use for worst-case joint eval)
         self.done_condition = kwargs.get('done_condition', 'all')
         # Gaussian movement noise std as a fraction of max step size 
         self.movement_noise_std = kwargs.get('movement_noise_std', 0.0)
+
+        # SAP Domain Randomization: randomize partner task state at each reset.
+        # Forces the focal agent to train on diverse partner states (water/life/picture)
+        # so its Q-values are robust when the partner plays actively in worst-case eval.
+        # Set sap_focal_agent_idx to know which agent's partner state to randomize.
+        self.sap_domain_randomize_partner = kwargs.get('sap_domain_randomize_partner', False)
+        self.sap_focal_agent_idx = kwargs.get('sap_focal_agent_idx', 0)
+
+        # Phase A: collision detection (no reward penalty — dead-end termination only)
+        self.collision_radius = kwargs.get('collision_radius', 0.05)
+        # Step penalty per timestep. Set to 0.0 to ablate step penalty effect (v23).
+        self.step_penalty = kwargs.get('step_penalty', -0.01)
+        # Goal minimum separation.
+        # Must be > detection_radius (0.2) so goals are always unambiguously distinct.
+        self.min_sep_goal = kwargs.get('min_sep_goal', 0.30)
 
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "coop_recon_continuous")
@@ -105,41 +122,97 @@ class CoopReconContinuousWrapper(BaseEnv):
             obs: Dictionary of observations for each agent
             state: Wrapped environment state
         """
-        key, pos_key, goal_key = jax.random.split(key, 3)
+        key, pos_key, goal_key, partner_state_key = jax.random.split(key, 4)
 
-        # Random initial positions with spatial partitioning
+        # ==============================================================
+        # PHASE A: Full-grid spawning (wall removed).
+        # Both agents can spawn anywhere in [0.01, 0.99]^2.
+        # ==============================================================
         key_x0, key_y0, key_x1, key_y1 = jax.random.split(pos_key, 4)
-        
-        pos_x_0 = jax.random.uniform(key_x0, shape=(1,), minval=0.0, maxval=0.49)
-        pos_y_0 = jax.random.uniform(key_y0, shape=(1,), minval=0.0, maxval=1.0)
-        
-        pos_x_1 = jax.random.uniform(key_x1, shape=(1,), minval=0.51, maxval=1.0)
-        pos_y_1 = jax.random.uniform(key_y1, shape=(1,), minval=0.0, maxval=1.0)
-        
+
+        pos_x_0 = jax.random.uniform(key_x0, shape=(1,), minval=0.01, maxval=0.99)
+        pos_y_0 = jax.random.uniform(key_y0, shape=(1,), minval=0.01, maxval=0.99)
+        pos_x_1 = jax.random.uniform(key_x1, shape=(1,), minval=0.01, maxval=0.99)
+        pos_y_1 = jax.random.uniform(key_y1, shape=(1,), minval=0.01, maxval=0.99)
+
         positions = jnp.stack([
             jnp.concatenate([pos_x_0, pos_y_0]),
             jnp.concatenate([pos_x_1, pos_y_1])
         ])
-        
+
+        # ==============================================================
+        # OPAQUE WALL version (v15/v16) — kept for easy revert:
+        # key_x0, key_y0, key_x1, key_y1 = jax.random.split(pos_key, 4)
+        # pos_x_0 = jax.random.uniform(key_x0, shape=(1,), minval=0.0, maxval=0.49)
+        # pos_y_0 = jax.random.uniform(key_y0, shape=(1,), minval=0.0, maxval=1.0)
+        # pos_x_1 = jax.random.uniform(key_x1, shape=(1,), minval=0.51, maxval=1.0)
+        # pos_y_1 = jax.random.uniform(key_y1, shape=(1,), minval=0.0, maxval=1.0)
+        # positions = jnp.stack([
+        #     jnp.concatenate([pos_x_0, pos_y_0]),
+        #     jnp.concatenate([pos_x_1, pos_y_1])
+        # ])
+        # ==============================================================
+
         velocities = jnp.zeros((2, 2), dtype=jnp.float32)
 
-        # Random goal positions (One for each agent per PI specs)
-        key_gx0, key_gy0, key_gx1, key_gy1 = jax.random.split(goal_key, 4)
-        goal_x_0 = jax.random.uniform(key_gx0, shape=(1,), minval=0.0, maxval=0.49)
-        goal_y_0 = jax.random.uniform(key_gy0, shape=(1,), minval=0.0, maxval=1.0)
-        
-        goal_x_1 = jax.random.uniform(key_gx1, shape=(1,), minval=0.51, maxval=1.0)
-        goal_y_1 = jax.random.uniform(key_gy1, shape=(1,), minval=0.0, maxval=1.0)
-        
-        goal_pos = jnp.stack([
-            jnp.concatenate([goal_x_0, goal_y_0]),
-            jnp.concatenate([goal_x_1, goal_y_1])
-        ])
+        # ==============================================================
+        # PHASE A: Goals span the full grid (goal allocation social law).
+        # Agent i is always assigned to goal i (by index).
+        # ==============================================================
+        # Sample goal_0 uniformly; reject goal_1 if too close to goal_0.
+        # jax.lax.while_loop is JIT-safe and terminates quickly:
+        # P(|goal_1 - goal_0| >= 0.30) >= ~91% per trial on a unit grid.
+        key, key_g0, key_g1_init = jax.random.split(goal_key, 3)
+        goal_0 = jax.random.uniform(key_g0, shape=(2,), minval=0.01, maxval=0.99)
+        goal_1_init = jax.random.uniform(key_g1_init, shape=(2,), minval=0.01, maxval=0.99)
 
-        # Task state arrays (shape 2 for 2 goals)
+        def _goal1_too_close(carry):
+            k, g1 = carry
+            return jnp.linalg.norm(g1 - goal_0) < self.min_sep_goal
+
+        def _resample_goal1(carry):
+            k, _ = carry
+            k, subk = jax.random.split(k)
+            g1 = jax.random.uniform(subk, shape=(2,), minval=0.01, maxval=0.99)
+            return k, g1
+
+        _, goal_1 = jax.lax.while_loop(_goal1_too_close, _resample_goal1, (key, goal_1_init))
+
+        goal_pos = jnp.stack([goal_0, goal_1])
+
+        # ==============================================================
+        # OPAQUE WALL version — kept for easy revert:
+        # goal_x_0 = jax.random.uniform(key_gx0, shape=(1,), minval=0.0, maxval=0.49)
+        # goal_y_0 = jax.random.uniform(key_gy0, shape=(1,), minval=0.0, maxval=1.0)
+        # goal_x_1 = jax.random.uniform(key_gx1, shape=(1,), minval=0.51, maxval=1.0)
+        # goal_y_1 = jax.random.uniform(key_gy1, shape=(1,), minval=0.0, maxval=1.0)
+        # goal_pos = jnp.stack([
+        #     jnp.concatenate([goal_x_0, goal_y_0]),
+        #     jnp.concatenate([goal_x_1, goal_y_1])
+        # ])
+        # ==============================================================
+
+        # Task state arrays (shape 2 for 2 agents)
         detected_water = jnp.array([False, False])
         detected_life = jnp.array([False, False])
         picture_taken = jnp.array([False, False])
+        collision_happened = jnp.array(False)  # Phase A: dead-end flag
+
+        # SAP Domain Randomization: randomize partner's task state so the focal agent
+        # trains on diverse partner observations (water/life/picture taken at various stages).
+        # Partner task states are sampled in progression order: water -> life -> photo,
+        # each conditioned on the previous so the state is physically consistent.
+        # NOTE: This is a Python-level `if` — safe because `self` is static under JIT.
+        if self.sap_domain_randomize_partner:
+            partner_idx = 1 - self.sap_focal_agent_idx
+            key_pw, key_pl, key_pp = jax.random.split(partner_state_key, 3)
+            # Progressive sampling: life requires water; photo requires life.
+            partner_water = jax.random.bernoulli(key_pw, p=0.5)
+            partner_life  = partner_water & jax.random.bernoulli(key_pl, p=0.5)
+            partner_pic   = partner_life  & jax.random.bernoulli(key_pp, p=0.5)
+            detected_water = detected_water.at[partner_idx].set(partner_water)
+            detected_life  = detected_life.at[partner_idx].set(partner_life)
+            picture_taken  = picture_taken.at[partner_idx].set(partner_pic)
         timestep = jnp.array(0, dtype=jnp.int32)
 
         env_state = CoopReconEnvState(
@@ -149,7 +222,8 @@ class CoopReconContinuousWrapper(BaseEnv):
             detected_water=detected_water,
             detected_life=detected_life,
             picture_taken=picture_taken,
-            timestep=timestep
+            timestep=timestep,
+            collision_happened=collision_happened,  # Phase A
         )
 
         obs = self._get_obs(env_state)
@@ -205,16 +279,25 @@ class CoopReconContinuousWrapper(BaseEnv):
         noise = jax.random.normal(key_noise, shape=new_positions.shape) * self.movement_noise_std * self.dt
         new_positions = new_positions + noise
         
-        # Apply spatial partitioning Constraints
-        # Agent 0: x in [0.0, 0.5]
-        # Agent 1: x in [0.5, 1.0]
-        new_pos_x = jnp.array([
-            jnp.clip(new_positions[0, 0], 0.0, 0.49),
-            jnp.clip(new_positions[1, 0], 0.51, 1.0)
-        ])
-        new_pos_y = jnp.clip(new_positions[:, 1], 0.0, 1.0)
-        
-        new_positions = jnp.stack([new_pos_x, new_pos_y], axis=1)
+        # ==============================================================
+        # PHASE A: Simple boundary clip — wall is removed.
+        # ==============================================================
+        new_positions = jnp.clip(new_positions, 0.0, 1.0)
+
+        # ==============================================================
+        # OPAQUE WALL version (v15/v16) — kept for easy revert:
+        # new_pos_x = jnp.array([
+        #     jnp.clip(new_positions[0, 0], 0.0, 0.49),   # Agent 0: left half
+        #     jnp.clip(new_positions[1, 0], 0.51, 1.0)    # Agent 1: right half
+        # ])
+        # new_pos_y = jnp.clip(new_positions[:, 1], 0.0, 1.0)
+        # new_positions = jnp.stack([new_pos_x, new_pos_y], axis=1)
+        # ==============================================================
+
+        # Phase A: collision detection — dead-end if agents are within collision_radius.
+        dist_between = jnp.linalg.norm(new_positions[0] - new_positions[1])
+        collision = dist_between < self.collision_radius
+        new_collision_happened = env_state.collision_happened | collision
 
         # Process detection/picture actions and compute rewards
         key_water, key_life = jax.random.split(key, 2)
@@ -238,7 +321,8 @@ class CoopReconContinuousWrapper(BaseEnv):
             detected_water=new_detected_water,
             detected_life=new_detected_life,
             picture_taken=new_picture_taken,
-            timestep=new_timestep
+            timestep=new_timestep,
+            collision_happened=new_collision_happened,  # Phase A
         )
 
         obs_st = self._get_obs(env_state_next)
@@ -315,15 +399,30 @@ class CoopReconContinuousWrapper(BaseEnv):
         # Compute distances to goal
         dists_to_goal = jnp.linalg.norm(positions[:, None, :] - goal_pos[None, :, :], axis=-1)  # (2 agents, 2 goals)
         at_goal = dists_to_goal < self.detection_radius  # (2, 2)
-        
-        # Opaque wall at x=0.5: line of sight cannot penetrate the geographic boundary
-        is_agent_left = positions[:, 0] < 0.5
-        is_goal_left = goal_pos[:, 0] < 0.5
-        same_side = is_agent_left[:, None] == is_goal_left[None, :]
-        at_goal = at_goal & same_side
 
-        # Initialize rewards with step penalty (-0.01 to match PyTorch)
-        reward_values = jnp.full(self.num_agents, -0.01, dtype=jnp.float32)
+        # ==============================================================
+        # GOAL-ALLOCATION SOCIAL LAW (Phase A):
+        # Agent i may only perform task actions (water/life/picture) at goal i.
+        # Movement actions remain unrestricted.
+        # agent_goal_mask[i, j] = True iff agent i is assigned to goal j.
+        # For 2 agents: agent 0 → goal 0, agent 1 → goal 1.
+        # ==============================================================
+        agent_goal_mask = jnp.eye(self.num_agents, dtype=bool)  # (2, 2)
+        at_goal = at_goal & agent_goal_mask
+
+        # ==============================================================
+        # PHASE A: Same-side (opaque wall) check removed.
+        # Agents may now interact with their assigned goal anywhere in the grid.
+        # ==============================================================
+
+        # OPAQUE WALL version (v15/v16) — kept for easy revert:
+        # is_agent_left = positions[:, 0] < 0.5
+        # is_goal_left = goal_pos[:, 0] < 0.5
+        # same_side = is_agent_left[:, None] == is_goal_left[None, :]
+        # at_goal = at_goal & same_side
+
+        # Initialize rewards with step penalty (configurable; default -0.01 to match PyTorch)
+        reward_values = jnp.full(self.num_agents, self.step_penalty, dtype=jnp.float32)
 
         # Split keys for each agent
         key_water_0, key_water_1 = jax.random.split(key_water)
@@ -434,16 +533,19 @@ class CoopReconContinuousWrapper(BaseEnv):
         Returns:
             dones: Dictionary of done flags
         """
+        # Phase A: collision causes immediate termination (dead-end state — no further reward possible).
+        collision_done = env_state.collision_happened
+
         if self.done_condition == 'any':
-            done = jnp.any(env_state.picture_taken) | (env_state.timestep >= self.horizon)
+            done = jnp.any(env_state.picture_taken) | (env_state.timestep >= self.horizon) | collision_done
         elif self.done_condition == 'agent_0':
             # Episode ends only when focal agent 0 completes (used for joint worst-case eval)
-            done = env_state.picture_taken[0] | (env_state.timestep >= self.horizon)
+            done = env_state.picture_taken[0] | (env_state.timestep >= self.horizon) | collision_done
         elif self.done_condition == 'agent_1':
             # Episode ends only when focal agent 1 completes (used for joint worst-case eval)
-            done = env_state.picture_taken[1] | (env_state.timestep >= self.horizon)
+            done = env_state.picture_taken[1] | (env_state.timestep >= self.horizon) | collision_done
         else:  # 'all'
-            done = jnp.all(env_state.picture_taken) | (env_state.timestep >= self.horizon)
+            done = jnp.all(env_state.picture_taken) | (env_state.timestep >= self.horizon) | collision_done
         dones = {agent: done for agent in self.agents}
         dones["__all__"] = done
         return dones
@@ -460,22 +562,33 @@ class CoopReconContinuousWrapper(BaseEnv):
             avail_actions: Dictionary of available action masks
         """
         dists_to_goal = jnp.linalg.norm(env_state.positions[:, None, :] - env_state.goal_pos[None, :, :], axis=-1)
-        at_goal = dists_to_goal < self.detection_radius
-        
-        # Opaque wall at x=0.5: line of sight cannot penetrate the geographic boundary
-        is_agent_left = env_state.positions[:, 0] < 0.5
-        is_goal_left = env_state.goal_pos[:, 0] < 0.5
-        same_side = is_agent_left[:, None] == is_goal_left[None, :]
-        at_goal = at_goal & same_side
-        
+        at_goal = dists_to_goal < self.detection_radius  # (2 agents, 2 goals)
+
+        # ==============================================================
+        # GOAL-ALLOCATION SOCIAL LAW: restrict task-action availability
+        # to each agent's own assigned goal (agent i → goal i only).
+        # ==============================================================
+        agent_goal_mask = jnp.eye(self.num_agents, dtype=bool)  # (2, 2)
+        at_goal = at_goal & agent_goal_mask
+
+        # ==============================================================
+        # OPAQUE WALL version — kept for easy revert:
+        # is_agent_left = env_state.positions[:, 0] < 0.5
+        # is_goal_left = env_state.goal_pos[:, 0] < 0.5
+        # same_side = is_agent_left[:, None] == is_goal_left[None, :]
+        # at_goal = at_goal & same_side
+        # ==============================================================
+
         avail_actions = {}
         for i, agent in enumerate(self.agents):
             # Once this agent's own goal's picture is taken, force noop (stop moving)
             agent_done = env_state.picture_taken[i]
 
-            can_water = jnp.any(at_goal[i] & ~env_state.detected_water)
-            can_life = jnp.any(at_goal[i] & env_state.detected_water & ~env_state.detected_life)
-            can_pic = jnp.any(at_goal[i] & env_state.detected_life & ~env_state.picture_taken)
+            # Check only agent i's own goal (column i after mask, so at_goal[i, i])
+            at_own_goal = at_goal[i, i]
+            can_water = at_own_goal & ~env_state.detected_water[i]
+            can_life  = at_own_goal & env_state.detected_water[i] & ~env_state.detected_life[i]
+            can_pic   = at_own_goal & env_state.detected_life[i]  & ~env_state.picture_taken[i]
 
             full_mask = jnp.array([
                 True, True, True, True, True,  # 0-4: noop, directions

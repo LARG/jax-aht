@@ -9,6 +9,9 @@ ENV_KWARGS: {
     ego_centric_obs: false,
     movement_noise_std: 0.1, # set noise to 10% of max step size
     done_condition: "all", # default: episode ends when all agents are done
+    horizon: 60,            # increased from 40 (agents need more time to navigate full grid)
+    collision_radius: 0.05, # dead-end on collision (no reward penalty, just termination)
+    min_sep_goal: 0.30,     # goals must be >= 0.30 apart (> detection_radius 0.2; PI guidance)
   }
 TASK_NAME: continuous/coop_recon
 SINGLE_AGENT_1_PROJECTION: ""
