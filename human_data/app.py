@@ -357,6 +357,10 @@ class GameSession:
         self.rewards = {"agent_0": 0.0, "agent_1": 0.0}
         self.total_rewards = {"agent_0": 0.0, "agent_1": 0.0}
         self.step_count = 0
+        # track timing for the episode
+        self.start_time = time.time()
+        self.end_time = None
+
         self.episode_history = []
 
         return self.get_state_dict()
@@ -364,6 +368,7 @@ class GameSession:
     def step(self, human_action):
         """Execute one step with human action and AI agent action."""
         if self.done:
+            # TODO: Record endtime
             return self.get_state_dict()
         
         # Get AI agent action
@@ -399,17 +404,24 @@ class GameSession:
         for agent in self.env.agents:
             self.total_rewards[agent] += float(self.rewards[agent])
         
-        # Store in history
+        # Store in history (with elapsed time since start)
+        now = time.time()
+        elapsed = now - self.start_time if hasattr(self, 'start_time') else None
         self.episode_history.append({
             "step": self.step_count,
             "human_action": int(human_action),
             "ai_action": int(ai_action),
             "rewards": {k: float(v) for k, v in self.rewards.items()},
-            "state": self._serialize_state()
+            "state": self._serialize_state(),
+            # include wall-clock timestamp and elapsed seconds
+            "timestamp": now,
+            "elapsed": elapsed
         })
         
         # Auto-save when episode is done
         if self.done:
+            # record end time before saving
+            self.end_time = time.time()
             self.save_episode()
         
         return self.get_state_dict()
@@ -453,6 +465,10 @@ class GameSession:
         
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         
+        # make sure end_time is set if game is being saved after completion
+        if getattr(self, 'end_time', None) is None and self.done:
+            self.end_time = time.time()
+
         episode_data = {
             "player_name": player_name,
             "session_id": self.session_id,
@@ -461,6 +477,10 @@ class GameSession:
             "total_rewards": {k: float(v) for k, v in self.total_rewards.items()},
             "grid_size": self.grid_size,
             "num_fruits": self.num_fruits,
+            # include game start/end timing information
+            "start_time": getattr(self, "start_time", None),
+            "end_time": getattr(self, "end_time", None),
+            "duration": (self.end_time - self.start_time) if (self.start_time and self.end_time) else None,
             "trajectory": self.episode_history
         }
         
@@ -901,7 +921,10 @@ def upload_replay():
                 "timestamp": episode_data.get('timestamp', ''),
                 "total_steps": len(episode_data['trajectory']),
                 "grid_size": episode_data.get('grid_size', 7),
-                "num_fruits": episode_data.get('num_fruits', 3)
+                "num_fruits": episode_data.get('num_fruits', 3),
+                "start_time": episode_data.get('start_time'),
+                "end_time": episode_data.get('end_time'),
+                "duration": episode_data.get('duration')
             }
         })
     except json.JSONDecodeError:
