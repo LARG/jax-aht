@@ -1,7 +1,8 @@
 defaults:
   - task: lbf # overcooked-v1/cramped_room # task configs
-  - global_heldout_settings # defines the heldout_set variable
+  # - global_heldout_settings # defines the heldout_set variable
   # - global_validation_settings # defines the heldout_set variable
+  - heldout_extra_teammates
   - hydra: hydra_simple
   - _self_
 
