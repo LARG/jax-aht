@@ -1296,6 +1296,8 @@
                     gameState = data.state;
                     lastHumanAction = null;
                     lastAIAction = null;
+                    lastHumanAction = null;
+                    lastAIAction = null;
                     updateDisplay();
                     showMessage('Game reset!', 'info');
                     // Ensure main action button remains labeled 'Reset'
@@ -1441,6 +1443,116 @@
             if (replayMode) {
                 updateReplayUI();
             }
+        }
+
+        // --- Action animation helpers ---
+        function startActionAnimation() {
+            actionAnimationAlpha = 1.0;
+            if (actionAnimationTimer) cancelAnimationFrame(actionAnimationTimer);
+            fadeActionIndicators();
+        }
+
+        function fadeActionIndicators() {
+            actionAnimationAlpha -= 0.025;
+            if (actionAnimationAlpha <= 0) {
+                actionAnimationAlpha = 0;
+                return; // done fading
+            }
+            drawGame();
+            actionAnimationTimer = requestAnimationFrame(fadeActionIndicators);
+        }
+
+        // Draw a directional arrow on an agent's cell
+        function drawDirectionArrow(row, col, action, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const arrowLen = cellSize * 0.35;
+            const headLen = 10;
+            const headAngle = Math.PI / 6;
+
+            let dx = 0, dy = 0;
+            if (action === ACTIONS.UP)    { dx = 0;  dy = -1; }
+            if (action === ACTIONS.DOWN)  { dx = 0;  dy =  1; }
+            if (action === ACTIONS.LEFT)  { dx = -1; dy =  0; }
+            if (action === ACTIONS.RIGHT) { dx =  1; dy =  0; }
+            if (dx === 0 && dy === 0) return;
+
+            const ex = cx + dx * arrowLen;
+            const ey = cy + dy * arrowLen;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(cx - dx * arrowLen * 0.3, cy - dy * arrowLen * 0.3);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ex - headLen * Math.cos(angle - headAngle), ey - headLen * Math.sin(angle - headAngle));
+            ctx.lineTo(ex - headLen * Math.cos(angle + headAngle), ey - headLen * Math.sin(angle + headAngle));
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw a "collecting" indicator (pulsing ring + sparkles) around an agent
+        function drawLoadIndicator(row, col, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const radius = cellSize * 0.48;
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+
+            // Outer glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Inner glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Sparkle lines radiating outward
+            const sparkleCount = 8;
+            const innerR = radius * 0.55;
+            const outerR = radius * 1.1;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            for (let s = 0; s < sparkleCount; s++) {
+                const a = (Math.PI * 2 * s) / sparkleCount + (actionAnimationAlpha * Math.PI);
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+                ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+                ctx.stroke();
+            }
+
+            // "⚡" label above the cell
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = color;
+            ctx.fillText('⚡ COLLECT', cx, row * cellSize - 2);
+
+            ctx.restore();
         }
 
         // --- Action animation helpers ---
@@ -1725,6 +1837,9 @@
                     lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
                     lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
                     actionAnimationAlpha = 1.0;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     
                     // Hide file upload, show replay controls
                     document.getElementById('fileUploadSection').classList.add('hidden');
@@ -1774,6 +1889,9 @@
                     lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
                     lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
                     actionAnimationAlpha = 1.0;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     updateDisplay();
                 }
             } catch (error) {
@@ -1800,6 +1918,9 @@
                 const data = await response.json();
                 if (data.success) {
                     gameState = data.state;
+                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
+                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
+                    actionAnimationAlpha = 1.0;
                     lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
                     lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
                     actionAnimationAlpha = 1.0;

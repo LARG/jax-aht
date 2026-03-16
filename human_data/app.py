@@ -810,6 +810,9 @@ def step():
         "state": state,
         "human_action": last_step["human_action"] if last_step else None,
         "ai_action": last_step["ai_action"] if last_step else None
+        "state": state,
+        "human_action": last_step["human_action"] if last_step else None,
+        "ai_action": last_step["ai_action"] if last_step else None
     })
 
 

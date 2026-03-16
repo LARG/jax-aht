@@ -44,7 +44,7 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
     config["NUM_GAME_AGENTS"] = num_agents
     config["NUM_CONF_ACTORS"] = config["NUM_ENVS"]
     config["NUM_BR_ACTORS"] = config["NUM_ENVS"]
-    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // (num_agents * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
+    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // (config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
 
     def make_lbrdiv_agents(config):
         def linear_schedule(count):
@@ -1091,7 +1091,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
             wandb.plot.line_series(xs=xs, ys=array_data, keys=lm_keys,
             title=array_name, xname="train_step")
         )
-        wandb.commit()
+    logger.commit()
 
     ### Log artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
