@@ -45,7 +45,7 @@ class ResetTransition(NamedTuple):
     conf_hstate: jnp.ndarray
     partner_hstate: jnp.ndarray
 
-def train_comedi_partners(train_rng, env, config):
+def train_comedi_partners(train_rng, wandb_logger, env, config):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -83,7 +83,7 @@ def train_comedi_partners(train_rng, env, config):
             config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
             config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
             config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
-            out = make_ppo_train(config, env)(partner_rng) # train a single PPO agent
+            out = make_ppo_train(config, env, wandb_logger)(partner_rng) # train a single PPO agent
             return out
 
         def train(rng):
@@ -1056,7 +1056,10 @@ def run_comedi(config, wandb_logger):
     with jax.disable_jit(False):
         vmapped_train_fn = jax.jit(
             jax.vmap(
-                partial(train_comedi_partners, env=env, config=algorithm_config)
+                partial(train_comedi_partners, 
+                        wandb_logger=wandb_logger,
+                        env=env, 
+                        config=algorithm_config)
             )
         )
         out = vmapped_train_fn(rngs)
