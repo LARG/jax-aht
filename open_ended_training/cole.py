@@ -1,8 +1,10 @@
 '''Implementation of the COLE algorithm.
-TODO: add COLE citation.
 
-Command to run COLE on LBF:
-python open_ended_training/run.py algorithm=cole/lbf task=lbf label=test_cole run_heldout_eval=false
+https://proceedings.mlr.press/v202/li23au.html
+
+
+Recommended debug command:
+python open_ended_training/run.py algorithm=cole/lbf task=lbf label=test_cole run_heldout_eval=false algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 logger.log_train_out=false logger.log_eval_out=false local_logger.save_train_out=false local_logger.save_eval_out=false
 
 Limitations: does not support recurrent actors.
 '''
@@ -29,7 +31,6 @@ from common.plot_utils import get_metric_names
 from common.run_episodes import run_episodes
 from envs import make_env
 from envs.log_wrapper import LogWrapper, LogEnvState
-from marl.ippo import make_train as make_ppo_train
 from marl.ppo_utils import Transition, unbatchify, _create_minibatches
 
 log = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ class ResetTransition(NamedTuple):
     conf_hstate: jnp.ndarray
     partner_hstate: jnp.ndarray
 
-def train_cole_partners(train_rng, env, config):
+def train_cole_partners(train_rng, wandb_logger, env, config):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -55,6 +56,7 @@ def train_cole_partners(train_rng, env, config):
     config["NUM_ACTORS"] = num_agents * config["NUM_ENVS"]
     # Right now assume control of both agent and its BR
     config["NUM_CONTROLLED_ACTORS"] = config["NUM_ACTORS"]
+    config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
 
     # Compute numbber of updates PER outermost iteration
     # Calculate timesteps per update
@@ -75,22 +77,9 @@ def train_cole_partners(train_rng, env, config):
             frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
             return config["LR"] * frac
 
-        def train_init_ippo_partners(config, partner_rng, env):
-            '''
-            Train a pool IPPO agents w/parameter sharing.
-            Returns out, a dictionary of the model checkpoints, final parameters, and metrics.
-            '''
-            config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
-            config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
-            config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
-            out = make_ppo_train(config, env)(partner_rng) # train a single PPO agent
-            return out
-
         def train(rng):
             # Start by training a single PPO agent via self-play
             rng, init_ppo_rng, init_conf_rng = jax.random.split(rng, 3)
-
-            init_ppo_partner = train_init_ippo_partners(config, init_ppo_rng, env)
 
             # Initialize a population buffer
             dummy_policy, dummy_init_params = initialize_actor_with_conditional_critic(config, env, init_conf_rng)
@@ -100,7 +89,11 @@ def train_cole_partners(train_rng, env, config):
             )
 
             population_buffer = partner_population.reset_buffer(dummy_init_params)
-            population_buffer = partner_population.add_agent(population_buffer, init_ppo_partner["final_params"])
+            # explicitly add a random agent to buffer rather than a PPO agent
+            population_buffer = partner_population.add_agent(
+                population_buffer, 
+                dummy_init_params
+            )
 
             def add_conf_policy(pop_buffer, func_input):
                 num_existing_agents, rng = func_input
@@ -890,9 +883,10 @@ def train_cole_partners(train_rng, env, config):
 
                     return (new_update_runner_state, checkpoint_array, ckpt_idx+1), metric
 
-                # XP eval against all policies in the buffer
+                # XP eval current policy against all policies in the buffer
+                # shape (pop_size, num_eval_episodes, num_agents_per_game)
                 xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                        train_state.params,jnp.arange(config["POP_SIZE"]))
+                        train_state.params, jnp.arange(config["POP_SIZE"]))
 
                 # SP performance against itself
                 sp_eval_returns = run_episodes(
@@ -1050,13 +1044,17 @@ def run_cole(config, wandb_logger):
 
     # Generate multiple random seeds from the base seed
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
+    rng, eval_rng = jax.random.split(rng)
     rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
 
     # Create a vmapped version of train_cole_partners
     with jax.disable_jit(False):
         vmapped_train_fn = jax.jit(
             jax.vmap(
-                partial(train_cole_partners, env=env, config=algorithm_config)
+                partial(train_cole_partners, 
+                        wandb_logger=wandb_logger,
+                        env=env, 
+                        config=algorithm_config)
             )
         )
         out = vmapped_train_fn(rngs)
@@ -1067,8 +1065,20 @@ def run_cole(config, wandb_logger):
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
 
     log_metrics(config, out, wandb_logger, metric_names)
-    partner_params, partner_population = get_cole_population(config, out, env)
-    return partner_params, partner_population
+    
+    dummy_env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
+    algorithm_config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
+    ego_policy, init_ego_params = initialize_actor_with_conditional_critic(algorithm_config, dummy_env, eval_rng)
+    
+    # final_xp_returns = np.asarray(out["last_ep_infos_xp"]["returned_episode_returns"])[:, :, -1].mean(axis=(-2, -1))
+    # TODO: we return the last trained ego agent as a place holder for now, while we don't have the 
+    # proper XP matrix.
+    # ultimately, we want to compute the best ego params for each seed, selected from all checkpoints over the entire population,
+    # i.e., select from out["checkpoints_conf"]
+    best_ids = -1
+    best_ego_params = jax.tree.map(lambda x: x[:, best_ids], out["final_params_conf"])
+    
+    return ego_policy, best_ego_params, init_ego_params
 
 def compute_sp_mask_and_ids(pop_size):
     cross_product = np.meshgrid(
@@ -1083,33 +1093,33 @@ def compute_sp_mask_and_ids(pop_size):
 
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
-    num_seeds, pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
+    # trained_pop_size excludes the initial policy, so it's pop_size - 1
+    num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
     # TODO: add the eval_ep_last_info metrics
 
     ### Log evaluation metrics
     # we plot XP return curves separately from SP return curves
-    # shape (num_seeds, num_updates, pop_size,  num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
-    # shape (num_seeds, num_updates, pop_size, pop_size, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
     all_returns_xp = np.asarray(outs["last_ep_infos_xp"]["returned_episode_returns"])
-    xs = list(range(num_updates))
 
-    # Average over seeds, then over agent pairs, episodes and num_agents_per_game
-    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))
-    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))
+    # Average over seeds, eval episodes and num_agents_per_game
+    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4)) # shape (pop_size - 1, num_updates)
+    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5)) #  shape (pop_size - 1, num_updates, pop_size)
 
-    for num_add_policies in range(pop_size):
-        for step in range(num_updates):
-            logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, step], train_step=step)
-            mean_xp_returns = xp_return_curve[num_add_policies][:, :(num_add_policies+1)].mean(axis=-1)
-            logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[step], train_step=step)
+    for num_add_policies in range(trained_pop_size):
+        for update_step in range(num_updates):
+            logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
+            mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
+            logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[update_step], train_step=update_step)
     logger.commit()
 
     ### Log population loss as multi-line plots, where each line is a different population member
-    # both xp and xp metrics has shape (num_seeds, pop_size, num_updates, update_epochs, num_minibatches)
+    # both xp and xp metrics has shape (num_seeds, pop_size - 1, num_updates, update_epochs, num_minibatches)
     # Average over seeds
     processed_losses = {
-        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size, num_updates)
+        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size - 1, num_updates)
         "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=(0, 3, 4)),
         "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=(0, 3, 4)),
         "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=(0, 3, 4)),
@@ -1121,7 +1131,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     }
 
     xs = list(range(num_updates))
-    keys = [f"pair {i}" for i in range(pop_size)]
+    keys = [f"pair {i}" for i in range(trained_pop_size)]
 
     for loss_name, loss_data in processed_losses.items():
         logger.log_item(f"Losses/{loss_name}",
