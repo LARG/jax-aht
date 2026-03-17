@@ -7,14 +7,8 @@ metric:
   goal: maximize
   name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
-# 1,800 Combinations: bayes search recommended over grid
+# 900 Combinations: bayes search recommended over grid
 parameters:
-  algorithm.NUM_ENVS:
-    values: [512]
-  algorithm.ego_train_algorithm.NUM_ENVS:
-    values: [512]
-  algorithm.ACTIVATION:
-    values: ["tanh", "relu"]
   algorithm.PARTNER_POP_SIZE:
     values: [10, 15, 20]
   algorithm.COMEDI_ALPHA:

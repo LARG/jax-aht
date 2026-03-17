@@ -4,14 +4,16 @@ defaults:
 
 TOTAL_TIMESTEPS_PER_ITERATION: 6e6
 PARTNER_POP_SIZE: 10
-LR: 5e-4
+NUM_ENVS: 64
+LR: 1e-3
 UPDATE_EPOCHS: 15
-CLIP_EPS: 0.05
+CLIP_EPS: 0.5
 ENT_COEF: 0.001
 COMEDI_ALPHA: 0.2 # weight on XP return
 COMEDI_BETA: 0.4 # weight on SXP return
-ego_train_algorithm: 
+ego_train_algorithm:
   TOTAL_TIMESTEPS: 3e7
-  LR: 1e-4
-  ENT_COEF: 0.01
-  CLIP_EPS: 0.05
+  NUM_ENVS: 256
+  LR: 1e-3
+  ENT_COEF: 0.001
+  CLIP_EPS: 0.5
