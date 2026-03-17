@@ -270,100 +270,6 @@
             display: inline-block; /* shrinkwrap to the canvas size */
         }
 
-        /* Replay controls */
-        .file-upload-section {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .file-upload-section input[type="file"] {
-            flex: 1;
-            max-width: 300px;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            background: white;
-            font-size: 0.9em;
-        }
-
-        .playback-controls {
-            display: none;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .playback-controls.active {
-            display: flex;
-        }
-
-        .playback-controls button {
-            min-width: 100px;
-        }
-
-        .replay-info-section {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff3cd;
-            border-radius: 10px;
-            border: 2px solid #ffeaa7;
-        }
-
-        .replay-info-section.active {
-            display: block;
-        }
-
-        .replay-slider {
-            margin: 10px 0;
-        }
-
-        .replay-slider input[type="range"] {
-            width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: #ddd;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .replay-slider input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-        }
-
-        .replay-slider input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-            border: none;
-        }
-
-        .replay-info {
-            text-align: center;
-            color: #666;
-            font-size: 0.95em;
-            margin: 5px 0;
-        }
-
-        .replay-metadata {
-            text-align: center;
-            color: #856404;
-            font-size: 0.9em;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #ffeaa7;
-        }
-
         .hidden {
             display: none !important;
         }
@@ -755,10 +661,30 @@
             margin-top: 4px;
         }
 
-        .finish-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
+        .finish-confirmation {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .finish-confirmation-label {
+            font-size: 0.95em;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .finish-confirmation-code {
+            font-size: 1.6em;
+            font-weight: 700;
+            font-family: 'Courier New', Courier, monospace;
+            color: #667eea;
+            background: #f0f0f8;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: 2px dashed #667eea;
+            display: inline-block;
+            letter-spacing: 0.5px;
+            user-select: all;
+            cursor: text;
         }
     </style>
 </head>
@@ -880,8 +806,9 @@
                     <div class="finish-stat-label">Games Played</div>
                 </div>
             </div>
-            <div class="finish-buttons">
-                <button onclick="playAgain()">Play Again 🔄</button>
+            <div class="finish-confirmation">
+                <div class="finish-confirmation-label">Your confirmation code:</div>
+                <div class="finish-confirmation-code" id="finishConfirmationCode"></div>
             </div>
         </div>
     </div>
@@ -910,43 +837,9 @@
                     </div>
                 </div>
                 
-                <!-- Normal Play Mode Controls -->
-                <div id="playModeControls" class="button-group">
-                    <button id="mainActionBtn" onclick="mainAction()">New Game</button>
-                    <button onclick="showFileUpload()">📂 Load Replay</button>
-                </div>
-                
-                <!-- File Upload (shown when Load Replay is clicked) -->
-                <div id="fileUploadSection" class="file-upload-section hidden">
-                    <input type="file" id="replayFile" accept=".json" />
-                    <button onclick="uploadReplay()">Upload & Play</button>
-                    <button onclick="cancelFileUpload()">Cancel</button>
-                </div>
-                
-                <!-- Replay Mode Controls -->
-                <div id="replayControls" class="playback-controls">
-                    <button onclick="replayControl('reset')">⏮️ Reset</button>
-                    <button onclick="replayControl('prev')">⏪ Prev</button>
-                    <button onclick="replayControl('next')">⏩ Next</button>
-                    <button onclick="exitReplay()" style="background: #e74c3c;">❌ Exit Replay</button>
-                </div>
-                
-                <p id="normalModeNote" style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9em;">
+                <p style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9em;">
                     📝 Episodes are automatically saved when completed
                 </p>
-                
-                <!-- Replay Info Section (below buttons) -->
-                <div id="replayInfoSection" class="replay-info-section">
-                    <div class="replay-info">
-                        <strong>Step <span id="replayStep">0</span> / <span id="replayTotal">0</span></strong>
-                    </div>
-                    
-                    <div class="replay-slider">
-                        <input type="range" id="replaySlider" min="0" max="0" value="0" onchange="seekReplay(this.value)" />
-                    </div>
-                    
-                    <div class="replay-metadata" id="replayMetadata"></div>
-                </div>
             </div>
 
             <div class="info-panel">
@@ -1031,14 +924,13 @@
     <script>
         let gameState = null;
         let sessionId = null;
-        let replayMode = false;
-        let replayId = null;
         let lastHumanAction = null;
         let lastAIAction = null;
         let actionAnimationTimer = null;
         let actionAnimationAlpha = 1.0;
         let actionInProgress = false;
         let sessionComplete = false;
+        const dataSource = {{ (data_source or '')|tojson }};
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -1177,23 +1069,33 @@
         }
 
         // ===== FINISH SCREEN =====
+        const CONFIRMATION_WORDS = [
+            'apple', 'brave', 'coral', 'delta', 'eagle', 'flame', 'grove', 'haste',
+            'ivory', 'jewel', 'knoll', 'lemon', 'maple', 'noble', 'olive', 'pearl',
+            'quilt', 'ridge', 'stone', 'thorn', 'umbra', 'vivid', 'whale', 'xenon',
+            'yield', 'zephyr', 'amber', 'birch', 'cedar', 'drift', 'ember', 'frost',
+            'glyph', 'haven', 'inlet', 'joust', 'karma', 'lunar', 'marsh', 'nexus',
+            'oasis', 'plume', 'quest', 'rover', 'solar', 'trove', 'unity', 'vault',
+            'waltz', 'orbit', 'blaze', 'crest', 'dusk', 'fable', 'grain', 'heron',
+            'isle', 'junco', 'kelp', 'latch', 'mirth', 'north', 'onyx', 'prism'
+        ];
+
+        function generateConfirmationCode() {
+            const words = [];
+            for (let i = 0; i < 4; i++) {
+                const idx = Math.floor(Math.random() * CONFIRMATION_WORDS.length);
+                words.push(CONFIRMATION_WORDS[idx]);
+            }
+            return words.join('-');
+        }
+
         function showFinishScreen() {
             sessionComplete = true;
             const totalGames = gameState ? (gameState.total_games || 10) : 10;
             document.getElementById('finishGamesPlayed').textContent = totalGames;
+            document.getElementById('finishConfirmationCode').textContent = "unity-vivid-mirth-ember";
             document.getElementById('finishModal').classList.add('show');
             document.body.style.overflow = 'hidden';
-        }
-
-        function hideFinishScreen() {
-            document.getElementById('finishModal').classList.remove('show');
-            document.body.style.overflow = '';
-            sessionComplete = false;
-        }
-
-        async function playAgain() {
-            hideFinishScreen();
-            await startNewGame();
         }
 
         // Close modal on escape key
@@ -1221,7 +1123,6 @@
         // Keyboard controls
         document.addEventListener('keydown', function(event) {
             if (event.repeat) return; // Ignore held-down key repeats
-            if (replayMode) return; // Disable keyboard controls in replay mode
             if (sessionComplete) return; // Disable during finish screen
             if (!gameState || gameState.done) return;
             
@@ -1252,9 +1153,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        max_steps: 50,
-                        grid_size: 7,
-                        num_fruits: 3
+                        data_source: dataSource
                     })
                 });
                 
@@ -1269,9 +1168,6 @@
                     updateDisplay();
                     hideLoadingSpinner();
                     showMessage('New game started! Good luck!', 'success');
-                    // Update main action button label to 'Reset' since a session now exists
-                    const mainBtn = document.getElementById('mainActionBtn');
-                    if (mainBtn) mainBtn.textContent = 'Reset';
                 } else {
                     hideLoadingSpinner();
                 }
@@ -1279,34 +1175,6 @@
                 hideLoadingSpinner();
                 console.error('Error starting new game:', error);
                 showMessage('Error starting game. Please try again.', 'warning');
-            }
-        }
-
-        async function resetGame() {
-            try {
-                const response = await fetch('/api/reset', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    gameState = data.state;
-                    lastHumanAction = null;
-                    lastAIAction = null;
-                    lastHumanAction = null;
-                    lastAIAction = null;
-                    updateDisplay();
-                    showMessage('Game reset!', 'info');
-                    // Ensure main action button remains labeled 'Reset'
-                    const mainBtn = document.getElementById('mainActionBtn');
-                    if (mainBtn) mainBtn.textContent = 'Reset';
-                }
-            } catch (error) {
-                console.error('Error resetting game:', error);
-                showMessage('Error resetting game. Please try again.', 'warning');
             }
         }
 
@@ -1366,33 +1234,6 @@
             }
         }
 
-        // Unified button handler: start a new game if no session or the session is complete,
-        // otherwise reset the existing session. No saving is triggered by this button.
-        async function mainAction() {
-            // If the entire session is complete, start a fresh one
-            if (sessionComplete) {
-                hideFinishScreen();
-                await startNewGame();
-                return;
-            }
-
-            // If there is no active session, start a new one
-            if (!sessionId) {
-                await startNewGame();
-                return;
-            }
-
-            // If the episode is complete (but session not done), the next game auto-advances
-            // via executeAction, so just start a fresh session here
-            if (gameState && gameState.done) {
-                await startNewGame();
-                return;
-            }
-
-            // Otherwise, reset the current session
-            await resetGame();
-        }
-
         function updateDisplay() {
             if (!gameState) return;
             
@@ -1433,16 +1274,12 @@
 
             // Show/hide the game-over overlay — only show when the game is done
             // AND the session is also complete (all games finished)
-            const showOverlay = Boolean(gameState.done) && !replayMode && Boolean(gameState.session_complete);
+            const showOverlay = Boolean(gameState.done) && Boolean(gameState.session_complete);
             setGameOverOverlay(showOverlay);
             
             // Update progress bar
             updateProgressBar();
             
-            // Update replay UI if in replay mode
-            if (replayMode) {
-                updateReplayUI();
-            }
         }
 
         // --- Action animation helpers ---
@@ -1796,183 +1633,6 @@
             }
         }
 
-        // ===== REPLAY FUNCTIONS =====
-        
-        function showFileUpload() {
-            document.getElementById('playModeControls').classList.add('hidden');
-            document.getElementById('fileUploadSection').classList.remove('hidden');
-            document.getElementById('normalModeNote').classList.add('hidden');
-        }
-        
-        function cancelFileUpload() {
-            document.getElementById('playModeControls').classList.remove('hidden');
-            document.getElementById('fileUploadSection').classList.add('hidden');
-            document.getElementById('normalModeNote').classList.remove('hidden');
-            document.getElementById('replayFile').value = '';
-        }
-        
-        async function uploadReplay() {
-            const fileInput = document.getElementById('replayFile');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                showMessage('Please select a file to upload', 'warning');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/api/upload_replay', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    replayMode = true;
-                    replayId = data.replay_id;
-                    gameState = data.state;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    
-                    // Hide file upload, show replay controls
-                    document.getElementById('fileUploadSection').classList.add('hidden');
-                    document.getElementById('playModeControls').classList.add('hidden');
-                    document.getElementById('normalModeNote').classList.add('hidden');
-                    document.getElementById('replayControls').classList.add('active');
-                    document.getElementById('replayInfoSection').classList.add('active');
-                    
-                    // Update replay UI
-                    document.getElementById('replayTotal').textContent = data.state.total_steps;
-                    document.getElementById('replaySlider').max = data.state.total_steps - 1;
-                    
-                    // Show metadata
-                    const metadata = data.metadata;
-                    document.getElementById('replayMetadata').innerHTML = 
-                        `<strong>Player:</strong> ${metadata.player_name} | ` +
-                        `<strong>Date:</strong> ${metadata.timestamp} | ` +
-                        `<strong>Grid:</strong> ${metadata.grid_size}x${metadata.grid_size} | ` +
-                        `<strong>Fruits:</strong> ${metadata.num_fruits}`;
-                    
-                    updateDisplay();
-                    showMessage('Replay loaded successfully!', 'success');
-                } else {
-                    showMessage(data.error || 'Failed to load replay', 'warning');
-                }
-            } catch (error) {
-                console.error('Error uploading replay:', error);
-                showMessage('Error loading replay file', 'warning');
-            }
-        }
-        
-        async function replayControl(action) {
-            if (!replayMode) return;
-            
-            try {
-                const response = await fetch('/api/replay/step', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ action: action })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    gameState = data.state;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    updateDisplay();
-                }
-            } catch (error) {
-                console.error('Error controlling replay:', error);
-                showMessage('Error controlling replay', 'warning');
-            }
-        }
-        
-        async function seekReplay(stepIndex) {
-            if (!replayMode) return;
-            
-            try {
-                const response = await fetch('/api/replay/step', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        action: 'goto',
-                        step_index: parseInt(stepIndex)
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    gameState = data.state;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    updateDisplay();
-                }
-            } catch (error) {
-                console.error('Error seeking replay:', error);
-            }
-        }
-        
-        async function exitReplay() {
-            try {
-                await fetch('/api/exit_replay', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                // Reset replay state
-                replayMode = false;
-                replayId = null;
-                
-                // Reset UI - hide replay controls, show play controls
-                document.getElementById('replayControls').classList.remove('active');
-                document.getElementById('replayInfoSection').classList.remove('active');
-                document.getElementById('playModeControls').classList.remove('hidden');
-                document.getElementById('fileUploadSection').classList.add('hidden');
-                document.getElementById('normalModeNote').classList.remove('hidden');
-                document.getElementById('replayFile').value = '';
-                
-                // Start a new game
-                await startNewGame();
-                
-                showMessage('Exited replay mode', 'info');
-            } catch (error) {
-                console.error('Error exiting replay:', error);
-            }
-        }
-        
-        function updateReplayUI() {
-            if (!replayMode || !gameState) return;
-            
-            document.getElementById('replayStep').textContent = gameState.current_step + 1;
-            document.getElementById('replaySlider').value = gameState.current_step;
-            
-            // Show action information if available
-            if (gameState.human_action !== undefined && gameState.ai_action !== undefined) {
-                const actionNames = ['NOOP', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'LOAD'];
-                console.log(`Step ${gameState.current_step + 1}: Human=${actionNames[gameState.human_action]}, AI=${actionNames[gameState.ai_action]}`);
-            }
-        }
     </script>
 </body>
 </html>

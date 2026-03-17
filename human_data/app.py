@@ -27,12 +27,12 @@ from common.agent_loader_from_config import initialize_rl_agent_from_config
 from evaluation.heldout_evaluator import extract_params
 
 app = Flask(__name__)
-app.secret_key = '<FILL_THIS_IN>'  # Change this in production
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32).hex())
 CORS(app)
 
 # Global game state storage (in production, use Redis or similar)
 game_sessions = {}
-replay_sessions = {}
+game_sessions_lock = threading.Lock()
 
 
 # -- RL POLICY AGENT SUPPORT --
@@ -223,8 +223,9 @@ LOAD = 5
 class GameSession:
     """Manages a single game session with environment state and agent state."""
 
-    def __init__(self, session_id, max_steps=50, env_kwargs: dict = None, is_warmup: bool = False):
+    def __init__(self, session_id, max_steps=50, env_kwargs: dict = None, is_warmup: bool = False, data_source: str = ""):
         self.is_warmup = is_warmup
+        self.data_source = data_source
         self.session_id = session_id
         self.max_steps = max_steps
         self.env_kwargs = env_kwargs or {}
@@ -264,29 +265,34 @@ class GameSession:
         self._warmup_jit_compilation()
     
     def _choose_agent(self):
-        # Ensure RL agents for this variant are loaded (lazy, thread-safe)
+        # Build a flat list of all possible agent factories, then pick uniformly
+        candidates = []
+
+        # RL policy agents
         variant_key = (self.grid_size, self.different_levels)
         if variant_key not in RL_AGENTS:
             _load_rl_agents_for_variant(variant_key)
-        rl_pool = RL_AGENTS.get(variant_key, [])
-        if rl_pool:
-            if random.random() < 0.33:
-                agent = random.choice(rl_pool)
-                # print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
-                return agent
+        for agent in RL_AGENTS.get(variant_key, []):
+            candidates.append(lambda a=agent: a)
 
-        if random.random() < 0.5:
-            return SequentialFruitAgent(
+        # SequentialFruitAgent — one per ordering strategy
+        for strategy in SequentialFruitAgent.VALID_ORDERING_STRATEGIES:
+            candidates.append(lambda s=strategy: SequentialFruitAgent(
                 grid_size=self.grid_size,
                 num_fruits=self.num_fruits,
-                ordering_strategy=random.choice(SequentialFruitAgent.VALID_ORDERING_STRATEGIES)
-            )
-        else:
-            return GreedyHeuristicAgent(
+                ordering_strategy=s,
+            ))
+
+        # GreedyHeuristicAgent — one per heuristic
+        heuristics = GreedyHeuristicAgent.VALID_HEURISTICS_LEVELS if self.different_levels else GreedyHeuristicAgent.VALID_HEURISTICS
+        for heuristic in heuristics:
+            candidates.append(lambda h=heuristic: GreedyHeuristicAgent(
                 grid_size=self.grid_size,
                 num_fruits=self.num_fruits,
-                heuristic=random.choice(GreedyHeuristicAgent.VALID_HEURISTICS)
-            )
+                heuristic=h,
+            ))
+
+        return random.choice(candidates)()
 
     def _warmup_jit_compilation(self):
         """
@@ -475,6 +481,8 @@ class GameSession:
             "total_rewards": {k: float(v) for k, v in self.total_rewards.items()},
             "grid_size": self.grid_size,
             "num_fruits": self.num_fruits,
+            "different_levels": self.different_levels,
+            "agent_type": self.ai_agent.get_name(),
             # include game start/end timing information
             "start_time": getattr(self, "start_time", None),
             "end_time": getattr(self, "end_time", None),
@@ -483,8 +491,9 @@ class GameSession:
         }
         
         # Create data directory if it doesn't exist
-        # Warmup games go to a separate folder
-        folder_name = "collected_data_warmup" if self.is_warmup else "collected_data"
+        # Warmup games go to a separate folder; data_source adds a suffix (e.g. "_prolific")
+        suffix = f"_{self.data_source}" if self.data_source else ""
+        folder_name = f"collected_data_warmup{suffix}" if self.is_warmup else f"collected_data{suffix}"
         data_dir = os.path.join(os.path.dirname(__file__), folder_name)
         os.makedirs(data_dir, exist_ok=True)
         
@@ -497,90 +506,6 @@ class GameSession:
         
         return filepath
 
-class ReplaySession:
-    """Manages replay of a saved episode."""
-    
-    def __init__(self, session_id, episode_data):
-        self.session_id = session_id
-        self.episode_data = episode_data
-        self.trajectory = episode_data['trajectory']
-        self.current_step = 0
-        self.is_playing = False
-        
-    def get_current_state(self):
-        """Get the current replay state."""
-        if self.current_step >= len(self.trajectory):
-            return self._get_final_state()
-        
-        step_data = self.trajectory[self.current_step]
-        return {
-            "replay": True,
-            "done": self.current_step >= len(self.trajectory) - 1,
-            "current_step": self.current_step,
-            "total_steps": len(self.trajectory),
-            "step_count": step_data['step'],
-            "max_steps": self.episode_data.get('total_steps', len(self.trajectory)),
-            "rewards": step_data['rewards'],
-            "total_rewards": self._calculate_total_rewards_up_to(self.current_step),
-            "state": step_data['state'],
-            "human_action": step_data.get('human_action'),
-            "ai_action": step_data.get('ai_action'),
-            "player_name": self.episode_data.get('player_name', 'Anonymous'),
-            "is_playing": self.is_playing
-        }
-    
-    def _get_final_state(self):
-        """Get the final state when replay is complete."""
-        final_step = self.trajectory[-1] if self.trajectory else {}
-        return {
-            "replay": True,
-            "done": True,
-            "current_step": len(self.trajectory),
-            "total_steps": len(self.trajectory),
-            "step_count": final_step.get('step', 0),
-            "max_steps": self.episode_data.get('total_steps', len(self.trajectory)),
-            "rewards": final_step.get('rewards', {"agent_0": 0.0, "agent_1": 0.0}),
-            "total_rewards": self.episode_data.get('total_rewards', {"agent_0": 0.0, "agent_1": 0.0}),
-            "state": final_step.get('state', {}),
-            "player_name": self.episode_data.get('player_name', 'Anonymous'),
-            "is_playing": False
-        }
-    
-    def _calculate_total_rewards_up_to(self, step_index):
-        """Calculate cumulative rewards up to the given step."""
-        total = {"agent_0": 0.0, "agent_1": 0.0}
-        for i in range(step_index + 1):
-            if i < len(self.trajectory):
-                rewards = self.trajectory[i]['rewards']
-                total["agent_0"] += rewards.get("agent_0", 0.0)
-                total["agent_1"] += rewards.get("agent_1", 0.0)
-        return total
-    
-    def next_step(self):
-        """Advance to the next step in the replay."""
-        if self.current_step < len(self.trajectory) - 1:
-            self.current_step += 1
-        return self.get_current_state()
-    
-    def prev_step(self):
-        """Go back to the previous step in the replay."""
-        if self.current_step > 0:
-            self.current_step -= 1
-        return self.get_current_state()
-    
-    def goto_step(self, step_index):
-        """Jump to a specific step in the replay."""
-        if 0 <= step_index < len(self.trajectory):
-            self.current_step = step_index
-        return self.get_current_state()
-    
-    def reset(self):
-        """Reset replay to the beginning."""
-        self.current_step = 0
-        self.is_playing = False
-        return self.get_current_state()
-
-
 # Number of warmup games at the start of each session
 NUM_WARMUP_GAMES = 2
 NUM_REAL_GAMES = 8
@@ -588,20 +513,22 @@ NUM_REAL_GAMES = 8
 
 class MultiGameSession:
     """Manages a sequence of GameSession instances played sequentially with lazy loading."""
-    def __init__(self, session_id, game_configs, first_game=None, num_warmup=NUM_WARMUP_GAMES):
+    def __init__(self, session_id, game_configs, first_game=None, num_warmup=NUM_WARMUP_GAMES, data_source=""):
         self.session_id = session_id
         self.config_list = game_configs  # All configs (used for lazy creation)
         self.games = [None] * len(game_configs)  # Placeholder for all games
         self.current_idx = 0
         self.num_warmup = num_warmup  # First N games are warmup
+        self.data_source = data_source
         self.session_complete = False  # True when all games are done
         self.last_activity = time.time()
-        
+
         # Set first game if provided (already prewarmed or created)
         if first_game:
             self.games[0] = first_game
             first_game.session_id = session_id
             first_game.is_warmup = (0 < num_warmup)
+            first_game.data_source = data_source
 
     def _ensure_game_loaded(self, idx):
         """Ensure game at index is loaded; fetch or create if needed."""
@@ -612,6 +539,7 @@ class MultiGameSession:
         game = get_or_create_game(cfg)
         game.session_id = self.session_id
         game.is_warmup = (idx < self.num_warmup)
+        game.data_source = self.data_source
         self.games[idx] = game
 
     def _current(self):
@@ -638,11 +566,6 @@ class MultiGameSession:
         result = self.get_state_dict()
         result['game_just_advanced'] = False
         return result
-
-    def reset(self):
-        # Reset current game
-        self._ensure_game_loaded(self.current_idx)
-        return self._current().reset()
 
     def get_state_dict(self):
         state = self._current().get_state_dict()
@@ -720,61 +643,77 @@ async def prewarm_games():
     """Continuously prewarm games in background, keeping a pool of each config type."""
     while True:
         try:
-            # Clean up stale game and replay sessions
+            # Clean up stale game sessions
             now = time.time()
-            stale = [sid for sid, gs in game_sessions.items()
-                     if hasattr(gs, 'last_activity') and now - gs.last_activity > SESSION_TTL]
-            for sid in stale:
-                del game_sessions[sid]
+            with game_sessions_lock:
+                stale = [sid for sid, gs in game_sessions.items()
+                         if hasattr(gs, 'last_activity') and now - gs.last_activity > SESSION_TTL]
+                for sid in stale:
+                    del game_sessions[sid]
             if stale:
                 print(f"Cleaned up {len(stale)} stale game session(s)")
-
-            stale_replays = [rid for rid, rs in replay_sessions.items()
-                             if hasattr(rs, 'last_activity') and now - rs.last_activity > SESSION_TTL]
-            for rid in stale_replays:
-                del replay_sessions[rid]
 
             for cfg in BASE_ENV_CONFIGS:
                 key = _config_key(cfg)
                 with PREWARMING_LOCK:
                     if key not in PREWARMED_GAMES_POOL:
                         PREWARMED_GAMES_POOL[key] = []
+                    needs_prewarm = len(PREWARMED_GAMES_POOL[key]) < 3
 
+                if not needs_prewarm:
+                    continue
+
+                gs = GameSession(str(uuid.uuid4()), 50, env_kwargs=cfg.copy())
+
+                with PREWARMING_LOCK:
                     if len(PREWARMED_GAMES_POOL[key]) < 3:
-                        gs = GameSession(str(uuid.uuid4()), 50, env_kwargs=cfg.copy())
                         PREWARMED_GAMES_POOL[key].append(gs)
+                    else:
+                        del gs  # Pool was replenished by another thread
 
-            await asyncio.sleep(2.0)
+            await asyncio.sleep(1)
         except Exception as e:
             print(f"Error prewarming: {e}")
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
 
 @app.route('/')
 def index():
     """Serve the main game page."""
-    return render_template('index.html')
+    return render_template('index.html', data_source='')
+
+
+@app.route('/prolific')
+def prolific_index():
+    """Serve the game page for Prolific participants (data saved to prolific-specific folders)."""
+    return render_template('index.html', data_source='prolific')
 
 
 @app.route('/api/new_game', methods=['POST'])
 def new_game():
     """Start a new game session with 2 warmup + 8 real games. Only first game is loaded upfront."""
+    data = request.get_json() or {}
+    # Sanitize data_source to prevent path traversal — only allow alphanumeric and hyphens
+    raw_source = data.get('data_source', '')
+    data_source = raw_source if raw_source.isalnum() or all(c.isalnum() or c == '-' for c in raw_source) else ''
+
     session_id = str(uuid.uuid4())
-    
+
     # Generate full config list: 2 warmup + 8 real
     conf_list = generate_session_configs()
-    
+
     # Only get/create the FIRST game immediately
     first_cfg = conf_list[0]
     first_game = get_or_create_game(first_cfg)
-    
+
     # Create MultiGameSession with lazy loading for remaining games
-    multi = MultiGameSession(session_id, conf_list, first_game=first_game, num_warmup=NUM_WARMUP_GAMES)
-    game_sessions[session_id] = multi
-    
+    multi = MultiGameSession(session_id, conf_list, first_game=first_game, num_warmup=NUM_WARMUP_GAMES, data_source=data_source)
+    with game_sessions_lock:
+        game_sessions[session_id] = multi
+
     # Store session ID in Flask session
     session['session_id'] = session_id
-    
+
     return jsonify({
         "success": True,
         "session_id": session_id,
@@ -790,13 +729,13 @@ def step():
     session_id = session.get('session_id')
     action = data.get('action')
     
-    if not session_id or session_id not in game_sessions:
-        return jsonify({"success": False, "error": "No active game session"}), 400
-    
     if action is None or not isinstance(action, int) or action < 0 or action > 5:
         return jsonify({"success": False, "error": "Invalid action"}), 400
-    
-    game = game_sessions[session_id]
+
+    with game_sessions_lock:
+        if not session_id or session_id not in game_sessions:
+            return jsonify({"success": False, "error": "No active game session"}), 400
+        game = game_sessions[session_id]
     # capture reference to underlying current game before stepping (so we can report last actions)
     pre_game = game._current() if hasattr(game, '_current') else game
     state = game.step(action)
@@ -807,27 +746,7 @@ def step():
         "success": True,
         "state": state,
         "human_action": last_step["human_action"] if last_step else None,
-        "ai_action": last_step["ai_action"] if last_step else None,
-        "state": state,
-        "human_action": last_step["human_action"] if last_step else None,
         "ai_action": last_step["ai_action"] if last_step else None
-    })
-
-
-@app.route('/api/reset', methods=['POST'])
-def reset():
-    """Reset the current game."""
-    session_id = session.get('session_id')
-    
-    if not session_id or session_id not in game_sessions:
-        return jsonify({"success": False, "error": "No active game session"}), 400
-    
-    game = game_sessions[session_id]
-    state = game.reset()
-    
-    return jsonify({
-        "success": True,
-        "state": state
     })
 
 
@@ -838,14 +757,14 @@ def save_episode():
     session_id = session.get('session_id')
     player_name = data.get('player_name', 'Anonymous')
     
-    if not session_id or session_id not in game_sessions:
-        return jsonify({"success": False, "error": "No active game session"}), 400
-    
-    game = game_sessions[session_id]
+    with game_sessions_lock:
+        if not session_id or session_id not in game_sessions:
+            return jsonify({"success": False, "error": "No active game session"}), 400
+        game = game_sessions.pop(session_id)
+
     # If this is a multi-game session, save all games
     if hasattr(game, 'save_all'):
         paths = game.save_all(player_name)
-        del game_sessions[session_id]
         if paths:
             names = [os.path.basename(p) for p in paths]
             return jsonify({"success": True, "message": f"Saved episodes: {', '.join(names)}"})
@@ -853,7 +772,6 @@ def save_episode():
             return jsonify({"success": False, "error": "No episode data to save"}), 400
     else:
         filepath = game.save_episode(player_name)
-        del game_sessions[session_id]
         if filepath:
             return jsonify({"success": True, "message": f"Episode saved to {os.path.basename(filepath)}"})
         else:
@@ -882,99 +800,6 @@ def get_controls():
         }
     }
     return jsonify(controls)
-
-
-@app.route('/api/upload_replay', methods=['POST'])
-def upload_replay():
-    """Upload an episode file and start a replay session."""
-    if 'file' not in request.files:
-        return jsonify({"success": False, "error": "No file provided"}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"success": False, "error": "No file selected"}), 400
-    
-    if not file.filename.endswith('.json'):
-        return jsonify({"success": False, "error": "File must be a JSON file"}), 400
-    
-    try:
-        # Parse the uploaded JSON file
-        episode_data = json.load(file)
-        
-        # Validate the episode data structure
-        if 'trajectory' not in episode_data:
-            return jsonify({"success": False, "error": "Invalid episode file format"}), 400
-        
-        # Create a new replay session
-        replay_id = str(uuid.uuid4())
-        replay_session = ReplaySession(replay_id, episode_data)
-        replay_sessions[replay_id] = replay_session
-        
-        # Store replay ID in Flask session
-        session['replay_id'] = replay_id
-        
-        return jsonify({
-            "success": True,
-            "replay_id": replay_id,
-            "state": replay_session.get_current_state(),
-            "metadata": {
-                "player_name": episode_data.get('player_name', 'Anonymous'),
-                "timestamp": episode_data.get('timestamp', ''),
-                "total_steps": len(episode_data['trajectory']),
-                "grid_size": episode_data.get('grid_size', 7),
-                "num_fruits": episode_data.get('num_fruits', 3),
-                "start_time": episode_data.get('start_time'),
-                "end_time": episode_data.get('end_time'),
-                "duration": episode_data.get('duration')
-            }
-        })
-    except json.JSONDecodeError:
-        return jsonify({"success": False, "error": "Invalid JSON file"}), 400
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@app.route('/api/replay/step', methods=['POST'])
-def replay_step():
-    """Control replay playback."""
-    data = request.get_json()
-    replay_id = session.get('replay_id')
-    
-    if not replay_id or replay_id not in replay_sessions:
-        return jsonify({"success": False, "error": "No active replay session"}), 400
-    
-    replay = replay_sessions[replay_id]
-    action = data.get('action')  # 'next', 'prev', 'goto', 'reset'
-    
-    if action == 'next':
-        state = replay.next_step()
-    elif action == 'prev':
-        state = replay.prev_step()
-    elif action == 'goto':
-        step_index = data.get('step_index', 0)
-        state = replay.goto_step(step_index)
-    elif action == 'reset':
-        state = replay.reset()
-    else:
-        return jsonify({"success": False, "error": "Invalid action"}), 400
-    
-    return jsonify({
-        "success": True,
-        "state": state
-    })
-
-
-@app.route('/api/exit_replay', methods=['POST'])
-def exit_replay():
-    """Exit replay mode and return to normal game mode."""
-    replay_id = session.get('replay_id')
-    
-    if replay_id and replay_id in replay_sessions:
-        del replay_sessions[replay_id]
-    
-    session.pop('replay_id', None)
-    
-    return jsonify({"success": True})
 
 
 BACKGROUND_LOOP = asyncio.new_event_loop()

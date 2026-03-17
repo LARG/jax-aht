@@ -58,6 +58,9 @@ class SequentialFruitAgent(BaseAgent):
              raise ValueError(f"Invalid ordering_strategy: '{ordering_strategy}'. Must be one of {self.VALID_ORDERING_STRATEGIES}")
         self.ordering_strategy = ordering_strategy # Store the chosen strategy string
 
+    def get_name(self):
+        return f"SequentialFruitAgent({self.ordering_strategy})"
+
     def init_agent_state(self, agent_id: int) -> 'SequentialFruitAgent.SeqAgentState':
         """
         Creates an initial, uninitialized agent state structure. Only used in the __init__ method.
