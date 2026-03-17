@@ -111,8 +111,16 @@ def run_heldout_xp_evaluation(config, print_metrics=False):
         metric_names = get_metric_names(config["ENV_NAME"])
         heldout_names = list(heldout_agents.keys())
         br_names = list(br_agents.keys())
+        save_heatmap = config.get("xp_matrix_outputs", {}).get("save_heatmap", False)
         for metric_name in metric_names:
-            print_metrics_table(eval_metrics, metric_name, heldout_names, br_names, 
-            config["global_heldout_settings"]["AGGREGATE_STAT"], 
-            config["global_heldout_settings"]["NORMALIZE_RETURNS"], save=True)
+            print_metrics_table(
+                eval_metrics,
+                metric_name,
+                heldout_names,
+                br_names,
+                config["global_heldout_settings"]["AGGREGATE_STAT"],
+                config["global_heldout_settings"]["NORMALIZE_RETURNS"],
+                save=True,
+                save_heatmap=save_heatmap,
+            )
     return eval_metrics

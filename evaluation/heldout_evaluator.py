@@ -273,14 +273,16 @@ def run_heldout_evaluation(config, print_metrics=False):
                 aggregate_stat, config["global_heldout_settings"]["NORMALIZE_RETURNS"])
     return eval_metrics
 
-def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names, 
-                        aggregate_stat: str, normalized_metrics: bool, save: bool = False):
+def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names,
+                        aggregate_stat: str, normalized_metrics: bool,
+                        save: bool = False, save_heatmap: bool = False):
     '''Generate a table of the aggregate stat and CI of the metric for each ego agent and heldout agent.'''
     # eval_metrics[metric_name] shape (num_ego_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)
     # we first take the mean over the num_agents_per_env dimension
     eval_metric_data = np.array(eval_metrics[metric_name]).mean(axis=-1) # shape (num_ego_agents, num_heldout_agents, num_eval_episodes, 2)
     table = PrettyTable()
     table.field_names = ["---", *heldout_names]
+    tidy_rows = []
 
     for i, ego_name in enumerate(ego_names):
         data = eval_metric_data[i].transpose(1, 0) # shape (num_eval_episodes, num_heldout_agents)
@@ -289,6 +291,17 @@ def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names,
         upper_ci = interval_ests_all[:, 1]
         row = [ego_name] + [f"{point_est_all[j]:.2f} ({lower_ci[j]:.2f}, {upper_ci[j]:.2f})" for j in range(len(heldout_names))]
         table.add_row(row)
+        for j, heldout_name in enumerate(heldout_names):
+            tidy_rows.append({
+                "row_agent": ego_name,
+                "col_agent": heldout_name,
+                "metric_name": metric_name,
+                "aggregate_stat": aggregate_stat,
+                "normalized": normalized_metrics,
+                "mean": float(point_est_all[j]),
+                "ci_lower": float(lower_ci[j]),
+                "ci_upper": float(upper_ci[j]),
+            })
     
     print(f"\n{metric_name} ({aggregate_stat} ± CI):")
     if normalized_metrics:
@@ -307,3 +320,34 @@ def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names,
         with open(csv_filename, 'w', newline='') as f_output:
             f_output.write(table.get_csv_string())
         print(f"Table saved to {csv_filename}")
+
+        tidy_csv_filename = os.path.join(output_dir, f"{safe_metric_name}_{aggregate_stat}_normalized={normalized_metrics}_tidy.csv")
+        import csv
+        with open(tidy_csv_filename, 'w', newline='') as tidy_file:
+            writer = csv.DictWriter(
+                tidy_file,
+                fieldnames=[
+                    "row_agent",
+                    "col_agent",
+                    "metric_name",
+                    "aggregate_stat",
+                    "normalized",
+                    "mean",
+                    "ci_lower",
+                    "ci_upper",
+                ],
+            )
+            writer.writeheader()
+            writer.writerows(tidy_rows)
+        print(f"Tidy table saved to {tidy_csv_filename}")
+
+        if save_heatmap:
+            try:
+                from pathlib import Path
+                from evaluation.plot_xp_csv_heatmap import generate_heatmap_from_csv
+
+                heatmap_title = f"XP Matrix: {metric_name} ({aggregate_stat})"
+                png_path = generate_heatmap_from_csv(Path(csv_filename), title=heatmap_title)
+                print(f"Heatmap saved to {png_path}")
+            except Exception as exc:
+                print(f"Warning: failed to generate heatmap for {csv_filename}: {exc}")
