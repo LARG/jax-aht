@@ -136,7 +136,8 @@ def main():
         test_flask_imports,
         test_environment,
         test_agent,
-        test_episode
+        test_episode,
+        test_data_timestamps
     ]
     
     results = []
@@ -145,6 +146,9 @@ def main():
     
     for _ in range(2):
         test_episode()
+    # run the timestamp test a couple times as well
+    for _ in range(2):
+        test_data_timestamps()
 
     print("\n" + "=" * 60)
     print(f"Test Results: {sum(results)}/{len(results)} passed")
@@ -160,6 +164,41 @@ def main():
         return 1
     
     return 0
+
+
+def test_data_timestamps():
+    """Verify that saved episode JSON contains start/end times and elapsed fields."""
+    print("\nTesting data timestamps in saved JSON...")
+    from human_data.app import GameSession
+    import tempfile, json, time
+
+    # create a short game and take a couple steps
+    game = GameSession(session_id="test", max_steps=5, grid_size=7, num_fruits=3)
+    # initial reset already sets start_time
+    game.step(0)
+    game.step(1)
+    # force finish by marking done
+    game.done = True
+    game.end_time = time.time()
+    path = game.save_episode(player_name="tester")
+    if not path:
+        print("  ✗ failed to save episode file")
+        return False
+    with open(path) as f:
+        data = json.load(f)
+    # check keys
+    ok = True
+    for key in ('start_time','end_time','duration'):
+        if key not in data:
+            print(f"  ✗ missing {key} in episode JSON")
+            ok = False
+    traj = data.get('trajectory', [])
+    if traj:
+        if 'elapsed' not in traj[0] or 'timestamp' not in traj[0]:
+            print("  ✗ trajectory entries missing timing info")
+            ok = False
+    print("  ✓ data timestamps present?", ok)
+    return ok
 
 if __name__ == "__main__":
     exit(main())
