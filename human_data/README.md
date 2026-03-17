@@ -59,8 +59,9 @@ python app.py
 Episode data is **automatically saved** to `human_data/collected_data/` when an episode completes (reaches max steps or game ends). Each file contains:
 
 - **Player Information**: Player name and session ID
+- **Timing Information**: When the game actually started/ended and elapsed duration
 - **Episode Metadata**: Total steps, rewards, grid configuration
-- **Full Trajectory**: Step-by-step actions, rewards, and environment states
+- **Full Trajectory**: Step-by-step actions, rewards, states, and elapsed time
 
 Data format example:
 ```json
@@ -68,6 +69,9 @@ Data format example:
   "player_name": "Anonymous",
   "session_id": "uuid-string",
   "timestamp": "20251023_143052",
+  "start_time": 1700000000.123,
+  "end_time": 1700000012.456,
+  "duration": 12.333,
   "total_steps": 30,
   "total_rewards": {
     "agent_0": 0.5,
@@ -81,7 +85,9 @@ Data format example:
       "human_action": 1,
       "ai_action": 4,
       "rewards": {"agent_0": 0.0, "agent_1": 0.0},
-      "state": { ... }
+      "state": { ... },
+      "timestamp": 1700000000.123,
+      "elapsed": 0.0
     },
     ...
   ]

@@ -7,7 +7,6 @@ import sys
 import json
 import time
 import random
-from functools import wraps
 from flask import Flask, render_template, jsonify, request, session
 from flask_cors import CORS
 import jax
@@ -17,7 +16,6 @@ import asyncio
 import uuid
 import threading
 from asyncio import run_coroutine_threadsafe
-from werkzeug.utils import secure_filename
 
 # Add parent directory to path to import project modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,6 +23,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from envs import make_env
 from agents.lbf import SequentialFruitAgent
 from agents.lbf import GreedyHeuristicAgent
+from common.agent_loader_from_config import initialize_rl_agent_from_config
+from evaluation.heldout_evaluator import extract_params
 
 app = Flask(__name__)
 app.secret_key = '<FILL_THIS_IN>'  # Change this in production
@@ -34,6 +34,184 @@ CORS(app)
 game_sessions = {}
 replay_sessions = {}
 
+
+# -- RL POLICY AGENT SUPPORT --
+
+class RLPolicyAgentWrapper:
+    """Wraps an AgentPolicy + params to match the heuristic BaseAgent interface
+    so GameSession can use RL policy agents interchangeably with heuristic agents."""
+
+    def __init__(self, policy, params, test_mode=False, name="rl_agent"):
+        self.policy = policy
+        self.params = params
+        self.test_mode = test_mode
+        self._name = name
+
+    def init_agent_state(self, agent_id):
+        return self.policy.init_hstate(1, aux_info={"agent_id": agent_id})
+
+    def get_action(self, obs, env_state, agent_state, rng):
+        obs_reshaped = obs.reshape(1, 1, -1)
+        done = jnp.zeros((1, 1), dtype=bool)
+        avail_actions = env_state.avail_actions["agent_1"].astype(jnp.float32)
+        action, new_hstate = self.policy.get_action(
+            params=self.params,
+            obs=obs_reshaped,
+            done=done,
+            avail_actions=avail_actions,
+            hstate=agent_state,
+            rng=rng,
+            env_state=env_state,
+            test_mode=self.test_mode,
+        )
+        return action.squeeze(), new_hstate
+
+    def get_name(self):
+        return self._name
+
+
+# Pool of loaded RL agents per game variant (populated at startup)
+# Key: (grid_size, different_levels) -> list of RLPolicyAgentWrapper
+RL_AGENTS = {}
+
+# Configs for RL teammates stored in human_data/teammates/, keyed by (grid_size, different_levels)
+_RL_AGENT_CONFIGS = {
+    (7, False): [
+        {
+            "name": "ippo_mlp",
+            "path": "human_data/teammates/ippo-lbf-7/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+        {
+            "name": "ippo_mlp_s2c0",
+            "path": "human_data/teammates/ippo-lbf-7/saved_train_run",
+            "actor_type": "mlp",
+            "idx_list": [[2, 0]],  # seed 2, checkpoint 0 — needs "checkpoints" key (default)
+            "test_mode": False,
+        },
+        # {
+        #     "name": "brdiv-conf1",
+        #     "path": "human_data/teammates/brdiv-lbf-7-1/saved_train_run",
+        #     "actor_type": "actor_with_conditional_critic",
+        #     "ckpt_key": "final_params_conf",
+        #     "idx_list": [0, 1, 2],
+        #     "POP_SIZE": 5,
+        #     "test_mode": False,
+        # },
+        # {
+        #     "name": "brdiv-conf2",
+        #     "path": "human_data/teammates/brdiv-lbf-7-2/saved_train_run",
+        #     "actor_type": "actor_with_conditional_critic",
+        #     "ckpt_key": "final_params_conf",
+        #     "idx_list": [0, 1],
+        #     "POP_SIZE": 3,
+        #     "test_mode": False,
+        # },
+    ],
+    (7, True): [
+        {
+            "name": "ippo_mlp_7_levels",
+            "path": "human_data/teammates/ippo-lbf-7-levels/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+    ],
+    (12, False): [
+        {
+            "name": "ippo_mlp_12",
+            "path": "human_data/teammates/ippo-lbf-12/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+    ],
+    (12, True): [
+        {
+            "name": "ippo_mlp_12_levels",
+            "path": "human_data/teammates/ippo-lbf-12-levels/saved_train_run",
+            "actor_type": "mlp",
+            "ckpt_key": "final_params",
+            "idx_list": [0],
+            "test_mode": False,
+        },
+    ],
+}
+
+
+_rl_load_lock = threading.Lock()
+_rl_load_rng = jax.random.PRNGKey(0)
+
+
+def _load_rl_agents_for_variant(variant_key):
+    """Load RL agents for a single (grid_size, different_levels) variant. Thread-safe, idempotent."""
+    global _rl_load_rng
+    import logging
+
+    if variant_key in RL_AGENTS:
+        return  # Already loaded
+
+    with _rl_load_lock:
+        if variant_key in RL_AGENTS:
+            return  # Double-check after acquiring lock
+
+        grid_size, different_levels = variant_key
+        cfg_list = _RL_AGENT_CONFIGS.get(variant_key, [])
+        if not cfg_list:
+            RL_AGENTS[variant_key] = []
+            return
+
+        cpu = jax.devices('cpu')[0]
+        num_food = 3 if grid_size == 7 else 6
+        env = make_env(env_name="lbf", env_kwargs={
+            "grid_size": grid_size, "num_agents": 2, "num_food": num_food,
+            "different_levels": different_levels,
+        })
+
+        root_logger = logging.getLogger()
+        prev_level = root_logger.level
+        root_logger.setLevel(logging.CRITICAL)
+
+        agents = []
+        try:
+            for cfg in cfg_list:
+                cfg = dict(cfg)
+                name = cfg.pop("name")
+                test_mode = cfg.pop("test_mode")
+
+                _rl_load_rng, init_rng = jax.random.split(_rl_load_rng)
+                cfg["custom_loader"] = {"name": "partial_load"}
+                policy, params, init_params, idx_labels = initialize_rl_agent_from_config(
+                    cfg, name, env, init_rng
+                )
+                params = jax.tree.map(lambda x: jax.device_put(x, cpu), params)
+                params_list, idx_labels = extract_params(params, init_params, idx_labels)
+                del init_params
+
+                for i, p in enumerate(params_list):
+                    label = f"{name}({idx_labels[i]})" if len(params_list) > 1 else name
+                    param_bytes = sum(x.nbytes for x in jax.tree.leaves(p))
+                    print(f"  Agent '{label}': {param_bytes / 1024:.1f} KB ({len(jax.tree.leaves(p))} arrays)")
+                    agents.append(RLPolicyAgentWrapper(policy, p, test_mode, label))
+        finally:
+            root_logger.setLevel(prev_level)
+
+        RL_AGENTS[variant_key] = agents
+        print(f"Loaded {len(agents)} RL policy agents for {grid_size}x{grid_size} (different_levels={different_levels})")
+
+
+def load_rl_agents():
+    """Eagerly load RL agents for the (7, 'same') variant at startup. Others load lazily on first use."""
+    _load_rl_agents_for_variant((7, False))
+    _load_rl_agents_for_variant((7, True))
+    _load_rl_agents_for_variant((12, True))
+    _load_rl_agents_for_variant((12, False))
+
 # Action constants
 NOOP = 0
 UP = 1
@@ -42,48 +220,29 @@ LEFT = 3
 RIGHT = 4
 LOAD = 5
 
-def simple_timer(func):
-    """
-    Simple timing decorator that always runs.
-    Prints execution time for the function.
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        elapsed_time = time.time() - start_time
-        print(f"⏱️  {func.__name__} took {elapsed_time:.4f}s")
-        return result
-    return wrapper
-
 class GameSession:
     """Manages a single game session with environment state and agent state."""
-    
-    def __init__(self, session_id, max_steps=50, grid_size=7, num_fruits=3):
+
+    def __init__(self, session_id, max_steps=50, env_kwargs: dict = None, is_warmup: bool = False):
+        self.is_warmup = is_warmup
         self.session_id = session_id
         self.max_steps = max_steps
-        self.grid_size = grid_size
-        self.num_fruits = num_fruits
-        
-        # Initialize environment
-        self.env = make_env(
-            env_name="lbf", 
-            env_kwargs={
-                "time_limit": max_steps,
-                "grid_size": grid_size,
-                "num_agents": 2,
-                "num_food": num_fruits,
-                "highlight_agent_idx": 0  # Highlight human player
-            }
-        )
-        
-        # Initialize heuristic agent (agent 1 - computer)
-        # self.ai_agent = SequentialFruitAgent(
-        #     grid_size=grid_size, 
-        #     num_fruits=num_fruits, 
-        #     ordering_strategy='nearest_agent'
-        # )
+        self.env_kwargs = env_kwargs or {}
+        self.grid_size = self.env_kwargs.get("grid_size", 7)
+        self.num_fruits = self.env_kwargs.get("num_food", 3 if self.grid_size == 7 else 6)
+        self.different_levels = self.env_kwargs.get("different_levels", False)
+
+        # Choose agent first
         self.ai_agent = self._choose_agent()
+
+        # Initialize environment
+        env_args = dict(self.env_kwargs)
+        env_args.update({
+            "time_limit": max_steps,
+            "num_agents": 2,
+            "highlight_agent_idx": 0,
+        })
+        self.env = make_env(env_name="lbf", env_kwargs=env_args)
         
         # Initialize JAX random key
         self.rng = jax.random.PRNGKey(np.random.randint(0, 1000000))
@@ -105,26 +264,36 @@ class GameSession:
         self._warmup_jit_compilation()
     
     def _choose_agent(self):
+        # Ensure RL agents for this variant are loaded (lazy, thread-safe)
+        variant_key = (self.grid_size, self.different_levels)
+        if variant_key not in RL_AGENTS:
+            _load_rl_agents_for_variant(variant_key)
+        rl_pool = RL_AGENTS.get(variant_key, [])
+        if rl_pool:
+            if random.random() < 0.33:
+                agent = random.choice(rl_pool)
+                # print(f"  AI teammate: RL policy agent '{agent.get_name()}'")
+                return agent
+
         if random.random() < 0.5:
             return SequentialFruitAgent(
-                grid_size=self.grid_size, 
-                num_fruits=self.num_fruits, 
+                grid_size=self.grid_size,
+                num_fruits=self.num_fruits,
                 ordering_strategy=random.choice(SequentialFruitAgent.VALID_ORDERING_STRATEGIES)
             )
         else:
             return GreedyHeuristicAgent(
-                grid_size=self.grid_size, 
-                num_fruits=self.num_fruits, 
+                grid_size=self.grid_size,
+                num_fruits=self.num_fruits,
                 heuristic=random.choice(GreedyHeuristicAgent.VALID_HEURISTICS)
             )
-        
 
     def _warmup_jit_compilation(self):
         """
         Pre-compile JAX functions by doing warmup steps.
         This ensures the first actual game step is fast.
         """
-        print(f"🔥 Warming up JIT compilation for session {self.session_id[:8]}...")
+        # print(f"🔥 Warming up JIT compilation for session {self.session_id[:8]}...")
         warmup_start = time.time()
         
         # Save current state
@@ -172,7 +341,7 @@ class GameSession:
         self.rng = saved_rng
         
         warmup_time = time.time() - warmup_start
-        print(f"✅ JIT compilation complete ({warmup_time:.2f}s)")
+        # print(f"✅ JIT compilation complete ({warmup_time:.2f}s)")
     
     def reset(self):
         """Reset the game environment."""
@@ -186,13 +355,18 @@ class GameSession:
         self.rewards = {"agent_0": 0.0, "agent_1": 0.0}
         self.total_rewards = {"agent_0": 0.0, "agent_1": 0.0}
         self.step_count = 0
+        # track timing for the episode
+        self.start_time = time.time()
+        self.end_time = None
+
         self.episode_history = []
-        
+
         return self.get_state_dict()
     
     def step(self, human_action):
         """Execute one step with human action and AI agent action."""
         if self.done:
+            # TODO: Record endtime
             return self.get_state_dict()
         
         # Get AI agent action
@@ -216,6 +390,10 @@ class GameSession:
             step_key, self.state, actions
         )
         
+        # Block until all JAX operations are complete before proceeding
+        # This ensures responsive gameplay without lag
+        jax.block_until_ready(self.obs)
+        
         # Update state
         self.done = done_dict["__all__"]
         self.step_count += 1
@@ -224,17 +402,24 @@ class GameSession:
         for agent in self.env.agents:
             self.total_rewards[agent] += float(self.rewards[agent])
         
-        # Store in history
+        # Store in history (with elapsed time since start)
+        now = time.time()
+        elapsed = now - self.start_time if hasattr(self, 'start_time') else None
         self.episode_history.append({
             "step": self.step_count,
             "human_action": int(human_action),
             "ai_action": int(ai_action),
             "rewards": {k: float(v) for k, v in self.rewards.items()},
-            "state": self._serialize_state()
+            "state": self._serialize_state(),
+            # include wall-clock timestamp and elapsed seconds
+            "timestamp": now,
+            "elapsed": elapsed
         })
         
         # Auto-save when episode is done
         if self.done:
+            # record end time before saving
+            self.end_time = time.time()
             self.save_episode()
         
         return self.get_state_dict()
@@ -265,7 +450,10 @@ class GameSession:
             "rewards": {k: float(v) for k, v in self.rewards.items()},
             "total_rewards": {k: float(v) for k, v in self.total_rewards.items()},
             "avail_actions": avail_actions,
-            "state": state_data
+            "state": state_data,
+            "grid_size": self.grid_size,
+            "num_fruits": self.num_fruits,
+            "different_levels": self.different_levels
         }
     
     def save_episode(self, player_name="Anonymous"):
@@ -273,10 +461,12 @@ class GameSession:
         if not self.episode_history:
             return None
         
-        # Add timestamp for uniqueness
-        import time
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         
+        # make sure end_time is set if game is being saved after completion
+        if getattr(self, 'end_time', None) is None and self.done:
+            self.end_time = time.time()
+
         episode_data = {
             "player_name": player_name,
             "session_id": self.session_id,
@@ -285,11 +475,17 @@ class GameSession:
             "total_rewards": {k: float(v) for k, v in self.total_rewards.items()},
             "grid_size": self.grid_size,
             "num_fruits": self.num_fruits,
+            # include game start/end timing information
+            "start_time": getattr(self, "start_time", None),
+            "end_time": getattr(self, "end_time", None),
+            "duration": (self.end_time - self.start_time) if (self.start_time and self.end_time) else None,
             "trajectory": self.episode_history
         }
         
         # Create data directory if it doesn't exist
-        data_dir = os.path.join(os.path.dirname(__file__), "collected_data")
+        # Warmup games go to a separate folder
+        folder_name = "collected_data_warmup" if self.is_warmup else "collected_data"
+        data_dir = os.path.join(os.path.dirname(__file__), folder_name)
         os.makedirs(data_dir, exist_ok=True)
         
         # Save to file with timestamp for uniqueness
@@ -310,7 +506,6 @@ class ReplaySession:
         self.trajectory = episode_data['trajectory']
         self.current_step = 0
         self.is_playing = False
-        self.playback_speed = 1.0  # Steps per second
         
     def get_current_state(self):
         """Get the current replay state."""
@@ -385,25 +580,174 @@ class ReplaySession:
         self.is_playing = False
         return self.get_current_state()
 
-# -- PREWARMING -- 
-# Prewarm a queue of game sessions that are ready to go
 
-PREWARMED_GAMES = []
+# Number of warmup games at the start of each session
+NUM_WARMUP_GAMES = 2
+NUM_REAL_GAMES = 8
 
-def get_game():
-    max_steps = 50
-    grid_size = 7
-    num_fruits = random.randint(3, 4)
-    game = GameSession(str(uuid.uuid4()), max_steps, grid_size, num_fruits)
-    return game
 
-async def add_prewarmed_game():
-    print("Adding prewarmed game session...")
-    game = get_game()
-    print("Added prewarmed game session")
-    PREWARMED_GAMES.append(game)
+class MultiGameSession:
+    """Manages a sequence of GameSession instances played sequentially with lazy loading."""
+    def __init__(self, session_id, game_configs, first_game=None, num_warmup=NUM_WARMUP_GAMES):
+        self.session_id = session_id
+        self.config_list = game_configs  # All configs (used for lazy creation)
+        self.games = [None] * len(game_configs)  # Placeholder for all games
+        self.current_idx = 0
+        self.num_warmup = num_warmup  # First N games are warmup
+        self.session_complete = False  # True when all games are done
+        self.last_activity = time.time()
+        
+        # Set first game if provided (already prewarmed or created)
+        if first_game:
+            self.games[0] = first_game
+            first_game.session_id = session_id
+            first_game.is_warmup = (0 < num_warmup)
 
-    return game
+    def _ensure_game_loaded(self, idx):
+        """Ensure game at index is loaded; fetch or create if needed."""
+        if self.games[idx] is not None:
+            return  # Already loaded
+        
+        cfg = self.config_list[idx]
+        game = get_or_create_game(cfg)
+        game.session_id = self.session_id
+        game.is_warmup = (idx < self.num_warmup)
+        self.games[idx] = game
+
+    def _current(self):
+        self._ensure_game_loaded(self.current_idx)
+        return self.games[self.current_idx]
+
+    def step(self, human_action):
+        self.last_activity = time.time()
+        cur = self._current()
+        prev_idx = self.current_idx
+        cur.step(human_action)
+        # If current finished, advance to next game
+        if cur.done and self.current_idx < len(self.games) - 1:
+            self.current_idx += 1
+            # Ensure next game is loaded before returning its state
+            self._ensure_game_loaded(self.current_idx)
+            result = self.get_state_dict()
+            result['game_just_advanced'] = True
+            result['prev_game_index'] = prev_idx
+            return result
+        # If all games are done, mark session complete
+        if cur.done and self.current_idx >= len(self.games) - 1:
+            self.session_complete = True
+        result = self.get_state_dict()
+        result['game_just_advanced'] = False
+        return result
+
+    def reset(self):
+        # Reset current game
+        self._ensure_game_loaded(self.current_idx)
+        return self._current().reset()
+
+    def get_state_dict(self):
+        state = self._current().get_state_dict()
+        # add multi-game metadata
+        state['multi'] = True
+        state['current_game_index'] = self.current_idx
+        state['total_games'] = len(self.games)
+        state['num_warmup'] = self.num_warmup
+        state['is_warmup'] = self.current_idx < self.num_warmup
+        state['session_complete'] = self.session_complete
+        state['game_configs'] = self.config_list
+        return state
+
+    def save_all(self, player_name='Anonymous'):
+        paths = []
+        for game in self.games:
+            if game is not None:
+                p = game.save_episode(player_name)
+                if p:
+                    paths.append(p)
+        return paths
+
+
+# -- PREWARMING --
+# Prewarm a pool of games; each env_kwargs config is prewarmed independently.
+# User gets a prewarmed game if available from the pool, otherwise created on-demand.
+
+PREWARMED_GAMES_POOL = {}  # {config_key: [GameSession, ...]}
+PREWARMING_LOCK = threading.Lock()
+
+# The 4 base env_kwargs configurations
+BASE_ENV_CONFIGS = [
+    {"grid_size": 7, "num_food": 3, "different_levels": False},
+    {"grid_size": 7, "num_food": 3, "different_levels": True},
+    {"grid_size": 12, "num_food": 6, "different_levels": False},
+    {"grid_size": 12, "num_food": 6, "different_levels": True},
+]
+
+def _config_key(env_kwargs):
+    """Hashable key for an env_kwargs dict."""
+    return (env_kwargs.get("grid_size", 7), env_kwargs.get("different_levels", False))
+
+def generate_session_configs(num_warmup=NUM_WARMUP_GAMES, num_real=NUM_REAL_GAMES):
+    """Generate the full list of game configs (env_kwargs dicts) for a session.
+
+    Returns a list of dicts: first `num_warmup` are warmup, rest are real games.
+    Warmup games use randomly chosen configs.
+    Real games use 2 copies of each of the 4 base configs, shuffled.
+    """
+    # Warmup: pick randomly from base configs
+    warmup = [random.choice(BASE_ENV_CONFIGS).copy() for _ in range(num_warmup)]
+
+    # Real games: 2 copies of each base config, shuffled
+    real = [cfg.copy() for cfg in BASE_ENV_CONFIGS for _ in range(num_real // len(BASE_ENV_CONFIGS))]
+    # If num_real isn't perfectly divisible, pad with random picks
+    while len(real) < num_real:
+        real.append(random.choice(BASE_ENV_CONFIGS).copy())
+    random.shuffle(real)
+
+    return warmup + real
+
+def get_or_create_game(env_kwargs):
+    """Get a prewarmed game or create one on-demand."""
+    key = _config_key(env_kwargs)
+    with PREWARMING_LOCK:
+        if key in PREWARMED_GAMES_POOL and PREWARMED_GAMES_POOL[key]:
+            return PREWARMED_GAMES_POOL[key].pop(0)
+
+    # Fallback: create on-demand
+    return GameSession(str(uuid.uuid4()), 50, env_kwargs=env_kwargs)
+
+SESSION_TTL = 30 * 60  # 30 minutes
+
+async def prewarm_games():
+    """Continuously prewarm games in background, keeping a pool of each config type."""
+    while True:
+        try:
+            # Clean up stale game and replay sessions
+            now = time.time()
+            stale = [sid for sid, gs in game_sessions.items()
+                     if hasattr(gs, 'last_activity') and now - gs.last_activity > SESSION_TTL]
+            for sid in stale:
+                del game_sessions[sid]
+            if stale:
+                print(f"Cleaned up {len(stale)} stale game session(s)")
+
+            stale_replays = [rid for rid, rs in replay_sessions.items()
+                             if hasattr(rs, 'last_activity') and now - rs.last_activity > SESSION_TTL]
+            for rid in stale_replays:
+                del replay_sessions[rid]
+
+            for cfg in BASE_ENV_CONFIGS:
+                key = _config_key(cfg)
+                with PREWARMING_LOCK:
+                    if key not in PREWARMED_GAMES_POOL:
+                        PREWARMED_GAMES_POOL[key] = []
+
+                    if len(PREWARMED_GAMES_POOL[key]) < 3:
+                        gs = GameSession(str(uuid.uuid4()), 50, env_kwargs=cfg.copy())
+                        PREWARMED_GAMES_POOL[key].append(gs)
+
+            await asyncio.sleep(2.0)
+        except Exception as e:
+            print(f"Error prewarming: {e}")
+            await asyncio.sleep(2)
 
 
 @app.route('/')
@@ -414,20 +758,19 @@ def index():
 
 @app.route('/api/new_game', methods=['POST'])
 def new_game():
-    """Start a new game session."""
-    # Generate session ID
+    """Start a new game session with 2 warmup + 8 real games. Only first game is loaded upfront."""
     session_id = str(uuid.uuid4())
     
-    print("Prewarmed games:", len(PREWARMED_GAMES))
-
-    if PREWARMED_GAMES:
-        game = PREWARMED_GAMES.pop(0)
-        run_coroutine_threadsafe(add_prewarmed_game(), BACKGROUND_LOOP)
-    else:
-        game = get_game()
-
-    game.session_id = session_id
-    game_sessions[session_id] = game
+    # Generate full config list: 2 warmup + 8 real
+    conf_list = generate_session_configs()
+    
+    # Only get/create the FIRST game immediately
+    first_cfg = conf_list[0]
+    first_game = get_or_create_game(first_cfg)
+    
+    # Create MultiGameSession with lazy loading for remaining games
+    multi = MultiGameSession(session_id, conf_list, first_game=first_game, num_warmup=NUM_WARMUP_GAMES)
+    game_sessions[session_id] = multi
     
     # Store session ID in Flask session
     session['session_id'] = session_id
@@ -435,8 +778,9 @@ def new_game():
     return jsonify({
         "success": True,
         "session_id": session_id,
-        "state": game.get_state_dict()
+        "state": multi.get_state_dict()
     })
+
 
 
 @app.route('/api/step', methods=['POST'])
@@ -453,13 +797,17 @@ def step():
         return jsonify({"success": False, "error": "Invalid action"}), 400
     
     game = game_sessions[session_id]
+    # capture reference to underlying current game before stepping (so we can report last actions)
+    pre_game = game._current() if hasattr(game, '_current') else game
     state = game.step(action)
-    
-    # Include the last actions so the frontend can show visual indicators
-    last_step = game.episode_history[-1] if game.episode_history else None
+    # last actions come from the pre-step game
+    last_step = pre_game.episode_history[-1] if pre_game.episode_history else None
     
     return jsonify({
         "success": True,
+        "state": state,
+        "human_action": last_step["human_action"] if last_step else None,
+        "ai_action": last_step["ai_action"] if last_step else None,
         "state": state,
         "human_action": last_step["human_action"] if last_step else None,
         "ai_action": last_step["ai_action"] if last_step else None
@@ -494,18 +842,22 @@ def save_episode():
         return jsonify({"success": False, "error": "No active game session"}), 400
     
     game = game_sessions[session_id]
-    filepath = game.save_episode(player_name)
-    
-    if filepath:
-        return jsonify({
-            "success": True,
-            "message": f"Episode saved to {os.path.basename(filepath)}"
-        })
+    # If this is a multi-game session, save all games
+    if hasattr(game, 'save_all'):
+        paths = game.save_all(player_name)
+        del game_sessions[session_id]
+        if paths:
+            names = [os.path.basename(p) for p in paths]
+            return jsonify({"success": True, "message": f"Saved episodes: {', '.join(names)}"})
+        else:
+            return jsonify({"success": False, "error": "No episode data to save"}), 400
     else:
-        return jsonify({
-            "success": False,
-            "error": "No episode data to save"
-        }), 400
+        filepath = game.save_episode(player_name)
+        del game_sessions[session_id]
+        if filepath:
+            return jsonify({"success": True, "message": f"Episode saved to {os.path.basename(filepath)}"})
+        else:
+            return jsonify({"success": False, "error": "No episode data to save"}), 400
 
 
 @app.route('/api/controls', methods=['GET'])
@@ -570,7 +922,10 @@ def upload_replay():
                 "timestamp": episode_data.get('timestamp', ''),
                 "total_steps": len(episode_data['trajectory']),
                 "grid_size": episode_data.get('grid_size', 7),
-                "num_fruits": episode_data.get('num_fruits', 3)
+                "num_fruits": episode_data.get('num_fruits', 3),
+                "start_time": episode_data.get('start_time'),
+                "end_time": episode_data.get('end_time'),
+                "duration": episode_data.get('duration')
             }
         })
     except json.JSONDecodeError:
@@ -622,30 +977,21 @@ def exit_replay():
     return jsonify({"success": True})
 
 
-global BACKGROUND_LOOP
 BACKGROUND_LOOP = asyncio.new_event_loop()
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("LBF Human Interaction Server")
-    print("=" * 60)
-    print("\nControls:")
-    print("  W/↑    : Move Up")
-    print("  S/↓    : Move Down")
-    print("  A/←    : Move Left")
-    print("  D/→    : Move Right")
-    print("  SPACE  : Load/Collect Food")
-    print("  Q      : No Operation (Wait)")
-    print("\nStarting server at http://localhost:8998")
-    print("=" * 60)
     
     threading.Thread(target=start_background_loop, args=(BACKGROUND_LOOP,), daemon=True).start()
 
-    for _ in range(2):
-        print("[Startup] prewarming")
-        run_coroutine_threadsafe(add_prewarmed_game(), BACKGROUND_LOOP)
+    # Load RL policy agents from checkpoints (once at startup)
+    print("[Startup] Loading RL policy agents...")
+    load_rl_agents()
+
+    # Start background prewarming loop
+    print("[Startup] Starting background prewarming loop...")
+    run_coroutine_threadsafe(prewarm_games(), BACKGROUND_LOOP)
 
     app.run(debug=False, host='0.0.0.0', port=8998)
