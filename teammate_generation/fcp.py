@@ -45,10 +45,10 @@ def get_fcp_population(config, out, env):
 
     return flattened_partner_params, partner_population
 
-def train_fcp_partners(rng, env, algorithm_config):
+def train_fcp_partners(rng, env, algorithm_config, wandb_logger):
     '''Single seed of training an FCP pool.'''
     rngs = jax.random.split(rng, algorithm_config["PARTNER_POP_SIZE"])
-    train_jit = jax.jit(jax.vmap(make_ppo_train(algorithm_config, env)))
+    train_jit = jax.jit(jax.vmap(make_ppo_train(algorithm_config, env, wandb_logger=wandb_logger)))
     out = train_jit(rngs)
     return out
 
@@ -68,7 +68,10 @@ def run_fcp(config, wandb_logger):
     with jax.disable_jit(False):
         vmapped_train_fn = jax.jit(
             jax.vmap(
-            partial(train_fcp_partners, env=env, algorithm_config=algorithm_config)
+            partial(train_fcp_partners, 
+                    env=env, 
+                    algorithm_config=algorithm_config,
+                    wandb_logger=wandb_logger)
             )
         )
         out = vmapped_train_fn(rngs)
