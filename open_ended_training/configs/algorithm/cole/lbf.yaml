@@ -8,5 +8,4 @@ LR: 5e-4
 UPDATE_EPOCHS: 15
 CLIP_EPS: 0.05
 ENT_COEF: 0.001
-COMEDI_ALPHA: 0.2 # weight on XP return
-COMEDI_BETA: 0.4 # weight on SXP return
+COLE_ALPHA: 0.4
