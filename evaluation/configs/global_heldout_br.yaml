@@ -1,0 +1,434 @@
+# @package _global_
+# Best-response policies for the held-out teammate set.
+
+best_response_set:
+  lbf:
+    br_for_ippo_mlp_0:
+      path: "results/lbf/ppo_br_s5/ippo_mlp_0_serious/2026-03-09_14-37-49/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_s2c0_2_0:
+      path: "results/lbf/ppo_br_s5/ippo_mlp_s2c0_serious/2026-03-09_21-11-30/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf1_0:
+      path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [0]
+      POP_SIZE: 5
+      test_mode: false
+
+    br_for_brdiv_conf1_1:
+      path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [1]
+      POP_SIZE: 5
+      test_mode: false
+
+    br_for_brdiv_conf1_2:
+      path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [2]
+      POP_SIZE: 5
+      test_mode: false
+
+    br_for_brdiv_conf2_0:
+      path: "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [0]
+      POP_SIZE: 3
+      test_mode: false
+
+    br_for_brdiv_conf2_1:
+      path: "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      ckpt_key: final_params_br
+      idx_list: [1]
+      POP_SIZE: 3
+      test_mode: false
+
+    br_for_seq_agent_lexi:
+      path: "results/lbf/ppo_br_s5/seq_agent_lexi_serious/2026-03-09_22-00-17/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_rlexi:
+      path: "results/lbf/ppo_br_s5/seq_agent_rlexi_serious/2026-03-09_22-04-11/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_col:
+      path: "results/lbf/ppo_br_s5/seq_agent_col_serious/2026-03-10_11-34-55/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_rcol:
+      path: "results/lbf/ppo_br_s5/seq_agent_rcol_serious/2026-03-10_11-35-07/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_nearest:
+      path: "results/lbf/ppo_br_s5/seq_agent_nearest_serious/2026-03-10_12-37-02/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_seq_agent_farthest:
+      path: "results/lbf/ppo_br_s5/seq_agent_farthest_serious/2026-03-10_12-37-22/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+  overcooked-v1/cramped_room:
+    br_for_ippo_mlp_0:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_ippo_mlp_0_serious/2026-03-16_11-08-25/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_1:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_ippo_mlp_1_serious/2026-03-16_11-08-25/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_2:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_ippo_mlp_2_serious/2026-03-16_11-31-44/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_0:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_brdiv_conf_0_serious/2026-03-16_11-31-44/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_1:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_brdiv_conf_1_serious/2026-03-16_11-55-04/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_independent_agent_0_4:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_independent_agent_0_4_serious/2026-03-16_11-55-04/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_independent_agent_0:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_independent_agent_0_serious/2026-03-16_12-18-02/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_onion_agent_0_1:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_onion_agent_0_1_serious/2026-03-16_12-20-27/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_plate_agent_0_1:
+      path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_plate_agent_0_1_serious/2026-03-16_12-43-21/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+  overcooked-v1/asymm_advantages:
+    br_for_ippo_mlp_0:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_ippo_mlp_0_serious/2026-03-16_12-44-48/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_1:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_ippo_mlp_1_serious/2026-03-16_13-08-19/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_2:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_ippo_mlp_2_serious/2026-03-16_13-12-02/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_0:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_brdiv_conf_0_serious/2026-03-16_13-35-34/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_1:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_brdiv_conf_1_serious/2026-03-16_13-39-19/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_2:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_brdiv_conf_2_serious/2026-03-16_14-41-26/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_independent_agent_0:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_independent_agent_0_serious/2026-03-16_14-41-26/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_onion_agent_0:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_onion_agent_0_serious/2026-03-16_15-08-51/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_plate_agent_0:
+      path: "results/overcooked-v1/asymm_advantages/ppo_br_s5/asymm_advantages_plate_agent_0_serious/2026-03-16_15-11-58/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+  overcooked-v1/counter_circuit:
+    br_for_ippo_mlp_cc_0:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_ippo_mlp_cc_0_serious/2026-03-16_15-37-34/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_cc_1:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_ippo_mlp_cc_1_serious/2026-03-16_15-40-58/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_cc_2:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_ippo_mlp_cc_2_serious/2026-03-16_16-01-42/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_pass_0:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_ippo_mlp_pass_0_serious/2026-03-16_16-04-58/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_pass_1:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_ippo_mlp_pass_1_serious/2026-03-16_16-25-49/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_pass_2:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_ippo_mlp_pass_2_serious/2026-03-16_16-29-00/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_independent_agent_0:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_independent_agent_0_serious/2026-03-16_16-49-59/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_onion_agent_0:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_onion_agent_0_serious/2026-03-16_19-56-09/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_plate_agent_0:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_plate_agent_0_serious/2026-03-16_19-56-09/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_onion_agent_0_9:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_onion_agent_0_9_serious/2026-03-16_20-22-17/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_plate_agent_0_9:
+      path: "results/overcooked-v1/counter_circuit/ppo_br_s5/counter_circuit_plate_agent_0_9_serious/2026-03-16_20-22-27/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+  overcooked-v1/coord_ring:
+    br_for_ippo_mlp_1:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_ippo_mlp_1_serious/2026-03-16_20-48-58/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_2:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_ippo_mlp_2_serious/2026-03-16_20-49-15/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_3:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_ippo_mlp_3_serious/2026-03-16_21-12-48/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf1_1:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_brdiv_conf1_1_serious/2026-03-16_21-13-18/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf1_2:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_brdiv_conf1_2_serious/2026-03-16_21-36-51/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf2_0:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_brdiv_conf2_0_serious/2026-03-16_21-37-32/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_independent_agent_0:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_independent_agent_0_serious/2026-03-16_22-00-43/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_onion_agent_0:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_onion_agent_0_serious/2026-03-16_22-01-32/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_plate_agent_0:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_plate_agent_0_serious/2026-03-16_22-26-32/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+  overcooked-v1/forced_coord:
+    br_for_ippo_mlp_0:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_ippo_mlp_0_serious/2026-03-16_22-27-05/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_1:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_ippo_mlp_1_serious/2026-03-17_08-04-53/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_2:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_ippo_mlp_2_serious/2026-03-17_08-04-53/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf1_0:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_brdiv_conf1_0_serious/2026-03-17_08-24-58/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf1_2:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_brdiv_conf1_2_serious/2026-03-17_08-25-00/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf2_1:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_brdiv_conf2_1_serious/2026-03-17_08-44-38/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf3_0:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_brdiv_conf3_0_serious/2026-03-17_08-44-42/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf3_2:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_brdiv_conf3_2_serious/2026-03-17_09-04-28/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_independent_agent_0_6:
+      path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_independent_agent_0_6_serious/2026-03-17_09-04-28/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true

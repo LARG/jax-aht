@@ -24,8 +24,8 @@ heldout_set:
       idx_list: [[2, 0]] # load in seed 2 ckpt 0
       test_mode: false
       performance_bounds:
-        percent_eaten: [[0.0, 69.27]]
-        returned_episode_returns: [[0.0, 0.35]]
+          percent_eaten: [[0.0, 93.75]]
+          returned_episode_returns: [[0.0, 0.47]]
     brdiv-conf1: 
       path: "eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run"
       actor_type: actor_with_conditional_critic
@@ -34,8 +34,8 @@ heldout_set:
       POP_SIZE: 5 # for brdiv, we need to specify population size that the method was trained with
       test_mode: false
       performance_bounds:
-        percent_eaten: [[0.0, 61.98], [0.0, 83.33], [0.0, 78.65]]
-        returned_episode_returns: [[0.0, 0.31], [0.0, 0.42], [0.0, 0.39]]
+          percent_eaten: [[0.0, 90.10], [0.0, 98.96], [0.0, 76.56]]
+          returned_episode_returns: [[0.0, 0.45], [0.0, 0.49], [0.0, 0.39]]
     brdiv-conf2:
       path: "eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run"
       actor_type: actor_with_conditional_critic
@@ -44,8 +44,8 @@ heldout_set:
       POP_SIZE: 3
       test_mode: false
       performance_bounds:
-        percent_eaten: [[0.0, 90.62], [0.0, 52.08]]
-        returned_episode_returns: [[0.0, 0.45], [0.0, 0.26]]
+          percent_eaten: [[0.0, 98.96], [0.0, 58.85]]
+          returned_episode_returns: [[0.0, 0.49], [0.0, 0.29]]
     seq_agent_lexi:
       actor_type: seq_agent
       ordering_strategy: lexicographic

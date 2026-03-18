@@ -11,3 +11,6 @@ TASK_NAME: ${task.TASK_NAME}
 
 label: ""
 name: ${TASK_NAME}/heldout_xp_matrix/${label}
+
+xp_matrix_outputs:
+  save_heatmap: true
