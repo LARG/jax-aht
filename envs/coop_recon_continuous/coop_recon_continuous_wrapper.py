@@ -484,17 +484,20 @@ class CoopReconContinuousWrapper(BaseEnv):
         obs_full_dict = {}
         for agent_idx, agent in enumerate(self.agents):
             if self._ego_centric_obs:
-                # Ego-centric observation for agent 0: relative pos to agent 1, own vel, other vel, goal pos, task states
-                # Ego-centric observation for agent 1: relative pos to agent 0, own vel, other vel, goal pos, task states
+                # Ego-centric observation: relative position to other agent, own then other vel/goal/state.
+                # BUG FIX: goal and task state arrays must use [OWN, OTHER] ordering (same as non-ego branch).
+                # Previously used goal_pos.flatten() = [goal_0, goal_1] in ABSOLUTE order, which meant
+                # Agent 1 always saw its own goal in the SECOND slot, training against the wrong target.
                 other_agent_idx = 1 - agent_idx
                 obs_dict[agent] = jnp.concatenate([
-                    env_state.positions[agent_idx] - env_state.positions[other_agent_idx], # Relative position
-                    env_state.velocities[agent_idx],                                       # Own velocity
-                    env_state.velocities[other_agent_idx],                                 # Other agent's velocity
-                    env_state.goal_pos.flatten(),                                          # [g1x, g1y, g2x, g2y]
-                    env_state.detected_water.astype(jnp.float32),                          # [w1, w2]
-                    env_state.detected_life.astype(jnp.float32),                           # [l1, l2]
-                    env_state.picture_taken.astype(jnp.float32)                            # [p1, p2]
+                    env_state.positions[agent_idx] - env_state.positions[other_agent_idx],   # Relative position
+                    env_state.velocities[agent_idx],                                         # Own velocity
+                    env_state.velocities[other_agent_idx],                                   # Other agent's velocity
+                    env_state.goal_pos[agent_idx],                                           # Own goal (ego-centric: own first)
+                    env_state.goal_pos[other_agent_idx],                                     # Other goal
+                    jnp.array([env_state.detected_water[agent_idx], env_state.detected_water[other_agent_idx]], dtype=jnp.float32),
+                    jnp.array([env_state.detected_life[agent_idx], env_state.detected_life[other_agent_idx]], dtype=jnp.float32),
+                    jnp.array([env_state.picture_taken[agent_idx], env_state.picture_taken[other_agent_idx]], dtype=jnp.float32),
                 ], dtype=jnp.float32)
             else:
                 # Observation mapped to the agent's absolute identity: [OWN_POS, OTHER_POS]
