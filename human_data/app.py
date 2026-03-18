@@ -632,7 +632,10 @@ def get_or_create_game(env_kwargs):
     key = _config_key(env_kwargs)
     with PREWARMING_LOCK:
         if key in PREWARMED_GAMES_POOL and PREWARMED_GAMES_POOL[key]:
-            return PREWARMED_GAMES_POOL[key].pop(0)
+            game = PREWARMED_GAMES_POOL[key].pop(0)
+            # When returning a prewarmed game, reset to ensure start/end times are for the actual human episode
+            game.reset()
+            return game
 
     # Fallback: create on-demand
     return GameSession(str(uuid.uuid4()), 50, env_kwargs=env_kwargs)
