@@ -242,9 +242,9 @@ def run_single_agent_joint_eval(logger, eval_seed, env, agent_params, agent_poli
         eval_render_env_state = out[0][-1]['pre_reset_state'].env_state # WrappedEnvState
         eval_render_dones = out[0][4]['__all__']
 
-        final_ckpt_eval_render_init_env_state = jax.tree_map(lambda x: x[:, -1, ...], eval_render_init_env_state)
-        final_ckpt_eval_render_env_state = jax.tree_map(lambda x: x[:, -1, ...], eval_render_env_state)
-        final_ckpt_eval_render_dones = jax.tree_map(lambda x: x[:, -1, ...], eval_render_dones)
+        final_ckpt_eval_render_init_env_state = jax.tree.map(lambda x: x[:, -1, ...], eval_render_init_env_state)
+        final_ckpt_eval_render_env_state = jax.tree.map(lambda x: x[:, -1, ...], eval_render_env_state)
+        final_ckpt_eval_render_dones = jax.tree.map(lambda x: x[:, -1, ...], eval_render_dones)
 
         # num_episodes = final_ckpt_eval_render_dones.shape[1]
         num_episodes = 5
