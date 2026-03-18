@@ -26,7 +26,7 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
     algorithm.FIXED_EVAL=true \
     algorithm.SAP_DOMAIN_RANDOMIZE_PARTNER=true \
     algorithm.NUM_EVAL_EPISODES=50 \
-    '+task.ENV_KWARGS.min_sep_goal=0.5' \
+    'task.ENV_KWARGS.min_sep_goal=0.5' \
     label=jax_coop_recon_v24_phaseA_sep50_creppo
 
 echo "Training complete."
