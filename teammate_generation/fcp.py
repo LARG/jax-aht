@@ -48,7 +48,7 @@ def get_fcp_population(config, out, env):
 def train_fcp_partners(rng, env, algorithm_config, wandb_logger):
     '''Single seed of training an FCP pool.'''
     rngs = jax.random.split(rng, algorithm_config["PARTNER_POP_SIZE"])
-    train_jit = jax.jit(jax.vmap(make_ppo_train(algorithm_config, env, wandb_logger=wandb_logger)))
+    train_jit = jax.jit(jax.vmap(make_ppo_train(algorithm_config, env, logger=wandb_logger)))
     out = train_jit(rngs)
     return out
 
