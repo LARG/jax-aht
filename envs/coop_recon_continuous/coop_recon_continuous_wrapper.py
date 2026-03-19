@@ -493,8 +493,8 @@ class CoopReconContinuousWrapper(BaseEnv):
                     env_state.positions[agent_idx] - env_state.positions[other_agent_idx],   # Relative position
                     env_state.velocities[agent_idx],                                         # Own velocity
                     env_state.velocities[other_agent_idx],                                   # Other agent's velocity
-                    env_state.goal_pos[agent_idx],                                           # Own goal (ego-centric: own first)
-                    env_state.goal_pos[other_agent_idx],                                     # Other goal
+                    env_state.goal_pos[agent_idx] - env_state.positions[agent_idx],          # Own goal vector (relative to self)
+                    env_state.goal_pos[other_agent_idx] - env_state.positions[agent_idx],    # Other goal vector (relative to self)
                     jnp.array([env_state.detected_water[agent_idx], env_state.detected_water[other_agent_idx]], dtype=jnp.float32),
                     jnp.array([env_state.detected_life[agent_idx], env_state.detected_life[other_agent_idx]], dtype=jnp.float32),
                     jnp.array([env_state.picture_taken[agent_idx], env_state.picture_taken[other_agent_idx]], dtype=jnp.float32),
