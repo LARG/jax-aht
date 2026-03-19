@@ -93,10 +93,10 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         self.name = f"CoopReconContinuous{N}Agent"
 
         # Obs dims:
-        # Ego: 2*(N-1) rel_pos + 2*N vel + 2*N goal_vec + 3*N task = 6N + 2(N-1) = 8N - 2
+        # Ego: 2*(N-1) rel_pos + 2*N vel + 2*N goal_vec + 3*N task = 7N + 2(N-1) = 9N - 2
         # Non-ego: 2*N pos + 2*N vel + 2*N goal + 3*N task = 9N
         if self._ego_centric_obs:
-            obs_size = 8 * N - 2
+            obs_size = 9 * N - 2
         else:
             obs_size = 9 * N
         # Full obs always uses global absolute info: same as non-ego
