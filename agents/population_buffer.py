@@ -263,7 +263,7 @@ class BufferedPopulation(AgentPopulation):
     
     @partial(jax.jit, static_argnums=(0,))
     def update_scores(self, buffer, indices, new_scores):
-        """Update scores for specific agents in the buffer.
+        """Supports updating scores for specific agents in the buffer.
         
         Args:
             buffer: The population buffer

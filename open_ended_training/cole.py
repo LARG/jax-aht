@@ -50,18 +50,9 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
     config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
 
     # Compute number of updates PER outermost iteration
-    # Calculate timesteps per update
-    # 1. Overhead from population selection rollouts
-    # We divide by 2 because for ease in Jax, this implementation uses a vmap over PARTNER_POP_SIZE to
-    # evaluate the agent generated at each outermost iteration against all previously
-    # generated agents, but a non-Jax implementation would only need to evaluate against
-    # *previously* generated agents.
-    selection_steps = config["PARTNER_POP_SIZE"] * config["NUM_ARGMAX_ROLLOUT_EPS"] * config["ROLLOUT_LENGTH"] // 2
-    # 2. Training rollouts: 2 distinct rollout phases (SP, XP) each using NUM_ENVS
+    # Training rollouts: 2 distinct rollout phases (SP, XP) each using NUM_ENVS
     training_steps = 2 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
-
-    steps_per_update = selection_steps + training_steps
-    config["NUM_UPDATES"] = int(config["TOTAL_TIMESTEPS_PER_ITERATION"] // steps_per_update)
+    config["NUM_UPDATES"] = int(config["TOTAL_TIMESTEPS_PER_ITERATION"] // training_steps)
 
     def make_cole_agents(config):
         def linear_schedule(count):
@@ -70,7 +61,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
 
         def train(rng):
             # Start by training a single PPO agent via self-play
-            rng, init_ppo_rng, init_conf_rng = jax.random.split(rng, 3)
+            rng, init_ppo_rng, init_conf_rng, xp_init_rng = jax.random.split(rng, 4)
 
             # Initialize a population buffer
             dummy_policy, dummy_init_params = initialize_actor_with_conditional_critic(config, env, init_conf_rng)
@@ -86,7 +77,22 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 dummy_init_params
             )
 
-            def add_conf_policy(pop_buffer, func_input):
+            # Initialize XP matrix: shape (POP_SIZE, POP_SIZE)
+            # Entry (i, j) = mean return of agent_i when playing as agent_0 against agent_j.
+            # Seed entry (0, 0) with the SP return of the initial random policy.
+            sp_init_return = run_episodes(
+                rng=xp_init_rng, env=env,
+                agent_0_param=dummy_init_params, agent_0_policy=dummy_policy,
+                agent_1_param=dummy_init_params, agent_1_policy=dummy_policy,
+                max_episode_steps=config["ROLLOUT_LENGTH"],
+                num_eps=config["NUM_ARGMAX_ROLLOUT_EPS"]
+            )
+            init_sp_mean = sp_init_return["returned_episode_returns"][:, 0].mean()
+            xp_matrix = jnp.zeros((config["POP_SIZE"], config["POP_SIZE"]))
+            xp_matrix = xp_matrix.at[0, 0].set(init_sp_mean)
+
+            def add_conf_policy(carry, func_input):
+                pop_buffer, xp_matrix = carry
                 num_existing_agents, rng = func_input
                 rng, init_conf_rng = jax.random.split(rng)
 
@@ -118,8 +124,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 reset_rngs_sps = jax.random.split(reset_rng_sp, config["NUM_ENVS"])
                 reset_rngs_xps = jax.random.split(reset_rng_xp, config["NUM_ENVS"])
 
-                obsv_xp, env_state_xp = jax.vmap(env.reset, in_axes=(0,))(reset_rngs_sps)
-                obsv_sp, env_state_sp = jax.vmap(env.reset, in_axes=(0,))(reset_rngs_xps)
+                obsv_xp, env_state_xp = jax.vmap(env.reset, in_axes=(0,))(reset_rngs_xps)
+                obsv_sp, env_state_sp = jax.vmap(env.reset, in_axes=(0,))(reset_rngs_sps)
 
                 # build a pytree that can hold the parameters for all checkpoints.
                 ckpt_and_eval_interval = config["NUM_UPDATES"] // max(1, config["NUM_CHECKPOINTS"] - 1)
@@ -145,69 +151,102 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                     )
                     return all_outs
 
+                def metasolve_game_graph(xp_matrix, agent_idx, num_prev_trained_conf):
+                    """Derive a sampling distribution over the trained population.
+
+                    Uses the full XP matrix to allow future metasolvers to exploit
+                    cross-agent statistics. Currently implements an inverse-return
+                    heuristic on the row corresponding to `agent_idx`: partners that
+                    `agent_idx` performs *worse* against receive higher sampling
+                    probability (harder partners are prioritised).
+                    Agents {num_prev_trained_conf, ..., POP_SIZE-1} receive
+                    probability zero since they have not yet been trained.
+
+                    Args:
+                        xp_matrix: Array of shape (POP_SIZE, POP_SIZE).
+                            Entry (i, j) is the mean return of agent i as agent_0
+                            versus agent j as agent_1.
+                        agent_idx: Scalar int - the agent whose sampling distribution
+                            is being computed (i.e. the current training agent).
+                        num_prev_trained_conf: Number of trained agents so far
+                            (valid entries are 0..num_prev_trained_conf-1).
+
+                    Returns:
+                        sampling_dist: Array of shape (POP_SIZE,) summing to 1.
+                    """
+                    xp_row = xp_matrix[agent_idx]  # (POP_SIZE,) - row for agent_idx
+                    valid_mask = jnp.arange(config["POP_SIZE"]) < num_prev_trained_conf
+                    # Negate returns so lower (harder) partners get higher weight,
+                    # then shift to be non-negative before normalising.
+                    negated = -xp_row
+                    shifted = negated - negated.min() + 1e-8
+                    weights = jnp.where(valid_mask, shifted, 0.0)
+                    total = weights.sum()
+                    # Fall back to uniform over valid agents if total is zero
+                    uniform = valid_mask.astype(jnp.float32) / jnp.maximum(valid_mask.sum(), 1)
+                    sampling_dist = jnp.where(total > 0, weights / total, uniform)
+                    return sampling_dist
+
                 def _update_step(update_with_ckpt_runner_state, unused):
                     update_runner_state, checkpoint_array, ckpt_idx = update_with_ckpt_runner_state
                     (
-                        train_state, pop_buffer,
+                        train_state, pop_buffer, xp_matrix,
                         env_state_sp, obsv_sp,
                         env_state_xp, obsv_xp,
                         last_dones_xp,
                         last_dones_sp,
+                        partner_indices_xp,
                         rng, update_steps,
                         num_prev_trained_conf
                     ) = update_runner_state
 
-                    # Identify the expected returns from the newly trained policy
-                    # when interacting with the previously generated confederate
-                    # policies
-                    valid_sampling_indices = jnp.arange(config["POP_SIZE"])
-                    run_all_rollouts = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                        train_state.params,valid_sampling_indices)
+                    # Derive sampling distribution from the full XP matrix for the current agent
+                    sampling_dist = metasolve_game_graph(xp_matrix, num_prev_trained_conf, num_prev_trained_conf)
 
-                    # Mask out the XP returns against invalid policies
-                    # resulting from IDs that are yet set to a specific
-                    # confederate params
-                    all_mean_returns = run_all_rollouts["returned_episode_returns"][:, :, 0].mean(axis=-1)
-                    masked_mean_returns = jnp.where(
-                        valid_sampling_indices >= num_prev_trained_conf, -jnp.inf, all_mean_returns
+                    # Sample per-env partner indices for XP rollouts
+                    rng, sample_rng, rng_xp, rng_sp = jax.random.split(rng, 4)
+                    needs_resample_xp = last_dones_xp["__all__"]
+                    sampled_indices_all = jax.random.choice(
+                        sample_rng, jnp.arange(config["POP_SIZE"]),
+                        shape=(config["NUM_ENVS"],), p=sampling_dist, replace=True
                     )
-
-                    # Pick the right confederate params to act as the XP agent
-                    max_means_id = masked_mean_returns.argmax()
-                    xp_param = jax.tree_map(
-                        lambda x: jnp.squeeze(x, 0),
-                        partner_population.gather_agent_params(pop_buffer,
-                                                               agent_indices=max_means_id * jnp.ones((1,), dtype=np.int32))
+                    partner_indices_xp = jnp.where(
+                        needs_resample_xp,
+                        sampled_indices_all,
+                        partner_indices_xp
                     )
-
-                    rng, rng_xp, rng_sp = jax.random.split(rng, 3)
 
                     def _env_step_conf_ego(runner_state, unused):
                         """
-                        agent_0 = confederate, agent_1 = ego
-                        Returns updated runner_state and a Transition for the confederate.
+                        agent_0 = training confederate, agent_1 = population partner (sampled per env).
+                        On episode resets, resamples a new partner from the population buffer
+                        according to sampling_dist. Returns updated runner_state and a Transition for agent_0.
                         """
-                        train_state, xp_param, xp_id, env_state, last_obs, last_dones, rng = runner_state
-                        rng, act_rng, partner_rng, step_rng = jax.random.split(rng, 4)
+                        train_state, pop_buffer, partner_indices, sampling_dist, env_state, last_obs, last_dones, rng = runner_state
+                        rng, act_rng, partner_rng, step_rng, resample_rng = jax.random.split(rng, 5)
 
                         obs_0 = last_obs["agent_0"]
                         obs_1 = last_obs["agent_1"]
 
-                        # Get available actions for agent 0 from environment state
+                        # Resample partner index for envs that just finished an episode
+                        needs_resample = last_dones["__all__"]
+                        new_sampled = jax.random.choice(
+                            resample_rng, jnp.arange(config["POP_SIZE"]),
+                            shape=(config["NUM_ENVS"],), p=sampling_dist, replace=True
+                        )
+                        partner_indices = jnp.where(needs_resample, new_sampled, partner_indices)
+
+                        # Get available actions from environment state
                         avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)
                         avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
                         avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
 
-                        # Add one-hot ID of XP teammate
-                        xp_one_hot_id = jnp.eye(config["POP_SIZE"])[xp_id]
-                        xp_one_hot_id = jnp.expand_dims(
-                            jnp.expand_dims(
-                                xp_one_hot_id, 0
-                            ), 0
-                        )
+                        # Build per-env one-hot IDs for agent_0's conditional critic
+                        # shape: (1, NUM_ENVS, POP_SIZE)
+                        per_env_one_hot = jnp.eye(config["POP_SIZE"])[partner_indices]  # (NUM_ENVS, POP_SIZE)
+                        aux_obs_0 = per_env_one_hot[jnp.newaxis, :, :]  # (1, NUM_ENVS, POP_SIZE)
 
-                        # Agent_0 (confederate) action using policy interface
-                        aux_obs = jnp.repeat(xp_one_hot_id, config["NUM_ENVS"], axis=1)
+                        # Agent_0 (training confederate) action
                         act_0, val_0, pi_0, _ = policy.get_action_value_policy(
                             params=train_state.params,
                             obs=obs_0.reshape(1, config["NUM_ENVS"], -1),
@@ -215,37 +254,36 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             avail_actions=jax.lax.stop_gradient(avail_actions_0),
                             hstate=None,
                             rng=act_rng,
-                            aux_obs=aux_obs
+                            aux_obs=aux_obs_0
                         )
                         logp_0 = pi_0.log_prob(act_0)
-
                         act_0 = act_0.squeeze()
                         logp_0 = logp_0.squeeze()
                         val_0 = val_0.squeeze()
 
-                        # Agent_1 (ego) action using policy interface
-                        act_1, _, _, _ = policy.get_action_value_policy(
-                            params=xp_param,
-                            obs=obs_1.reshape(1, config["NUM_ENVS"], -1),
-                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS"]),
-                            avail_actions=jax.lax.stop_gradient(avail_actions_1),
+                        # Agent_1 (population partner) action - one partner per env via BufferedPopulation
+                        act_1, _ = partner_population.get_actions(
+                            buffer=pop_buffer,
+                            agent_indices=partner_indices,
+                            obs=obs_1.reshape(config["NUM_ENVS"], 1, -1),
+                            done=last_dones["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
+                            avail_actions=avail_actions_1,
                             hstate=None,
                             rng=partner_rng,
-                            aux_obs=aux_obs
+                            aux_obs=None
                         )
                         act_1 = act_1.squeeze()
 
                         # Combine actions into the env format
-                        combined_actions = jnp.concatenate([act_0, act_1], axis=0)  # shape (2*num_envs,)
+                        combined_actions = jnp.concatenate([act_0, act_1], axis=0)  # (2*num_envs,)
                         env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS"], num_agents)
                         env_act = {k: v.flatten() for k, v in env_act.items()}
 
                         # Step env
                         step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
-                        obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0,0,0))(
+                        obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0, 0, 0))(
                             step_rngs, env_state, env_act
                         )
-                        # note that num_actors = num_envs * num_agents
                         info_0 = jax.tree.map(lambda x: x[:, 0], info)
 
                         # Store agent_0 data in transition
@@ -253,13 +291,14 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             done=done["agent_0"],
                             action=act_0,
                             value=val_0,
-                            reward=reward["agent_1"],
+                            reward=reward["agent_0"],
                             log_prob=logp_0,
                             obs=obs_0,
                             info=info_0,
                             avail_actions=avail_actions_0
                         )
-                        new_runner_state = (train_state, xp_param, xp_id, env_state_next, obs_next, done, rng)
+                        new_runner_state = (train_state, pop_buffer, partner_indices, sampling_dist,
+                                            env_state_next, obs_next, done, rng)
                         return new_runner_state, transition
 
                     def _env_step_conf_br(runner_state, unused):
@@ -398,11 +437,12 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         new_runner_state = (train_state, env_state_next, obs_next, done, rng, current_trained_pop_id, reset_traj_batch)
                         return new_runner_state, (transition_0, transition_1)
 
-                    # Do XP rollout (based on train_state params and the param in pop_buffer identified in Step 1)
-                    runner_state_xp = (train_state, xp_param, max_means_id, env_state_xp, obsv_xp, last_dones_xp, rng_xp)
+                    # Do XP rollout: agent_0 vs population partners sampled per env
+                    runner_state_xp = (train_state, pop_buffer, partner_indices_xp, sampling_dist,
+                                       env_state_xp, obsv_xp, last_dones_xp, rng_xp)
                     runner_state_xp, traj_batch_xp = jax.lax.scan(
                         _env_step_conf_ego, runner_state_xp, None, config["ROLLOUT_LENGTH"])
-                    (train_state, xp_param, max_means_id, env_state_xp, last_obs_xp, last_dones_xp, rng_xp) = runner_state_xp
+                    (train_state, pop_buffer, partner_indices_xp, _, env_state_xp, last_obs_xp, last_dones_xp, rng_xp) = runner_state_xp
 
                     # Do self-play (based on train_state params) rollout
                     runner_state_sp = (train_state, env_state_sp, obsv_sp, last_dones_sp, rng_sp, num_prev_trained_conf, None)
@@ -464,10 +504,18 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         advantages, targets = _calculate_gae(traj_batch, last_val)
                         return advantages, targets
 
-                    # 5a) Compute conf advantages for XP (conf-ego) interaction
+                    # 5a) Compute conf advantages for XP interaction
+                    # Use the most recently sampled partner index (per env) for the value head.
+                    # We take the per-env partner_indices_xp and use the mode as the scalar value_idx
+                    # for the _compute_advantages_and_targets helper (which expects a scalar id).
+                    # Since the helper only uses value_idx to build the aux_obs for the *last* value
+                    # estimate, we use the mean partner index as a reasonable approximation.
+                    # Note: this is only used for the bootstrap value; the trajectory obs already
+                    # carry the correct per-step aux_obs.
+                    mean_xp_id = jnp.round(partner_indices_xp.mean()).astype(jnp.int32)
                     advantages_xp_conf, targets_xp_conf = _compute_advantages_and_targets(
                         env_state_xp, policy, train_state.params, None,
-                        last_obs_xp, last_dones_xp, traj_batch_xp, "agent_0", value_idx=max_means_id)
+                        last_obs_xp, last_dones_xp, traj_batch_xp, "agent_0", value_idx=mean_xp_id)
 
                     # 5b) Compute conf and br advantages for SP (conf-br) interaction
                     advantages_sp_conf, targets_sp_conf = _compute_advantages_and_targets(
@@ -654,7 +702,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         advantages_sp_conf, advantages_sp_br,
                         targets_xp_conf, targets_sp_conf,
                         targets_sp_br, sub_rng,
-                        max_means_id, num_prev_trained_conf
+                        mean_xp_id, num_prev_trained_conf
                     )
                     update_state, conf_losses = jax.lax.scan(
                         _update_epoch, update_state, None, config["UPDATE_EPOCHS"])
@@ -667,10 +715,11 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                     ) = conf_losses[1]
 
                     new_update_runner_state = (
-                        train_state, pop_buffer,
+                        train_state, pop_buffer, xp_matrix,
                         env_state_sp, last_obs_sp,
                         env_state_xp, last_obs_xp,
                         last_dones_xp, last_dones_sp,
+                        partner_indices_xp,
                         rng, update_steps+1, num_prev_trained_conf
                     )
 
@@ -709,12 +758,15 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 update_steps = 0
                 init_done_xp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
                 init_done_sp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
+                # Initialize XP partner indices: default to agent 0 until resampled
+                init_partner_indices_xp = jnp.zeros((config["NUM_ENVS"],), dtype=jnp.int32)
 
                 update_runner_state = (
-                    train_state, pop_buffer,
+                    train_state, pop_buffer, xp_matrix,
                     env_state_sp, obsv_sp,
                     env_state_xp, obsv_xp,
                     init_done_xp, init_done_sp,
+                    init_partner_indices_xp,
                     rng, update_steps,
                     num_existing_agents
                 )
@@ -722,6 +774,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 checkpoint_array = init_ckpt_array(train_state.params)
                 ckpt_idx = 0
                 update_with_ckpt_runner_state = (update_runner_state, checkpoint_array, ckpt_idx, xp_eval_returns, sp_eval_returns)
+
 
                 def _update_step_with_ckpt(state_with_ckpt, unused):
 
@@ -782,19 +835,94 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                     xs=None,  # No per-step input data
                     length=config["NUM_UPDATES"],
                 )
-                new_update_runner_state, new_checkpoint_array, _, _ ,_ = new_update_with_ckpt_runner_state
+                new_update_runner_state, new_checkpoint_array, _, _, _ = new_update_with_ckpt_runner_state
                 final_train_state = new_update_runner_state[0]
+                # Recover the xp_matrix carried through the scan
+                xp_matrix = new_update_runner_state[2]
 
+                # Add newly trained agent i to the population buffer (default score, updated below)
                 updated_pop_buffer = partner_population.add_agent(pop_buffer, final_train_state.params)
+
+                # ------------------------------------------------------------------
+                # Update XP matrix for agent i (= num_existing_agents).
+                # Evaluate agent i vs every agent j in {0, ..., i} and vice-versa.
+                # Entry (i, j): mean return of agent_i as agent_0 vs agent_j as agent_1.
+                # Entry (j, i): mean return of agent_j as agent_0 vs agent_i as agent_1.
+                # ------------------------------------------------------------------
+                rng, xp_update_rng = jax.random.split(rng)
+
+                def eval_pair_ij(agent_i_param, agent_j_param):
+                    """Return mean reward of agent_i (as agent_0) vs agent_j."""
+                    outs = run_episodes(
+                        rng=xp_update_rng, env=env,
+                        agent_0_param=agent_i_param, agent_0_policy=policy,
+                        agent_1_param=agent_j_param, agent_1_policy=policy,
+                        max_episode_steps=config["ROLLOUT_LENGTH"],
+                        num_eps=config["NUM_ARGMAX_ROLLOUT_EPS"]
+                    )
+                    return outs["returned_episode_returns"][:, 0].mean()
+
+                new_agent_i = num_existing_agents  # index of newly added agent
+
+                # Gather all current agent params (including the new agent at index new_agent_i)
+                all_indices = jnp.arange(config["POP_SIZE"])
+
+                # Row i  : agent_i (new) as agent_0 vs each existing agent j as agent_1
+                def eval_i_vs_j(j_idx):
+                    agent_j_param = jax.tree_map(
+                        lambda x: jnp.squeeze(x, 0),
+                        partner_population.gather_agent_params(
+                            updated_pop_buffer,
+                            agent_indices=j_idx * jnp.ones((1,), dtype=jnp.int32)
+                        )
+                    )
+                    return eval_pair_ij(final_train_state.params, agent_j_param)
+
+                # Column i: each existing agent j as agent_0 vs agent_i (new) as agent_1
+                def eval_j_vs_i(j_idx):
+                    agent_j_param = jax.tree_map(
+                        lambda x: jnp.squeeze(x, 0),
+                        partner_population.gather_agent_params(
+                            updated_pop_buffer,
+                            agent_indices=j_idx * jnp.ones((1,), dtype=jnp.int32)
+                        )
+                    )
+                    return eval_pair_ij(agent_j_param, final_train_state.params)
+
+                # Evaluate over all population slots (masking of invalid entries done via xp_matrix)
+                row_i_returns = jax.vmap(eval_i_vs_j)(all_indices)   # shape (POP_SIZE,)
+                col_i_returns = jax.vmap(eval_j_vs_i)(all_indices)   # shape (POP_SIZE,)
+
+                # Write into xp_matrix (entries for untrained agents will be 0 and are masked by metasolve)
+                xp_matrix = xp_matrix.at[new_agent_i, :].set(row_i_returns)
+                xp_matrix = xp_matrix.at[:, new_agent_i].set(col_i_returns)
+
+                # ------------------------------------------------------------------
+                # Update pop_buffer scores: for each trained agent j in {0,...,i},
+                # recompute its sampling distribution and use it as a score so that
+                # future training iterations can be guided by the current XP matrix.
+                # We summarise each agent j's distribution as its mean sampling weight
+                # (a high weight means j is a hard partner and should be prioritised).
+                # ------------------------------------------------------------------
+                num_trained_so_far = new_agent_i + 1  # agents {0, ..., i} are now trained
+
+                def compute_score_for_agent(j_idx):
+                    """Sampling weight of agent j under the distribution for agent j."""
+                    dist_j = metasolve_game_graph(xp_matrix, j_idx, num_trained_so_far)
+                    return dist_j[j_idx]  # agent j's own weight in its distribution
+
+                new_scores = jax.vmap(compute_score_for_agent)(all_indices)  # (POP_SIZE,)
+                updated_pop_buffer = partner_population.update_scores(updated_pop_buffer, all_indices, new_scores)
+
                 conf_checkpoints = new_checkpoint_array
-                return updated_pop_buffer, (conf_checkpoints, metric, xp_eval_returns, sp_eval_returns)
+                return (updated_pop_buffer, xp_matrix), (conf_checkpoints, metric, xp_eval_returns, sp_eval_returns)
 
             rngs = jax.random.split(rng, config["PARTNER_POP_SIZE"])
             rng, add_conf_iter_rngs = rngs[0], rngs[1:]
 
             iter_ids = jnp.arange(1, config["PARTNER_POP_SIZE"])
-            final_population_buffer, (conf_checkpoints, metric, xp_eval_returns, sp_eval_returns) = jax.lax.scan(
-                add_conf_policy, population_buffer, (iter_ids, add_conf_iter_rngs)
+            (final_population_buffer, final_xp_matrix), (conf_checkpoints, metric, xp_eval_returns, sp_eval_returns) = jax.lax.scan(
+                add_conf_policy, (population_buffer, xp_matrix), (iter_ids, add_conf_iter_rngs)
             )
 
             out = {

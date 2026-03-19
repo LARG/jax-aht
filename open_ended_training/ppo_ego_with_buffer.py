@@ -1,7 +1,7 @@
 '''
-Script for training a PPO ego agent against a buffered population of homogeneous partner agents.
-In comparison to ego_agent_training/ppo_ego.py, this script permits a nonstationary sampling 
-distribution over partners and a changing buffer size. 
+Script for training a PPO ego agent against a BufferedPopulation of homogeneous partner agents.
+In comparison to ego_agent_training/ppo_ego.py, this script permits a (potentially nonstationary)
+sampling distribution over partners and a population of partners that potentially changes in size.
 '''
 import logging
 
