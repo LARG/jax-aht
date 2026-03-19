@@ -257,8 +257,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         act_1, new_partner_hstate = partner_population.get_actions(
                             buffer=pop_buffer,
                             agent_indices=partner_indices,
-                            obs=last_obs["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
-                            done=last_dones["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
+                            obs=last_obs["agent_1"],
+                            done=last_dones["agent_1"],
                             avail_actions=avail_actions_1,
                             hstate=partner_hstate,
                             rng=partner_rng,
@@ -284,7 +284,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             value=val_0,
                             reward=reward["agent_0"],
                             log_prob=logp_0,
-                            obs=obs_0,
+                            obs=last_obs["agent_0"],
                             info=info_0,
                             avail_actions=avail_actions_0
                         )
@@ -325,8 +325,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         # Agent_1 (agent slot 1 in SP) action — same params, different hstate
                         act_1, val_1, pi_1, new_ego_hstate_sp1 = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=last_obs["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
-                            done=last_dones["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
+                            obs=last_obs["agent_1"].reshape(1, config["NUM_ENVS"], -1),
+                            done=last_dones["agent_1"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_1),
                             hstate=ego_hstate_sp1,
                             rng=br_rng
@@ -356,7 +356,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             value=val_0,
                             reward=reward["agent_0"],
                             log_prob=logp_0,
-                            obs=obs_0,
+                            obs=last_obs["agent_0"],
                             info=info_0,
                             avail_actions=avail_actions_0
                         )
@@ -367,7 +367,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             value=val_1,
                             reward=reward["agent_1"],
                             log_prob=logp_1,
-                            obs=obs_1,
+                            obs=last_obs["agent_1"],
                             info=info_1,
                             avail_actions=avail_actions_1
                         )

@@ -378,19 +378,24 @@ class BufferedPopulation(AgentPopulation):
     def get_actions(self, buffer, agent_indices, obs, done, avail_actions, hstate, rng, 
                     env_state=None, aux_obs=None, test_mode=False):
         """Get actions from agents in the buffer.
-        
+
+        Callers pass obs/done/avail_actions with shape (num_envs, ...) and hstate
+        as returned by policy.init_hstate(num_envs).  For recurrent policies (RNN,
+        S5) hstate leaves have shape (..., num_envs, H) with the env axis at -2.
+        For MLP pass hstate=None.
+
         Args:
-            buffer: The population buffer 
+            buffer: The population buffer
             agent_indices: Indices with shape (num_envs,), each in [0, buffer_size)
-            obs: Observations with shape (num_envs, ...)
+            obs: Observations with shape (num_envs, obs_dim)
             done: Done flags with shape (num_envs,)
             avail_actions: Available actions with shape (num_envs, num_actions)
-            hstate: Hidden state with shape (num_envs, ...) or None
+            hstate: Hidden state in policy.init_hstate(num_envs) format, or None
             rng: Random key
             env_state: Environment state with shape (num_envs, ...) or None
             aux_obs: Optional auxiliary vector to append to observation
             test_mode: Whether to use test mode (deterministic actions)
-            
+
         Returns:
             actions: Actions with shape (num_envs,)
             new_hstate: New hidden state in the same format as hstate
@@ -398,12 +403,38 @@ class BufferedPopulation(AgentPopulation):
         gathered_params = self.gather_agent_params(buffer, agent_indices)
         num_envs = agent_indices.squeeze().shape[0]
         rngs_batched = jax.random.split(rng, num_envs)
-        
-        vmapped_get_action = jax.vmap(partial(self.policy_cls.get_action, 
-                                             aux_obs=aux_obs, 
-                                             env_state=env_state, 
-                                             test_mode=test_mode))
-        actions, new_hstate = vmapped_get_action(
-            gathered_params, obs, done, avail_actions, hstate, 
-            rngs_batched)
-        return actions, new_hstate 
+
+        # We vmap over the per-env params axis only, keeping the (seq_len, batch)
+        # dims that recurrent policies (S5, RNN) require inside each forward call.
+        # Each per-env invocation receives (1, 1, ...) shaped obs/done/avail and
+        # a hstate with a singleton env axis (..., 1, H).
+        def _get_action_one_env(params_i, obs_i, done_i, avail_i, hstate_i, rng_i):
+            # obs_i: (obs_dim,)  done_i: ()  avail_i: (num_actions,)
+            # hstate_i: pytree with leaves (..., H) — env axis stripped by outer vmap
+            act_i, _, _, new_h_i = self.policy_cls.get_action_value_policy(
+                params=params_i,
+                obs=obs_i[jnp.newaxis, jnp.newaxis, :],            # (1, 1, obs_dim)
+                done=done_i[jnp.newaxis, jnp.newaxis],              # (1, 1)
+                avail_actions=avail_i[jnp.newaxis, jnp.newaxis, :], # (1, 1, num_actions)
+                hstate=jax.tree.map(lambda h: h[..., jnp.newaxis, :], hstate_i),
+                rng=rng_i,
+            )
+            # Squeeze (1,1) action → scalar; drop the inserted singleton env axis
+            return act_i.squeeze(), jax.tree.map(lambda h: h[..., 0, :], new_h_i)
+
+        # Move env axis to position 0 so vmap strips it per-env, then restore.
+        if hstate is not None:
+            hstate_env_first = jax.tree.map(lambda h: jnp.moveaxis(h, -2, 0), hstate)
+        else:
+            hstate_env_first = None
+
+        actions, new_hstate_env_first = jax.vmap(_get_action_one_env)(
+            gathered_params, obs, done, avail_actions, hstate_env_first, rngs_batched
+        )
+
+        if new_hstate_env_first is not None:
+            new_hstate = jax.tree.map(lambda h: jnp.moveaxis(h, 0, -2), new_hstate_env_first)
+        else:
+            new_hstate = None
+
+        return actions, new_hstate
