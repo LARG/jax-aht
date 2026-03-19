@@ -253,6 +253,27 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         # create the CoopReconContinuous environment
         env = CoopReconContinuousWrapper(**env_kwargs_copy)
 
+    elif env_name == 'continuous/coop_recon_n_agent':
+        # Phase B: N-agent generalization (N=3 or N=4).
+        # Use num_agents kwarg to set N; grid_size kwarg to scale the arena.
+        default_env_kwargs = {
+            "instance": "",
+            "render": False,
+            "render_name": "coop_recon_n_agent",
+            "render_dir": "render",
+            "ego_centric_obs": False,
+            "num_agents": 3,
+            "grid_size": 1.0,
+        }
+
+        from envs.coop_recon_continuous.coop_recon_continuous_n_agent_wrapper import CoopReconContinuousNAgentWrapper
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        for key in default_env_kwargs:
+            if key not in env_kwargs:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+
+        env = CoopReconContinuousNAgentWrapper(**env_kwargs_copy)
+
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
 
