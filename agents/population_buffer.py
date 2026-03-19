@@ -393,7 +393,7 @@ class BufferedPopulation(AgentPopulation):
             
         Returns:
             actions: Actions with shape (num_envs,)
-            new_hstate: New hidden state with shape (num_envs, ...) or None
+            new_hstate: New hidden state in the same format as hstate
         """
         gathered_params = self.gather_agent_params(buffer, agent_indices)
         num_envs = agent_indices.squeeze().shape[0]

@@ -5,8 +5,6 @@ https://proceedings.mlr.press/v202/li23au.html
 
 Recommended debug command:
 python open_ended_training/run.py algorithm=cole/lbf task=lbf label=test_cole run_heldout_eval=false algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 logger.log_train_out=false logger.log_eval_out=false local_logger.save_train_out=false local_logger.save_eval_out=false
-
-Limitations: does not support recurrent actors.
 '''
 from functools import partial
 import logging
@@ -22,8 +20,11 @@ import numpy as np
 import optax
 import wandb
 
-from agents.mlp_actor_critic_agent import ActorWithConditionalCriticPolicy
-from agents.initialize_agents import initialize_actor_with_conditional_critic
+from agents.initialize_agents import (
+    initialize_s5_agent,
+    initialize_mlp_agent,
+    initialize_rnn_agent,
+)
 from agents.population_interface import AgentPopulation
 from agents.population_buffer import BufferedPopulation
 from common.save_load_utils import save_train_run
@@ -35,6 +36,19 @@ from marl.ppo_utils import Transition, unbatchify, _create_minibatches
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+def initialize_agent(actor_type, config, env, rng):
+    """Dispatch to the appropriate agent initialiser based on ACTOR_TYPE."""
+    if actor_type == "s5":
+        return initialize_s5_agent(config, env, rng)
+    elif actor_type == "mlp":
+        return initialize_mlp_agent(config, env, rng)
+    elif actor_type == "rnn":
+        return initialize_rnn_agent(config, env, rng)
+    else:
+        raise ValueError(f"Unsupported ACTOR_TYPE for COLE: {actor_type!r}. "
+                         "Choose from 's5', 'mlp', 'rnn'.")
 
 
 def train_cole_partners(train_rng, wandb_logger, env, config):
@@ -51,6 +65,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
 
     # Compute number of updates PER outermost iteration
     # Training rollouts: 2 distinct rollout phases (SP, XP) each using NUM_ENVS
+    # TODO: make sure we're including timesteps used to compute XP matrix
     training_steps = 2 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
     config["NUM_UPDATES"] = int(config["TOTAL_TIMESTEPS_PER_ITERATION"] // training_steps)
 
@@ -64,10 +79,11 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
             rng, init_ppo_rng, init_conf_rng, xp_init_rng = jax.random.split(rng, 4)
 
             # Initialize a population buffer
-            dummy_policy, dummy_init_params = initialize_actor_with_conditional_critic(config, env, init_conf_rng)
+            dummy_policy, dummy_init_params = initialize_agent(config["ACTOR_TYPE"], config, env, init_conf_rng)
             partner_population = BufferedPopulation(
                 max_pop_size=config["PARTNER_POP_SIZE"],
                 policy_cls=dummy_policy,
+                sampling_strategy="softmax",  # scores from metasolve_game_graph are used directly via softmax; staleness is irrelevant
             )
 
             population_buffer = partner_population.reset_buffer(dummy_init_params)
@@ -96,10 +112,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 num_existing_agents, rng = func_input
                 rng, init_conf_rng = jax.random.split(rng)
 
-                # Create new confederate agent policy and critic
-                policy, init_params = initialize_actor_with_conditional_critic(
-                    config, env, init_conf_rng
-                )
+                policy, init_params = initialize_agent(config["ACTOR_TYPE"], config, env, init_conf_rng)
 
                 # Create a train_state and optimizer for the newly initialzied model
                 if config["ANNEAL_LR"]:
@@ -190,49 +203,34 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 def _update_step(update_with_ckpt_runner_state, unused):
                     update_runner_state, checkpoint_array, ckpt_idx = update_with_ckpt_runner_state
                     (
-                        train_state, pop_buffer, xp_matrix,
+                        train_state, pop_buffer,
                         env_state_sp, obsv_sp,
                         env_state_xp, obsv_xp,
                         last_dones_xp,
                         last_dones_sp,
                         partner_indices_xp,
+                        ego_hstate_xp, partner_hstate,
+                        ego_hstate_sp0, ego_hstate_sp1,
                         rng, update_steps,
                         num_prev_trained_conf
                     ) = update_runner_state
 
-                    # Derive sampling distribution from the full XP matrix for the current agent
-                    sampling_dist = metasolve_game_graph(xp_matrix, num_prev_trained_conf, num_prev_trained_conf)
-
-                    # Sample per-env partner indices for XP rollouts
-                    rng, sample_rng, rng_xp, rng_sp = jax.random.split(rng, 4)
-                    needs_resample_xp = last_dones_xp["__all__"]
-                    sampled_indices_all = jax.random.choice(
-                        sample_rng, jnp.arange(config["POP_SIZE"]),
-                        shape=(config["NUM_ENVS"],), p=sampling_dist, replace=True
-                    )
-                    partner_indices_xp = jnp.where(
-                        needs_resample_xp,
-                        sampled_indices_all,
-                        partner_indices_xp
-                    )
-
-                    def _env_step_conf_ego(runner_state, unused):
+                    def _env_step_xp(runner_state, unused):
                         """
-                        agent_0 = training confederate, agent_1 = population partner (sampled per env).
-                        On episode resets, resamples a new partner from the population buffer
-                        according to sampling_dist. Returns updated runner_state and a Transition for agent_0.
+                        XP (cross-play) rollout step.
+                        agent_0 = ego agent being trained, agent_1 = partner sampled from the population buffer.
+                        Partners are resampled per env at episode boundaries using the metasolve distribution
+                        stored in pop_buffer.scores.
+                        Returns updated runner_state and a Transition for agent_0.
                         """
-                        train_state, pop_buffer, partner_indices, sampling_dist, env_state, last_obs, last_dones, rng = runner_state
+                        train_state, pop_buffer, partner_indices, env_state, last_obs, last_dones, ego_hstate, partner_hstate, rng = runner_state
                         rng, act_rng, partner_rng, step_rng, resample_rng = jax.random.split(rng, 5)
-
-                        obs_0 = last_obs["agent_0"]
-                        obs_1 = last_obs["agent_1"]
 
                         # Resample partner index for envs that just finished an episode
                         needs_resample = last_dones["__all__"]
-                        new_sampled = jax.random.choice(
-                            resample_rng, jnp.arange(config["POP_SIZE"]),
-                            shape=(config["NUM_ENVS"],), p=sampling_dist, replace=True
+                        new_sampled, pop_buffer = partner_population.sample_agent_indices(
+                            pop_buffer, config["NUM_ENVS"], resample_rng,
+                            needs_resample_mask=needs_resample
                         )
                         partner_indices = jnp.where(needs_resample, new_sampled, partner_indices)
 
@@ -241,20 +239,14 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
                         avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
 
-                        # Build per-env one-hot IDs for agent_0's conditional critic
-                        # shape: (1, NUM_ENVS, POP_SIZE)
-                        per_env_one_hot = jnp.eye(config["POP_SIZE"])[partner_indices]  # (NUM_ENVS, POP_SIZE)
-                        aux_obs_0 = per_env_one_hot[jnp.newaxis, :, :]  # (1, NUM_ENVS, POP_SIZE)
-
-                        # Agent_0 (training confederate) action
-                        act_0, val_0, pi_0, _ = policy.get_action_value_policy(
+                        # Agent_0 (trained ego agent) action
+                        act_0, val_0, pi_0, new_ego_hstate = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=obs_0.reshape(1, config["NUM_ENVS"], -1),
+                            obs=last_obs["agent_0"].reshape(1, config["NUM_ENVS"], -1),
                             done=last_dones["agent_0"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_0),
-                            hstate=None,
+                            hstate=ego_hstate,
                             rng=act_rng,
-                            aux_obs=aux_obs_0
                         )
                         logp_0 = pi_0.log_prob(act_0)
                         act_0 = act_0.squeeze()
@@ -262,15 +254,14 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         val_0 = val_0.squeeze()
 
                         # Agent_1 (population partner) action - one partner per env via BufferedPopulation
-                        act_1, _ = partner_population.get_actions(
+                        act_1, new_partner_hstate = partner_population.get_actions(
                             buffer=pop_buffer,
                             agent_indices=partner_indices,
-                            obs=obs_1.reshape(config["NUM_ENVS"], 1, -1),
+                            obs=last_obs["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
                             done=last_dones["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
                             avail_actions=avail_actions_1,
-                            hstate=None,
+                            hstate=partner_hstate,
                             rng=partner_rng,
-                            aux_obs=None
                         )
                         act_1 = act_1.squeeze()
 
@@ -297,103 +288,50 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             info=info_0,
                             avail_actions=avail_actions_0
                         )
-                        new_runner_state = (train_state, pop_buffer, partner_indices, sampling_dist,
-                                            env_state_next, obs_next, done, rng)
+                        new_runner_state = (train_state, pop_buffer, partner_indices,
+                                            env_state_next, obs_next, done,
+                                            new_ego_hstate, new_partner_hstate, rng)
                         return new_runner_state, transition
 
-                    def _env_step_conf_br(runner_state, unused):
+                    def _env_step_sp(runner_state, unused):
                         """
-                        agent_0 = confederate, agent_1 = best response
-                        Returns updated runner_state, and Transitions for the confederate and best response.
+                        SP (self-play) rollout step.
+                        Both agent slots (agent_0 and agent_1) use the same confederate parameters.
+                        Separate hidden states are tracked per slot so recurrent agents are handled correctly.
+                        Returns updated runner_state and Transitions for both agent slots.
                         """
-                        train_state, env_state, last_obs, last_dones, rng, current_trained_pop_id, reset_traj_batch = runner_state
+                        train_state, env_state, last_obs, last_dones, ego_hstate_sp0, ego_hstate_sp1, rng = runner_state
                         rng, conf_rng, br_rng, step_rng = jax.random.split(rng, 4)
-
-                        def gather_sampled(data_pytree, flat_indices, first_nonbatch_dim: int):
-                            '''Will treat all dimensions up to the first_nonbatch_dim as batch dimensions. '''
-                            batch_size = config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
-                            flat_data = jax.tree.map(lambda x: x.reshape(batch_size, *x.shape[first_nonbatch_dim:]), data_pytree)
-                            sampled_data = jax.tree.map(lambda x: x[flat_indices], flat_data) # Shape (N, ...)
-                            return sampled_data
-
-                        if reset_traj_batch is not None:
-                            rng, sample_rng = jax.random.split(rng)
-                            needs_resample = last_dones["__all__"] # shape (N,) bool
-
-                            total_reset_states = config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
-                            sampled_indices = jax.random.randint(sample_rng, shape=(config["NUM_ENVS"],), minval=0,
-                                                                maxval=total_reset_states)
-
-                            # Gather sampled leaves from each data pytree
-                            sampled_env_state = gather_sampled(reset_traj_batch.env_state, sampled_indices, first_nonbatch_dim=2)
-                            sampled_conf_obs = gather_sampled(reset_traj_batch.conf_obs, sampled_indices, first_nonbatch_dim=2)
-                            sampled_br_obs = gather_sampled(reset_traj_batch.partner_obs, sampled_indices, first_nonbatch_dim=2)
-                            sampled_conf_done = gather_sampled(reset_traj_batch.conf_done, sampled_indices, first_nonbatch_dim=2)
-                            sampled_br_done = gather_sampled(reset_traj_batch.partner_done, sampled_indices, first_nonbatch_dim=2)
-
-                            # for done environments, select data corresponding to the reset_traj_batch states
-                            env_state = jax.tree.map(
-                                lambda sampled, original: jnp.where(
-                                    needs_resample.reshape((-1,) + (1,) * (original.ndim - 1)),
-                                    sampled, original
-                                ),
-                                sampled_env_state,
-                                env_state
-                            )
-                            obs_0 = jnp.where(needs_resample[:, jnp.newaxis], sampled_conf_obs, last_obs["agent_0"])
-                            obs_1 = jnp.where(needs_resample[:, jnp.newaxis], sampled_br_obs, last_obs["agent_1"])
-
-                            dones_0 = jnp.where(needs_resample, sampled_conf_done, last_dones["agent_0"])
-                            dones_1 = jnp.where(needs_resample, sampled_br_done, last_dones["agent_1"])
-
-                        else:
-
-                            # Reset conf-br data collection from conf-ego states
-                            obs_0, obs_1 = last_obs["agent_0"], last_obs["agent_1"]
-                            dones_0, dones_1 = last_dones["agent_0"], last_dones["agent_1"]
 
                         # Get available actions for agent 0 from environment state
                         avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)
                         avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
                         avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
 
-                        # Agent_0 (confederate) action
-                        # Add one-hot ID of XP teammate
-                        sp_one_hot_id = jnp.eye(config["POP_SIZE"])[current_trained_pop_id]
-                        sp_one_hot_id = jnp.expand_dims(
-                            jnp.expand_dims(
-                                sp_one_hot_id, 0
-                            ), 0
-                        )
-
-                        aux_obs = jnp.repeat(sp_one_hot_id, config["NUM_ENVS"], 1)
-                        act_0, val_0, pi_0, _ = policy.get_action_value_policy(
+                        # Agent_0 (agent slot 0 in SP) action
+                        act_0, val_0, pi_0, new_ego_hstate_sp0 = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=obs_0.reshape(1, config["NUM_ENVS"], -1),
-                            done=dones_0.reshape(1, config["NUM_ENVS"]),
+                            obs=last_obs["agent_0"].reshape(1, config["NUM_ENVS"], -1),
+                            done=last_dones["agent_0"].reshape(1, config["NUM_ENVS"]),
                             avail_actions=jax.lax.stop_gradient(avail_actions_0),
-                            hstate=None,
-                            rng=conf_rng,
-                            aux_obs=aux_obs
+                            hstate=ego_hstate_sp0,
+                            rng=conf_rng
                         )
                         logp_0 = pi_0.log_prob(act_0)
-
                         act_0 = act_0.squeeze()
                         logp_0 = logp_0.squeeze()
                         val_0 = val_0.squeeze()
 
-                        # Agent 1 (best response) action
-                        act_1, val_1, pi_1, _ = policy.get_action_value_policy(
+                        # Agent_1 (agent slot 1 in SP) action — same params, different hstate
+                        act_1, val_1, pi_1, new_ego_hstate_sp1 = policy.get_action_value_policy(
                             params=train_state.params,
-                            obs=obs_1.reshape(1, config["NUM_ENVS"], -1),
-                            done=dones_1.reshape(1, config["NUM_ENVS"]),
+                            obs=last_obs["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
+                            done=last_dones["agent_1"].reshape(config["NUM_ENVS"], 1, -1),
                             avail_actions=jax.lax.stop_gradient(avail_actions_1),
-                            hstate=None,
-                            rng=br_rng,
-                            aux_obs=aux_obs
+                            hstate=ego_hstate_sp1,
+                            rng=br_rng
                         )
                         logp_1 = pi_1.log_prob(act_1)
-
                         act_1 = act_1.squeeze()
                         logp_1 = logp_1.squeeze()
                         val_1 = val_1.squeeze()
@@ -405,13 +343,13 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
 
                         # Step env
                         step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
-                        obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0,0,0))(
+                        obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0, 0, 0))(
                             step_rngs, env_state, env_act
                         )
                         info_0 = jax.tree.map(lambda x: x[:, 0], info)
                         info_1 = jax.tree.map(lambda x: x[:, 1], info)
 
-                        # Store agent_0 (confederate) data in transition
+                        # Store agent_0 data in transition
                         transition_0 = Transition(
                             done=done["agent_0"],
                             action=act_0,
@@ -422,7 +360,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             info=info_0,
                             avail_actions=avail_actions_0
                         )
-                        # Store agent_1 (best response) data in transition
+                        # Store agent_1 data in transition
                         transition_1 = Transition(
                             done=done["agent_1"],
                             action=act_1,
@@ -433,22 +371,37 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             info=info_1,
                             avail_actions=avail_actions_1
                         )
-                        # Pass reset_traj_batch and init_br_hstate through unchanged in the state tuple
-                        new_runner_state = (train_state, env_state_next, obs_next, done, rng, current_trained_pop_id, reset_traj_batch)
+                        new_runner_state = (train_state, env_state_next, obs_next, done,
+                                            new_ego_hstate_sp0, new_ego_hstate_sp1, rng)
                         return new_runner_state, (transition_0, transition_1)
 
+                    # Sample per-env XP partner indices, resampling only for envs that finished an episode
+                    rng, sample_rng, rng_xp, rng_sp = jax.random.split(rng, 4)
+                    needs_resample_xp = last_dones_xp["__all__"]
+                    sampled_indices_all, pop_buffer = partner_population.sample_agent_indices(
+                        pop_buffer, config["NUM_ENVS"], sample_rng,
+                        needs_resample_mask=needs_resample_xp
+                    )
+                    partner_indices_xp = jnp.where(
+                        needs_resample_xp, sampled_indices_all, partner_indices_xp
+                    )
+
                     # Do XP rollout: agent_0 vs population partners sampled per env
-                    runner_state_xp = (train_state, pop_buffer, partner_indices_xp, sampling_dist,
-                                       env_state_xp, obsv_xp, last_dones_xp, rng_xp)
+                    runner_state_xp = (train_state, pop_buffer, partner_indices_xp,
+                                       env_state_xp, obsv_xp, last_dones_xp,
+                                       ego_hstate_xp, partner_hstate, rng_xp)
                     runner_state_xp, traj_batch_xp = jax.lax.scan(
-                        _env_step_conf_ego, runner_state_xp, None, config["ROLLOUT_LENGTH"])
-                    (train_state, pop_buffer, partner_indices_xp, _, env_state_xp, last_obs_xp, last_dones_xp, rng_xp) = runner_state_xp
+                        _env_step_xp, runner_state_xp, None, config["ROLLOUT_LENGTH"])
+                    (train_state, pop_buffer, partner_indices_xp, env_state_xp,
+                     last_obs_xp, last_dones_xp, ego_hstate_xp, partner_hstate, rng_xp) = runner_state_xp
 
                     # Do self-play (based on train_state params) rollout
-                    runner_state_sp = (train_state, env_state_sp, obsv_sp, last_dones_sp, rng_sp, num_prev_trained_conf, None)
+                    runner_state_sp = (train_state, env_state_sp, obsv_sp, last_dones_sp,
+                                       ego_hstate_sp0, ego_hstate_sp1, rng_sp)
                     runner_state_sp, (traj_batch_sp_agent0, traj_batch_sp_agent1) = jax.lax.scan(
-                        _env_step_conf_br, runner_state_sp, None, config["ROLLOUT_LENGTH"])
-                    (train_state, env_state_sp, last_obs_sp, last_dones_sp, rng_sp, num_prev_trained_conf, _) = runner_state_sp
+                        _env_step_sp, runner_state_sp, None, config["ROLLOUT_LENGTH"])
+                    (train_state, env_state_sp, last_obs_sp, last_dones_sp,
+                     ego_hstate_sp0, ego_hstate_sp1, rng_sp) = runner_state_sp
 
                     def _calculate_gae(traj_batch, last_val):
                         def _get_advantages(gae_and_next_value, transition):
@@ -475,22 +428,9 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         return advantages, advantages + traj_batch.value
 
                     def _compute_advantages_and_targets(env_state, policy, policy_params, policy_hstate,
-                                                    last_obs, last_dones, traj_batch, agent_name, value_idx=None):
-                        '''Value_idx argument is to support the ActorWithDoubleCritic (confederate) policy, which
-                        has two value heads. Value head 0 models the ego agent while value head 1 models the best response.'''
+                                                    last_obs, last_dones, traj_batch, agent_name):
+                        """Compute GAE advantages and value targets for a trajectory."""
                         avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)[agent_name].astype(jnp.float32)
-
-                        # Add one-hot ID of interaction teammate
-                        xp_one_hot_id = jnp.eye(config["POP_SIZE"])[value_idx]
-                        xp_one_hot_id = jnp.expand_dims(
-                            jnp.expand_dims(
-                                xp_one_hot_id, 0
-                            ), 0
-                        )
-
-                        # Agent_0 (confederate) action using policy interface
-                        aux_obs = jnp.repeat(xp_one_hot_id, last_obs[agent_name].shape[0], axis=1)
-
                         _, vals, _, _ = policy.get_action_value_policy(
                             params=policy_params,
                             obs=last_obs[agent_name].reshape(1, last_obs[agent_name].shape[0], -1),
@@ -498,33 +438,24 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             avail_actions=jax.lax.stop_gradient(avail_actions),
                             hstate=policy_hstate,
                             rng=jax.random.PRNGKey(0),  # dummy key as we don't sample actions
-                            aux_obs=aux_obs
                         )
                         last_val = vals.squeeze()
                         advantages, targets = _calculate_gae(traj_batch, last_val)
                         return advantages, targets
 
                     # 5a) Compute conf advantages for XP interaction
-                    # Use the most recently sampled partner index (per env) for the value head.
-                    # We take the per-env partner_indices_xp and use the mode as the scalar value_idx
-                    # for the _compute_advantages_and_targets helper (which expects a scalar id).
-                    # Since the helper only uses value_idx to build the aux_obs for the *last* value
-                    # estimate, we use the mean partner index as a reasonable approximation.
-                    # Note: this is only used for the bootstrap value; the trajectory obs already
-                    # carry the correct per-step aux_obs.
-                    mean_xp_id = jnp.round(partner_indices_xp.mean()).astype(jnp.int32)
                     advantages_xp_conf, targets_xp_conf = _compute_advantages_and_targets(
-                        env_state_xp, policy, train_state.params, None,
-                        last_obs_xp, last_dones_xp, traj_batch_xp, "agent_0", value_idx=mean_xp_id)
+                        env_state_xp, policy, train_state.params, ego_hstate_xp,
+                        last_obs_xp, last_dones_xp, traj_batch_xp, "agent_0")
 
                     # 5b) Compute conf and br advantages for SP (conf-br) interaction
                     advantages_sp_conf, targets_sp_conf = _compute_advantages_and_targets(
-                        env_state_sp, policy, train_state.params, None,
-                        last_obs_sp, last_dones_sp, traj_batch_sp_agent0, "agent_0", value_idx=num_prev_trained_conf)
+                        env_state_sp, policy, train_state.params, ego_hstate_sp0,
+                        last_obs_sp, last_dones_sp, traj_batch_sp_agent0, "agent_0")
 
                     advantages_sp_br, targets_sp_br = _compute_advantages_and_targets(
-                        env_state_sp, policy, train_state.params, None,
-                        last_obs_sp, last_dones_sp, traj_batch_sp_agent1, "agent_1", value_idx=num_prev_trained_conf)
+                        env_state_sp, policy, train_state.params, ego_hstate_sp1,
+                        last_obs_sp, last_dones_sp, traj_batch_sp_agent1, "agent_1")
 
                     def _update_epoch(update_state, unused):
                         def _compute_ppo_value_loss(pred_value, traj_batch, target_v):
@@ -553,64 +484,42 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             return pg_loss
 
                         def _update_minbatch_conf(train_state_conf, batch_infos):
-                            minbatch_xp, minbatch_sp1, minbatch_sp2, xp_id, sp_id = batch_infos
-                            _, traj_batch_xp, advantages_xp, returns_xp = minbatch_xp
-                            _, traj_batch_sp1, advantages_sp1, returns_sp1 = minbatch_sp1
-                            _, traj_batch_sp2, advantages_sp2, returns_sp2 = minbatch_sp2
+                            minbatch_xp, minbatch_sp1, minbatch_sp2 = batch_infos
+                            init_hstate_xp, traj_batch_xp, advantages_xp, returns_xp = minbatch_xp
+                            init_hstate_sp1, traj_batch_sp1, advantages_sp1, returns_sp1 = minbatch_sp1
+                            init_hstate_sp2, traj_batch_sp2, advantages_sp2, returns_sp2 = minbatch_sp2
 
                             def _loss_fn_conf(params, traj_batch_xp, gae_xp, target_v_xp,
                                             traj_batch_sp, gae_sp, target_v_sp,
                                             traj_batch_sp2, gae_sp2, target_v_sp2):
-                                # get policy and value of confederate versus ego and best response agents respectively
-                                xp_one_hot_id = jnp.eye(config["POP_SIZE"])[xp_id]
-                                xp_one_hot_id = jnp.expand_dims(
-                                    jnp.expand_dims(
-                                        xp_one_hot_id, 0
-                                    ), 0
-                                )
-
-                                sp_one_hot_id = jnp.eye(config["POP_SIZE"])[sp_id]
-                                sp_one_hot_id = jnp.expand_dims(
-                                    jnp.expand_dims(
-                                        sp_one_hot_id, 0
-                                    ), 0
-                                )
-
-                                # XP: confederate interacting with ego partner
-                                aux_obs_xp = jnp.repeat(xp_one_hot_id, traj_batch_xp.obs.shape[1], axis=1)
-                                aux_obs_xp = jnp.repeat(aux_obs_xp, traj_batch_xp.obs.shape[0], axis=0)
-
+                                # XP: training agent interacting with population partner
                                 _, value_xp, pi_xp, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_xp.obs,
                                     done=traj_batch_xp.done,
                                     avail_actions=traj_batch_xp.avail_actions,
-                                    hstate=None,
+                                    hstate=init_hstate_xp,
                                     rng=jax.random.PRNGKey(0),
-                                    aux_obs=aux_obs_xp
                                 )
 
-                                # SP: confederate interacting with itself
-                                aux_obs_sp = jnp.repeat(sp_one_hot_id, traj_batch_sp.obs.shape[1], axis=1)
-                                aux_obs_sp = jnp.repeat(aux_obs_sp, traj_batch_sp.obs.shape[0], axis=0)
+                                # SP: agent slot 0 interacting with itself
                                 _, value_sp, pi_sp, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_sp.obs,
                                     done=traj_batch_sp.done,
                                     avail_actions=traj_batch_sp.avail_actions,
-                                    hstate=None,
+                                    hstate=init_hstate_sp1,
                                     rng=jax.random.PRNGKey(0),
-                                    aux_obs=aux_obs_sp
                                 )
 
+                                # SP: agent slot 1 interacting with itself
                                 _, value_sp2, pi_sp2, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_sp2.obs,
                                     done=traj_batch_sp2.done,
                                     avail_actions=traj_batch_sp2.avail_actions,
-                                    hstate=None,
+                                    hstate=init_hstate_sp2,
                                     rng=jax.random.PRNGKey(0),
-                                    aux_obs=aux_obs_sp
                                 )
 
                                 log_prob_xp = pi_xp.log_prob(traj_batch_xp.action)
@@ -655,44 +564,44 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             advantages_xp_conf, advantages_sp_conf,
                             advantages_sp_br, targets_xp_conf,
                             targets_sp_conf, targets_sp_br,
-                            rng, xp_id, sp_id
+                            init_hstate_xp, init_hstate_sp0, init_hstate_sp1, rng
                         ) = update_state
 
                         rng, perm_rng_xp, perm_rng_sp_conf, perm_rng_sp_br = jax.random.split(rng, 4)
 
                         # Create minibatches for XP and SP interaction types
                         minibatches_xp = _create_minibatches(
-                            traj_batch_xp, advantages_xp_conf, targets_xp_conf, None,
+                            traj_batch_xp, advantages_xp_conf, targets_xp_conf, init_hstate_xp,
                             config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_xp
                         )
                         minibatches_sp_conf = _create_minibatches(
-                            traj_batch_sp_conf, advantages_sp_conf, targets_sp_conf, None,
+                            traj_batch_sp_conf, advantages_sp_conf, targets_sp_conf, init_hstate_sp0,
                             config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_sp_conf
                         )
                         minibatches_sp_br = _create_minibatches(
-                            traj_batch_sp_br, advantages_sp_br, targets_sp_br, None,
+                            traj_batch_sp_br, advantages_sp_br, targets_sp_br, init_hstate_sp1,
                             config["NUM_ENVS"], config["NUM_MINIBATCHES"], perm_rng_sp_br
                         )
 
                         # Update confederate
-                        repeated_xp_id = jnp.repeat(xp_id, minibatches_xp[1].obs.shape[0], axis=0)
-                        repeated_sp_id = jnp.repeat(sp_id, minibatches_sp_br[1].obs.shape[0], axis=0)
                         train_state_conf, total_loss_conf = jax.lax.scan(
-                            _update_minbatch_conf, train_state_conf, (
-                                minibatches_xp, minibatches_sp_conf, minibatches_sp_br,
-                                repeated_xp_id, repeated_sp_id
-                            )
+                            _update_minbatch_conf, train_state_conf,
+                            (minibatches_xp, minibatches_sp_conf, minibatches_sp_br)
                         )
 
                         update_state = (train_state_conf,
                             traj_batch_xp, traj_batch_sp_conf, traj_batch_sp_br,
                             advantages_xp_conf, advantages_sp_conf, advantages_sp_br,
                             targets_xp_conf, targets_sp_conf, targets_sp_br,
-                            rng, xp_id, sp_id
+                            init_hstate_xp, init_hstate_sp0, init_hstate_sp1, rng
                         )
                         return update_state, total_loss_conf
 
                     # 3) PPO update
+                    # init_hstate_* are fresh zero hstates to replay trajectory from (like ippo.py)
+                    init_hstate_xp = policy.init_hstate(config["NUM_ENVS"])
+                    init_hstate_sp0 = policy.init_hstate(config["NUM_ENVS"])
+                    init_hstate_sp1 = policy.init_hstate(config["NUM_ENVS"])
                     rng, sub_rng = jax.random.split(rng, 2)
                     update_state = (
                         train_state,
@@ -701,8 +610,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         advantages_xp_conf,
                         advantages_sp_conf, advantages_sp_br,
                         targets_xp_conf, targets_sp_conf,
-                        targets_sp_br, sub_rng,
-                        mean_xp_id, num_prev_trained_conf
+                        targets_sp_br,
+                        init_hstate_xp, init_hstate_sp0, init_hstate_sp1, sub_rng
                     )
                     update_state, conf_losses = jax.lax.scan(
                         _update_epoch, update_state, None, config["UPDATE_EPOCHS"])
@@ -715,11 +624,13 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                     ) = conf_losses[1]
 
                     new_update_runner_state = (
-                        train_state, pop_buffer, xp_matrix,
+                        train_state, pop_buffer,
                         env_state_sp, last_obs_sp,
                         env_state_xp, last_obs_xp,
                         last_dones_xp, last_dones_sp,
                         partner_indices_xp,
+                        ego_hstate_xp, partner_hstate,
+                        ego_hstate_sp0, ego_hstate_sp1,
                         rng, update_steps+1, num_prev_trained_conf
                     )
 
@@ -755,21 +666,37 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 )
 
 
+                # Pre-compute the metasolve sampling distribution for agent i and write it into
+                # pop_buffer.scores so that sample_agent_indices uses it throughout the PPO loop.
+                init_sampling_dist = metasolve_game_graph(xp_matrix, num_existing_agents, num_existing_agents)
+                pop_buffer = partner_population.update_scores(
+                    pop_buffer, jnp.arange(config["POP_SIZE"]), init_sampling_dist
+                )
+
                 update_steps = 0
                 init_done_xp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
                 init_done_sp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
                 # Initialize XP partner indices: default to agent 0 until resampled
                 init_partner_indices_xp = jnp.zeros((config["NUM_ENVS"],), dtype=jnp.int32)
 
+                # Initialize hidden states for the training agent (xp + sp slots) and population partner
+                init_ego_hstate_xp = policy.init_hstate(config["NUM_ENVS"])
+                init_partner_hstate = partner_population.policy_cls.init_hstate(config["NUM_ENVS"])
+                init_ego_hstate_sp0 = policy.init_hstate(config["NUM_ENVS"])
+                init_ego_hstate_sp1 = policy.init_hstate(config["NUM_ENVS"])
+
                 update_runner_state = (
-                    train_state, pop_buffer, xp_matrix,
+                    train_state, pop_buffer,
                     env_state_sp, obsv_sp,
                     env_state_xp, obsv_xp,
                     init_done_xp, init_done_sp,
                     init_partner_indices_xp,
+                    init_ego_hstate_xp, init_partner_hstate,
+                    init_ego_hstate_sp0, init_ego_hstate_sp1,
                     rng, update_steps,
                     num_existing_agents
                 )
+
 
                 checkpoint_array = init_ckpt_array(train_state.params)
                 ckpt_idx = 0
@@ -837,8 +764,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 )
                 new_update_runner_state, new_checkpoint_array, _, _, _ = new_update_with_ckpt_runner_state
                 final_train_state = new_update_runner_state[0]
-                # Recover the xp_matrix carried through the scan
-                xp_matrix = new_update_runner_state[2]
+                # xp_matrix is unchanged during the inner PPO loop; use the local variable directly
 
                 # Add newly trained agent i to the population buffer (default score, updated below)
                 updated_pop_buffer = partner_population.add_agent(pop_buffer, final_train_state.params)
@@ -949,11 +875,9 @@ def get_cole_population(config, out, env):
     # partner_params has shape (num_seeds, cole_pop_size, ...)
     partner_params = out['final_params_conf']
 
-    partner_policy = ActorWithConditionalCriticPolicy(
-        action_dim=env.action_space(env.agents[1]).n,
-        obs_dim=env.observation_space(env.agents[1]).shape[0],
-        pop_size=cole_pop_size, # used to create onehot agent id
-        activation=config["algorithm"].get("ACTIVATION", "tanh")
+    rng = jax.random.PRNGKey(0)  # dummy key; only used for parameter shape
+    partner_policy, _ = initialize_agent(
+        config["algorithm"]["ACTOR_TYPE"], dict(config["algorithm"]), env, rng
     )
 
     # Create partner population
@@ -998,17 +922,17 @@ def run_cole(config, wandb_logger):
     log_metrics(config, out, wandb_logger, metric_names)
     
     dummy_env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
-    algorithm_config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
-    ego_policy, init_ego_params = initialize_actor_with_conditional_critic(algorithm_config, dummy_env, eval_rng)
-    
-    # final_xp_returns = np.asarray(out["last_ep_infos_xp"]["returned_episode_returns"])[:, :, -1].mean(axis=(-2, -1))
-    # TODO: we return the last trained ego agent as a place holder for now, while we don't have the 
+    ego_policy, init_ego_params = initialize_agent(
+        algorithm_config["ACTOR_TYPE"], algorithm_config, dummy_env, eval_rng
+    )
+
+    # TODO: we return the last trained ego agent as a place holder for now, while we don't have the
     # proper XP matrix.
     # ultimately, we want to compute the best ego params for each seed, selected from all checkpoints over the entire population,
     # i.e., select from out["checkpoints_conf"]
     best_ids = -1
     best_ego_params = jax.tree.map(lambda x: x[:, best_ids], out["final_params_conf"])
-    
+
     return ego_policy, best_ego_params, init_ego_params
 
 def compute_sp_mask_and_ids(pop_size):
