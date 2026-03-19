@@ -493,6 +493,13 @@ class CoopReconContinuousWrapper(BaseEnv):
                     env_state.positions[agent_idx] - env_state.positions[other_agent_idx],   # Relative position
                     env_state.velocities[agent_idx],                                         # Own velocity
                     env_state.velocities[other_agent_idx],                                   # Other agent's velocity
+                    # Note: We now use relative goal vectors for true ego-centric obs.
+                    # The original implementation used absolute goal positions, but this forces
+                    # the agent to learn a map from relative positions back to global coordinates.
+                    # Uncomment these to revert to the original (harder) absolute goal positions:
+                    # env_state.goal_pos[agent_idx],                                           # Own goal (ego-centric: own first)
+                    # env_state.goal_pos[other_agent_idx],                                     # Other goal
+                    
                     env_state.goal_pos[agent_idx] - env_state.positions[agent_idx],          # Own goal vector (relative to self)
                     env_state.goal_pos[other_agent_idx] - env_state.positions[agent_idx],    # Other goal vector (relative to self)
                     jnp.array([env_state.detected_water[agent_idx], env_state.detected_water[other_agent_idx]], dtype=jnp.float32),
