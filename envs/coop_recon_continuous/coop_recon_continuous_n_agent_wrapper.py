@@ -582,3 +582,56 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
 
     def reset_render(self):
         pass
+
+    def animate(self, states, dones, num_episodes, extra_dir=None, fps=1, loop_count=0, debug=False):
+        if debug:
+            import logging
+            from envs.coop_recon_continuous.CoopReconContinuousNAgentViz import CoopReconContinuousNAgentViz
+            log = logging.getLogger(__name__)
+            try:
+                init_state, env_states = states
+                
+                base_dir = self._render_dir
+                if extra_dir is not None:
+                    base_dir = os.path.join(base_dir, extra_dir)
+                os.makedirs(base_dir, exist_ok=True)
+                
+                N = self.num_agents
+
+                for ep in range(num_episodes):
+                    positions = env_states.positions[0, ep] # (max_steps, N, 2)
+                    goals = env_states.goal_pos[0, ep] # (max_steps, N, 2)
+                    water = env_states.detected_water[0, ep] # (max_steps, N)
+                    life = env_states.detected_life[0, ep] # (max_steps, N)
+                    picture = env_states.picture_taken[0, ep] # (max_steps, N)
+                    
+                    viz = CoopReconContinuousNAgentViz(grid_size=self.grid_size)
+                    frames = []
+                    max_steps = positions.shape[0]
+                    
+                    for t in range(max_steps):
+                        state_layout = {
+                            'agent_positions': [(float(positions[t, i, 0]), float(positions[t, i, 1])) for i in range(N)],
+                            'goal_positions': [(float(goals[t, i, 0]), float(goals[t, i, 1])) for i in range(N)],
+                            'detected_water': [bool(water[t, i]) for i in range(N)],
+                            'detected_life': [bool(life[t, i]) for i in range(N)],
+                            'picture_taken': [bool(picture[t, i]) for i in range(N)]
+                        }
+                        
+                        frame = viz.render(state_layout)
+                        frames.append(frame)
+                        
+                        if bool(dones[0, ep, t]):
+                            break
+
+                    frames[0].save(
+                        os.path.join(base_dir, f"{self._render_name}_ep_{ep}.gif"),
+                        save_all=True,
+                        append_images=frames[1:],
+                        duration=1000 // fps,
+                        loop=loop_count
+                    )
+                log.info(f"Successfully saved {num_episodes} evaluation GIFs to {base_dir}")
+                
+            except Exception as e:
+                log.error(f"Diagnostic evaluation printing/rendering failed: {e}")
