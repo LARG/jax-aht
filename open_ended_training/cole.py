@@ -212,7 +212,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         ego_hstate_xp, partner_hstate,
                         ego_hstate_sp0, ego_hstate_sp1,
                         rng, update_steps,
-                        num_prev_trained_conf
+                        num_prev_trained_conf, partner_visit_counts
                     ) = update_runner_state
 
                     def _env_step_xp(runner_state, unused):
@@ -223,7 +223,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         stored in pop_buffer.scores.
                         Returns updated runner_state and a Transition for agent_0.
                         """
-                        train_state, pop_buffer, partner_indices, env_state, last_obs, last_dones, ego_hstate, partner_hstate, rng = runner_state
+                        train_state, pop_buffer, partner_indices, env_state, last_obs, last_dones, ego_hstate, partner_hstate, partner_visit_counts, rng = runner_state
                         rng, act_rng, partner_rng, step_rng, resample_rng = jax.random.split(rng, 5)
 
                         # Resample partner index for envs that just finished an episode
@@ -233,6 +233,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             needs_resample_mask=needs_resample
                         )
                         partner_indices = jnp.where(needs_resample, new_sampled, partner_indices)
+                        partner_visit_counts = partner_visit_counts.at[new_sampled].add(needs_resample.astype(jnp.int32))
 
                         # Get available actions from environment state
                         avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)
@@ -290,7 +291,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         )
                         new_runner_state = (train_state, pop_buffer, partner_indices,
                                             env_state_next, obs_next, done,
-                                            new_ego_hstate, new_partner_hstate, rng)
+                                            new_ego_hstate, new_partner_hstate, partner_visit_counts, 
+                                            rng)
                         return new_runner_state, transition
 
                     def _env_step_sp(runner_state, unused):
@@ -386,14 +388,24 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         needs_resample_xp, sampled_indices_all, partner_indices_xp
                     )
 
-                    # Do XP rollout: agent_0 vs population partners sampled per env
+                    # Update sampling distribution using UCB logic
+                    sum_counts = partner_visit_counts.sum()
+                    ucb_scores = init_sampling_dist + config["C_UCT"] * jnp.sqrt(sum_counts / (1 + partner_visit_counts))
+                    pop_buffer = partner_population.update_scores(
+                        pop_buffer, jnp.arange(config["POP_SIZE"]), ucb_scores
+                    )
+
+                    # Do XP rollout
                     runner_state_xp = (train_state, pop_buffer, partner_indices_xp,
                                        env_state_xp, obsv_xp, last_dones_xp,
-                                       ego_hstate_xp, partner_hstate, rng_xp)
+                                       ego_hstate_xp, partner_hstate, partner_visit_counts, rng_xp)
                     runner_state_xp, traj_batch_xp = jax.lax.scan(
-                        _env_step_xp, runner_state_xp, None, config["ROLLOUT_LENGTH"])
+                        _env_step_xp, 
+                        runner_state_xp, 
+                        None, 
+                        config["ROLLOUT_LENGTH"])
                     (train_state, pop_buffer, partner_indices_xp, env_state_xp,
-                     last_obs_xp, last_dones_xp, ego_hstate_xp, partner_hstate, rng_xp) = runner_state_xp
+                     last_obs_xp, last_dones_xp, ego_hstate_xp, partner_hstate, partner_visit_counts, rng_xp) = runner_state_xp
 
                     # Do self-play (based on train_state params) rollout
                     runner_state_sp = (train_state, env_state_sp, obsv_sp, last_dones_sp,
@@ -631,7 +643,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         partner_indices_xp,
                         ego_hstate_xp, partner_hstate,
                         ego_hstate_sp0, ego_hstate_sp1,
-                        rng, update_steps+1, num_prev_trained_conf
+                        rng, update_steps+1, num_prev_trained_conf,
+                        partner_visit_counts
                     )
 
                     # Metrics
@@ -685,6 +698,9 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 init_ego_hstate_sp0 = policy.init_hstate(config["NUM_ENVS"])
                 init_ego_hstate_sp1 = policy.init_hstate(config["NUM_ENVS"])
 
+                # Initialize visit counts for UCB style sampling of partners
+                init_partner_visit_counts = jnp.zeros((config["POP_SIZE"],), dtype=jnp.int32)
+
                 update_runner_state = (
                     train_state, pop_buffer,
                     env_state_sp, obsv_sp,
@@ -694,7 +710,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                     init_ego_hstate_xp, init_partner_hstate,
                     init_ego_hstate_sp0, init_ego_hstate_sp1,
                     rng, update_steps,
-                    num_existing_agents
+                    num_existing_agents,
+                    init_partner_visit_counts,
                 )
 
 
@@ -702,9 +719,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 ckpt_idx = 0
                 update_with_ckpt_runner_state = (update_runner_state, checkpoint_array, ckpt_idx, xp_eval_returns, sp_eval_returns)
 
-
                 def _update_step_with_ckpt(state_with_ckpt, unused):
-
                     (update_runner_state, checkpoint_array, ckpt_idx, xp_eval_returns, sp_eval_returns) = state_with_ckpt
                     train_state = update_runner_state[0]
 
@@ -714,7 +729,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         None
                     )
                     new_update_runner_state = new_state_with_ckpt[0]
-                    rng, update_steps = new_update_runner_state[-3], new_update_runner_state[-2]
+                    rng, update_steps = new_update_runner_state[13], new_update_runner_state[14]
 
                     # Decide if we store a checkpoint
                     # update steps is 1-indexed because it was incremented at the end of the update step
@@ -739,7 +754,6 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             max_episode_steps=config["ROLLOUT_LENGTH"],
                             num_eps=config["NUM_EVAL_EPISODES"]
                         )
-
                         return (new_ckpt_arr_conf, rng, cidx + 1, xp_eval_returns, sp_eval_returns)
 
                     def skip_ckpt(args):
@@ -846,6 +860,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
             rngs = jax.random.split(rng, config["PARTNER_POP_SIZE"])
             rng, add_conf_iter_rngs = rngs[0], rngs[1:]
 
+            # TODO: get rid of iter_ids
             iter_ids = jnp.arange(1, config["PARTNER_POP_SIZE"])
             (final_population_buffer, final_xp_matrix), (conf_checkpoints, metric, xp_eval_returns, sp_eval_returns) = jax.lax.scan(
                 add_conf_policy, (population_buffer, xp_matrix), (iter_ids, add_conf_iter_rngs)
@@ -934,17 +949,6 @@ def run_cole(config, wandb_logger):
     best_ego_params = jax.tree.map(lambda x: x[:, best_ids], out["final_params_conf"])
 
     return ego_policy, best_ego_params, init_ego_params
-
-def compute_sp_mask_and_ids(pop_size):
-    cross_product = np.meshgrid(
-        np.arange(pop_size),
-        np.arange(pop_size)
-    )
-    agent_id_cartesian_product = np.stack([g.ravel() for g in cross_product], axis=-1)
-    conf_ids = agent_id_cartesian_product[:, 0]
-    ego_ids = agent_id_cartesian_product[:, 1]
-    sp_mask = (conf_ids == ego_ids)
-    return sp_mask, agent_id_cartesian_product
 
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
