@@ -261,7 +261,7 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
 
         actions_array = jnp.stack([actions[agent] for agent in self.agents], axis=0).astype(jnp.int32).squeeze()
 
-        new_velocities = self._update_velocities(env_state.velocities, actions_array)
+        new_velocities = self._update_velocities(env_state.velocities, actions_array, env_state.picture_taken)
         new_positions = env_state.positions + new_velocities * self.dt
 
         # Gaussian movement noise
@@ -329,12 +329,17 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
     # -------------------------------------------------------------------------
 
     @partial(jax.jit, static_argnums=(0,))
-    def _update_velocities(self, velocities: jnp.ndarray, actions: jnp.ndarray) -> jnp.ndarray:
+    def _update_velocities(self, velocities: jnp.ndarray, actions: jnp.ndarray, picture_taken: jnp.ndarray) -> jnp.ndarray:
         target_vels = self.action_to_vel[actions]  # (N, 2)
         new_velocities = 0.7 * velocities + 0.3 * target_vels
         speeds = jnp.linalg.norm(new_velocities, axis=1, keepdims=True)
         scale = jnp.minimum(1.0, self.max_speed / (speeds + 1e-8))
-        return new_velocities * scale
+        
+        # Zero out velocity for agents who have completed their task
+        completed_mask = picture_taken[:, None]  # (N, 1)
+        new_velocities = jnp.where(completed_mask, jnp.zeros_like(new_velocities), new_velocities * scale)
+        
+        return new_velocities
 
     # -------------------------------------------------------------------------
     # PROCESS ACTIONS & REWARDS
