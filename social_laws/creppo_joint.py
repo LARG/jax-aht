@@ -172,7 +172,7 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                 restricted_avail_actions = optimal_action_mask * avail_actions
 
                 # remove extra batch dim
-                return restricted_avail_actions, new_hstate
+                return restricted_avail_actions, new_hstate, max_q
 
             def _env_step(runner_state, unused):
                 """
@@ -199,8 +199,9 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                 # Restrict available actions based on value function
                 optimal_restricted_avail_actions = []
                 new_optimal_hstates = []
+                sap_max_qs = []
                 for i in range(num_agents):
-                    opt_restricted_i, new_opt_hstate_i = _get_optimal_restricted_avail_actions(
+                    opt_restricted_i, new_opt_hstate_i, max_q_i = _get_optimal_restricted_avail_actions(
                         obs=prev_obs_per_agent[i],
                         done=prev_done_per_agent[i],
                         avail_actions=avail_actions_per_agent[i],
@@ -210,6 +211,7 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                     )
                     optimal_restricted_avail_actions.append(opt_restricted_i)
                     new_optimal_hstates.append(new_opt_hstate_i)
+                    sap_max_qs.append(max_q_i)
 
                 # Note that we do not need to reset the hidden states for the agents
                 # as the recurrent states are automatically reset when done is True.
@@ -299,6 +301,9 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                     # TODO: Prev or next avail actions?
                     entropy = -jnp.sum(jnp.where(next_opt_restricted_i, q_probs * jnp.log(q_probs + 1e-8), 0), axis=-1) * config["NUM_ACTIONS"] / next_opt_restricted_i.sum(-1)
 
+                    agent_info = {k: v for k, v in info.items()}
+                    agent_info["sap_max_q"] = sap_max_qs[i].squeeze()
+                    
                     # Build per-agent transitions
                     transitions.append(
                         Transition(
@@ -311,7 +316,7 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                             next_obs=get_agent_data(obs_full_next, i) if config["JOINT_USE_FULL_OBS"] else get_agent_data(obs_next, i),
                             next_avail_actions=next_opt_restricted_i,
                             next_val=next_values,
-                            info=info
+                            info=agent_info
                         )
                     )
 
@@ -481,6 +486,7 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                                 metrics = {
                                     f"agent_{agent_i}/critic_loss": loss,
                                     f"agent_{agent_i}/q_values": q_vals.mean(),
+                                    f"agent_{agent_i}/sap_max_q": minibatch.info.get("sap_max_q", jnp.array(0.0)).mean(),
                                     f"agent_{agent_i}/q_error": optax.l2_loss(target - q_vals).mean(),
                                     f"agent_{agent_i}/alpha_loss": jnp.mean(alpha_loss),
                                     f"agent_{agent_i}/alpha": alpha,
