@@ -33,6 +33,7 @@ from common.run_episodes import run_episodes
 from envs import make_env
 from envs.log_wrapper import LogWrapper, LogEnvState
 from marl.ppo_utils import Transition, unbatchify, _create_minibatches
+from open_ended_training.shapley_utils import shapley_values
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -101,7 +102,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 agent_0_param=dummy_init_params, agent_0_policy=dummy_policy,
                 agent_1_param=dummy_init_params, agent_1_policy=dummy_policy,
                 max_episode_steps=config["ROLLOUT_LENGTH"],
-                num_eps=config["NUM_ARGMAX_ROLLOUT_EPS"]
+                num_eps=config["XP_EVAL_ROLLOUT_EPS"]
             )
             init_sp_mean = sp_init_return["returned_episode_returns"][:, 0].mean()
             xp_matrix = jnp.zeros((config["POP_SIZE"], config["POP_SIZE"]))
@@ -160,44 +161,89 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         agent_0_param=agent0_param, agent_0_policy=policy,
                         agent_1_param=agent1_param, agent_1_policy=policy,
                         max_episode_steps=config["ROLLOUT_LENGTH"],
-                        num_eps=config["NUM_ARGMAX_ROLLOUT_EPS"]
+                        num_eps=config["XP_EVAL_ROLLOUT_EPS"]
                     )
                     return all_outs
 
-                def metasolve_game_graph(xp_matrix, agent_idx, num_prev_trained_conf):
+                def metasolve_game_graph(xp_matrix, agent_idx, num_prev_trained_conf, rng):
                     """Derive a sampling distribution over the trained population.
 
-                    Uses the full XP matrix to allow future metasolvers to exploit
-                    cross-agent statistics. Currently implements an inverse-return
-                    heuristic on the row corresponding to `agent_idx`: partners that
-                    `agent_idx` performs *worse* against receive higher sampling
-                    probability (harder partners are prioritised).
-                    Agents {num_prev_trained_conf, ..., POP_SIZE-1} receive
-                    probability zero since they have not yet been trained.
+                    Supports two modes, selected by config["METASOLVE_MODE"]:
+
+                    ``"returns"`` (default)
+                        Inverse-return heuristic on the row for ``agent_idx``:
+                        partners that ``agent_idx`` performs *worse* against
+                        receive higher probability (harder partners prioritised).
+
+                    ``"shapley"``
+                        Compute Shapley values over the valid sub-matrix of the
+                        XP matrix using coalition-aware weighted PageRank.  The
+                        XP matrix is min-max normalised *locally* (only for this
+                        computation) so that PageRank edge weights are in [0, 1].
+                        The resulting phi scores are converted to a sampling
+                        distribution via softmax, giving higher probability to
+                        agents with higher Shapley value (i.e. those whose
+                        presence most improves coalition performance against hard
+                        opponents).
+
+                    In both modes, agents {num_prev_trained_conf, ..., POP_SIZE-1}
+                    receive probability zero (untrained agents are excluded).
 
                     Args:
-                        xp_matrix: Array of shape (POP_SIZE, POP_SIZE).
-                            Entry (i, j) is the mean return of agent i as agent_0
-                            versus agent j as agent_1.
-                        agent_idx: Scalar int - the agent whose sampling distribution
-                            is being computed (i.e. the current training agent).
-                        num_prev_trained_conf: Number of trained agents so far
-                            (valid entries are 0..num_prev_trained_conf-1).
+                        xp_matrix: (POP_SIZE, POP_SIZE) — entry (i, j) is the
+                            mean return of agent i as agent_0 vs agent j.
+                        agent_idx: Scalar int — current training agent index.
+                        num_prev_trained_conf: Number of already-trained agents
+                            (valid indices are 0..num_prev_trained_conf-1).
+                        rng: JAX PRNG key (only consumed by the ``"shapley"`` mode).
 
                     Returns:
-                        sampling_dist: Array of shape (POP_SIZE,) summing to 1.
+                        sampling_dist: (POP_SIZE,) array summing to 1.
                     """
-                    xp_row = xp_matrix[agent_idx]  # (POP_SIZE,) - row for agent_idx
                     valid_mask = jnp.arange(config["POP_SIZE"]) < num_prev_trained_conf
-                    # Negate returns so lower (harder) partners get higher weight,
-                    # then shift to be non-negative before normalising.
-                    negated = -xp_row
-                    shifted = negated - negated.min() + 1e-8
-                    weights = jnp.where(valid_mask, shifted, 0.0)
-                    total = weights.sum()
-                    # Fall back to uniform over valid agents if total is zero
                     uniform = valid_mask.astype(jnp.float32) / jnp.maximum(valid_mask.sum(), 1)
-                    sampling_dist = jnp.where(total > 0, weights / total, uniform)
+
+                    if config["METASOLVE_MODE"] == "shapley":
+                        # Min-max normalise the XP matrix locally so all edge weights
+                        # are in [0, 1] for PageRank
+                        xp_min = jnp.min(xp_matrix)
+                        xp_max = jnp.max(xp_matrix)
+                        xp_range = jnp.maximum(xp_max - xp_min, 1e-8)
+                        xp_norm = (xp_matrix - xp_min) / xp_range
+
+                        N = config["POP_SIZE"]
+                        phi = shapley_values(
+                            rng, xp_norm,
+                            N=N,
+                            max_iter=config["SHAPLEY_MAX_ITER"],
+                            damping=config["SHAPLEY_DAMPING"],
+                            pagerank_max_iter=config["SHAPLEY_PAGERANK_ITER"],
+                            sigma_temperature=config["SHAPLEY_SIGMA_TEMP"],
+                        )  # (POP_SIZE,)
+
+                        # Zero out untrained agents, then softmax over valid ones.
+                        phi_valid = jnp.where(valid_mask, phi, -jnp.inf)
+                        phi_valid = jnp.where(
+                            jnp.all(jnp.isinf(phi_valid)), jnp.zeros_like(phi_valid), phi_valid
+                        )
+                        # Stable softmax: shift by max before exp
+                        phi_shifted = phi_valid - jnp.where(valid_mask, phi_valid, -jnp.inf).max()
+                        exp_phi = jnp.where(valid_mask, jnp.exp(phi_shifted), 0.0)
+                        total = exp_phi.sum()
+                        sampling_dist = jnp.where(total > 0, exp_phi / total, uniform)
+
+                    elif config["METASOLVE_MODE"] == "returns":
+                        # ── Returns-heuristic mode (default) ─────────────────────────
+                        xp_row = xp_matrix[agent_idx]  # (POP_SIZE,)
+                        # Negate: lower return → harder partner → higher weight.
+                        negated = -xp_row
+                        shifted = negated - negated.min() + 1e-8
+                        weights = jnp.where(valid_mask, shifted, 0.0)
+                        total = weights.sum()
+                        sampling_dist = jnp.where(total > 0, weights / total, uniform)
+                    else:
+                        raise ValueError(f"Unknown METASOLVE_MODE: {config['METASOLVE_MODE']}")
+
                     return sampling_dist
 
                 def _update_step(update_with_ckpt_runner_state, unused):
@@ -681,7 +727,10 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
 
                 # Pre-compute the metasolve sampling distribution for agent i and write it into
                 # pop_buffer.scores so that sample_agent_indices uses it throughout the PPO loop.
-                init_sampling_dist = metasolve_game_graph(xp_matrix, num_existing_agents, num_existing_agents)
+                rng, metasolve_rng = jax.random.split(rng)
+                init_sampling_dist = metasolve_game_graph(
+                    xp_matrix, num_existing_agents, num_existing_agents, metasolve_rng
+                )
                 pop_buffer = partner_population.update_scores(
                     pop_buffer, jnp.arange(config["POP_SIZE"]), init_sampling_dist
                 )
@@ -798,7 +847,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         agent_0_param=agent_i_param, agent_0_policy=policy,
                         agent_1_param=agent_j_param, agent_1_policy=policy,
                         max_episode_steps=config["ROLLOUT_LENGTH"],
-                        num_eps=config["NUM_ARGMAX_ROLLOUT_EPS"]
+                        num_eps=config["XP_EVAL_ROLLOUT_EPS"]
                     )
                     return outs["returned_episode_returns"][:, 0].mean()
 
@@ -846,12 +895,14 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                 # ------------------------------------------------------------------
                 num_trained_so_far = new_agent_i + 1  # agents {0, ..., i} are now trained
 
-                def compute_score_for_agent(j_idx):
+                def compute_score_for_agent(j_idx, score_rng):
                     """Sampling weight of agent j under the distribution for agent j."""
-                    dist_j = metasolve_game_graph(xp_matrix, j_idx, num_trained_so_far)
+                    dist_j = metasolve_game_graph(xp_matrix, j_idx, num_trained_so_far, score_rng)
                     return dist_j[j_idx]  # agent j's own weight in its distribution
 
-                new_scores = jax.vmap(compute_score_for_agent)(all_indices)  # (POP_SIZE,)
+                rng, score_rng = jax.random.split(rng)
+                score_rngs = jax.random.split(score_rng, config["POP_SIZE"])
+                new_scores = jax.vmap(compute_score_for_agent)(all_indices, score_rngs)  # (POP_SIZE,)
                 updated_pop_buffer = partner_population.update_scores(updated_pop_buffer, all_indices, new_scores)
 
                 conf_checkpoints = new_checkpoint_array

@@ -16,6 +16,14 @@ VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: false
 ACTOR_TYPE: mlp # choices: s5, rnn, mlp
-NUM_ARGMAX_ROLLOUT_EPS: 20
+XP_EVAL_ROLLOUT_EPS: 20
 COLE_ALPHA: 0.5
 C_UCT: 0.1
+#####
+# metasolver parameters
+METASOLVE_MODE: shapley    # choices: shapley, returns
+# shapley metasolver parameters
+SHAPLEY_MAX_ITER: 50          # coalition samples per player
+SHAPLEY_DAMPING: 0.85         # PageRank damping
+SHAPLEY_PAGERANK_ITER: 100    # PageRank power iterations
+SHAPLEY_SIGMA_TEMP: 10.0      # difficulty-weight temperature
