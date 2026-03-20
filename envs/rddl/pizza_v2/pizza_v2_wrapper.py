@@ -48,12 +48,20 @@ class PizzaWrapper(BaseEnv):
 
         # Domain-specific non-fluents
         self.reward_goal = self.env.model.non_fluents.get('DELIVERY-REWARD', 1.0)
+        self.collision_penalty = self.env.model.non_fluents.get('COLLISION-PENALTY', 0.0)
         self.rddl_location_names = self.env.model.type_to_objects['location']
-        order_list = self.env.model.non_fluents['ORDERS']
-        self.num_orders = {loc_name: order_list[i] for i, loc_name in enumerate(self.rddl_location_names)}
-
-        self.pizzas_list = self.env.model.type_to_objects['pizza']
         self.locations_list = self.env.model.type_to_objects['location']
+        self._obs_keys = [
+            'truckAt',
+            'numShopPizzas',
+            'numOrdersRemaining',
+            'numPizzasInTruck',
+            'collision',
+        ]
+        obs_space_keys = set(self.env.observation_space.keys())
+        missing_obs_keys = [key for key in self._obs_keys if key not in obs_space_keys]
+        if missing_obs_keys:
+            raise ValueError(f"Missing pizza_v2 observation keys: {missing_obs_keys}")
 
         if self._render:
             self.render_name = kwargs.get('render_name', "pizza")
@@ -169,6 +177,13 @@ class PizzaWrapper(BaseEnv):
         if self.vectorized:
             obs_agent = {}
             obs_full = {}
+
+            # Shared features are global in pizza_v2 and are identical for each agent.
+            shop_pizzas = jnp.atleast_1d(observation['numShopPizzas']).flatten()
+            orders_remaining = jnp.atleast_1d(observation['numOrdersRemaining']).flatten()
+            pizzas_in_truck = jnp.atleast_1d(observation['numPizzasInTruck']).flatten()
+            collision = jnp.atleast_1d(observation['collision']).flatten()
+
             for agent_idx, agent in enumerate(self.agents):
                 obs_agent_values = []
                 obs_full_values = []
@@ -182,44 +197,35 @@ class PizzaWrapper(BaseEnv):
                         observation['truckAt'][agent_idx+1:]            # Agents after
                     ], axis=0).flatten()
 
-                    delivered = observation['delivered'].flatten()
-                    pizzaInTruck = observation['pizzaInTruck'].flatten()
-                    hot = observation['hot'].flatten()
-                    disposed = observation['disposed'].flatten()
-
                     obs_agent_values.append(truck_at_reordered)
-                    obs_agent_values.append(delivered)
-                    obs_agent_values.append(pizzaInTruck)
-                    obs_agent_values.append(hot)
-                    obs_agent_values.append(disposed)
+                    obs_agent_values.append(shop_pizzas)
+                    obs_agent_values.append(orders_remaining)
+                    obs_agent_values.append(pizzas_in_truck)
+                    obs_agent_values.append(collision)
 
                     obs_full_values.append(truck_at_reordered)
-                    obs_full_values.append(delivered)
-                    obs_full_values.append(pizzaInTruck)
-                    obs_full_values.append(hot)
-                    obs_full_values.append(disposed)
+                    obs_full_values.append(shop_pizzas)
+                    obs_full_values.append(orders_remaining)
+                    obs_full_values.append(pizzas_in_truck)
+                    obs_full_values.append(collision)
 
                     obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
                     obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
                 else:
                     # Non-ego-centric: keep original ordering
                     truck_at = observation['truckAt'].flatten()
-                    delivered = observation['delivered'].flatten()
-                    pizzaInTruck = observation['pizzaInTruck'].flatten()
-                    hot = observation['hot'].flatten()
-                    disposed = observation['disposed'].flatten()
 
                     obs_agent_values.append(truck_at)
-                    obs_agent_values.append(delivered)
-                    obs_agent_values.append(pizzaInTruck)
-                    obs_agent_values.append(hot)
-                    obs_agent_values.append(disposed)
+                    obs_agent_values.append(shop_pizzas)
+                    obs_agent_values.append(orders_remaining)
+                    obs_agent_values.append(pizzas_in_truck)
+                    obs_agent_values.append(collision)
 
                     obs_full_values.append(truck_at)
-                    obs_full_values.append(delivered)
-                    obs_full_values.append(pizzaInTruck)
-                    obs_full_values.append(hot)
-                    obs_full_values.append(disposed)
+                    obs_full_values.append(shop_pizzas)
+                    obs_full_values.append(orders_remaining)
+                    obs_full_values.append(pizzas_in_truck)
+                    obs_full_values.append(collision)
 
                     obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
                     obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
@@ -320,11 +326,16 @@ class PizzaWrapper(BaseEnv):
         Returns:
             A dictionary {agent: reward_value}
         """
+        reward_array = jnp.asarray(reward)
         if self.share_rewards:
-            total_reward = jnp.sum(reward)
+            total_reward = jnp.sum(reward_array)
             rewards = {agent: total_reward for agent in self.agents}
         else:
-            rewards = {agent: reward[i] for i, agent in enumerate(self.agents)}
+            if reward_array.ndim == 0 or reward_array.size == 1:
+                scalar_reward = reward_array.reshape(-1)[0]
+                rewards = {agent: scalar_reward for agent in self.agents}
+            else:
+                rewards = {agent: reward_array[i] for i, agent in enumerate(self.agents)}
         return rewards
 
     @partial(jax.jit, static_argnums=(0,))
@@ -355,10 +366,9 @@ class PizzaWrapper(BaseEnv):
 
         The input dictionary has actions with shapes like:
         - 'noop': (num_agents, 2) - last dim is [False, True]
-        - 'drive': (num_agents, 3, 2) - 3 drive options
-        - 'deliver': (num_agents, 2, 3, 2) - 2 locations × 3 pizzas
-        - 'load': (num_agents, 2, 2) - 2 load locations
-        - 'dispose': (num_agents, 2, 2) - 2 dispose locations
+        - 'drive': (num_agents, num_locations, 2)
+        - 'deliver': (num_agents, num_locations, 2)
+        - 'load': (num_agents, 2)
 
         We extract the True values (index 1 of last dimension) and flatten all
         action dimensions to create a flat mask for each agent.
@@ -424,14 +434,14 @@ class PizzaWrapper(BaseEnv):
             # Create Box space
             observation_space = jaxmarl_spaces.Box(
                 low=0,
-                high=1,
+                high=jnp.inf,
                 shape=(obs_size,),
                 dtype=jnp.float32
             )
 
             observation_full_space = jaxmarl_spaces.Box(
                 low=0,
-                high=1,
+                high=jnp.inf,
                 shape=(obs_full_size,),
                 dtype=jnp.float32
             )
@@ -471,8 +481,8 @@ if __name__ == "__main__":
     import os
     from pyRDDLGym_jax.core.env import JaxRDDLEnv
 
-    domain_path = os.path.join(os.path.dirname(__file__), 'pizza_domain_new.rddl')
-    instance_path = os.path.join(os.path.dirname(__file__), 'pizza_instance0.rddl')
+    domain_path = os.path.join(os.path.dirname(__file__), 'pizza_v2_domain.rddl')
+    instance_path = os.path.join(os.path.dirname(__file__), 'pizza_v2_instance_all.rddl')
 
     # Create the JAX RDDL environment
     jax_env = JaxRDDLEnv(domain=domain_path, instance=instance_path)
@@ -483,6 +493,7 @@ if __name__ == "__main__":
     # Test reset and step
     key = jax.random.PRNGKey(0)
     obs, state = wrapper.reset(key)
+    obs_agent, obs_full = obs
 
     print(f"Number of agents: {wrapper.num_agents}")
     for agent in wrapper.agents:
@@ -490,8 +501,8 @@ if __name__ == "__main__":
         print(f"  Observation space: {wrapper.observation_space(agent, 'agent')}")
         print(f"  Action space: {wrapper.action_space(agent)}")
 
-    print(f"\nInitial observation keys: {obs.keys()}")
-    print(f"Initial observation shape: {obs[wrapper.agents[0]].shape}")
+    print(f"\nInitial observation keys: {obs_agent.keys()}")
+    print(f"Initial observation shape: {obs_agent[wrapper.agents[0]].shape}")
 
     # Take a few random steps
     for step_i in range(5):
@@ -508,9 +519,11 @@ if __name__ == "__main__":
 
         key, step_key = jax.random.split(key)
         obs, state, rewards, dones, info = wrapper.step(step_key, state, actions)
+        obs_agent, obs_full = obs
 
         print(f"  Rewards: {rewards}")
         print(f"  Done: {dones['__all__']}")
+        print(f"  Observation shape: {obs_agent[wrapper.agents[0]].shape}")
 
         if dones["__all__"]:
             print("  Episode finished!")

@@ -1,0 +1,47 @@
+non-fluents pizza_v2_1 {
+
+	domain = pizzav2;
+	
+	objects {
+		location : {s1, c1, c2};
+		truck : {t1, t2};
+	};
+  
+	// Only need to specify non-default values
+	non-fluents {
+		CAPACITY(t1) = 1;
+		CAPACITY(t2) = 1;
+		SHOP(s1) = true;
+		CONNECTED(s1, c1) = true;
+		CONNECTED(c1, s1) = true;
+		CONNECTED(s1, c2) = true;
+		CONNECTED(c2, s1) = true;
+
+		CONTROLLABLE(t2); // only truck t2 is controllable
+
+		CAN-DELIVER(t1, c1) = true;
+		CAN-DELIVER(t1, c2) = true;
+		CAN-DELIVER(t2, c1) = true;
+		CAN-DELIVER(t2, c2) = true;
+	};
+}
+
+instance inst_pizza_v2 {
+
+	domain = pizzav2;
+	
+	non-fluents = pizza_v2_1;
+  
+	init-state {
+		truckAt(t1, s1);
+		truckAt(t2, s1);
+
+		numOrdersRemaining(c1) = 2;
+		numOrdersRemaining(c2) = 2;
+
+		numShopPizzas = 4;
+	};
+  
+	horizon  = 20;
+	discount = 1.0;
+}

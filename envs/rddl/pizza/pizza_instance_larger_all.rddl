@@ -1,0 +1,51 @@
+non-fluents pizza_larger_all {
+
+	domain = pizza;
+	
+	objects { 
+		pizza : {p1, p2, p3, p4};
+		location : {s1, c1, c2, c3, c4};
+		truck : {t1, t2};
+	};
+  
+	// Only need to specify non-default values
+	non-fluents { 
+		CAPACITY(t1) = 2;
+		CAPACITY(t2) = 2;
+
+		// Shape is c4 - c2 - s1 - c1 - c3
+		SHOP(s1) = true;
+		CONNECTED(s1, c1) = true;
+		CONNECTED(c1, s1) = true;
+		CONNECTED(s1, c2) = true;
+		CONNECTED(c2, s1) = true;
+		CONNECTED(c1, c3) = true;
+		CONNECTED(c3, c1) = true;
+		CONNECTED(c2, c4) = true;
+		CONNECTED(c4, c2) = true;
+
+		CONTROLLABLE(t1);
+		CONTROLLABLE(t2); // both trucks are controllable by the agent
+
+		ORDERS(c1) = 1;
+		ORDERS(c2) = 1;
+		ORDERS(c3) = 1;
+		ORDERS(c4) = 1;
+	};
+}
+
+instance inst_pizza {
+
+	domain = pizza;
+	
+	non-fluents = pizza_larger_all;
+  
+	init-state { 
+		truckAt(t1, s1); 
+		truckAt(t2, s1);		 
+	};
+  
+  
+	horizon  = 40;
+	discount = 1.0;
+}

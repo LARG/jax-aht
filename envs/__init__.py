@@ -233,6 +233,32 @@ def make_env(env_name: str, env_kwargs: dict = {}):
                               vectorized=env_kwargs_copy["vectorized"])
         env = PizzaWrapper(rddl_env, **env_kwargs_copy)
 
+    elif env_name == 'rddl/pizza_v2':
+        default_env_kwargs = {
+            "domain": "pizza_v2_domain.rddl",
+            "instance": "pizza_v2_instance_all.rddl",
+            "render": False,
+            "render_name": "pizza_v2",
+            "render_dir": "render",
+            "enforce_action_constraints": True,
+            "vectorized": True,
+            "ego_centric_obs": False
+        }
+
+        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.pizza_v2.pizza_v2_wrapper import PizzaWrapper
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        # add default args that are not already in env_kwargs
+        for key in default_env_kwargs:
+            if key not in env_kwargs:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+
+        # create the JAX RDDL Pizza V2 environment
+        rddl_env = JaxRDDLEnv(domain=os.path.join(os.path.dirname(__file__), 'rddl/pizza_v2', env_kwargs_copy["domain"]),
+                              instance=os.path.join(os.path.dirname(__file__), 'rddl/pizza_v2', env_kwargs_copy["instance"]),
+                              vectorized=env_kwargs_copy["vectorized"])
+        env = PizzaWrapper(rddl_env, **env_kwargs_copy)
+
     elif env_name == 'continuous/coop_recon':
         default_env_kwargs = {
             "instance": "",

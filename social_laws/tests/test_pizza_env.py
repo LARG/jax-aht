@@ -14,9 +14,9 @@ from pathlib import Path
 
 try:
     from pyRDDLGym_jax.core.env import JaxRDDLEnv
-except ImportError:
-    print("Error: pyRDDLGym_jax not found. Please install it via:")
-    print("  pip install pyRDDLGym")
+except ImportError as e:
+    print("Error importing pyRDDLGym_jax:")
+    print(e)
     sys.exit(1)
 
 import jax
@@ -214,14 +214,8 @@ def main():
     print("="*60)
     
     # Initialize environment
-    domain_file = os.path.join(
-        os.path.dirname(__file__), 
-        'envs/rddl/pizza/pizza_domain_new_w_reward.rddl'
-    )
-    instance_file = os.path.join(
-        os.path.dirname(__file__),
-        'envs/rddl/pizza/pizza_instance_all.rddl'
-    )
+    domain_file = '/content/jax-aht/envs/rddl/pizza/pizza_domain_new_w_reward.rddl'
+    instance_file = '/content/jax-aht/envs/rddl/pizza/pizza_instance_larger_all.rddl'
     
     print(f"\nLoading domain: {domain_file}")
     print(f"Loading instance: {instance_file}")
@@ -264,7 +258,7 @@ def main():
     env_state, timestep = env.reset(key)
     observation = timestep.observation
     
-    print_state(observation, int(timestep.step))
+    print_state(observation, 0)
     
     # Main interaction loop
     print("\n" + "="*60)

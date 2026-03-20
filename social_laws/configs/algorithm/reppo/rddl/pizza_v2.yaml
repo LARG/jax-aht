@@ -1,0 +1,22 @@
+defaults:
+  - reppo/_base_
+  - _self_ # values from this file override the values from the base file
+
+TOTAL_TIMESTEPS: 3e6
+TOTAL_TIMESTEPS_DECAY: 3e6
+LR: 0.0003
+
+NUM_MINIBATCHES: 160
+
+TARGET_ENTROPY_MULT: 0.01
+GAMMA: 0.99
+VMIN: 0 # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * min_reward
+VMAX: 2  # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * max_reward
+
+ANNEAL_LR: false
+NUM_EPOCHS: 4
+
+S5_D_MODEL: 128
+S5_SSM_SIZE: 128
+S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+FC_N_LAYERS: 3

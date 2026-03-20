@@ -30,9 +30,10 @@ domain pizza {
     	CAPACITY(truck) : { non-fluent, int, default = 3 };
 		ORDERS(location) : { non-fluent, int, default = 0 };
 		CONNECTED(location, location) : { non-fluent, bool, default = false };
-		DRIVEPROB(truck) : { non-fluent, real, default = 0.9 }; //probability truck goes nowhere this step
+		DRIVEPROB(truck) : { non-fluent, real, default = 1.0 }; //probability truck goes nowhere this step
 		SHOP(location) : { non-fluent, bool, default = false };
 		CONTROLLABLE(truck) : { non-fluent, bool, default = false }; // whether this truck is controllable by the agent
+		//CANNOT-DRIVE-TO(truck, location) : { non-fluent, bool, default = false }; // whether this truck cannot drive to this location (for constraints)
 
 		// State fluents
 		truckAt(truck, location) : { state-fluent, bool, default = false };
@@ -83,11 +84,11 @@ domain pizza {
 		pizzaFree(?p) = (forall_{?t : truck}[~pizzaInTruck(?p, ?t)]);
 		numPizzasInTruck(?t) = (sum_{?p : pizza}[pizzaInTruck(?p, ?t)]);
 
-		blocked(?t) =
-			if (~CONTROLLABLE(?t)) // uncontrollable trucks are never blocked
-				then false
-			else (exists_{?l : location, ?t2 : truck}[(?t ~= ?t2) ^ truckAt(?t, ?l) ^ truckAt(?t2, ?l) ^
-				(exists_{?l2: location}[drive(?t, ?l2) ^ drive(?t2, ?l2)])]);
+		blocked(?t) = false;
+		//	if (~CONTROLLABLE(?t)) // uncontrollable trucks are never blocked
+		//		then false
+		//	else (exists_{?l : location, ?t2 : truck}[(?t ~= ?t2) ^ truckAt(?t, ?l) ^ truckAt(?t2, ?l) ^
+		//		(exists_{?l2: location}[drive(?t, ?l2) ^ drive(?t2, ?l2)])]);
 
 		isBeingPickedUp(?p) = (exists_{?t: truck}[load(?t, ?p)]);
 
@@ -118,10 +119,11 @@ domain pizza {
 
 		disposed'(?p) = disposed(?p) | (exists_{?t: truck} dispose(?t, ?p));
 
-		hot'(?p) = if(~hot(?p)) then false
-			  else if(exists_{?l: location}[delivered(?p, ?l)]) then true
-			  else if(pizzaFree(?p)) then true // has to be at the shop and not cold (should the shop be able to warm them up?)
-			  else Bernoulli(hotPizzasTogether(?p) / (hotPizzasTogether(?p) + 1));
+		hot'(?p) = true;
+		//hot'(?p) = if(~hot(?p)) then false
+		//	  else if(exists_{?l: location}[delivered(?p, ?l)]) then true
+		//	  else if(pizzaFree(?p)) then true // has to be at the shop and not cold (should the shop be able to warm them up?)
+		//	  else Bernoulli(hotPizzasTogether(?p) / (hotPizzasTogether(?p) + 1));
 
 		// Track which truck delivered which pizza at which location
 		deliveredByTruck(?t, ?p, ?l) = (pizzaInTruck(?p, ?t) ^ deliver(?t, ?p, ?l));
