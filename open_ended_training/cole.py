@@ -7,6 +7,7 @@ Recommended debug command:
 python open_ended_training/run.py algorithm=cole/lbf task=lbf label=test_cole run_heldout_eval=false algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 logger.log_train_out=false logger.log_eval_out=false local_logger.save_train_out=false local_logger.save_eval_out=false
 """
 from functools import partial
+from tqdm import tqdm
 import logging
 import shutil
 import time
@@ -18,7 +19,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-import wandb
 
 from agents.initialize_agents import (
     initialize_s5_agent,
@@ -52,7 +52,7 @@ def initialize_agent(actor_type, config, env, rng):
                          "Choose from 's5', 'mlp', 'rnn'.")
 
 
-def train_cole_partners(train_rng, wandb_logger, env, config):
+def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=None):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -698,8 +698,15 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                     metric["entropy_xp"] = entropy_xp
                     metric["entropy_sp"] = entropy_sp
 
-                    metric["average_rewards_ego"] = jnp.mean(traj_batch_xp.reward)
-                    metric["average_rewards_sp1"] = jnp.mean(traj_batch_sp1.reward)
+                    metric["average_rewards_xp"] = jnp.mean(traj_batch_xp.reward)
+                    metric["average_rewards_sp"] = jnp.mean(traj_batch_sp1.reward)
+
+                    def callback(m):
+                        log_metrics_intermediate(m, wandb_logger)
+                        if progress_callback is not None:
+                            progress_callback()
+
+                    jax.experimental.io_callback(callback, None, metric)
 
                     return (new_update_runner_state, checkpoint_array, ckpt_idx+1), metric
 
@@ -978,6 +985,23 @@ def run_cole(config, wandb_logger):
     rng, eval_rng = jax.random.split(rng)
     rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
 
+    num_seeds = algorithm_config["NUM_SEEDS"]
+    # num_updates is computed inside train_cole_partners, replicate the formula here for the pbar
+    training_steps_per_update = 2 * algorithm_config["ROLLOUT_LENGTH"] * algorithm_config["NUM_ENVS"]
+    xp_eval_steps = algorithm_config["XP_EVAL_ROLLOUT_EPS"] * algorithm_config["ROLLOUT_LENGTH"] * algorithm_config["PARTNER_POP_SIZE"] ** 2
+    num_updates = int((algorithm_config["TOTAL_TIMESTEPS_PER_ITERATION"] - xp_eval_steps) // training_steps_per_update)
+    trained_pop_size = algorithm_config["PARTNER_POP_SIZE"] - 1
+    total_updates = trained_pop_size * num_updates
+
+    pbar = tqdm(total=total_updates, desc="COLE Training", unit="update")
+    pbar._call_count = 0
+
+    def update_progress_bar():
+        # vmap causes this to be called num_seeds times per update step
+        pbar._call_count += 1
+        if pbar._call_count % num_seeds == 0:
+            pbar.update(1)
+
     # Create a vmapped version of train_cole_partners
     with jax.disable_jit(False):
         vmapped_train_fn = jax.jit(
@@ -985,17 +1009,19 @@ def run_cole(config, wandb_logger):
                 partial(train_cole_partners, 
                         wandb_logger=wandb_logger,
                         env=env, 
-                        config=algorithm_config)
+                        config=algorithm_config,
+                        progress_callback=update_progress_bar)
             )
         )
         out = vmapped_train_fn(rngs)
 
+    pbar.close()
     end = time.time()
     log.info(f"COLE training complete in {end - start} seconds")
 
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
 
-    log_metrics(config, out, wandb_logger, metric_names)
+    log_final_metrics(config, out, wandb_logger, metric_names)
     
     dummy_env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
     ego_policy, init_ego_params = initialize_agent(
@@ -1004,29 +1030,73 @@ def run_cole(config, wandb_logger):
 
     # Select the best agent from each seed's population using the final XP matrix and Pareto-improvement criterion
     # out["final_xp_matrix"] has shape (num_seeds, POP_SIZE, POP_SIZE).
-    best_is, best_s0s, best_s1s = jax.vmap(select_best_agent)(out["final_xp_matrix"])
-    log.info(f"Best agent indices per seed:      {np.array(best_is)}")
-    log.info(f"Best row-mean (s0) per seed:      {np.array(best_s0s)}")
-    log.info(f"Best col-mean (s1) per seed:      {np.array(best_s1s)}")
-    best_ego_params = jax.tree.map(
-        lambda x: x[jnp.arange(algorithm_config["NUM_SEEDS"]), best_is],
-        out["final_params"]
-    )
-
+    # best_is, best_s0s, best_s1s = jax.vmap(select_best_agent)(out["final_xp_matrix"])
+    # log.info(f"Best agent indices per seed:      {np.array(best_is)}")
+    # log.info(f"Best row-mean (s0) per seed:      {np.array(best_s0s)}")
+    # log.info(f"Best col-mean (s1) per seed:      {np.array(best_s1s)}")
+    # best_ego_params = jax.tree.map(
+    #     lambda x: x[jnp.arange(algorithm_config["NUM_SEEDS"]), best_is],
+    #     out["final_params"]
+    # )
+    best_ego_params = out['final_params']
     return ego_policy, best_ego_params, init_ego_params
 
-def log_metrics(config, outs, logger, metric_names: tuple):
+def log_metrics_intermediate(metric, logger):
+    """Log one update step's metrics to wandb in real time.
+
+    Called via jax.experimental.io_callback from inside _update_step,
+    so all values arrive as concrete numpy arrays.
+
+    Metric keys and their shapes (before vmap over seeds collapses them):
+      update_steps            : scalar int
+      value_loss_xp/sp        : (UPDATE_EPOCHS, NUM_MINIBATCHES)
+      pg_loss_xp/sp           : (UPDATE_EPOCHS, NUM_MINIBATCHES)
+      entropy_xp/sp           : (UPDATE_EPOCHS, NUM_MINIBATCHES)
+      average_rewards_xp/sp  : scalar float
+      returned_episode_returns: (ROLLOUT_LENGTH, NUM_ENVS)  – from LogWrapper
+    """
+    metric = dict(metric)  # shallow copy – avoid mutating the original
+    step = int(np.array(metric.pop("update_steps")))
+
+    # Loss/entropy keys – mean over epochs and minibatches
+    loss_keys = [
+        "value_loss_xp", "value_loss_sp",
+        "pg_loss_xp", "pg_loss_sp",
+        "entropy_xp", "entropy_sp",
+    ]
+    for k in loss_keys:
+        if k in metric:
+            val = float(np.mean(np.array(metric.pop(k))))
+            logger.log_item(f"Train/{k}", val, train_step=step, commit=False)
+
+    # Scalar reward summaries
+    scalar_keys = ["average_rewards_xp", "average_rewards_sp"]
+    for k in scalar_keys:
+        if k in metric:
+            val = float(np.mean(np.array(metric.pop(k))))
+            logger.log_item(f"Train/{k}", val, train_step=step, commit=False)
+
+    # Rollout info fields from LogWrapper (e.g. returned_episode_returns)
+    # Shape is (ROLLOUT_LENGTH, NUM_ENVS); only log completed-episode returns
+    for k, v in metric.items():
+        v_np = np.array(v)
+        logger.log_item(f"Train/{k}", float(np.mean(v_np)), train_step=step, commit=False)
+
+    logger.commit()
+
+def log_final_metrics(config, outs, logger, metric_names: tuple):
+    """Log post-hoc evaluation metrics and save artifacts.
+    """
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy, so it's pop_size - 1
     num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_sp"].shape
-    # TODO: add the eval_ep_last_info metrics
 
     ### Log last XP matrix
     final_xp_matrix = np.asarray(outs["final_xp_matrix"]).mean(axis=0)  # shape (pop_size, pop_size)
     logger.log_xp_matrix("Eval/LastXPMatrix", final_xp_matrix)
 
-    ### Log XP and SP return curves
-    # xp_eval_returns and sp_eval_returns logged at each evaluation only. 
+    ### Log XP and SP eval return curves
+    # xp_eval_returns and sp_eval_returns logged at each evaluation only.
     algorithm_config = config["algorithm"]
     ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
     # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
@@ -1050,26 +1120,6 @@ def log_metrics(config, outs, logger, metric_names: tuple):
             logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[update_step], train_step=update_step)
     logger.commit()
 
-    ### Log population loss as multi-line plots, where each line is a different population member
-    # both xp and sp metrics has shape (num_seeds, pop_size - 1, num_updates, update_epochs, num_minibatches)
-    processed_losses = {
-        "PGLossSP": np.asarray(metrics["pg_loss_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size - 1, num_updates)
-        "PGLossXP": np.asarray(metrics["pg_loss_xp"]).mean(axis=(0, 3, 4)),
-        "ValLossSP": np.asarray(metrics["value_loss_sp"]).mean(axis=(0, 3, 4)),
-        "ValLossXP": np.asarray(metrics["value_loss_xp"]).mean(axis=(0, 3, 4)),
-        "EntropySP": np.asarray(metrics["entropy_sp"]).mean(axis=(0, 3, 4)),
-        "EntropyXP": np.asarray(metrics["entropy_xp"]).mean(axis=(0, 3, 4)),
-    }
-
-    xs = list(range(num_updates))
-    keys = [f"pair {i}" for i in range(trained_pop_size)]
-
-    for loss_name, loss_data in processed_losses.items():
-        logger.log_item(f"Losses/{loss_name}",
-            wandb.plot.line_series(xs=xs, ys=loss_data, keys=keys,
-            title=loss_name, xname="train_step")
-        )
-
     ### Log artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     # Save train run output and log to wandb as artifact
@@ -1080,3 +1130,4 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     # Cleanup locally logged out files
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)
+
