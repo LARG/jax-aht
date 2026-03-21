@@ -1,26 +1,22 @@
-# Environment
-grid_size: 1.5
-ego_centric_obs: true
-horizon: 100              # Increased horizon for the 1.5 grid
-min_sep_goal: 0.50        # Goals spread further apart
-
-# Reward
-step_penalty: -0.01       # 0 is dense, -1 is sparse
-collision_penalty: -10.0
-capture_reward: 10.0
-detect_reward: 1.0        # Same as v29/v31/v32
-
-# Geometry
-agent_radius: 0.05
-capture_radius: 0.075     # Scaled proportionally to min_sep_goal
-detect_radius: 0.2
-sensor_radius: 0.50
-
-# Continuous action
-max_acceleration: 1.0     
-max_velocity: 1.0         
-drag_factor: 5.0          
-
-# Physics
-simulation_steps: 5
-gaussian_noise: 0.02
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 50
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_3",
+    render_dir: "render",
+    num_agents: 3,
+    grid_size: 1.5,             # Expanded to 1.5 to provide focal agent geometric dodge space
+    ego_centric_obs: false,
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 100,               # Increased to 100 to compensate for 1.5 grid distance
+    collision_radius: 0.05,
+    min_sep_goal: 0.50,         # Expanded to limit adversary pincer positioning
+  }
+TASK_NAME: continuous/coop_recon_n_agent_3
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+ALPHA_COST: false
