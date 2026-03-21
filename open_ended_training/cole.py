@@ -174,7 +174,6 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         agent_indices=agent1_id * jnp.ones((1,), dtype=np.int32)
                     )
                     agent1_param = jax.tree_map(lambda y: jnp.squeeze(y, 0), agent1_param)
-                    # Re-use eval_pair_ij's rng and episode count; return full outs for logging.
                     return run_episodes(
                         rng=eval_rng, env=env,
                         agent_0_param=agent0_param, agent_0_policy=policy,
@@ -217,7 +216,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                             rng, xp_norm,
                             N=N,
                             max_iter=config["SHAPLEY_MAX_ITER"],
-                            damping=config["SHAPLEY_DAMPING"],
+                            damping=config["SHAPLEY_PAGERANK_DAMPING"],
                             pagerank_max_iter=config["SHAPLEY_PAGERANK_ITER"],
                             sigma_temperature=config["SHAPLEY_SIGMA_TEMP"],
                         )  # (POP_SIZE,)
@@ -227,7 +226,6 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                         sampling_dist = masked_softmax(phi, valid_mask, temperature=1.0)
 
                     elif config["METASOLVE_MODE"] == "returns":
-                        # ── Returns-heuristic mode (default) ─────────────────────────
                         xp_row = xp_matrix[agent_idx]  # (POP_SIZE,)
                         # Negate: lower return → harder partner → higher weight.
                         negated = -xp_row
@@ -719,7 +717,6 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
                     num_eps=config["NUM_EVAL_EPISODES"]
                 )
 
-
                 # Pre-compute the metasolve sampling distribution for agent i and write it into
                 # pop_buffer.scores so that sample_agent_indices uses it throughout the PPO loop.
                 rng, metasolve_rng = jax.random.split(rng)
@@ -761,7 +758,10 @@ def train_cole_partners(train_rng, wandb_logger, env, config):
 
                 checkpoint_array = init_ckpt_array(train_state.params)
                 ckpt_idx = 0
-                update_with_ckpt_runner_state = (update_runner_state, checkpoint_array, ckpt_idx, xp_eval_returns, sp_eval_returns)
+                update_with_ckpt_runner_state = (
+                    update_runner_state, checkpoint_array, ckpt_idx, 
+                    xp_eval_returns, sp_eval_returns
+                )
 
                 def _update_step_with_ckpt(state_with_ckpt, unused):
                     (update_runner_state, checkpoint_array, ckpt_idx, xp_eval_returns, sp_eval_returns) = state_with_ckpt
@@ -1021,8 +1021,19 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_sp"].shape
     # TODO: add the eval_ep_last_info metrics
 
-    ### Log evaluation metrics
-    # we plot XP return curves separately from SP return curves
+    ### Log last XP matrix
+    final_xp_matrix = np.asarray(outs["final_xp_matrix"]).mean(axis=0)  # shape (pop_size, pop_size)
+    logger.log_xp_matrix("Eval/LastXPMatrix", final_xp_matrix)
+
+    ### Log XP and SP return curves
+    # xp_eval_returns and sp_eval_returns logged at each evaluation only. 
+    algorithm_config = config["algorithm"]
+    ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
+    # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
+    eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
+    if (num_updates - 1) not in eval_steps:
+        eval_steps.append(num_updates - 1)
+
     # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
     # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
@@ -1033,7 +1044,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5)) #  shape (pop_size - 1, num_updates, pop_size)
 
     for num_add_policies in range(trained_pop_size):
-        for update_step in range(num_updates):
+        for update_step in eval_steps:
             logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
             mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
             logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[update_step], train_step=update_step)
@@ -1041,7 +1052,6 @@ def log_metrics(config, outs, logger, metric_names: tuple):
 
     ### Log population loss as multi-line plots, where each line is a different population member
     # both xp and sp metrics has shape (num_seeds, pop_size - 1, num_updates, update_epochs, num_minibatches)
-    # Average over seeds
     processed_losses = {
         "PGLossSP": np.asarray(metrics["pg_loss_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size - 1, num_updates)
         "PGLossXP": np.asarray(metrics["pg_loss_xp"]).mean(axis=(0, 3, 4)),

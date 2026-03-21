@@ -1091,7 +1091,14 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     # TODO: add the eval_ep_last_info metrics
 
     ### Log evaluation metrics
-    # we plot XP return curves separately from SP return curves
+    # xp_eval_returns and sp_eval_returns logged at each evaluation only.
+    algorithm_config = config["algorithm"]
+    ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
+    # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
+    eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
+    if (num_updates - 1) not in eval_steps:
+        eval_steps.append(num_updates - 1)
+
     # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
     # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
@@ -1102,7 +1109,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))  # shape (pop_size - 1, num_updates, pop_size)
 
     for num_add_policies in range(trained_pop_size):
-        for update_step in range(num_updates):
+        for update_step in eval_steps:
             logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
             mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
             logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[update_step], train_step=update_step)
