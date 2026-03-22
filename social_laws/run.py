@@ -18,6 +18,7 @@ from social_laws.reppo_single_agent_projection import run_training as run_reppo_
 from social_laws.reppo_joint import run_training as run_reppo_joint_training
 from social_laws.creppo_single_agent_projection import run_training as run_creppo_training
 from social_laws.creppo_joint import run_training as run_creppo_joint_training
+from social_laws.creppo_joint_centralized import run_training as run_creppo_joint_centralized_training
 
 from envs import make_env
 from envs.log_wrapper import LogWrapper
@@ -198,7 +199,13 @@ def run_training(cfg):
 
     elif cfg["algorithm"]["ALG"] == "creppo":
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-            pass
+                joint_param, joint_policy, joint_init_param = run_creppo_joint_centralized_training(cfg, wandb_logger,
+                                                                                      agent_params,
+                                                                                      agent_policies,
+                                                                                      agent_idx=agent_idx)
+                joint_policies.append(joint_policy)
+                joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
         else:
             for agent_idx in range(cfg.NUM_EXPT_AGENTS):
                 joint_param, joint_policy, joint_init_param = run_creppo_joint_training(cfg, wandb_logger,
@@ -219,6 +226,7 @@ if __name__ == '__main__':
 # PYTHONPATH=/home/rolando/GitHub/SOCIAL_LAWS_JAHT XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_4x4 algorithm=ppo/rddl/grid_4x4 value_function=dqnppo/rddl/grid_4x4
 # PYTHONPATH=/home/rolando/GitHub/SOCIAL_LAWS_JAHT JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10 algorithm=ppo/rddl/grid_10x10 value_function=dqnppo/rddl/grid_10x10 algorithm.ACTOR_TYPE=s5
 
+# PYTHONPATH=/home/rolando/GitHub/SOCIAL_LAWS_JAHT XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.FIXED_EVAL=true label="test" algorithm.JOINT_CENTRALIZED=true
 
 # Different Seed
 
