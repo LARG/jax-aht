@@ -61,6 +61,9 @@ def run_training(cfg):
         with open_dict(cfg):
             cfg.task.ENV_KWARGS.single_task_seed = cfg.algorithm.TRAIN_SEED
 
+    if cfg.algorithm.get("KL_BOUND", None) == 'None':
+        cfg.algorithm.KL_BOUND = None
+
     print(OmegaConf.to_yaml(cfg, resolve=True))
     wandb_logger = Logger(cfg)
 
@@ -77,12 +80,12 @@ def run_training(cfg):
     # Single agent projection training
     # Creates what is effectively the optimal policy for a single agent in the environment
     if cfg["algorithm"]["ALG"] == "ppo":
-        if cfg["value_function"]["ALG"] == "dqnppo":
-            assert cfg["algorithm"]["ACTOR_TYPE"] == "mlp", "For DQN PPO value estimation, the PPO policy actor type must be MLP."
-            assert cfg["value_function"]["NETWORK_TYPE"] == "mlp", "For DQN PPO value estimation, the DQN network type must be MLP."
-        elif cfg["value_function"]["ALG"] == "drqnppo":
-            assert cfg["algorithm"]["ACTOR_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the PPO policy actor type must be s5 or rnn."
-            assert cfg["value_function"]["NETWORK_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the DRQN network type must be s5 or rnn."
+        # if cfg["value_function"]["ALG"] == "dqnppo":
+        #     assert cfg["algorithm"]["ACTOR_TYPE"] == "mlp", "For DQN PPO value estimation, the PPO policy actor type must be MLP."
+        #     assert cfg["value_function"]["NETWORK_TYPE"] == "mlp", "For DQN PPO value estimation, the DQN network type must be MLP."
+        # elif cfg["value_function"]["ALG"] == "drqnppo":
+        #     assert cfg["algorithm"]["ACTOR_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the PPO policy actor type must be s5 or rnn."
+        #     assert cfg["value_function"]["NETWORK_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the DRQN network type must be s5 or rnn."
 
         for agent_idx in range(cfg.NUM_EXPT_AGENTS):
             agent_param, agent_policy, agent_init_param, eval_checkpoints = run_ppo_training(cfg, wandb_logger, agent_idx=agent_idx)
@@ -105,18 +108,18 @@ def run_training(cfg):
         # Value function estimation for joint policies
         # Creates value functions for joint policies for all agents in the environment
         # conditioned on their single agent projections
-        if cfg["value_function"]["ALG"] == "dqnppo":
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                agent_vf_param, agent_vf, agent_vf_init_param = run_dqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
-                agent_vf_params.append(agent_vf_param)
-                agent_vf_policies.append(agent_vf)
-                agent_vf_init_params.append(agent_vf_init_param)
-        elif cfg["value_function"]["ALG"] == "drqnppo":
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                agent_vf_param, agent_vf, agent_vf_init_param = run_drqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
-                agent_vf_params.append(agent_vf_param)
-                agent_vf_policies.append(agent_vf)
-                agent_vf_init_params.append(agent_vf_init_param)
+        # if cfg["value_function"]["ALG"] == "dqnppo":
+        #     for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+        #         agent_vf_param, agent_vf, agent_vf_init_param = run_dqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
+        #         agent_vf_params.append(agent_vf_param)
+        #         agent_vf_policies.append(agent_vf)
+        #         agent_vf_init_params.append(agent_vf_init_param)
+        # elif cfg["value_function"]["ALG"] == "drqnppo":
+        #     for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+        #         agent_vf_param, agent_vf, agent_vf_init_param = run_drqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
+        #         agent_vf_params.append(agent_vf_param)
+        #         agent_vf_policies.append(agent_vf)
+        #         agent_vf_init_params.append(agent_vf_init_param)
 
     elif cfg["algorithm"]["ALG"] == "reppo":
         for agent_idx in range(cfg.NUM_EXPT_AGENTS):
@@ -155,59 +158,6 @@ def run_training(cfg):
                                            agent_eval_checkpoints, agent_policies, env.horizon,
                                            cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
                                            render=True, agent_test_mode=True)
-
-    # Joint multi-agent training
-    # Creates polices for joint policies for all agents in the environment
-    # conditioned on their single agent projections
-    if cfg["algorithm"]["ALG"] == "ppo":
-        if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                joint_param, joint_policy, joint_init_param = run_ppo_joint_centralized_training(cfg, wandb_logger,
-                                                                                            agent_params,
-                                                                                            agent_policies,
-                                                                                            agent_vf_params,
-                                                                                            agent_vf_policies,
-                                                                                            agent_idx=agent_idx)
-                joint_policies.append(joint_policy)
-                joint_init_params.append(joint_init_param)
-                joint_params.append(joint_param)
-        else:
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                joint_param, joint_policy, joint_init_param = run_ppo_joint_training(cfg, wandb_logger,
-                                                                                    agent_params,
-                                                                                    agent_policies,
-                                                                                    agent_vf_params,
-                                                                                    agent_vf_policies,
-                                                                                    agent_idx=agent_idx)
-                joint_policies.append(joint_policy)
-                joint_init_params.append(joint_init_param)
-                joint_params.append(joint_param)
-
-    elif cfg["algorithm"]["ALG"] == "reppo":
-        if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-            pass
-        else:
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                joint_param, joint_policy, joint_init_param = run_reppo_joint_training(cfg, wandb_logger,
-                                                                                      agent_params,
-                                                                                      agent_policies,
-                                                                                      agent_idx=agent_idx)
-                joint_policies.append(joint_policy)
-                joint_init_params.append(joint_init_param)
-                joint_params.append(joint_param)
-
-    elif cfg["algorithm"]["ALG"] == "creppo":
-        if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-            pass
-        else:
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                joint_param, joint_policy, joint_init_param = run_creppo_joint_training(cfg, wandb_logger,
-                                                                                      agent_params,
-                                                                                      agent_policies,
-                                                                                      agent_idx=agent_idx)
-                joint_policies.append(joint_policy)
-                joint_init_params.append(joint_init_param)
-                joint_params.append(joint_param)
 
     # Cleanup
     wandb_logger.close()
@@ -283,10 +233,3 @@ if __name__ == '__main__':
 
 # CREPPO social laws (full restrictions)
 # PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=creppo/continuous/coop_recon algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-
-
-
-
-
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="param_sweep_test" NUM_EVAL_EPISODES=200 algorithm.FIXED_EVAL=true
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="param_sweep_test" NUM_EVAL_EPISODES=200 algorithm.FIXED_EVAL=true

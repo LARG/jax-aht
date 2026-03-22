@@ -1,0 +1,58 @@
+program: social_laws/run_single_agent.py
+name: creppo-rddl-grid-10x10-alternating-toroidal-full-restrictions-3_agents
+method: bayes
+entity: social-laws-project
+project: social-laws-param-sweep
+metric:
+  goal: maximize
+  name: Eval/Agent_1_Proj/Return
+
+parameters:
+  # algorithm.TOTAL_TIMESTEPS:
+  #   values: []
+  # algorithm.NUM_ENVS:
+  #   values: []
+  algorithm.LR:
+    values: [5e-5, 3e-5, 3e-4, 3e-3, 3e-2]
+  algorithm.NUM_EPOCHS:
+    values: [4, 8, 16]
+  algorithm.GAMMA:
+    values: [0.95, 0.99]
+  algorithm.LAMBDA:
+    distribution: uniform
+    min: 0.0
+    max: 1.0
+  algorithm.TARGET_ENTROPY_MULT:
+    values: [0.1, 0.05, 0.01, 0.001, 0.0001]
+  algorithm.KL_BOUND:
+    values: [null]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents
+  - algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents
+  - NUM_EXPT_AGENTS=3
+  - algorithm.TRAIN_SEED=714212835
+  - algorithm.EVAL_SEED=212835427
+  - algorithm.FIXED_EVAL=true
+  - task.NUM_EVAL_EPISODES=200
+  - logger.project=social-laws-param-sweep
+  - logger.entity=social-laws-project
+  - logger.mode=online
+  - logger.log_train_out=false
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - label="param_sweep"
+  - ${args_no_hyphens}
+
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb sweep social_laws/param_sweep/creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions.yaml
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb sweep social_laws/param_sweep/ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions.yaml
+
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb agent social-laws-project/social-laws-param-sweep/6yvurnu3 --count 100
+
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb agent social-laws-project/social-laws-param-sweep/l7507ojt
+
+
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.FIXED_EVAL=true task.NUM_EVAL_EPISODES=200 label=param_sweep_test

@@ -6,20 +6,22 @@ TOTAL_TIMESTEPS: 6e7
 TOTAL_TIMESTEPS_DECAY: 6e7
 
 NUM_ENVS: 1000 # parallel environments
-NUM_EPOCHS: 4 # number of epochs per update
+NUM_EPOCHS: 8 # number of epochs per update
 NUM_MINIBATCHES: 128 # minibatches per epoch
 
-LR: 0.0003
+LR: 0.003
 
-TARGET_ENTROPY_MULT: 0.1 # sum (action probabilities) * log(action probabilities), max entropy
+KL_BOUND: null
+
+LAMBDA: 0.699114555051589
+
+TARGET_ENTROPY_MULT: 0.001 # sum (action probabilities) * log(action probabilities), max entropy
 GAMMA: 0.99
 VMIN: -30 # -400 with step penalty, -300 without step penalty # Env dependent, (1 / (1 - gamma)) * min_reward
 VMAX: 1 # Env dependent, (1 / (1 - gamma)) * max_reward
 
 JOINT_VMIN: -1 # -400 with step penalty, -300 without step penalty # Env dependent, (1 / (1 - gamma)) * min_reward
 JOINT_VMAX: 130 # Env dependent, (1 / (1 - gamma)) * max_reward
-
-KL_BOUND: 0.1
 
 ANNEAL_LR: false
 

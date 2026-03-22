@@ -16,6 +16,7 @@ algorithm:
   USE_SAME_SEED: false
   TRAIN_SEED:
   EVAL_SEED:
+  FIXED_EVAL: false
   NUM_EVAL_EPISODES: ${NUM_EVAL_EPISODES}
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
@@ -34,7 +35,7 @@ logger:
     - ${label}
   mode: online # options: online, offline, disabled
   verbose: false
-  log_train_out: true # whether to log the out dictionary
+  log_train_out: false # whether to log the out dictionary
   log_eval_out: true # whether to log the eval metrics
 
 # Local logger
