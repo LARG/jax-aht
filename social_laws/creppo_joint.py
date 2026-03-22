@@ -272,7 +272,7 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                 # Restrict next available actions and get next values per agent
                 transitions = []
                 for i in range(num_agents):
-                    next_opt_restricted_i, _ = _get_optimal_restricted_avail_actions(
+                    next_opt_restricted_i, _, _ = _get_optimal_restricted_avail_actions(
                         obs=obs_next_per_agent[i],
                         done=done_next_per_agent[i],
                         avail_actions=next_avail_per_agent[i],
