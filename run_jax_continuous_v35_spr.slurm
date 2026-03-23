@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH -J creppo_v34_3agent_spr
-#SBATCH -o creppo_v34_3agent_spr_%j.out
-#SBATCH -e creppo_v34_3agent_spr_%j.err
+#SBATCH -J creppo_v35_3agent_spr
+#SBATCH -o creppo_v35_3agent_spr_%j.out
+#SBATCH -e creppo_v35_3agent_spr_%j.err
 #SBATCH -p spr
 #SBATCH -N 1
 #SBATCH -n 1
@@ -16,7 +16,7 @@ cd /scratch/11079/jeffreychen287/jax-aht
 export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 
-# Expedited 30M Timestep execution logic to reliably finish under 24 hours on SPR
+# Expedited 30M Timestep execution logic to comfortably finish Phase 1 and Phase 2 under 24 hours
 /scratch/11079/jeffreychen287/jax-aht/venv/bin/python social_laws/run.py \
     task=continuous/coop_recon_3_agent_v33 \
     algorithm=creppo/continuous/coop_recon \
@@ -27,8 +27,8 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
     algorithm.FIXED_EVAL=true \
     algorithm.SAP_DOMAIN_RANDOMIZE_PARTNER=true \
     algorithm.NUM_EVAL_EPISODES=50 \
-    algorithm.EPSILON_OPTIMAL=0.001 \
+    algorithm.EPSILON_OPTIMAL=0.01 \
     task.ENV_KWARGS.ego_centric_obs=true \
-    label=jax_coop_recon_v34_3agent_0.001_eps_control
+    label=jax_coop_recon_v35_3agent_0.01_eps
 
-echo "v34 SPR fast-track training complete"
+echo "v35 SPR fast-track training complete"

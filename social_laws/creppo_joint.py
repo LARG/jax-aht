@@ -272,7 +272,7 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                 # Restrict next available actions and get next values per agent
                 transitions = []
                 for i in range(num_agents):
-                    next_opt_restricted_i, _ = _get_optimal_restricted_avail_actions(
+                    next_opt_restricted_i, _, _ = _get_optimal_restricted_avail_actions(
                         obs=obs_next_per_agent[i],
                         done=done_next_per_agent[i],
                         avail_actions=next_avail_per_agent[i],
@@ -908,19 +908,17 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
     all_ckpt_optimal_returns = all_ckpt_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_optimal_returns = all_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
 
-    if config["algorithm"].get("ALPHA_COST", False):
-        all_ckpt_alpha_returns = all_ckpt_optimal_returns / all_ckpt_worst_case_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
-        all_alpha_returns = all_optimal_returns / all_worst_case_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
-    else:
-        all_ckpt_alpha_returns = all_ckpt_worst_case_returns / all_ckpt_optimal_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
-        all_alpha_returns = all_worst_case_returns / all_optimal_returns # shape (n_train_seeds, num_updates, num_eval_episodes)
-
     average_ckpt_worst_case_rets_per_iter = np.mean(all_ckpt_worst_case_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_worst_case_rets_per_iter = np.mean(all_worst_case_returns, axis=(0, 2)) # shape (num_updates,)
     average_ckpt_optimal_rets_per_iter = np.mean(all_ckpt_optimal_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_optimal_rets_per_iter = np.mean(all_optimal_returns, axis=(0, 2)) # shape (num_updates,)
-    average_ckpt_alpha_rets_per_iter = np.mean(all_ckpt_alpha_returns, axis=(0, 2)) # shape (num_updates,)
-    average_agent_alpha_rets_per_iter = np.mean(all_alpha_returns, axis=(0, 2)) # shape (num_updates,)
+
+    if config["algorithm"].get("ALPHA_COST", False):
+        average_ckpt_alpha_rets_per_iter = average_ckpt_optimal_rets_per_iter / average_ckpt_worst_case_rets_per_iter
+        average_agent_alpha_rets_per_iter = average_agent_optimal_rets_per_iter / average_agent_worst_case_rets_per_iter
+    else:
+        average_ckpt_alpha_rets_per_iter = average_ckpt_worst_case_rets_per_iter / average_ckpt_optimal_rets_per_iter
+        average_agent_alpha_rets_per_iter = average_agent_worst_case_rets_per_iter / average_agent_optimal_rets_per_iter
 
     # Log metrics for each update step
     num_updates = len(avg_per_agent_alpha_losses[0])
