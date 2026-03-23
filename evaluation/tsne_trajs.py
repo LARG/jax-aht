@@ -1,5 +1,6 @@
-"""Train an S5 trajectory autoencoder on random episodes and visualize random vs IPPO trajectories in t-SNE."""
+"""Train an S5 trajectory autoencoder on heldout pairwise agent trajectories and visualize random vs IPPO trajectories in t-SNE."""
 
+import argparse
 import jax
 import numpy as np
 
@@ -12,75 +13,69 @@ from evaluation.trajectory_autoencoder import (
     encode_episodes,
     pad_episodes,
 )
-from evaluation.trajectory_collection import collect_random_trajectories, collect_ippo_selfplay_trajectories
+from evaluation.trajectory_collection import (
+    collect_heldout_pairwise_trajectories,
+    collect_ippo_selfplay_trajectories,
+)
 from evaluation.trajectory_plot import plot_tsne
 
 # Config
-ENV_NAME = "lbf"
-ENV_KWARGS = {}
-NUM_ENVS = 64
-ROLLOUT_STEPS = 128
-ROLLOUTS_PER_ITER = 5
-NUM_ITERS = 10
-D_MODEL = 64
-SSM_SIZE = 64
-SSM_N_LAYERS = 3
-LATENT_DIM = 128
-LEARNING_RATE = 3e-4
-NUM_EPOCHS = 200
-BATCH_SIZE = 64
-MAX_BUFFER_SIZE = 1024
+DEFAULT_ENV_NAME = "lbf"
+DEFAULT_ENV_KWARGS = {}
+DEFAULT_NUM_ENVS = 64
+DEFAULT_ROLLOUT_STEPS = 128
+DEFAULT_ROLLOUTS_PER_ITER = 5
+DEFAULT_NUM_ITERS = 10
+DEFAULT_D_MODEL = 64
+DEFAULT_SSM_SIZE = 64
+DEFAULT_SSM_N_LAYERS = 3
+DEFAULT_LATENT_DIM = 128
+DEFAULT_LEARNING_RATE = 3e-4
+DEFAULT_NUM_EPOCHS = 200
+DEFAULT_BATCH_SIZE = 64
+DEFAULT_MAX_BUFFER_SIZE = 1024
+DEFAULT_K = 5
 
 
-def main():
+def main(env_name=DEFAULT_ENV_NAME, k=DEFAULT_K, num_envs=DEFAULT_NUM_ENVS, rollout_steps=DEFAULT_ROLLOUT_STEPS, num_epochs=DEFAULT_NUM_EPOCHS):
     rng = jax.random.PRNGKey(42)
-    env = make_env(ENV_NAME, ENV_KWARGS)
+    env = make_env(env_name, DEFAULT_ENV_KWARGS)
     obs_dim = env.observation_space("agent_0").shape[0]
 
-    all_episodes = []
-    train_state = None
-    model = None
-    train_step = None
-    max_seq_len = None
+    print("Collecting pairwise heldout trajectories for autoencoder training...")
+    rng, all_episodes = collect_heldout_pairwise_trajectories(
+        rng,
+        env,
+        k=k,
+        rollout_steps=rollout_steps,
+        num_envs=num_envs,
+        env_name=env_name,
+    )
+    print(f"Collected {len(all_episodes)} heldout pairwise episodes.")
 
-    for iteration in range(NUM_ITERS):
-        print(f"Iteration {iteration+1}/{NUM_ITERS}: collecting random trajectories")
-        rng, new_eps = collect_random_trajectories(
-            rng,
-            env,
-            num_rollouts=ROLLOUTS_PER_ITER,
-            rollout_steps=ROLLOUT_STEPS,
-            num_envs=NUM_ENVS,
-        )
-        all_episodes.extend(new_eps)
-        if len(all_episodes) > MAX_BUFFER_SIZE:
-            all_episodes = all_episodes[-MAX_BUFFER_SIZE:]
+    padded_episodes, masks, max_seq_len = pad_episodes(all_episodes)
+    rng, train_state, model = init_autoencoder(
+        rng,
+        obs_dim,
+        max_seq_len,
+        d_model=DEFAULT_D_MODEL,
+        ssm_size=DEFAULT_SSM_SIZE,
+        ssm_n_layers=DEFAULT_SSM_N_LAYERS,
+        latent_dim=DEFAULT_LATENT_DIM,
+        learning_rate=DEFAULT_LEARNING_RATE,
+    )
+    train_step = make_train_step(model, obs_dim)
 
-        padded_episodes, masks, max_seq_len = pad_episodes(all_episodes)
-
-        if train_state is None:
-            rng, train_state, model = init_autoencoder(
-                rng,
-                obs_dim,
-                max_seq_len,
-                d_model=D_MODEL,
-                ssm_size=SSM_SIZE,
-                ssm_n_layers=SSM_N_LAYERS,
-                latent_dim=LATENT_DIM,
-                learning_rate=LEARNING_RATE,
-            )
-            train_step = make_train_step(model, obs_dim)
-
-        print(f"Training on {len(all_episodes)} episodes (padded length {max_seq_len})")
-        rng, train_state = train_autoencoder(
-            rng,
-            train_state,
-            train_step,
-            padded_episodes,
-            masks,
-            num_epochs=NUM_EPOCHS,
-            batch_size=BATCH_SIZE,
-        )
+    print(f"Training on {len(all_episodes)} episodes (padded length {max_seq_len})")
+    rng, train_state = train_autoencoder(
+        rng,
+        train_state,
+        train_step,
+        padded_episodes,
+        masks,
+        num_epochs=num_epochs,
+        batch_size=DEFAULT_BATCH_SIZE,
+    )
 
     print("Training complete.")
 
@@ -88,9 +83,9 @@ def main():
     rng, ippo_episodes = collect_ippo_selfplay_trajectories(
         rng,
         env,
-        num_rollouts=ROLLOUTS_PER_ITER,
-        rollout_steps=ROLLOUT_STEPS,
-        num_envs=NUM_ENVS,
+        num_rollouts=DEFAULT_ROLLOUTS_PER_ITER,
+        rollout_steps=rollout_steps,
+        num_envs=num_envs,
     )
 
     print("Encoding episodes and plotting t-SNE...")
@@ -103,4 +98,18 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Train S5 trajectory autoencoder on heldout pairwise trajectories and plot t-SNE.")
+    parser.add_argument("--env_name", type=str, default=DEFAULT_ENV_NAME, help="Environment name")
+    parser.add_argument("--k", type=int, default=DEFAULT_K, help="Number of rollouts per agent pair")
+    parser.add_argument("--num_envs", type=int, default=DEFAULT_NUM_ENVS, help="Number of parallel environments")
+    parser.add_argument("--rollout_steps", type=int, default=DEFAULT_ROLLOUT_STEPS, help="Steps per rollout")
+    parser.add_argument("--num_epochs", type=int, default=DEFAULT_NUM_EPOCHS, help="Number of training epochs")
+
+    args = parser.parse_args()
+    main(
+        env_name=args.env_name,
+        k=args.k,
+        num_envs=args.num_envs,
+        rollout_steps=args.rollout_steps,
+        num_epochs=args.num_epochs,
+    )

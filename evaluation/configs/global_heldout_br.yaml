@@ -4,14 +4,16 @@
 best_response_set:
   lbf:
     br_for_ippo_mlp_0:
-      path: "results/lbf/ppo_br_s5/ippo_mlp_0_serious/2026-03-09_14-37-49/ego_train_run"
+      # 2026-03-09_14-37-49
+      path: "results/lbf/ppo_br_s5/ippo_mlp_0_serious/2026-03-18_12-08-53/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
 
     br_for_ippo_mlp_s2c0_2_0:
-      path: "results/lbf/ppo_br_s5/ippo_mlp_s2c0_serious/2026-03-09_21-11-30/ego_train_run"
+      # 2026-03-09_21-11-30
+      path: "results/lbf/ppo_br_s5/ippo_mlp_s2c0_serious/2026-03-18_12-08-53/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -58,42 +60,48 @@ best_response_set:
       test_mode: false
 
     br_for_seq_agent_lexi:
-      path: "results/lbf/ppo_br_s5/seq_agent_lexi_serious/2026-03-09_22-00-17/ego_train_run"
+      # seq_agent_lexi_serious/2026-03-09_22-00-17
+      path: "results/lbf/ppo_br_s5/br_seq_agent_lexi/2026-03-16_13-50-58/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
 
     br_for_seq_agent_rlexi:
-      path: "results/lbf/ppo_br_s5/seq_agent_rlexi_serious/2026-03-09_22-04-11/ego_train_run"
+      # seq_agent_rlexi_serious/2026-03-09_22-04-11
+      path: "results/lbf/ppo_br_s5/br_seq_agent_rlexi/2026-03-16_13-56-25/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
 
     br_for_seq_agent_col:
-      path: "results/lbf/ppo_br_s5/seq_agent_col_serious/2026-03-10_11-34-55/ego_train_run"
+      # seq_agent_col_serious/2026-03-10_11-34-55
+      path: "results/lbf/ppo_br_s5/br_seq_agent_col/2026-03-16_14-01-52/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
 
     br_for_seq_agent_rcol:
-      path: "results/lbf/ppo_br_s5/seq_agent_rcol_serious/2026-03-10_11-35-07/ego_train_run"
+      # seq_agent_rcol_serious/2026-03-10_11-35-07
+      path: "results/lbf/ppo_br_s5/br_seq_agent_rcol/2026-03-16_14-07-19/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
 
     br_for_seq_agent_nearest:
-      path: "results/lbf/ppo_br_s5/seq_agent_nearest_serious/2026-03-10_12-37-02/ego_train_run"
+      # seq_agent_nearest_serious/2026-03-10_12-37-02
+      path: "results/lbf/ppo_br_s5/br_seq_agent_nearest/2026-03-16_14-12-48/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
 
     br_for_seq_agent_farthest:
-      path: "results/lbf/ppo_br_s5/seq_agent_farthest_serious/2026-03-10_12-37-22/ego_train_run"
+      # seq_agent_farthest_serious/2026-03-10_12-37-22
+      path: "results/lbf/ppo_br_s5/br_seq_agent_farthest/2026-03-16_14-18-16/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
