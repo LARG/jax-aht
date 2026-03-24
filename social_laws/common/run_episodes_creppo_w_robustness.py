@@ -182,6 +182,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
     #          Worst Case Scan                #
     ###########################################
     worst_ep_ts = 1
+    rng, opt_rng = jax.random.split(rng)  # Split dedicated RNG for optimal rollout to avoid correlated randomness
     worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot,
                         hstates, optimal_vf_hstates, info)
     def worst_scan_step(carry, _):
@@ -256,12 +257,12 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
     #          Optimal Case Scan              #
     ###########################################
     optimal_ep_ts = 1
-    optimal_init_carry = (optimal_ep_ts, optimal_env_state, optimal_obs, rng, optimal_done, optimal_reward, optimal_env_act_onehot, optimal_hstates, optimal_info)
+    optimal_init_carry = (optimal_ep_ts, optimal_env_state, optimal_obs, opt_rng, optimal_done, optimal_reward, optimal_env_act_onehot, optimal_hstates, optimal_info)
     def optimal_scan_step(carry, _):
         def take_optimal_step(carry_step):
             ep_ts, env_state, obs, rng, done, reward, act_onehot, hstates, last_info = carry_step
 
-            avail_actions = env.get_avail_actions(env_state.env_state)
+            avail_actions = optimal_env.get_avail_actions(env_state.env_state)  # Bug fix: was incorrectly using joint env
             avail_actions = jax.lax.stop_gradient(avail_actions)
             avail_per_agent = [get_agent_data(avail_actions, i).astype(jnp.float32) for i in range(num_agents)]
 
