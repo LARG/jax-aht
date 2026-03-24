@@ -920,10 +920,6 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         average_ckpt_alpha_rets_per_iter = average_ckpt_worst_case_rets_per_iter / average_ckpt_optimal_rets_per_iter
         average_agent_alpha_rets_per_iter = average_agent_worst_case_rets_per_iter / average_agent_optimal_rets_per_iter
 
-    # Establish rigid theoretical upper bounds on Alpha per PI directive
-    average_ckpt_alpha_rets_per_iter = np.minimum(average_ckpt_alpha_rets_per_iter, 1.0)
-    average_agent_alpha_rets_per_iter = np.minimum(average_agent_alpha_rets_per_iter, 1.0)
-
     # Log metrics for each update step
     num_updates = len(avg_per_agent_alpha_losses[0])
     for step in range(num_updates):
