@@ -21,7 +21,6 @@ from tqdm import tqdm
 import logging
 import shutil
 import time
-from typing import NamedTuple
 
 from flax.training.train_state import TrainState
 import hydra
@@ -41,7 +40,7 @@ from common.save_load_utils import save_train_run
 from common.plot_utils import get_metric_names
 from common.run_episodes import run_episodes
 from envs import make_env
-from envs.log_wrapper import LogWrapper, LogEnvState
+from envs.log_wrapper import LogWrapper
 from marl.ppo_utils import Transition, unbatchify, _create_minibatches
 from open_ended_training.shapley_utils import masked_softmax, shapley_values
 
@@ -62,6 +61,24 @@ def initialize_agent(actor_type, config, env, rng):
                          "Choose from 's5', 'mlp', 'rnn'.")
 
 
+def compute_total_updates(config):
+    '''Compute the total number of updates and updates per iter.
+    '''
+    # XP matrix evaluation episodes: XP_EVAL_ROLLOUT_EPS per agent pair.
+    xp_eval_steps = (
+        config["XP_EVAL_ROLLOUT_EPS"] 
+        * config["ROLLOUT_LENGTH"] 
+        * config["PARTNER_POP_SIZE"] ** 2
+    )
+    # Training rollouts (SP, XP) per update
+    training_steps_per_update = 2 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
+    num_updates_per_iter = int(
+        (config["TOTAL_TIMESTEPS_PER_ITERATION"] - xp_eval_steps) 
+        // training_steps_per_update
+    )
+    total_num_updates = num_updates_per_iter * config["PARTNER_POP_SIZE"]
+    return num_updates_per_iter, total_num_updates
+
 def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=None):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
@@ -74,12 +91,9 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
     config["NUM_CONTROLLED_ACTORS"] = config["NUM_ACTORS"]
     config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
 
-    # Compute number of updates PER outermost iteration.
-    # Training rollouts: 2 distinct rollout phases (SP, XP) each using NUM_ENVS environments.
-    # XP matrix evaluation episodes: XP_EVAL_ROLLOUT_EPS per agent pair.
-    training_steps_per_update = 2 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
-    xp_eval_steps = config["XP_EVAL_ROLLOUT_EPS"] * config["ROLLOUT_LENGTH"] * config["PARTNER_POP_SIZE"] ** 2
-    config["NUM_UPDATES"] = int((config["TOTAL_TIMESTEPS_PER_ITERATION"] - xp_eval_steps) // training_steps_per_update)
+    # Set number of updates PER outermost iteration
+    num_updates_per_iter, _ = compute_total_updates(config)
+    config["NUM_UPDATES"] = num_updates_per_iter
 
     def make_cole_agents(config):
         def linear_schedule(count):
@@ -91,11 +105,13 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
             rng, init_ppo_rng, init_rng, xp_init_rng = jax.random.split(rng, 4)
 
             # Initialize a population buffer
-            dummy_policy, dummy_init_params = initialize_agent(config["ACTOR_TYPE"], config, env, init_rng)
+            dummy_policy, dummy_init_params = initialize_agent(
+                config["ACTOR_TYPE"], config, env, init_rng
+                )
             partner_population = BufferedPopulation(
                 max_pop_size=config["PARTNER_POP_SIZE"],
                 policy_cls=dummy_policy,
-                sampling_strategy="softmax",  # scores from metasolve_game_graph are used directly via softmax; staleness is irrelevant
+                sampling_strategy="softmax",
             )
 
             population_buffer = partner_population.reset_buffer(dummy_init_params)
@@ -106,7 +122,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
             )
 
             # Initialize XP matrix: shape (POP_SIZE, POP_SIZE)
-            # Entry (i, j) = mean return of agent_i when playing as agent_0 against agent_j.
+            # Entry (i, j) = mean return of agent_i vs agent j
             # Seed entry (0, 0) with the SP return of the initial random policy.
             sp_init_return = run_episodes(
                 rng=xp_init_rng, env=env,
@@ -124,7 +140,9 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 rng = func_input
                 rng, init_rng = jax.random.split(rng)
 
-                policy, init_params = initialize_agent(config["ACTOR_TYPE"], config, env, init_rng)
+                policy, init_params = initialize_agent(
+                    config["ACTOR_TYPE"], config, env, init_rng
+                    )
 
                 # Create a train_state and optimizer for the newly initialzied model
                 if config["ANNEAL_LR"]:
@@ -165,7 +183,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 rng, eval_rng = jax.random.split(rng, 2)
 
                 def eval_pair_ij(agent_i_param, agent_j_param):
-                    """Return mean reward of agent_i (as agent_0) vs agent_j (as agent_1)."""
+                    """Return mean reward of agent_i vs agent_j."""
                     outs = run_episodes(
                         rng=eval_rng, env=env,
                         agent_0_param=agent_i_param, agent_0_policy=policy,
@@ -876,13 +894,15 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 row_i_returns = jax.vmap(eval_i_vs_j)(all_indices)   # shape (POP_SIZE,)
                 col_i_returns = jax.vmap(eval_j_vs_i)(all_indices)   # shape (POP_SIZE,)
 
-                # Write into xp_matrix (entries for untrained agents will be 0 and are masked by metasolve)
+                # Write into xp_matrix
+                # Entries for untrained agents will be 0 and are masked by metasolve
                 new_agent_i = num_existing_agents  # index of the newly added agent
                 xp_matrix = xp_matrix.at[new_agent_i, :].set(row_i_returns)
                 xp_matrix = xp_matrix.at[:, new_agent_i].set(col_i_returns)
 
                 checkpoints = new_checkpoint_array
-                return (updated_pop_buffer, xp_matrix, num_existing_agents + 1), (checkpoints, metric, xp_eval_returns, sp_eval_returns)
+                return (updated_pop_buffer, xp_matrix, num_existing_agents + 1), \
+                    (checkpoints, metric, xp_eval_returns, sp_eval_returns)
 
             rngs = jax.random.split(rng, config["PARTNER_POP_SIZE"] - 1)
             num_existing_agents = 1
@@ -987,12 +1007,7 @@ def run_cole(config, wandb_logger):
     rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
 
     num_seeds = algorithm_config["NUM_SEEDS"]
-    # num_updates is computed inside train_cole_partners, replicate the formula here for the pbar
-    training_steps_per_update = 2 * algorithm_config["ROLLOUT_LENGTH"] * algorithm_config["NUM_ENVS"]
-    xp_eval_steps = algorithm_config["XP_EVAL_ROLLOUT_EPS"] * algorithm_config["ROLLOUT_LENGTH"] * algorithm_config["PARTNER_POP_SIZE"] ** 2
-    num_updates = int((algorithm_config["TOTAL_TIMESTEPS_PER_ITERATION"] - xp_eval_steps) // training_steps_per_update)
-    trained_pop_size = algorithm_config["PARTNER_POP_SIZE"] - 1
-    total_updates = trained_pop_size * num_updates
+    _, total_updates = compute_total_updates(algorithm_config)
 
     pbar = tqdm(total=total_updates, desc="COLE Training", unit="update")
     pbar._call_count = 0
@@ -1029,7 +1044,8 @@ def run_cole(config, wandb_logger):
         algorithm_config["ACTOR_TYPE"], algorithm_config, dummy_env, eval_rng
     )
 
-    # Select the best agent from each seed's population using the final XP matrix and Pareto-improvement criterion
+    # Select the best agent from each seed's population using 
+    # the final XP matrix and Pareto-improvement criterion
     # out["final_xp_matrix"] has shape (num_seeds, POP_SIZE, POP_SIZE).
     best_is, best_s0s, best_s1s = jax.vmap(select_best_agent)(out["final_xp_matrix"])
     log.info(f"Best agent indices per seed:      {np.array(best_is)}")
@@ -1100,7 +1116,7 @@ def log_final_metrics(config, outs, logger, metric_names: tuple):
     # xp_eval_returns and sp_eval_returns logged at each evaluation only.
     algorithm_config = config["algorithm"]
     ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
-    # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
+    # Steps at which store_and_eval_ckpt were run
     eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
     if (num_updates - 1) not in eval_steps:
         eval_steps.append(num_updates - 1)
@@ -1116,9 +1132,17 @@ def log_final_metrics(config, outs, logger, metric_names: tuple):
 
     for num_add_policies in range(trained_pop_size):
         for update_step in eval_steps:
-            logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
+            logger.log_item(
+                "Eval/AvgSPReturnCurve", 
+                sp_return_curve[num_add_policies, update_step], 
+                train_step=update_step
+                )
             mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
-            logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[update_step], train_step=update_step)
+            logger.log_item(
+                "Eval/AvgXPReturnCurve", 
+                mean_xp_returns[update_step], 
+                train_step=update_step
+                )
     logger.commit()
 
     ### Log artifacts
