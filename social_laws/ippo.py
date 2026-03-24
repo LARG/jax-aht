@@ -157,8 +157,19 @@ def train_ippo_agent(config, env, train_rng,
 
                 # Filter out rendering-only fields (pre_reset_state, pre_reset_obs) which
                 # have incompatible shapes for the per-actor reshape
-                info = {k: v for k, v in info.items() if k not in ('pre_reset_state', 'pre_reset_obs')}
-                info = jax.tree.map(lambda x: x.reshape((config["NUM_CONTROLLED_ACTORS"])), info)
+                keys_to_exclude = {'pre_reset_state', 'pre_reset_obs'}  # Add any keys that shouldn't be indexed
+
+                def filter_agent_info(path, x, idx):
+                    # Get the key name from the path
+                    key_name = path[-1].key if hasattr(path[-1], 'key') else None
+                    if key_name in keys_to_exclude or x.ndim <= 1:
+                        return x
+                    else:
+                        return x[:, idx]
+
+                # TODO: Get different info for each agent based on idx instead of just taking the first agent's info for all agents
+                # Or remove from transition if not needed
+                info = jax.tree_util.tree_map_with_path(partial(filter_agent_info, idx=0), info)
 
                 # Store per-agent transitions
                 transitions = tuple(
@@ -534,7 +545,8 @@ def run_training(config, wandb_logger):
     log.info(f"IPPO Logging completed in {elapsed_time:.2f}s")
     log.info(f"IPPO Logging completed in {int(hours):02d}h {int(minutes):02d}m {int(seconds):02d}s {milliseconds:03d}ms {microseconds:03d}µs")
 
-    return out["final_params"], policies, init_params
+    final_params = [out[f"final_params_agent_{i}"] for i in range(num_agents)]
+    return final_params, policies, init_params
 
 def log_metrics(env, config, train_out, logger, metric_names: tuple):
     """Process training metrics and log them using the provided logger.
@@ -554,10 +566,18 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple):
     # where the last dimension contains the mean and std of the metric
     train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
 
-    all_agent_value_losses = np.asarray(train_metrics["value_loss"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
-    all_agent__actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
-    all_agent_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
-    all_agent_grad_norms = np.asarray(train_metrics["avg_grad_norm"]) # shape (n_train_seeds, num_updates, num_update_epochs, num_minibatches)
+    # Train metrics include loss values and gradient norms, which we can average across seeds, partners and minibatches for each update step.
+    num_agents_log = sum(1 for k in train_metrics if k.endswith("/value_loss") and k.startswith("agent_"))
+    avg_per_agent_value_losses = []
+    avg_per_agent_actor_losses = []
+    avg_per_agent_entropy_losses = []
+    avg_per_agent_grad_norms = []
+    for i in range(num_agents_log):
+        avg_per_agent_value_losses.append(np.mean(np.asarray(train_metrics[f"agent_{i}/value_loss"]), axis=(0, 2, 3)))
+        avg_per_agent_actor_losses.append(np.mean(np.asarray(train_metrics[f"agent_{i}/actor_loss"]), axis=(0, 2, 3)))
+        avg_per_agent_entropy_losses.append(np.mean(np.asarray(train_metrics[f"agent_{i}/entropy_loss"]), axis=(0, 2, 3)))
+        avg_per_agent_grad_norms.append(np.mean(np.asarray(train_metrics[f"agent_{i}/avg_grad_norm"]), axis=(0, 2, 3)))
+
 
     # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
     all_ckpt_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
@@ -567,16 +587,9 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple):
     average_ckpt_agent_rets_per_iter = np.mean(all_ckpt_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_rets_per_iter = np.mean(all_returns, axis=(0, 2)) # shape (num_updates,)
 
-    # Process loss metrics - average across train seeds, partners and minibatches dims
-    # Loss metrics shape should be (n_train_seeds, num_updates, ...)
-    average_agent_value_losses = np.mean(all_agent_value_losses, axis=(0, 2, 3))  # shape (num_updates,)
-    average_agent_actor_losses = np.mean(all_agent__actor_losses, axis=(0, 2, 3)) # shape (num_updates,)
-    average_agent_entropy_losses = np.mean(all_agent_entropy_losses, axis=(0, 2, 3)) # shape (num_updates,)
-    average_agent_grad_norms = np.mean(all_agent_grad_norms, axis=(0, 2, 3)) # shape (num_updates,)
-
     # Log metrics for each update step
     num_agents = env.num_agents
-    num_updates = len(average_agent_value_losses)
+    num_updates = len(avg_per_agent_value_losses[0])
     for step in range(num_updates):
         for stat_name, stat_data in train_stats.items():
             # second dimension contains the mean and std of the metric
@@ -589,10 +602,13 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple):
 
         logger.log_item(f"Eval/Return", average_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Eval/CheckpointReturn", average_ckpt_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Train/ValueLoss", average_agent_value_losses[step], train_step=step, commit=True)
-        logger.log_item(f"Train/ActorLoss", average_agent_actor_losses[step], train_step=step, commit=True)
-        logger.log_item(f"Train/EntropyLoss", average_agent_entropy_losses[step], train_step=step, commit=True)
-        logger.log_item(f"Train/GradNorm", average_agent_grad_norms[step], train_step=step, commit=True)
+
+        for i in range(num_agents_log):
+            logger.log_item(f"Train/Agent_{i + 1}/ValueLoss", avg_per_agent_value_losses[i][step], train_step=step, commit=True)
+            logger.log_item(f"Train/Agent_{i + 1}/ActorLoss", avg_per_agent_actor_losses[i][step], train_step=step, commit=True)
+            logger.log_item(f"Train/Agent_{i + 1}/EntropyLoss", avg_per_agent_entropy_losses[i][step], train_step=step, commit=True)
+            logger.log_item(f"Train/Agent_{i + 1}/GradNorm", avg_per_agent_grad_norms[i][step], train_step=step, commit=True)
+
         logger.commit()
 
     # Saving artifacts

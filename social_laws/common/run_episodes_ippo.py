@@ -72,7 +72,7 @@ def run_single_episode(rng, env, agent_params, agent_policies,
     init_carry = (ep_ts, env_state, obs, rng, done, reward, env_act_onehot, hstates, info)
     def scan_step(carry, _):
         def take_step(carry_step):
-            ep_ts, env_state, (obs, obs_full), rng, done, reward, act_onehot, hstates, last_info = carry_step
+            ep_ts, env_state, obs, rng, done, reward, act_onehot, hstates, last_info = carry_step
             # Get available actions for the agent from environment state
             avail_actions = env.get_avail_actions(env_state.env_state)
             avail_actions = jax.lax.stop_gradient(avail_actions)
@@ -128,7 +128,7 @@ def run_single_episode(rng, env, agent_params, agent_policies,
         # Return the final info (which includes the episode return via LogWrapper).
         return final_carry[-1]
 
-def run_episodes(rng, env, agent_param, agent_policies,
+def run_episodes(rng, env, agent_params, agent_policies,
                  max_episode_steps, num_eps, render=False, agent_test_mode=False):
     '''Run num_eps episodes sequentially using scan.'''
     # Create episode-specific RNGs
@@ -138,7 +138,7 @@ def run_episodes(rng, env, agent_param, agent_policies,
     # Define scan function to run episodes sequentially
     def scan_episode(carry, ep_rng):
         all_out = run_single_episode(
-            ep_rng, env, agent_param, agent_policies,
+            ep_rng, env, agent_params, agent_policies,
             max_episode_steps, render, agent_test_mode
         )
         return carry, all_out
@@ -147,7 +147,7 @@ def run_episodes(rng, env, agent_param, agent_policies,
     _, all_outs = jax.lax.scan(scan_episode, None, ep_rngs)
     return all_outs  # each leaf has shape (num_eps, ...)
 
-def run_episodes_vmap(rng, env, agent_param, agent_policies,
+def run_episodes_vmap(rng, env, agent_params, agent_policies,
                       max_episode_steps, num_eps, render=False, agent_test_mode=False):
     '''Run num_eps episodes in parallel using vmap.'''
     # Create episode-specific RNGs
@@ -162,7 +162,7 @@ def run_episodes_vmap(rng, env, agent_param, agent_policies,
     )
 
     all_outs = vmapped_run(
-        ep_rngs, env, agent_param, agent_policies,
+        ep_rngs, env, agent_params, agent_policies,
         max_episode_steps, render, agent_test_mode
     )
 
