@@ -357,8 +357,6 @@ def run_ippo(config, logger):
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
-    
-    
 
     with jax.disable_jit(False):
         train_jit = jax.jit(jax.vmap(make_train(algorithm_config, env, logger, progress_callback=update_progress_bar)))
@@ -374,11 +372,18 @@ def run_ippo(config, logger):
 def log_metrics_intermediate(train_stats, logger):
     # Log metrics for one update step
     step = int(np.array(train_stats.pop("update_steps")))
-    # remaining values have shape (ROLLOUT_LENGTH, NUM_ACTORS); mean over axis 0 -> (NUM_ACTORS,)
-    train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
-    for stat_name, stat_data in train_stats.items():
-        stat_mean = stat_data[0] # get the first agent
-        logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
+    # remaining values have shape (ROLLOUT_LENGTH, NUM_ACTORS)
+    mask = np.array(train_stats.pop("returned_episode"))  # boolean mask for episode-ending steps
+    metric_names = [k for k in train_stats if k != "returned_episode"]
+    for stat_name in metric_names:
+        metric_data = np.array(train_stats[stat_name])
+        # Only average over timesteps where an episode actually ended, matching get_stats logic
+        mask_sum = mask.sum()
+        if mask_sum > 0:
+            stat_mean = np.where(mask, metric_data, 0).sum() / mask_sum
+        else:
+            stat_mean = 0.0
+        logger.log_item(f"Train/{stat_name}", float(stat_mean), train_step=step, commit=True)
     logger.commit()
 
 def log_artifacts(config, out, logger):
