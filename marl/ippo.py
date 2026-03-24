@@ -1,6 +1,9 @@
 '''
-Based on the IPPO implementation from JaxMarl. Trains a parameter-shared, MLP IPPO agent on a
-fully cooperative multi-agent environment. Note that this code is only compatible with MLP policies.
+Based on the IPPO implementation from JaxMarl. Trains a parameter-shared IPPO agent on a
+fully cooperative multi-agent environment.
+
+Recommended run command:
+python marl/run.py task=lbf algorithm=ippo/lbf
 '''
 import shutil
 

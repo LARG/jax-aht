@@ -182,7 +182,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                         num_eps=config["XP_EVAL_ROLLOUT_EPS"]
                     )
 
-                def metasolve_game_graph(xp_matrix, agent_idx, num_prev_trained_agents, rng):
+                def metasolve_game_graph(xp_matrix, num_prev_trained_agents, rng):
                     """Derive a sampling distribution over the trained population.
 
                     Supports two modes, selected by config["METASOLVE_MODE"]. In both modes,
@@ -226,7 +226,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                         sampling_dist = masked_softmax(phi, valid_mask, temperature=1.0)
 
                     elif config["METASOLVE_MODE"] == "returns":
-                        xp_row = xp_matrix[agent_idx]  # (POP_SIZE,)
+                        xp_row = xp_matrix[num_prev_trained_agents - 1]  # (POP_SIZE,)
                         # Negate: lower return → harder partner → higher weight.
                         negated = -xp_row
                         shifted = negated - negated.min() + 1e-8
@@ -649,7 +649,6 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                         return update_state, total_loss
 
                     # 3) PPO update
-                    # init_hstate_* are fresh zero hstates to replay trajectory from (like ippo.py)
                     init_hstate_xp = policy.init_hstate(config["NUM_ENVS"])
                     init_hstate_sp0 = policy.init_hstate(config["NUM_ENVS"])
                     init_hstate_sp1 = policy.init_hstate(config["NUM_ENVS"])
@@ -727,8 +726,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 # Pre-compute the metasolve sampling distribution for agent i and write it into
                 # pop_buffer.scores so that sample_agent_indices uses it throughout the PPO loop.
                 rng, metasolve_rng = jax.random.split(rng)
-                init_sampling_dist = metasolve_game_graph( # TODO: check why num_existing_agents is passed twice
-                    xp_matrix, num_existing_agents, num_existing_agents, metasolve_rng
+                init_sampling_dist = metasolve_game_graph(
+                    xp_matrix, num_existing_agents, metasolve_rng
                 )
                 pop_buffer = partner_population.update_scores(
                     pop_buffer, jnp.arange(config["POP_SIZE"]), init_sampling_dist
@@ -824,12 +823,11 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 new_update_with_ckpt_runner_state, (metric, xp_eval_returns, sp_eval_returns) = jax.lax.scan(
                     _update_step_with_ckpt,
                     update_with_ckpt_runner_state,
-                    xs=None,  # No per-step input data
+                    xs=None,
                     length=config["NUM_UPDATES"],
                 )
                 new_update_runner_state, new_checkpoint_array, _, _, _ = new_update_with_ckpt_runner_state
                 final_train_state = new_update_runner_state[0]
-                # xp_matrix is unchanged during the inner PPO loop; use the local variable directly
 
                 # Add newly trained agent i to the population buffer (default score, updated below)
                 updated_pop_buffer = partner_population.add_agent(pop_buffer, final_train_state.params)
@@ -840,6 +838,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 # Entry (i, j): mean return of agent_i as agent_0 vs agent_j as agent_1.
                 # Entry (j, i): mean return of agent_j as agent_0 vs agent_i as agent_1.
                 # ------------------------------------------------------------------
+                # TODO: why is the newly added agent set equal to num_existing_agents
                 new_agent_i = num_existing_agents  # index of the newly added agent
                 all_indices = jnp.arange(config["POP_SIZE"])
 
@@ -873,20 +872,13 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 xp_matrix = xp_matrix.at[new_agent_i, :].set(row_i_returns)
                 xp_matrix = xp_matrix.at[:, new_agent_i].set(col_i_returns)
 
-                # ------------------------------------------------------------------
-                # Update pop_buffer sampling scores using metasolve_game_graph.
-                # ------------------------------------------------------------------
-                num_trained_so_far = new_agent_i + 1  # agents {0, ..., i} are now trained
-                rng, score_rng = jax.random.split(rng)
-                new_scores = metasolve_game_graph(xp_matrix, new_agent_i, num_trained_so_far, score_rng)
-                updated_pop_buffer = partner_population.update_scores(updated_pop_buffer, all_indices, new_scores)
-
                 checkpoints = new_checkpoint_array
                 return (updated_pop_buffer, xp_matrix, num_existing_agents + 1), (checkpoints, metric, xp_eval_returns, sp_eval_returns)
 
             rngs = jax.random.split(rng, config["PARTNER_POP_SIZE"] - 1)
+            num_existing_agents = 1
             (final_population_buffer, final_xp_matrix, _), (checkpoints, metric, xp_eval_returns, sp_eval_returns) = jax.lax.scan(
-                add_policy, (population_buffer, xp_matrix, 1), rngs
+                add_policy, (population_buffer, xp_matrix, num_existing_agents), rngs
             )
 
             out = {
