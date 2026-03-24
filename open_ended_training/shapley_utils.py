@@ -92,7 +92,7 @@ def coalition_pagerank(
             (1.0 - damping) * teleport
             + damping * (jnp.dot(pr, M) + dangling_mass * teleport)
         )
-        # Numerical safety: zero out non-coalition slots
+        # Numerical safety: mask out non-coalition slots
         new_pr = new_pr * mask_f
         return new_pr, pr, i + 1
 
@@ -253,20 +253,19 @@ def shapley_values(
             # Computed in log-space to handle large N without overflow.
             s_size = jnp.sum(s_mask).astype(jnp.float32)   # |S|
             log_weight = (
-                jsp.special.gammaln(s_size + 1)             # log(|S|!)
+                (N - 1) * jnp.log(2.0)                      # log(2^{N-1}) to correct for uniform subset sampling
+                + jsp.special.gammaln(s_size + 1)           # log(|S|!)
                 + jsp.special.gammaln(N - s_size)           # log((N−|S|−1)!)
                 - jsp.special.gammaln(N + 1)                # log(N!)
             )
             weight = jnp.exp(log_weight)
 
-            return marginal, weight
+            return marginal * weight
 
         # Vectorise over the max_iter samples — returns (max_iter,) arrays.
-        marginals, weights = jax.vmap(one_sample)(sample_keys)
+        samples = jax.vmap(one_sample)(sample_keys)
 
-        mean_marginal = jnp.mean(marginals)
-        mean_weight   = jnp.mean(weights)
-        return mean_weight * mean_marginal
+        return jnp.mean(samples)
 
     # Vectorise over all N players simultaneously.
     players = jnp.arange(N)

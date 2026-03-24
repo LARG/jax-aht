@@ -278,12 +278,12 @@ class TestShapleyValues:
         # Constant symmetric payoff: all pairs interact identically.
         payoffs = jnp.ones((N, N), dtype=jnp.float32)
         phi = shapley_values(key, payoffs, N=N, max_iter=max_iter)
-        # All values should be approximately equal (within Monte-Carlo noise).
+        # All values should be approximately equal to 1/N (true Shapley value).
         np.testing.assert_allclose(
             np.array(phi),
-            np.full(N, float(jnp.mean(phi))),
-            atol=0.05,   # generous tolerance for Monte-Carlo variance
-            err_msg="Symmetric payoffs should yield approximately equal Shapley values.",
+            np.full(N, 1.0 / N),
+            atol=0.15,   # generous tolerance for unbiased Monte-Carlo variance
+            err_msg="Symmetric payoffs should yield Shapley values around 1/N.",
         )
 
     def test_weights_sum_correctly(self):
