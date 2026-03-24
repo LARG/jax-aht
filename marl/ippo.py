@@ -374,13 +374,14 @@ def log_metrics_intermediate(train_stats, logger):
     step = int(np.array(train_stats.pop("update_steps")))
     # remaining values have shape (ROLLOUT_LENGTH, NUM_ACTORS)
     mask = np.array(train_stats.pop("returned_episode"))  # boolean mask for episode-ending steps
+    num_trajectories = mask.sum()
+    
     metric_names = [k for k in train_stats if k != "returned_episode"]
-    for stat_name in metric_names:
-        metric_data = np.array(train_stats[stat_name])
-        # Only average over timesteps where an episode actually ended, matching get_stats logic
-        mask_sum = mask.sum()
-        if mask_sum > 0:
-            stat_mean = np.where(mask, metric_data, 0).sum() / mask_sum
+    for stat_name in metric_names:        
+        if num_trajectories > 0:
+            # Only average over timesteps where an episode actually ended, matching get_stats logic
+            metric_sum = np.where(mask, np.array(train_stats[stat_name]), 0).sum()
+            stat_mean = metric_sum / num_trajectories
         else:
             stat_mean = 0.0
         logger.log_item(f"Train/{stat_name}", float(stat_mean), train_step=step, commit=True)
