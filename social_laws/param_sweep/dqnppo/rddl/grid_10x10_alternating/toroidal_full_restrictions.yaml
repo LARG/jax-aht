@@ -1,0 +1,52 @@
+program: social_laws/run_single_agent.py
+name: dqnppo-rddl-grid-10x10-alternating-toroidal-full-restrictions
+method: bayes
+entity: social-laws-project
+project: social-laws-param-sweep
+metric:
+  goal: maximize
+  name: Eval/ValueFunction/Agent_1_Proj/Return
+
+# 450 Combinations: grid search possible instead of bayes
+parameters:
+  value_function.LR:
+    values: [5e-5, 1e-5, 2.5e-4, 1e-4, 1e-3, 1e-2]
+  value_function.GAMMA:
+    values: [0.95, 0.99]
+  value_function.TARGET_UPDATE_INTERVAL:
+    values: [1, 100, 300, 500]
+  value_function.TAU:
+    values: [1.0, 0.5, 0.05, 0.005]
+  value_function.LEARNING_STARTS:
+    values: [1000, 2000, 4000, 6000, 10000]
+  value_function.BUFFER_BATCH_SIZE:
+    values: [128, 256, 512]
+
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=rddl/grid_10x10_alternating/toroidal_full_restrictions
+  - algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions
+  - value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions
+  - algorithm.TRAIN_SEED=714212835
+  - algorithm.EVAL_SEED=212835427
+  - value_function.TRAIN_SEED=714212835
+  - value_function.EVAL_SEED=212835427
+  - algorithm.FIXED_EVAL=true
+  - value_function.FIXED_EVAL=true
+  - task.NUM_EVAL_EPISODES=200
+  - logger.project=social-laws-param-sweep
+  - logger.entity=social-laws-project
+  - logger.mode=online
+  - logger.log_train_out=false
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - label="param_sweep"
+  - ${args_no_hyphens}
+
+
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb sweep social_laws/param_sweep/dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions.yaml
+
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb agent social-laws-project/social-laws-param-sweep/ag8f90qq --count 100
