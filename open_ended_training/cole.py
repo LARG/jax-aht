@@ -2,9 +2,19 @@
 
 https://proceedings.mlr.press/v202/li23au.html
 
-
-Recommended debug command:
-python open_ended_training/run.py algorithm=cole/lbf task=lbf label=test_cole run_heldout_eval=false algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 logger.log_train_out=false logger.log_eval_out=false local_logger.save_train_out=false local_logger.save_eval_out=false
+Suggested debug command:
+python open_ended_training/run.py \
+    algorithm=cole/lbf \
+    task=lbf \
+    label=test_cole \
+    run_heldout_eval=false \
+    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 \
+    algorithm.PARTNER_POP_SIZE=2 \
+    algorithm.NUM_SEEDS=1 \
+    logger.log_train_out=false \
+    logger.log_eval_out=false \
+    local_logger.save_train_out=false \
+    local_logger.save_eval_out=false
 """
 from functools import partial
 from tqdm import tqdm
@@ -838,8 +848,6 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 # Entry (i, j): mean return of agent_i as agent_0 vs agent_j as agent_1.
                 # Entry (j, i): mean return of agent_j as agent_0 vs agent_i as agent_1.
                 # ------------------------------------------------------------------
-                # TODO: why is the newly added agent set equal to num_existing_agents
-                new_agent_i = num_existing_agents  # index of the newly added agent
                 all_indices = jnp.arange(config["POP_SIZE"])
 
                 # Row i  : agent_i (new) as agent_0 vs each existing agent j as agent_1
@@ -869,6 +877,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 col_i_returns = jax.vmap(eval_j_vs_i)(all_indices)   # shape (POP_SIZE,)
 
                 # Write into xp_matrix (entries for untrained agents will be 0 and are masked by metasolve)
+                new_agent_i = num_existing_agents  # index of the newly added agent
                 xp_matrix = xp_matrix.at[new_agent_i, :].set(row_i_returns)
                 xp_matrix = xp_matrix.at[:, new_agent_i].set(col_i_returns)
 
@@ -1022,15 +1031,15 @@ def run_cole(config, wandb_logger):
 
     # Select the best agent from each seed's population using the final XP matrix and Pareto-improvement criterion
     # out["final_xp_matrix"] has shape (num_seeds, POP_SIZE, POP_SIZE).
-    # best_is, best_s0s, best_s1s = jax.vmap(select_best_agent)(out["final_xp_matrix"])
-    # log.info(f"Best agent indices per seed:      {np.array(best_is)}")
-    # log.info(f"Best row-mean (s0) per seed:      {np.array(best_s0s)}")
-    # log.info(f"Best col-mean (s1) per seed:      {np.array(best_s1s)}")
-    # best_ego_params = jax.tree.map(
-    #     lambda x: x[jnp.arange(algorithm_config["NUM_SEEDS"]), best_is],
-    #     out["final_params"]
-    # )
-    best_ego_params = out['final_params']
+    best_is, best_s0s, best_s1s = jax.vmap(select_best_agent)(out["final_xp_matrix"])
+    log.info(f"Best agent indices per seed:      {np.array(best_is)}")
+    log.info(f"Best row-mean (s0) per seed:      {np.array(best_s0s)}")
+    log.info(f"Best col-mean (s1) per seed:      {np.array(best_s1s)}")
+    best_ego_params = jax.tree.map(
+        lambda x: x[jnp.arange(algorithm_config["NUM_SEEDS"]), best_is],
+        out["final_params"]
+    )
+    
     return ego_policy, best_ego_params, init_ego_params
 
 def log_metrics_intermediate(metric, logger):
