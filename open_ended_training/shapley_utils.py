@@ -108,22 +108,32 @@ def coalition_value(
     tol: float = 1e-6,
     sigma_temperature: float = 10.0,
 ) -> jnp.ndarray:
-    """Compute the value of a coalition using PageRank.
+    """Compute value of a coalition v(S) using negative PageRank.
 
     Algorithm
     ---------
     1. Build the coalition sub-graph S by masking payoffs.
     2. Run PageRank on the sub-graph, PR(S), to rank agents by centrality.
-    3. Compute difficulty weights:
+    3. Compute sigma, the difficulty weights (negative PageRank):
 
            sigma = masked_softmax(-masked_softmax(PR(S), temp=1), temp=sigma_temp)
 
-    High σ is assigned to agents with low PageRank — i.e., those who are hard to
-    cooperate with — so that coalitions which succeed against tough partners are
-    valued more.
+    High σ is assigned to agents with low PageRank.
 
     4. Value = (1/|S|) Σ_{i∈S} Σ_{j∈S}  sigma[j] · payoffs[i,j], clipped ≥ 0.
        Empty coalitions return 0.
+
+    Intuition: 
+    --------------------------------------
+    PageRank acts as a "ease-of-cooperation" score:
+    high-PageRank agents are universal cooperators that most agents do well
+    with. Inverting these scores (via a negated softmax) concentrates weight
+    on low-PageRank agents — those that are hard to cooperate with.
+
+    The value of a coalition S considers the average payoff for each pair of 
+    agents (i, j) in S, weighted by sigma[j]. 
+    The coalition value therefore rewards performance against difficult
+    partners more than against easy ones. 
 
     Args:
         mask:              ``(n,)`` boolean — ``True`` for coalition members.
@@ -173,11 +183,12 @@ def shapley_values(
     tol: float = 1e-6,
     sigma_temperature: float = 10.0,
 ) -> jnp.ndarray:
-    """Monte-Carlo Shapley value estimator over a cross-play payoff matrix.
+    """Monte-Carlo Shapley value estimator over a population, given XP matrix.
 
-    Uses the exact Shapley coalition weights with sampled coalitions, fully
-    vectorised over both players and samples via ``jax.vmap``.
+    This estimator uses the exact Shapley coalition weights with sampled coalitions, 
+    vectorised over both players and samples via jax.vmap.
 
+    Algorithm:
     For each player i, we estimate:
 
         phi[i] = mean_weight * mean_marginal
@@ -187,21 +198,14 @@ def shapley_values(
         marginal(S, i) = v(S ∪ {i}) − v(S)
         weight(S)      = |S|! · (N − |S| − 1)! / N!
 
-    v(S) is computed via coalition_value, which applies coalition-aware
-    weighted PageRank internally.
-
-    Intuition: inverse-PageRank weighting
-    --------------------------------------
-    Within coalition_value, PageRank acts as a "ease-of-cooperation" score:
-    high-PageRank agents are universal cooperators that most agents do well
-    with. Inverting these scores (via a negated softmax) concentrates weight
-    on low-PageRank agents — those that are *hard* to cooperate with.
-
-    The coalition value therefore rewards performance against difficult
+    v(S) is computed via coalition_value, which applies PageRank-based ranking 
+    internally. Recall that v(S) rewards performance against difficult
     partners more than against easy ones. 
+
     Consequently, phi[i] measures how much player i unlocks cooperation 
     with the otherwise-hard-to-coordinate members of each sampled coalition — 
     rewarding agents that are broadly compatible with the toughest teammates.
+
 
     Args:
         key:               JAX PRNG key.
@@ -226,12 +230,12 @@ def shapley_values(
         sample_keys = jax.random.split(player_key, max_iter)   # (max_iter, 2)
 
         def one_sample(sample_key):
-            # ── Sample S ⊆ players \ {i} via Bernoulli(0.5) ─────────────────
+            # Sample S ⊆ players \ {i} via Bernoulli(0.5)
             base_mask = jax.random.bernoulli(sample_key, p=0.5, shape=(N,))
             s_mask = base_mask.at[i].set(False)   # S excludes player i
             s_with_i = s_mask.at[i].set(True)     # S ∪ {i}
 
-            # ── Evaluate coalition value for S and S ∪ {i} ───────────────────
+            # Evaluate coalition value for S and S ∪ {i}
             v_s = coalition_value(
                 s_mask, payoffs,
                 damping=damping,

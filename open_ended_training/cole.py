@@ -1,19 +1,21 @@
 """Implementation of the COLE algorithm.
 
-https://proceedings.mlr.press/v202/li23au.html
+Paper: https://proceedings.mlr.press/v202/li23au.html
+Code: https://github.com/liyang619/COLE-Platform/tree/COLE_training
 
 Suggested debug command:
-python open_ended_training/run.py \
-    algorithm=cole/lbf \
-    task=lbf \
-    label=test_cole \
-    run_heldout_eval=false \
-    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 \
-    algorithm.PARTNER_POP_SIZE=2 \
-    algorithm.NUM_SEEDS=1 \
-    logger.log_train_out=false \
-    logger.log_eval_out=false \
-    local_logger.save_train_out=false \
+python open_ended_training/run.py
+    algorithm=cole/lbf
+    task=lbf
+    label=test_cole
+    run_heldout_eval=false
+    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5
+    algorithm.PARTNER_POP_SIZE=2
+    algorithm.NUM_SEEDS=1
+    logger.mode=offline
+    logger.log_train_out=false
+    logger.log_eval_out=false
+    local_logger.save_train_out=false
     local_logger.save_eval_out=false
 """
 from functools import partial
@@ -213,12 +215,12 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 def metasolve_game_graph(xp_matrix, num_prev_trained_agents, rng):
                     """Derive a sampling distribution over the trained population.
 
-                    Supports two modes, selected by config["METASOLVE_MODE"]. In both modes,
-                    agents {num_prev_trained_agents, ..., POP_SIZE-1} receive probability zero
-                    (untrained agents are excluded).    
+                    Supports two modes, selected by config["METASOLVE_MODE"]. 
+                    In both modes, agents {num_prev_trained_agents, ..., POP_SIZE-1} 
+                    receive probability zero (untrained agents are excluded).    
 
                     returns:
-                        Inverse-return heuristic on the row for agent_idx:
+                        Negative return heuristic on the row for agent_idx:
                         partners that agent_idx performs *worse* against
                         receive higher probability (harder partners prioritised).
 
