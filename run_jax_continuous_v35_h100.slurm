@@ -3,6 +3,7 @@
 #SBATCH -o creppo_v35_h100_%j.out
 #SBATCH -e creppo_v35_h100_%j.err
 #SBATCH -p h100
+#SBATCH -A IRI26004
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --cpus-per-task=96

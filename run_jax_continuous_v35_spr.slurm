@@ -3,6 +3,7 @@
 #SBATCH -o creppo_v35_3agent_spr_%j.out
 #SBATCH -e creppo_v35_3agent_spr_%j.err
 #SBATCH -p spr
+#SBATCH -A IRI26004
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --cpus-per-task=112
