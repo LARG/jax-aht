@@ -9,19 +9,10 @@ from open_ended_training.shapley_utils import coalition_value, coalition_pageran
 
 jax.config.update("jax_enable_x64", False)  # keep float32 for speed
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────────────────────────────────────
-
 def random_payoffs(n: int, seed: int = 0) -> jnp.ndarray:
     key = jax.random.PRNGKey(seed)
     return jax.random.uniform(key, shape=(n, n))
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# masked_softmax
-# ─────────────────────────────────────────────────────────────────────────────
 
 class TestMaskedSoftmax:
     def test_sums_to_one_over_mask(self):
@@ -55,7 +46,7 @@ class TestMaskedSoftmax:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Reference PageRank from the notebook (runs on an explicit dense submatrix)
+# Reference PageRank that runs on an explicit dense submatrix
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _reference_pagerank(adj, damping=0.85, max_iter=100, tol=1e-6):

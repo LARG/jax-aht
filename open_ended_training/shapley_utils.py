@@ -1,45 +1,11 @@
 """
-shapley.py
-==========
-JAX-jittable utilities for computing coalition values via weighted PageRank,
-intended for use in Shapley-value calculations over a cross-play payoff matrix.
-
-Design notes
-------------
-The key challenge is that coalition membership is *dynamic* (changes across
-Shapley samples), but JAX requires static array shapes for JIT compilation.
-
-Solution: keep all arrays at the full population size ``n`` and use a boolean
-``mask`` to confine PageRank to the coalition sub-graph.
-
-  - Non-coalition rows/columns are zeroed in the adjacency matrix.
-  - Dangling mass (from coalition members with no outgoing edges) is
-    redistributed uniformly **only among coalition members** (not the whole
-    graph), so random-walk probability mass stays inside the sub-graph.
-  - After convergence, non-coalition PageRank scores are exactly 0.
-
-Value formula
--------------
-Given the coalition mask ``S``:
-
-    pr   = coalition_pagerank(payoffs, S)
-    σ    = masked_softmax(−masked_softmax(pr, temp=1), S, temp=σ_temp)
-    val  = (1/|S|) Σ_{i∈S} Σ_{j∈S}  σ[j] · payoffs[i, j]
-    val  = max(val, 0)
-
-High σ is assigned to agents with *low* PageRank — i.e., those who are hard to
-cooperate with — so that coalitions which succeed against tough partners are
-valued more.
+Utilities for computing coalition values via weighted PageRank for COLE.
 """
 
 import jax
 import jax.numpy as jnp
 import jax.scipy as jsp
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Masked softmax
-# ─────────────────────────────────────────────────────────────────────────────
 
 def masked_softmax(logits: jnp.ndarray, mask: jnp.ndarray, 
                    temperature: float = 1.0) -> jnp.ndarray:
@@ -63,10 +29,6 @@ def masked_softmax(logits: jnp.ndarray, mask: jnp.ndarray,
     return exp_vals / (jnp.sum(exp_vals) + 1e-8)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Coalition-aware weighted PageRank
-# ─────────────────────────────────────────────────────────────────────────────
-
 def coalition_pagerank(
     payoffs: jnp.ndarray,
     mask: jnp.ndarray,
@@ -76,9 +38,15 @@ def coalition_pagerank(
 ) -> jnp.ndarray:
     """PageRank restricted to the coalition sub-graph.
 
-    Non-coalition nodes are masked out and their mass is never introduced into
-    the computation; dangling mass is redistributed *only* among coalition
-    members.
+    The key challenge is that the coalition membership changes across Shapley samples,
+    but JAX requires static array shapes for JIT compilation. We use masking to
+    compute PageRank over the coalition sub-graph.
+
+    - Non-coalition rows/columns are zeroed in the adjacency matrix.
+    - Dangling mass (from coalition members with no outgoing edges) is
+      redistributed uniformly only among coalition members (not the whole
+      graph), so random-walk probability mass stays inside the sub-graph.
+    - After convergence, non-coalition PageRank scores are exactly 0.
 
     Args:
         payoffs:  (n, n) float — raw pairwise payoff matrix.  Negative
@@ -132,10 +100,6 @@ def coalition_pagerank(
     return final_pr
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Coalition value
-# ─────────────────────────────────────────────────────────────────────────────
-
 def coalition_value(
     mask: jnp.ndarray,
     payoffs: jnp.ndarray,
@@ -144,7 +108,7 @@ def coalition_value(
     tol: float = 1e-6,
     sigma_temperature: float = 10.0,
 ) -> jnp.ndarray:
-    """Compute the value of a coalition given a payoff matrix.
+    """Compute the value of a coalition using PageRank.
 
     Algorithm
     ---------
@@ -154,7 +118,10 @@ def coalition_value(
 
            sigma = masked_softmax(-masked_softmax(PR(S), temp=1), temp=sigma_temp)
 
-       Agents with *low* PageRank (harder opponents) receive *high* weight.
+    High σ is assigned to agents with low PageRank — i.e., those who are hard to
+    cooperate with — so that coalitions which succeed against tough partners are
+    valued more.
+
     4. Value = (1/|S|) Σ_{i∈S} Σ_{j∈S}  sigma[j] · payoffs[i,j], clipped ≥ 0.
        Empty coalitions return 0.
 
@@ -196,10 +163,6 @@ def coalition_value(
     return value
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Shapley values
-# ─────────────────────────────────────────────────────────────────────────────
-
 def shapley_values(
     key: jnp.ndarray,
     payoffs: jnp.ndarray,
@@ -224,7 +187,7 @@ def shapley_values(
         marginal(S, i) = v(S ∪ {i}) − v(S)
         weight(S)      = |S|! · (N − |S| − 1)! / N!
 
-    v(S) is computed via ``coalition_value``, which applies coalition-aware
+    v(S) is computed via coalition_value, which applies coalition-aware
     weighted PageRank internally.
 
     Intuition: inverse-PageRank weighting
@@ -235,22 +198,10 @@ def shapley_values(
     on low-PageRank agents — those that are *hard* to cooperate with.
 
     The coalition value therefore rewards performance against difficult
-    partners more than against easy ones, analogous to a strength-of-schedule
-    adjustment in sports. Consequently, phi[i] measures how much player i
-    *unlocks* cooperation with the otherwise-hard-to-coordinate members of
-    each sampled coalition — rewarding agents that are broadly compatible
-    with the toughest teammates, not just the easiest.
-
-    JIT-compatibility notes
-    -----------------------
-    - N and max_iter must be static (compile-time constants).
-    - The function is fully vmap-able over a leading batch dimension on key.
-    - Outer vmap: over players (each gets its own independent RNG key).
-    - Inner vmap: over max_iter coalition samples (all drawn in parallel).
-    - Player exclusion (forcing mask[i] = False) uses ``.at[i].set(False)``
-      which is valid under vmap since i is a batched traced index.
-    - Shapley weights are computed in log-space via ``jax.scipy.special.gammaln``
-      to avoid factorial overflow for large N.
+    partners more than against easy ones. 
+    Consequently, phi[i] measures how much player i unlocks cooperation 
+    with the otherwise-hard-to-coordinate members of each sampled coalition — 
+    rewarding agents that are broadly compatible with the toughest teammates.
 
     Args:
         key:               JAX PRNG key.
