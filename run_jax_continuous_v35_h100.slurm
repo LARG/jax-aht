@@ -7,7 +7,7 @@
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --cpus-per-task=96
-#SBATCH -t 24:00:00
+#SBATCH -t 04:00:00
 #SBATCH --mail-user=jeffreychen287@gmail.com
 #SBATCH --mail-type=end,fail
 
