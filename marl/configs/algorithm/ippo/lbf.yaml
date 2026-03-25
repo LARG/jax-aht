@@ -2,7 +2,7 @@ defaults:
   - ippo/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 3e7
+TOTAL_TIMESTEPS: 1e7
 SEED: 12345
 LR: .0001
 NUM_ENVS: 128
