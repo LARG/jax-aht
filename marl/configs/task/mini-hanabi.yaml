@@ -1,0 +1,11 @@
+ENV_NAME: hanabi
+ROLLOUT_LENGTH: 128
+ENV_KWARGS:
+  num_agents: 2
+  num_colors: 4
+  num_ranks: 4
+  hand_size: 4
+  max_info_tokens: 8
+  max_life_tokens: 3
+  num_cards_of_rank: [2, 2, 2, 2]
+TASK_NAME: hanabi
