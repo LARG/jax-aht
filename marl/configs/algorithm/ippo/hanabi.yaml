@@ -2,11 +2,21 @@ defaults:
   - ippo/_base_
   - _self_ # values from this file override the values from the base file
 
+# Warning: This will need ~1e10 timesteps to run properly
+# You might need to make some adjustments to this training code to support more timesteps
+
 TOTAL_TIMESTEPS: 1e5
 SEED: 12345
-LR: .0001
-NUM_ENVS: 8
-UPDATE_EPOCHS: 15
+LR: .0005
+NUM_ENVS: 1024
+UPDATE_EPOCHS: 4
 NUM_MINIBATCHES: 4
-CLIP_EPS: 0.03
+CLIP_EPS: 0.2
 ENT_COEF: 0.01
+
+ANNEAL_LR: False
+MAX_GRAD_NORM: 0.5
+
+ACTOR_TYPE: mlp
+FC_HIDDEN_DIM: 512
+ACTIVATION: 'relu'
