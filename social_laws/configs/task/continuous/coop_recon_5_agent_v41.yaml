@@ -1,0 +1,24 @@
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 500  # Sufficient episodes to stabilize E[X]/E[Y] below 1.0
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_5",
+    render_dir: "render",
+    num_agents: 5,
+    grid_size: 1.0,            # Consistent with V37/V40 baselines for direct N comparison
+    ego_centric_obs: true,     # Required for N-agent scalability
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 200,              # Scaled up from 150 (4-agent) to allow 5-agent coordination
+    collision_radius: 0.05,
+    min_sep_goal: 0.20,        # Further reduced for feasible 5-goal placement in 1.0 grid
+  }
+TASK_NAME: continuous/coop_recon_n_agent_5
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+SINGLE_AGENT_4_PROJECTION: ""
+SINGLE_AGENT_5_PROJECTION: ""
+ALPHA_COST: false
