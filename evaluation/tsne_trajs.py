@@ -1,12 +1,10 @@
-"""Train an S5 trajectory autoencoder on heldout pairwise agent trajectories and visualize random vs IPPO trajectories in t-SNE."""
+"""Train an LSTM trajectory autoencoder on heldout pairwise agent trajectories and visualize random vs IPPO trajectories in t-SNE."""
 
 import argparse
 import jax
-import numpy as np
 
 from envs import make_env
 from evaluation.trajectory_autoencoder import (
-    create_autoencoder,
     init_autoencoder,
     make_train_step,
     train_autoencoder,
@@ -26,9 +24,7 @@ DEFAULT_NUM_ENVS = 64
 DEFAULT_ROLLOUT_STEPS = 128
 DEFAULT_ROLLOUTS_PER_ITER = 5
 DEFAULT_NUM_ITERS = 10
-DEFAULT_D_MODEL = 64
-DEFAULT_SSM_SIZE = 64
-DEFAULT_SSM_N_LAYERS = 3
+DEFAULT_HIDDEN_DIM = 128
 DEFAULT_LATENT_DIM = 128
 DEFAULT_LEARNING_RATE = 3e-4
 DEFAULT_NUM_EPOCHS = 200
@@ -58,9 +54,7 @@ def main(env_name=DEFAULT_ENV_NAME, k=DEFAULT_K, num_envs=DEFAULT_NUM_ENVS, roll
         rng,
         obs_dim,
         max_seq_len,
-        d_model=DEFAULT_D_MODEL,
-        ssm_size=DEFAULT_SSM_SIZE,
-        ssm_n_layers=DEFAULT_SSM_N_LAYERS,
+        hidden_dim=DEFAULT_HIDDEN_DIM,
         latent_dim=DEFAULT_LATENT_DIM,
         learning_rate=DEFAULT_LEARNING_RATE,
     )
@@ -98,7 +92,7 @@ def main(env_name=DEFAULT_ENV_NAME, k=DEFAULT_K, num_envs=DEFAULT_NUM_ENVS, roll
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train S5 trajectory autoencoder on heldout pairwise trajectories and plot t-SNE.")
+    parser = argparse.ArgumentParser(description="Train LSTM trajectory autoencoder on heldout pairwise trajectories and plot t-SNE.")
     parser.add_argument("--env_name", type=str, default=DEFAULT_ENV_NAME, help="Environment name")
     parser.add_argument("--k", type=int, default=DEFAULT_K, help="Number of rollouts per agent pair")
     parser.add_argument("--num_envs", type=int, default=DEFAULT_NUM_ENVS, help="Number of parallel environments")

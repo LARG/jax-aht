@@ -1,5 +1,4 @@
 from functools import partial
-from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -9,129 +8,120 @@ from flax.linen.initializers import constant, orthogonal
 from flax.training.train_state import TrainState
 import numpy as np
 
-from agents.s5_actor_critic import StackedEncoderModel, init_S5SSM, make_DPLR_HiPPO
+
+class MaskedLSTMCell(nn.Module):
+    """LSTM cell that conditionally updates carry based on a mask."""
+    features: int
+
+    def setup(self):
+        self.lstm = nn.OptimizedLSTMCell(features=self.features)
+
+    def __call__(self, carry, inputs):
+        x_t, m_t = inputs
+        new_carry, y = self.lstm(carry, x_t)
+        carry_out = jax.tree.map(
+            lambda nc, oc: jnp.where(m_t, nc, oc), new_carry, carry
+        )
+        return carry_out, y
+
+    def initialize_carry(self, rng, input_shape):
+        return self.lstm.initialize_carry(rng, input_shape)
 
 
-def make_ssm_init_fn(d_model, ssm_size, blocks=1):
-    block_size = int(ssm_size / blocks)
-    Lambda, _, _, V, _ = make_DPLR_HiPPO(ssm_size)
-    block_size = block_size // 2
-    ssm_size_half = ssm_size // 2
-    Lambda = Lambda[:block_size]
-    V = V[:, :block_size]
-    Vinv = V.conj().T
+class AutoregressiveLSTMCell(nn.Module):
+    """LSTM cell that feeds its hidden state back as input (autoregressive)."""
+    features: int
+    output_dim: int
 
-    return init_S5SSM(
-        H=d_model,
-        P=ssm_size_half,
-        Lambda_re_init=Lambda.real,
-        Lambda_im_init=Lambda.imag,
-        V=V,
-        Vinv=Vinv,
-    )
+    def setup(self):
+        self.lstm = nn.OptimizedLSTMCell(features=self.features)
+        self.output_proj = nn.Dense(self.output_dim, kernel_init=orthogonal(1.0), bias_init=constant(0.0))
+
+    def __call__(self, carry, _):
+        _, h_prev = carry
+        new_carry, y = self.lstm(carry, h_prev)
+        pred = self.output_proj(y)
+        return new_carry, pred
 
 
-class S5TrajectoryEncoder(nn.Module):
-    ssm_init_fn: Any
-    d_model: int
-    ssm_size: int
-    ssm_n_layers: int
+class LSTMTrajectoryEncoder(nn.Module):
+    hidden_dim: int
     latent_dim: int
 
     def setup(self):
-        self.input_proj = nn.Dense(self.d_model, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
-        self.s5 = StackedEncoderModel(
-            ssm=self.ssm_init_fn,
-            d_model=self.d_model,
-            n_layers=self.ssm_n_layers,
-            activation="full_glu",
-            do_norm=True,
-            prenorm=True,
-            do_gtrxl_norm=True,
+        self.input_proj = nn.Dense(self.hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
+        ScanMaskedLSTM = nn.scan(
+            MaskedLSTMCell,
+            variable_broadcast="params",
+            split_rngs={"params": False},
+            in_axes=0,
+            out_axes=0,
         )
+        self.scan_lstm = ScanMaskedLSTM(features=self.hidden_dim)
         self.latent_proj = nn.Dense(self.latent_dim, kernel_init=orthogonal(1.0), bias_init=constant(0.0))
 
     def __call__(self, x, mask):
+        # x: (seq_len, obs_dim), mask: (seq_len,)
         x = self.input_proj(x)
         x = nn.leaky_relu(x)
-        x = x[:, None, :]
 
-        dones = jnp.zeros((x.shape[0], 1))
-        hidden = StackedEncoderModel.initialize_carry(1, self.ssm_size // 2, self.ssm_n_layers)
-        _, x = self.s5(hidden, x, dones)
-        x = x[:, 0, :]
+        init_carry = self.scan_lstm.initialize_carry(jax.random.PRNGKey(0), (self.hidden_dim,))
+        final_carry, _ = self.scan_lstm(init_carry, (x, mask[:, None]))
 
-        mask_expanded = mask[:, None]
-        x = (x * mask_expanded).sum(axis=0) / (mask_expanded.sum(axis=0) + 1e-8)
-        latent = self.latent_proj(x)
+        # final_carry is (c, h); use h as context
+        _, h = final_carry
+        latent = self.latent_proj(h)
         return latent
 
 
-class S5TrajectoryDecoder(nn.Module):
-    ssm_init_fn: Any
+class LSTMTrajectoryDecoder(nn.Module):
     output_dim: int
     max_seq_len: int
-    d_model: int
-    ssm_size: int
-    ssm_n_layers: int
+    hidden_dim: int
 
     def setup(self):
-        self.latent_expand = nn.Dense(self.d_model, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
-        self.s5 = StackedEncoderModel(
-            ssm=self.ssm_init_fn,
-            d_model=self.d_model,
-            n_layers=self.ssm_n_layers,
-            activation="full_glu",
-            do_norm=True,
-            prenorm=True,
-            do_gtrxl_norm=True,
+        self.latent_expand = nn.Dense(self.hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
+        ScanAutoregLSTM = nn.scan(
+            AutoregressiveLSTMCell,
+            variable_broadcast="params",
+            split_rngs={"params": False},
+            in_axes=0,
+            out_axes=0,
         )
-        self.output_proj = nn.Dense(self.output_dim, kernel_init=orthogonal(1.0), bias_init=constant(0.0))
+        self.scan_lstm = ScanAutoregLSTM(features=self.hidden_dim, output_dim=self.output_dim)
 
-    def __call__(self, latent, seq_len):
-        x = self.latent_expand(latent)
-        x = nn.leaky_relu(x)
-        x = jnp.broadcast_to(x[None, :], (self.max_seq_len, self.d_model))
+    def __call__(self, latent):
+        # latent: (latent_dim,)
+        context = self.latent_expand(latent)
+        context = nn.leaky_relu(context)
 
-        x = x[:, None, :]
-        dones = jnp.zeros((self.max_seq_len, 1))
-        hidden = StackedEncoderModel.initialize_carry(1, self.ssm_size // 2, self.ssm_n_layers)
-        _, x = self.s5(hidden, x, dones)
-        x = x[:, 0, :]
-
-        reconstructed = self.output_proj(x)
+        carry = (context, context)
+        # Dummy input; autoregressive cell ignores it
+        dummy = jnp.zeros((self.max_seq_len,))
+        _, reconstructed = self.scan_lstm(carry, dummy)
         return reconstructed
 
 
-class S5TrajectoryAutoencoder(nn.Module):
-    ssm_init_fn: Any
+class LSTMTrajectoryAutoencoder(nn.Module):
     obs_dim: int
     max_seq_len: int
-    d_model: int
-    ssm_size: int
-    ssm_n_layers: int
+    hidden_dim: int
     latent_dim: int
 
     def setup(self):
-        self.encoder = S5TrajectoryEncoder(
-            ssm_init_fn=self.ssm_init_fn,
-            d_model=self.d_model,
-            ssm_size=self.ssm_size,
-            ssm_n_layers=self.ssm_n_layers,
+        self.encoder = LSTMTrajectoryEncoder(
+            hidden_dim=self.hidden_dim,
             latent_dim=self.latent_dim,
         )
-        self.decoder = S5TrajectoryDecoder(
-            ssm_init_fn=self.ssm_init_fn,
+        self.decoder = LSTMTrajectoryDecoder(
             output_dim=self.obs_dim,
             max_seq_len=self.max_seq_len,
-            d_model=self.d_model,
-            ssm_size=self.ssm_size,
-            ssm_n_layers=self.ssm_n_layers,
+            hidden_dim=self.hidden_dim,
         )
 
     def __call__(self, x, mask):
         latent = self.encoder(x, mask)
-        reconstructed = self.decoder(latent, self.max_seq_len)
+        reconstructed = self.decoder(latent)
         return reconstructed, latent
 
     def encode(self, x, mask):
@@ -154,21 +144,17 @@ def pad_episodes(episodes):
     return jnp.array(padded), jnp.array(masks), max_len
 
 
-def create_autoencoder(obs_dim, max_seq_len, d_model, ssm_size, ssm_n_layers, latent_dim):
-    ssm_init_fn = make_ssm_init_fn(d_model, ssm_size, blocks=1)
-    return S5TrajectoryAutoencoder(
-        ssm_init_fn=ssm_init_fn,
+def create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim):
+    return LSTMTrajectoryAutoencoder(
         obs_dim=obs_dim,
         max_seq_len=max_seq_len,
-        d_model=d_model,
-        ssm_size=ssm_size,
-        ssm_n_layers=ssm_n_layers,
+        hidden_dim=hidden_dim,
         latent_dim=latent_dim,
     )
 
 
-def init_autoencoder(rng, obs_dim, max_seq_len, d_model, ssm_size, ssm_n_layers, latent_dim, learning_rate):
-    model = create_autoencoder(obs_dim, max_seq_len, d_model, ssm_size, ssm_n_layers, latent_dim)
+def init_autoencoder(rng, obs_dim, max_seq_len, hidden_dim, latent_dim, learning_rate):
+    model = create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim)
     rng, rng_init = jax.random.split(rng)
     dummy_x = jnp.zeros((max_seq_len, obs_dim))
     dummy_mask = jnp.ones((max_seq_len,))
