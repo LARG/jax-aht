@@ -8,6 +8,7 @@ from common.wandb_visualizations import Logger
 from open_ended_training.rotate import run_rotate
 from open_ended_minimax import run_minimax
 from paired import run_paired
+from cole import run_cole
 
 @hydra.main(version_base=None, config_path="configs", config_name="base_config_oel")
 def run_training(cfg):
@@ -16,6 +17,8 @@ def run_training(cfg):
 
     if cfg.algorithm["ALG"] == "rotate":
         ego_policy, final_ego_params, init_ego_params = run_rotate(cfg, wandb_logger)
+    elif cfg.algorithm["ALG"] == "cole":
+        ego_policy, final_ego_params, init_ego_params = run_cole(cfg, wandb_logger)
     elif cfg.algorithm["ALG"] == "open_ended_minimax":
         ego_policy, final_ego_params, init_ego_params = run_minimax(cfg, wandb_logger)
     elif cfg.algorithm["ALG"] == "paired":
@@ -25,7 +28,7 @@ def run_training(cfg):
 
     if cfg["run_heldout_eval"]:
         metric_names = get_metric_names(cfg["task"]["ENV_NAME"])
-        ego_as_2d = False if cfg.algorithm["ALG"] in ["paired"] else True
+        ego_as_2d = False if cfg.algorithm["ALG"] in ["cole", "paired"] else True
         eval_metrics, ego_names, heldout_names = run_heldout_evaluation(
             cfg, ego_policy, final_ego_params, init_ego_params, ego_as_2d=ego_as_2d
         )
