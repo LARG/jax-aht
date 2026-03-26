@@ -85,15 +85,17 @@ best_response_set:
       idx_list: [0]
       test_mode: true
 
+    # retrained the nearest/farthest seq-agent BRs longer (6e7)
+    # see file log to get back 1e7 versions if needed
     br_for_seq_agent_nearest:
-      path: "results/lbf/ppo_br_s5/seq_agent_nearest_serious/2026-03-10_12-37-02/ego_train_run"
+      path: "results/lbf/ppo_br_s5/seq_agent_nearest_long_6e7/2026-03-17_15-29-35/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
 
     br_for_seq_agent_farthest:
-      path: "results/lbf/ppo_br_s5/seq_agent_farthest_serious/2026-03-10_12-37-22/ego_train_run"
+      path: "results/lbf/ppo_br_s5/seq_agent_farthest_long_6e7/2026-03-17_15-30-02/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
