@@ -12,6 +12,7 @@ import numpy as np
 import pyRDDLGym_jax
 
 from copy import deepcopy
+from flax.struct import dataclass
 
 # from pyRDDLGym.core.visualizer.movie import MovieGenerator
 from pyRDDLGym_jax.core.env import JaxRDDLEnv, EnvState
@@ -19,9 +20,18 @@ from jumanji import specs as jumanji_specs
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
 from envs.base_env import BaseEnv
-from envs.base_env import WrappedEnvState
+# from envs.base_env import WrappedEnvState
 
 from envs.rddl.grid_10x10_alternating.Grid10x10MultiAgentViz import Grid10x10MultiAgentVisualizer
+
+@dataclass
+class WrappedEnvState:
+    env_state: Any
+    base_return_so_far: jnp.ndarray  # records the original return w/o reward shaping terms
+    avail_actions: jnp.ndarray
+    step: jnp.array
+    collisions_so_far: jnp.ndarray  # records the number of collisions so far in the episode
+
 
 class Grid10x10AlternatingWrapper(BaseEnv):
     """Use the RDDL JAX Environment with JaxMARL environments.
@@ -124,7 +134,8 @@ class Grid10x10AlternatingWrapper(BaseEnv):
         state = WrappedEnvState(env_state,
                                 jnp.zeros(self.num_agents),
                                 self._extract_avail_actions(env_state),
-                                env_state.timestep)
+                                env_state.timestep,
+                                jnp.zeros(self.num_agents, dtype=jnp.int32))
         return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
@@ -144,14 +155,20 @@ class Grid10x10AlternatingWrapper(BaseEnv):
 
         env_state, timestep = self.env.step(state.env_state, actions_rddl)
         avail_actions = self._extract_avail_actions(env_state)
-        state_st = WrappedEnvState(env_state, jnp.zeros(self.num_agents), avail_actions, env_state.timestep)
+        done = self._extract_dones(timestep)
+        new_episode_collsions = state.collisions_so_far + timestep.observation['collision'].astype(jnp.int32)
+        state_st = WrappedEnvState(env_state,
+                                   jnp.zeros(self.num_agents),
+                                   avail_actions,
+                                   env_state.timestep,
+                                   state.collisions_so_far * (1 - done["__all__"]) + new_episode_collsions * done["__all__"])
         obs_st = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
         reward = self._extract_rewards(timestep.reward)
-        done = self._extract_dones(timestep)
         info = self._extract_infos(timestep)
         # Save the state before reset to info dict for rendering purposes
         info['pre_reset_state'] = state_st
         info['pre_reset_obs'] = obs_st
+        info["returned_episode_collisions"] = state_st.collisions_so_far
         # Auto-reset environment based on termination
         obs, state = jax.tree.map(
             lambda x, y: jax.lax.select(done["__all__"], x, y),
@@ -209,7 +226,7 @@ class Grid10x10AlternatingWrapper(BaseEnv):
                 [grid_to_xy(observation['goal-at'][i]) for i in range(self.num_agents)]
             )
             # Goal-reached flags: (num_agents,)
-            goal_reached = observation['goal-reached'].astype(jnp.float32)
+            # goal_reached = observation['goal-reached'].astype(jnp.float32)
 
             # Obstacle coordinates: (num_obstacles * 2,)
             # Sort by flat index so the ordering is deterministic across episodes.
@@ -236,18 +253,18 @@ class Grid10x10AlternatingWrapper(BaseEnv):
                     goal_xy_ego = jnp.concatenate(
                         [grid_to_xy(observation['goal-at'][i]) for i in order]
                     )
-                    goal_reached_ego = jnp.concatenate([
-                        goal_reached[agent_idx:agent_idx+1],
-                        goal_reached[:agent_idx],
-                        goal_reached[agent_idx+1:]
-                    ])
+                    # goal_reached_ego = jnp.concatenate([
+                    #     goal_reached[agent_idx:agent_idx+1],
+                    #     goal_reached[:agent_idx],
+                    #     goal_reached[agent_idx+1:]
+                    # ])
 
                     # Partial obs: own goal only; full obs: all goals
-                    agent_vals = [agent_xy_ego, grid_to_xy(observation['goal-at'][agent_idx]), goal_reached_ego]
-                    full_vals  = [agent_xy_ego, goal_xy_ego, goal_reached_ego]
+                    agent_vals = [agent_xy_ego, grid_to_xy(observation['goal-at'][agent_idx])]#, goal_reached_ego]
+                    full_vals  = [agent_xy_ego, goal_xy_ego]#, goal_reached_ego]
                 else:
-                    agent_vals = [all_agent_xy, grid_to_xy(observation['goal-at'][agent_idx]), goal_reached]
-                    full_vals  = [all_agent_xy, all_goal_xy, goal_reached]
+                    agent_vals = [all_agent_xy, grid_to_xy(observation['goal-at'][agent_idx])]#, goal_reached]
+                    full_vals  = [all_agent_xy, all_goal_xy]#, goal_reached]
 
                 if self.num_obstacles > 0:
                     agent_vals.append(obstacle_xy)
@@ -330,11 +347,11 @@ class Grid10x10AlternatingWrapper(BaseEnv):
                     + obstacle (x,y)s [num_obstacles*2]  (if any)
         """
         if self.vectorized:
-            obs_size      = self.num_agents * 2 + 2           + self.num_agents
-            obs_full_size = self.num_agents * 2 + self.num_agents * 2 + self.num_agents
+            obs_size = self.num_agents * 2 + 2 #+ self.num_agents
+            obs_full_size = self.num_agents * 2 + self.num_agents * 2 #+ self.num_agents
 
             if self.num_obstacles > 0:
-                obs_size      += self.num_obstacles * 2
+                obs_size += self.num_obstacles * 2
                 obs_full_size += self.num_obstacles * 2
 
             num_x = len(self._xpos_list)
@@ -667,7 +684,8 @@ class Grid10x10AlternatingWrapper(BaseEnv):
         # Valid position masks (ensure JAX arrays)
         valid_pos_mask = jnp.logical_not(occupied)
         valid_goal_mask = jnp.where(
-            (self._restriction_type != -1) & self.limit_goals_to_inner_grid,
+            # (self._restriction_type != -1) & self.limit_goals_to_inner_grid,
+            self.limit_goals_to_inner_grid,
             valid_pos_mask.at[0, :].set(False).at[-1, :].set(False).at[:, 0].set(False).at[:, -1].set(False),
             valid_pos_mask
         )

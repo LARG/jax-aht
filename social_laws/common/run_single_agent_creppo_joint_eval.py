@@ -217,21 +217,30 @@ def run_single_agent_joint_eval(logger, eval_seed, env, agent_params, agent_poli
 
     if render:
         returned_episode_returns = out[2]["returned_episode_returns"]
+        returned_episode_collisions = out[2].get("returned_episode_collisions", np.zeros_like(returned_episode_returns))
     else:
         returned_episode_returns = out["returned_episode_returns"]
+        returned_episode_collisions = out.get("returned_episode_collisions", np.zeros_like(returned_episode_returns))
 
     # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
     all_returns = np.asarray(returned_episode_returns) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     average_rets_per_iter = np.mean(np.sum(all_returns, axis=(3)), axis=(0, 2)) # shape (num_updates,)
     average_agent_rets_per_iter = np.mean(all_returns, axis=(0, 2)) # shape (num_updates, num_agents_per_game)
 
+    all_collisions = np.asarray(returned_episode_collisions) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    average_collisions_per_iter = np.mean(np.sum(all_collisions, axis=(3)), axis=(0, 2)) # shape (num_updates,)
+    average_agent_collisions_per_iter = np.mean(all_collisions, axis=(0, 2)) # shape (num_updates, num_agents_per_game)
+
+
     num_agents = env.num_agents
     num_updates = len(average_rets_per_iter)
     for step in range(num_updates):
         for agent_id in range(num_agents):
              logger.log_item(f"Eval/Single_Agent_Proj_Joint/Agent_{agent_id + 1}/Return", average_agent_rets_per_iter[step, agent_id], train_step=step, commit=True)
+             logger.log_item(f"Eval/Single_Agent_Proj_Joint/Agent_{agent_id + 1}/Collisions", average_agent_collisions_per_iter[step, agent_id], train_step=step, commit=True)
 
         logger.log_item(f"Eval/Single_Agent_Proj_Joint/Return", average_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Single_Agent_Proj_Joint/Collisions", average_collisions_per_iter[step], train_step=step, commit=True)
 
     # Saving artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir

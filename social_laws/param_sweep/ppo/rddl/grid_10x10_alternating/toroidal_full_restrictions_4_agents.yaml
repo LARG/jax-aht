@@ -45,4 +45,4 @@ command:
 
 # PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb sweep social_laws/param_sweep/ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents.yaml
 
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb agent social-laws-project/social-laws-param-sweep/y4ksfnjj
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false wandb agent social-laws-project/social-laws-param-sweep/ocjq1whv

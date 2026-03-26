@@ -11,8 +11,13 @@ def get_metric_names(env_name):
         return ("percent_eaten", "returned_episode_returns")
     elif env_name == "overcooked-v1":
         return ("base_return", "returned_episode_returns")
-    elif env_name == "social_laws_joint":
-        return ("returned_episode_minimized_returns", "returned_episode_returns")
+    elif "social_laws_joint" in env_name:
+        if "rddl/grid_10x10_alternating" in env_name:
+            return ("returned_episode_collisions", "returned_episode_minimized_returns", "returned_episode_returns")
+        else:
+            return ("returned_episode_minimized_returns", "returned_episode_returns")
+    elif env_name == "rddl/grid_10x10_alternating":
+        return ("returned_episode_collisions", "returned_episode_returns")
     else:
         return ("returned_episode_returns",)
 

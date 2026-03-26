@@ -9,11 +9,11 @@ NUM_ENVS: 1000 # parallel environments
 NUM_EPOCHS: 8 # number of epochs per update
 NUM_MINIBATCHES: 128 # minibatches per epoch
 
-LR: 0.003
+LR: 0.0003
 
 KL_BOUND: null
 
-LAMBDA: 0.699114555051589
+LAMBDA: 0.8442785629352622
 
 TARGET_ENTROPY_MULT: 0.001 # sum (action probabilities) * log(action probabilities), max entropy
 GAMMA: 0.99

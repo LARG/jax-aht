@@ -928,7 +928,7 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     log.info(f"Starting REPPO joint logging optimizing for agent {agent_idx}...")
     start_time = time.perf_counter()
     # metric_names = get_metric_names(config["ENV_NAME"])
-    metric_names = get_metric_names("social_laws_joint")
+    metric_names = get_metric_names(f"social_laws_joint-{config['ENV_NAME']}")
     log_metrics(env, optimal_env, config, out, wandb_logger, metric_names, agent_idx)
     elapsed_time = time.perf_counter() - start_time
     hours, rem = divmod(elapsed_time, 3600)

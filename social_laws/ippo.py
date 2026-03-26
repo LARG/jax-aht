@@ -578,7 +578,6 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple):
         avg_per_agent_entropy_losses.append(np.mean(np.asarray(train_metrics[f"agent_{i}/entropy_loss"]), axis=(0, 2, 3)))
         avg_per_agent_grad_norms.append(np.mean(np.asarray(train_metrics[f"agent_{i}/avg_grad_norm"]), axis=(0, 2, 3)))
 
-
     # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
     all_ckpt_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
@@ -586,6 +585,14 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple):
     average_rets_per_iter = np.mean(np.sum(all_returns, axis=(3)), axis=(0, 2)) # shape (num_updates,)
     average_ckpt_agent_rets_per_iter = np.mean(all_ckpt_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_rets_per_iter = np.mean(all_returns, axis=(0, 2)) # shape (num_updates,)
+
+    # Process eval return metrics - average across train seeds, eval episodes, and num_agents per game for each checkpoint
+    all_ckpt_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_collisions = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    average_ckpt_collisions_per_iter = np.mean(np.sum(all_ckpt_collisions, axis=(3)), axis=(0, 2)) # shape (num_updates,)
+    average_collisions_per_iter = np.mean(np.sum(all_collisions, axis=(3)), axis=(0, 2)) # shape (num_updates,)
+    average_ckpt_agent_collisions_per_iter = np.mean(all_ckpt_collisions, axis=(0, 2)) # shape (num_updates,)
+    average_agent_collisions_per_iter = np.mean(all_collisions, axis=(0, 2)) # shape (num_updates,)
 
     # Log metrics for each update step
     num_agents = env.num_agents
@@ -599,9 +606,13 @@ def log_metrics(env, config, train_out, logger, metric_names: tuple):
         for agent_id in range(num_agents):
              logger.log_item(f"Eval/Agent_{agent_id}/Return", average_agent_rets_per_iter[step, agent_id], train_step=step, commit=True)
              logger.log_item(f"Eval/Agent_{agent_id}/CheckpointReturn", average_ckpt_agent_rets_per_iter[step, agent_id], train_step=step, commit=True)
+             logger.log_item(f"Eval/Agent_{agent_id}/Collisions", average_agent_collisions_per_iter[step, agent_id], train_step=step, commit=True)
+             logger.log_item(f"Eval/Agent_{agent_id}/CheckpointCollisions", average_ckpt_agent_collisions_per_iter[step, agent_id], train_step=step, commit=True)
 
         logger.log_item(f"Eval/Return", average_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Eval/CheckpointReturn", average_ckpt_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Collisions", average_collisions_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/CheckpointCollisions", average_ckpt_collisions_per_iter[step], train_step=step, commit=True)
 
         for i in range(num_agents_log):
             logger.log_item(f"Train/Agent_{i + 1}/ValueLoss", avg_per_agent_value_losses[i][step], train_step=step, commit=True)

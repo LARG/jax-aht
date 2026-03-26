@@ -22,5 +22,6 @@ FIXED_EVAL: false
 TRAIN_EVAL: true
 
 JOINT_USE_FULL_OBS: true
+SINGLE_AGENT_CENTRALIZED: false
 JOINT_CENTRALIZED: false
 EPSILON_OPTIMAL: 1e-2 # Tolerance for near-optimal actions

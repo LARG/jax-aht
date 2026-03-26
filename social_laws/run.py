@@ -85,12 +85,20 @@ def run_training(cfg):
             assert cfg["algorithm"]["ACTOR_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the PPO policy actor type must be s5 or rnn."
             assert cfg["value_function"]["NETWORK_TYPE"] in ["s5", "rnn"], "For DRQN PPO value estimation, the DRQN network type must be s5 or rnn."
 
-        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_ppo_training(cfg, wandb_logger, agent_idx=agent_idx)
-            agent_policies.append(agent_policy)
-            agent_init_params.append(agent_init_param)
-            agent_params.append(agent_param)
-            agent_eval_checkpoints.append(eval_checkpoints)
+        if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_ppo_training(cfg, wandb_logger, agent_idx=0)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_policies.append(agent_policy)
+                agent_init_params.append(agent_init_param)
+                agent_params.append(agent_param)
+                agent_eval_checkpoints.append(eval_checkpoints)
+        else:
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_param, agent_policy, agent_init_param, eval_checkpoints = run_ppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+                agent_policies.append(agent_policy)
+                agent_init_params.append(agent_init_param)
+                agent_params.append(agent_param)
+                agent_eval_checkpoints.append(eval_checkpoints)
 
         env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
         env_kwargs["render_dir"] = os.path.join("render", "ppo", "Joint_Eval")
@@ -107,25 +115,47 @@ def run_training(cfg):
         # Creates value functions for joint policies for all agents in the environment
         # conditioned on their single agent projections
         if cfg["value_function"]["ALG"] == "dqnppo":
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                agent_vf_param, agent_vf, agent_vf_init_param = run_dqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
-                agent_vf_params.append(agent_vf_param)
-                agent_vf_policies.append(agent_vf)
-                agent_vf_init_params.append(agent_vf_init_param)
+            if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
+                agent_vf_param, agent_vf, agent_vf_init_param = run_dqnppo_value_estimation(cfg, wandb_logger, agent_params[0], agent_policies[0], agent_idx=0)
+                for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                    agent_vf_params.append(agent_vf_param)
+                    agent_vf_policies.append(agent_vf)
+                    agent_vf_init_params.append(agent_vf_init_param)
+            else:
+                for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                    agent_vf_param, agent_vf, agent_vf_init_param = run_dqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
+                    agent_vf_params.append(agent_vf_param)
+                    agent_vf_policies.append(agent_vf)
+                    agent_vf_init_params.append(agent_vf_init_param)
         elif cfg["value_function"]["ALG"] == "drqnppo":
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-                agent_vf_param, agent_vf, agent_vf_init_param = run_drqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
-                agent_vf_params.append(agent_vf_param)
-                agent_vf_policies.append(agent_vf)
-                agent_vf_init_params.append(agent_vf_init_param)
+            if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
+                agent_vf_param, agent_vf, agent_vf_init_param = run_drqnppo_value_estimation(cfg, wandb_logger, agent_params[0], agent_policies[0], agent_idx=0)
+                for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                    agent_vf_params.append(agent_vf_param)
+                    agent_vf_policies.append(agent_vf)
+                    agent_vf_init_params.append(agent_vf_init_param)
+            else:
+                for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                    agent_vf_param, agent_vf, agent_vf_init_param = run_drqnppo_value_estimation(cfg, wandb_logger, agent_params[agent_idx], agent_policies[agent_idx], agent_idx=agent_idx)
+                    agent_vf_params.append(agent_vf_param)
+                    agent_vf_policies.append(agent_vf)
+                    agent_vf_init_params.append(agent_vf_init_param)
 
     elif cfg["algorithm"]["ALG"] == "reppo":
-        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_reppo_training(cfg, wandb_logger, agent_idx=agent_idx)
-            agent_policies.append(agent_policy)
-            agent_init_params.append(agent_init_param)
-            agent_params.append(agent_param)
-            agent_eval_checkpoints.append(eval_checkpoints)
+        if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_reppo_training(cfg, wandb_logger, agent_idx=0)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_policies.append(agent_policy)
+                agent_init_params.append(agent_init_param)
+                agent_params.append(agent_param)
+                agent_eval_checkpoints.append(eval_checkpoints)
+        else:
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_param, agent_policy, agent_init_param, eval_checkpoints = run_reppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+                agent_policies.append(agent_policy)
+                agent_init_params.append(agent_init_param)
+                agent_params.append(agent_param)
+                agent_eval_checkpoints.append(eval_checkpoints)
 
         env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
         env_kwargs["render_dir"] = os.path.join("render", "reppo", "Joint_Eval")
@@ -139,12 +169,20 @@ def run_training(cfg):
                                           render=True, agent_test_mode=True)
 
     elif cfg["algorithm"]["ALG"] == "creppo":
-        for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_creppo_training(cfg, wandb_logger, agent_idx=agent_idx)
-            agent_policies.append(agent_policy)
-            agent_init_params.append(agent_init_param)
-            agent_params.append(agent_param)
-            agent_eval_checkpoints.append(eval_checkpoints)
+        if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
+            agent_param, agent_policy, agent_init_param, eval_checkpoints = run_creppo_training(cfg, wandb_logger, agent_idx=0)
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_policies.append(agent_policy)
+                agent_init_params.append(agent_init_param)
+                agent_params.append(agent_param)
+                agent_eval_checkpoints.append(eval_checkpoints)
+        else:
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                agent_param, agent_policy, agent_init_param, eval_checkpoints = run_creppo_training(cfg, wandb_logger, agent_idx=agent_idx)
+                agent_policies.append(agent_policy)
+                agent_init_params.append(agent_init_param)
+                agent_params.append(agent_param)
+                agent_eval_checkpoints.append(eval_checkpoints)
 
         env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
         env_kwargs["render_dir"] = os.path.join("render", "creppo", "Joint_Eval")
@@ -231,47 +269,47 @@ if __name__ == '__main__':
 # Different Seed
 
 # PPO
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # PPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # CREPPO
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # CREPPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 
 # Same Seed
 
 # PPO
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # PPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=ppo/rddl/grid_10x10_alternating/toroidal_full_restrictions value_function=dqnppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # CREPPO
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # CREPPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_3_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=3 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 
 # Recon
@@ -279,18 +317,18 @@ if __name__ == '__main__':
 # Different Seed
 
 # PPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=ppo/continuous/coop_recon value_function=dqnppo/continuous/coop_recon algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=ppo/continuous/coop_recon value_function=dqnppo/continuous/coop_recon algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 value_function.TRAIN_SEED=174464134 value_function.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # CREPPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=creppo/continuous/coop_recon algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=creppo/continuous/coop_recon algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=343516845 algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # Same Seed
 
 # PPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=ppo/continuous/coop_recon value_function=dqnppo/continuous/coop_recon algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=ppo/continuous/coop_recon value_function=dqnppo/continuous/coop_recon algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true value_function.USE_SAME_SEED=true algorithm.FIXED_EVAL=true value_function.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 # CREPPO social laws (full restrictions)
-# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=creppo/continuous/coop_recon algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=RLC-2026 NUM_EVAL_EPISODES=100
+# PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run.py task=continuous/coop_recon algorithm=creppo/continuous/coop_recon algorithm.TRAIN_SEED=343516845 algorithm.USE_SAME_SEED=true algorithm.FIXED_EVAL=true label="social_law_generalization" logger.project=NEURIPS-2026 NUM_EVAL_EPISODES=100
 
 
 
