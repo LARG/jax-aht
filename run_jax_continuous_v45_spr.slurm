@@ -28,7 +28,7 @@ python social_laws/run.py \
     algorithm.NUM_EVAL_EPISODES=50 \
     algorithm.EPSILON_OPTIMAL=0.01 \
     task.ENV_KWARGS.ego_centric_obs=true \
-    algorithm.REVERSE_AGENT_TRAIN_ORDER=true \
+    +algorithm.REVERSE_AGENT_TRAIN_ORDER=true \
     label=jax_coop_recon_v45_4agent_1.5grid_reverse
 
 echo "Syncing V45 offline run to WandB..."
