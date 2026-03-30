@@ -16,7 +16,7 @@ IPPO_CONFIG = {
 }
 
 
-def collect_random_trajectories(rng, env, num_rollouts, rollout_steps, num_envs):
+def collect_random_trajectories(rng, env, num_rollouts, rollout_steps, num_envs=256):
     all_episodes = []
 
     for _ in range(num_rollouts):
@@ -61,7 +61,7 @@ def collect_random_trajectories(rng, env, num_rollouts, rollout_steps, num_envs)
     return rng, all_episodes
 
 
-def collect_ippo_selfplay_trajectories(rng, env, num_rollouts, rollout_steps, num_envs):
+def collect_ippo_selfplay_trajectories(rng, env, num_rollouts, rollout_steps, num_envs=256):
     rng, load_rng = jax.random.split(rng)
     policy, agent_params, init_params, _ = initialize_rl_agent_from_config(IPPO_CONFIG, "ippo_mlp", env, load_rng)
     agent_params = jax.tree_map(jnp.squeeze, agent_params)
@@ -111,46 +111,51 @@ def collect_ippo_selfplay_trajectories(rng, env, num_rollouts, rollout_steps, nu
     return rng, all_episodes
 
 
-def _policy_action(policy, params, obs, done, avail_actions, hstate, rng):
+def _policy_action(policy, params, obs, done, avail_actions, hstate, rng, env_state):
     # obs: (num_envs, obs_dim), done: (num_envs,), avail_actions: (num_envs, n_actions)
-    # hstate: None/or recurrent tuple, rng: single PRNGKey
+    # hstate: None/or recurrent tuple, rng: single PRNGKey, env_state: batched env state
     # Returns actions: (num_envs,), new_hstate
 
     num_envs = obs.shape[0]
-
-    # Fast path for non-recurrent/no hidden state policies (MLP-based)
+    rng_keys = jax.random.split(rng, num_envs)
+    # MLP Policies (e.g. IPPO)
     if hstate is None:
-        rng_keys = jax.random.split(rng, num_envs)
         actions, _ = jax.vmap(partial(policy.get_action, params))(
             obs,
             done,
             avail_actions,
             None,
             rng_keys,
+            env_state,
         )
         return actions, None
 
-    # Recurrent path for S5-style policy where hstate is an ndarray tree
-    if isinstance(hstate, jnp.ndarray) or all(isinstance(x, jnp.ndarray) for x in jax.tree_leaves(hstate)):
+    # Recurrent path for S5-style policy where hstate is an ndarray tree (not a tuple of dataclasses)
+    # Check if hstate is a tuple/list: if so, check if it's sequential agents (dataclass instances)
+    is_sequential_batch = isinstance(hstate, (tuple, list)) and len(hstate) > 0 and not isinstance(hstate[0], jnp.ndarray)
+    
+    if not is_sequential_batch and (isinstance(hstate, jnp.ndarray) or all(isinstance(x, jnp.ndarray) for x in jax.tree_leaves(hstate))):
         obs_exp = obs[None]  # (1, num_envs, obs_dim)
         done_exp = done[None]  # (1, num_envs)
         avail_exp = avail_actions[None]  # (1, num_envs, n_actions)
 
-        actions_exp, new_hstate = policy.get_action(params, obs_exp, done_exp, avail_exp, hstate, rng)
-        actions = actions_exp.squeeze(0)
+        actions_exp, new_hstate = policy.get_action(params, obs_exp, done_exp, avail_exp, hstate, rng, env_state)
+        if actions_exp.ndim == 2:
+            actions = actions_exp.squeeze(0)
+        else:
+            actions = actions_exp
         return actions, new_hstate
 
-    # Generic fallback: vmap on policy.get_action over environment batch for structured hstate
+    # Generic fallback: iterate over environment batch for non-vectorized policies (e.g., sequential agents with tuple states)
+    # hstate should be a tuple/list of individual states, one per environment
     rng_keys = jax.random.split(rng, num_envs)
-    actions, new_hstate = jax.vmap(partial(policy.get_action, params))(
-        obs,
-        done,
-        avail_actions,
-        hstate,
-        rng_keys,
-    )
-    return actions, new_hstate
-
+    def single_call(i):
+        env_state_i = jax.tree_map(lambda x: x[i] if isinstance(x, jnp.ndarray) else x, env_state)
+        return policy.get_action(params, obs[i], done[i], avail_actions[i], hstate[i], rng_keys[i], env_state_i)
+    actions, new_hstates = jax.vmap(single_call)(jnp.arange(num_envs))
+    actions = jnp.array(actions)
+    new_hstate = tuple(new_hstates)
+    return actions, new_hstates
 
 def collect_pair_trajectories(
     rng,
@@ -161,7 +166,7 @@ def collect_pair_trajectories(
     br_params,
     num_rollouts=5,
     rollout_steps=128,
-    num_envs=64,
+    num_envs=256,
 ):
     all_episodes = []
     agent0 = env.agents[0]
@@ -196,6 +201,7 @@ def collect_pair_trajectories(
                 state.avail_actions[agent0],
                 teammate_hstate,
                 rng_t,
+                state,
             )
             actions[agent1], br_hstate = _policy_action(
                 br_policy,
@@ -205,6 +211,7 @@ def collect_pair_trajectories(
                 state.avail_actions[agent1],
                 br_hstate,
                 rng_b,
+                state,
             )
 
             rng, rng_step = jax.random.split(rng)
@@ -258,8 +265,8 @@ def get_agent_pair_configs(env_name="lbf", settings_path=None, br_path=None):
     br_configs = best_response_set[env_name]
 
     pairs = []
-    for ag_name, ag_cfg in agent_configs.items():
-        for br_name, br_cfg in br_configs.items():
+    for br_name, br_cfg in br_configs.items():
+        for ag_name, ag_cfg in agent_configs.items():
             pairs.append((ag_name, ag_cfg, br_name, br_cfg))
 
     return pairs
@@ -270,7 +277,7 @@ def collect_heldout_pairwise_trajectories(
     env,
     k=5,
     rollout_steps=128,
-    num_envs=64,
+    num_envs=256,
     env_name="lbf",
     settings_path=None,
     br_path=None,
