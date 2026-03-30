@@ -101,6 +101,62 @@ best_response_set:
       idx_list: [0]
       test_mode: true
 
+    br_for_lbrdiv_conf_1_0:
+      path: "results/lbf/ppo_br_s5/lbrdiv_conf_1_0_serious/2026-03-26_14-39-54/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_lbrdiv_conf_1_1:
+      path: "results/lbf/ppo_br_s5/lbrdiv_conf_1_1_serious/2026-03-27_08-00-13/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_lbrdiv_conf_1_2:
+      path: "results/lbf/ppo_br_s5/lbrdiv_conf_1_2_serious/2026-03-26_15-26-40/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_1_0:
+      path: "results/lbf/ppo_br_s5/comedi_1_0_serious/2026-03-29_14-57-30/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_1_1:
+      path: "results/lbf/ppo_br_s5/comedi_1_1_serious/2026-03-29_15-35-46/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_1_2:
+      path: "results/lbf/ppo_br_s5/comedi_1_2_serious/2026-03-29_16-14-12/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_1_3:
+      path: "results/lbf/ppo_br_s5/comedi_1_3_serious/2026-03-29_16-52-38/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_1_4:
+      path: "results/lbf/ppo_br_s5/comedi_1_4_serious/2026-03-29_17-30-53/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
   overcooked-v1/cramped_room:
     br_for_ippo_mlp_0:
       path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_ippo_mlp_0_serious/2026-03-16_11-08-25/ego_train_run"
