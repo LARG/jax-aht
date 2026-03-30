@@ -8,21 +8,16 @@ import jax
 import numpy as np
 
 from evaluation.trajectory_autoencoder import (
-    create_autoencoder,
     init_autoencoder,
     make_train_step,
     train_autoencoder,
     pad_episodes,
 )
-from common.save_load_utils import save_checkpoints
-
 # Config
 DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
 DEFAULT_MODEL_DIR = "results/lbf/autoencoder_models"
 DEFAULT_ENV_NAME = "lbf"
-DEFAULT_D_MODEL = 64
-DEFAULT_SSM_SIZE = 64
-DEFAULT_SSM_N_LAYERS = 3
+DEFAULT_HIDDEN_DIM = 64
 DEFAULT_LATENT_DIM = 128
 DEFAULT_LEARNING_RATE = 3e-4
 DEFAULT_NUM_EPOCHS = 200
@@ -40,9 +35,7 @@ def main(
     data_dir=DEFAULT_DATA_DIR,
     model_dir=DEFAULT_MODEL_DIR,
     env_name=DEFAULT_ENV_NAME,
-    d_model=DEFAULT_D_MODEL,
-    ssm_size=DEFAULT_SSM_SIZE,
-    ssm_n_layers=DEFAULT_SSM_N_LAYERS,
+    hidden_dim=DEFAULT_HIDDEN_DIM,
     latent_dim=DEFAULT_LATENT_DIM,
     learning_rate=DEFAULT_LEARNING_RATE,
     num_epochs=DEFAULT_NUM_EPOCHS,
@@ -71,16 +64,14 @@ def main(
         rng,
         obs_dim,
         max_seq_len,
-        d_model=d_model,
-        ssm_size=ssm_size,
-        ssm_n_layers=ssm_n_layers,
+        hidden_dim=hidden_dim,
         latent_dim=latent_dim,
         learning_rate=learning_rate,
     )
     train_step = make_train_step(model, obs_dim)
 
     print(f"Training on {len(all_episodes)} episodes (padded length {max_seq_len})")
-    print(f"Model config: d_model={d_model}, ssm_size={ssm_size}, ssm_n_layers={ssm_n_layers}, latent_dim={latent_dim}")
+    print(f"Model config: hidden_dim={hidden_dim}, latent_dim={latent_dim}")
     rng, train_state = train_autoencoder(
         rng,
         train_state,
@@ -93,14 +84,11 @@ def main(
 
     print("Training complete. Saving model...")
     
-    # Save the trained model
+    # Save only the parameters and config (JAX model objects aren't pickleable)
     checkpoint = {
-        "train_state": train_state,
-        "model": model,
+        "params": train_state.params,
         "config": {
-            "d_model": d_model,
-            "ssm_size": ssm_size,
-            "ssm_n_layers": ssm_n_layers,
+            "hidden_dim": hidden_dim,
             "latent_dim": latent_dim,
             "obs_dim": obs_dim,
             "max_seq_len": max_seq_len,
@@ -118,9 +106,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", type=str, default=DEFAULT_DATA_DIR, help="Directory containing trajectory data")
     parser.add_argument("--model_dir", type=str, default=DEFAULT_MODEL_DIR, help="Directory to save trained model")
     parser.add_argument("--env_name", type=str, default=DEFAULT_ENV_NAME, help="Environment name")
-    parser.add_argument("--d_model", type=int, default=DEFAULT_D_MODEL, help="Model dimension")
-    parser.add_argument("--ssm_size", type=int, default=DEFAULT_SSM_SIZE, help="SSM size")
-    parser.add_argument("--ssm_n_layers", type=int, default=DEFAULT_SSM_N_LAYERS, help="Number of SSM layers")
+    parser.add_argument("--hidden_dim", type=int, default=DEFAULT_HIDDEN_DIM, help="Hidden dimension")
     parser.add_argument("--latent_dim", type=int, default=DEFAULT_LATENT_DIM, help="Latent dimension")
     parser.add_argument("--learning_rate", type=float, default=DEFAULT_LEARNING_RATE, help="Learning rate")
     parser.add_argument("--num_epochs", type=int, default=DEFAULT_NUM_EPOCHS, help="Number of training epochs")
@@ -131,9 +117,7 @@ if __name__ == "__main__":
         data_dir=args.data_dir,
         model_dir=args.model_dir,
         env_name=args.env_name,
-        d_model=args.d_model,
-        ssm_size=args.ssm_size,
-        ssm_n_layers=args.ssm_n_layers,
+        hidden_dim=args.hidden_dim,
         latent_dim=args.latent_dim,
         learning_rate=args.learning_rate,
         num_epochs=args.num_epochs,

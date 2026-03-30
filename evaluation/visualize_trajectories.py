@@ -5,9 +5,16 @@ import pickle
 from pathlib import Path
 
 import jax
+import jax.numpy as jnp
 import numpy as np
+from flax.training.train_state import TrainState
+import optax
 
-from evaluation.trajectory_autoencoder import encode_episodes, pad_episodes
+from evaluation.trajectory_autoencoder import (
+    create_autoencoder,
+    encode_episodes,
+    pad_episodes,
+)
 from evaluation.trajectory_plot import plot_tsne
 
 # Config
@@ -54,12 +61,20 @@ def main(
     with open(model_path, "rb") as f:
         checkpoint = pickle.load(f)
 
-    train_state = checkpoint["train_state"]
-    model = checkpoint["model"]
+    params = checkpoint["params"]
     config = checkpoint["config"]
+    hidden_dim = config["hidden_dim"]
+    latent_dim = config["latent_dim"]
+    obs_dim = config["obs_dim"]
     max_seq_len = config["max_seq_len"]
 
     print(f"Model config: {config}")
+
+    # Recreate the model and train_state from saved parameters
+    model = create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim)
+    # Create a dummy train_state with loaded parameters
+    tx = optax.adam(1e-3)  # dummy learning rate, not used for inference
+    train_state = TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
     # Encode episodes
     print("Encoding trajectories...")

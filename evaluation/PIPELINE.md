@@ -1,6 +1,6 @@
 # Trajectory Collection, Autoencoder Training, and Visualization Pipeline
 
-This directory contains three independent scripts for collecting trajectories, training an autoencoder, and visualizing results. They can be run separately and at different times. All results are saved in `results/lbf/` for organization.
+This directory contains three independent scripts for collecting trajectories, training an LSTM-based trajectory autoencoder, and visualizing results. They can be run separately and at different times. All results are saved in `results/lbf/` for organization.
 
 ## Directory Structure
 
@@ -49,9 +49,7 @@ python evaluation/train_autoencoder.py \
     --data_dir results/lbf/trajectory_data \
     --model_dir results/lbf/autoencoder_models \
     --env_name lbf \
-    --d_model 64 \
-    --ssm_size 64 \
-    --ssm_n_layers 3 \
+    --hidden_dim 64 \
     --latent_dim 128 \
     --learning_rate 3e-4 \
     --num_epochs 200 \
@@ -62,9 +60,7 @@ python evaluation/train_autoencoder.py \
 - `--data_dir`: Directory containing trajectory data
 - `--model_dir`: Directory to save trained model (default: "results/lbf/autoencoder_models")
 - `--env_name`: Environment name for obs_dim inference
-- `--d_model`: Model dimension (default: 64)
-- `--ssm_size`: SSM size (default: 64)
-- `--ssm_n_layers`: Number of SSM layers (default: 3)
+- `--hidden_dim`: Hidden dimension (default: 64)
 - `--latent_dim`: Latent dimension (default: 128)
 - `--learning_rate`: Learning rate (default: 3e-4)
 - `--num_epochs`: Number of training epochs (default: 200)
