@@ -297,6 +297,43 @@ domain grid_10x10_alternating {
 			]
 		];
 
+		// Prevent moves into currently occupied target cells
+		forall_{?a : agent} [
+			(move(?a) == 4) => ~exists_{?a2 : agent, ?x : xpos, ?y : ypos, ?y2 : ypos} [
+				(?a ~= ?a2) ^
+				agent-at(?a, ?x, ?y) ^
+				SOUTH(?y, ?y2) ^
+				agent-at(?a2, ?x, ?y2)
+			]
+		];
+
+		forall_{?a : agent} [
+			(move(?a) == 3) => ~exists_{?a2 : agent, ?x : xpos, ?y : ypos, ?y2 : ypos} [
+				(?a ~= ?a2) ^
+				agent-at(?a, ?x, ?y) ^
+				NORTH(?y, ?y2) ^
+				agent-at(?a2, ?x, ?y2)
+			]
+		];
+
+		forall_{?a : agent} [
+			(move(?a) == 2) => ~exists_{?a2 : agent, ?x : xpos, ?x2 : xpos, ?y : ypos} [
+				(?a ~= ?a2) ^
+				agent-at(?a, ?x, ?y) ^
+				EAST(?x, ?x2) ^
+				agent-at(?a2, ?x2, ?y)
+			]
+		];
+
+		forall_{?a : agent} [
+			(move(?a) == 1) => ~exists_{?a2 : agent, ?x : xpos, ?x2 : xpos, ?y : ypos} [
+				(?a ~= ?a2) ^
+				agent-at(?a, ?x, ?y) ^
+				WEST(?x, ?x2) ^
+				agent-at(?a2, ?x2, ?y)
+			]
+		];
+
 		// ALTERNATING DIRECTION RESTRICTIONS:
 		// Mode 0 (default): Both column and row restrictions
 		// Mode 1: Only column restrictions
