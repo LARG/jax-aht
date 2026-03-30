@@ -57,6 +57,7 @@ def train_ppo_ego_agent(config, env, train_rng,
     '''
     # Get partner parameters from the population
     num_total_partners = partner_population.pop_size
+    progress_interval = int(config.get("PROGRESS_LOG_INTERVAL", 0) or 0)
 
     # ------------------------------
     # Build the PPO training function
@@ -70,6 +71,7 @@ def train_ppo_ego_agent(config, env, train_rng,
         config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
+        local_progress_interval = progress_interval or max(1, int(config["NUM_UPDATES"] // 20))
 
         config["NUM_ACTIONS"] = env.action_space(env.agents[0]).n
         assert config["NUM_CONTROLLED_ACTORS"] % config["NUM_MINIBATCHES"] == 0, "NUM_CONTROLLED_ACTORS must be divisible by NUM_MINIBATCHES"
@@ -346,6 +348,12 @@ def train_ppo_ego_agent(config, env, train_rng,
                     params_pytree)
 
             max_episode_steps = config["ROLLOUT_LENGTH"]
+
+            def _emit_progress(step, ret):
+                print(
+                    f"[train] update {int(step)}/{int(config['NUM_UPDATES'])} "
+                    f"avg_eval_return={float(ret):.4f}"
+                )
             
             def _update_step_with_ckpt(state_with_ckpt, unused):
                 (update_state, checkpoint_array, ckpt_idx, init_eval_last_info) = state_with_ckpt
@@ -388,6 +396,25 @@ def train_ppo_ego_agent(config, env, train_rng,
                 )
 
                 metric["eval_ep_last_info"] = eval_last_infos
+
+                avg_eval_return = metric["eval_ep_last_info"]["returned_episode_returns"].mean()
+                should_log_progress = jnp.logical_or(
+                    jnp.equal(jnp.mod(update_steps, local_progress_interval), 0),
+                    jnp.equal(update_steps, config["NUM_UPDATES"])
+                )
+
+                def _log_progress(args):
+                    step, ret = args
+                    jax.debug.callback(_emit_progress, step, ret)
+                    return None
+
+                jax.lax.cond(
+                    should_log_progress,
+                    _log_progress,
+                    lambda _: None,
+                    (update_steps, avg_eval_return),
+                )
+
                 return ((train_state, rng, update_steps),
                          checkpoint_array, ckpt_idx, eval_last_infos), metric
 
@@ -470,8 +497,22 @@ def run_ego_training(config, wandb_logger):
     
     # Initialize ego agent
     ego_policy, init_ego_params = initialize_ego_agent(algorithm_config, env, init_ego_rng)
+
+    expected_updates = int(
+        algorithm_config["TOTAL_TIMESTEPS"] //
+        algorithm_config["ROLLOUT_LENGTH"] //
+        algorithm_config["NUM_ENVS"]
+    )
+    progress_interval = int(algorithm_config.get("PROGRESS_LOG_INTERVAL", 0) or max(1, expected_updates // 20))
     
-    log.info("Starting ego agent training...")
+    log.info(
+        "Starting ego agent training with %s updates, %s envs, %s partner(s). "
+        "Progress will be logged every ~%s updates.",
+        expected_updates,
+        algorithm_config["NUM_ENVS"],
+        pop_size,
+        progress_interval,
+    )
     start_time = time.time()
     
     # Run the training
