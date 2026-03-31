@@ -39,6 +39,15 @@ class CoopReconNAgentEnvState:
     timestep: jnp.ndarray         # scalar int
     collision_happened: jnp.ndarray  # scalar bool — True once any two agents collide
 
+@dataclass
+class CoopReconWrappedEnvState:
+    """WrappedEnvState extended with per-agent collision counter."""
+    env_state: Any
+    base_return_so_far: jnp.ndarray
+    avail_actions: jnp.ndarray
+    step: jnp.array
+    collisions_so_far: jnp.ndarray  # (N,) int32 — cumulative per-agent collision count
+
 
 class CoopReconContinuousNAgentWrapper(BaseEnv):
     """N-agent JAX wrapper for cooperative reconnaissance continuous environment.
@@ -235,11 +244,12 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         obs = self._get_obs(env_state)
         avail_actions = self._get_avail_actions(env_state)
 
-        state = WrappedEnvState(
+        state = CoopReconWrappedEnvState(
             env_state=env_state,
             base_return_so_far=jnp.zeros(N, dtype=jnp.float32),
             avail_actions=avail_actions,
-            step=timestep
+            step=timestep,
+            collisions_so_far=jnp.zeros(N, dtype=jnp.int32)
         )
 
         return obs, state
@@ -276,8 +286,14 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         diffs = new_positions[:, None, :] - new_positions[None, :, :]  # (N, N, 2)
         dists = jnp.linalg.norm(diffs, axis=-1)                        # (N, N)
         off_diag = ~jnp.eye(self.num_agents, dtype=bool)
+        
+        # Existing global collision flag for termination logging
         collision = jnp.any((dists < self.collision_radius) & off_diag)
         new_collision_happened = env_state.collision_happened | collision
+
+        # Per-agent collision accumulation exactly mimicking teammate's code
+        per_agent_collision = jnp.any((dists < self.collision_radius) & off_diag, axis=1) # (N,)
+        new_episode_collisions = state.collisions_so_far + per_agent_collision.astype(jnp.int32)
 
         key_water, key_life = jax.random.split(key, 2)
         new_detected_water, new_detected_life, new_picture_taken, rewards = self._process_actions(
@@ -307,14 +323,20 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         avail_actions = self._get_avail_actions(env_state_next)
         dones = self._get_dones(env_state_next)
 
-        state_st = WrappedEnvState(
+        # Build next state before reset triggers, appropriately masking collisions on done
+        state_st = CoopReconWrappedEnvState(
             env_state=env_state_next,
             base_return_so_far=jnp.zeros(self.num_agents, dtype=jnp.float32),
             avail_actions=avail_actions,
-            step=new_timestep
+            step=new_timestep,
+            collisions_so_far=state.collisions_so_far * (1 - dones["__all__"]) + new_episode_collisions * dones["__all__"]
         )
 
-        info = {'pre_reset_state': state_st, 'pre_reset_obs': obs_st}
+        info = {
+            'pre_reset_state': state_st, 
+            'pre_reset_obs': obs_st,
+            'returned_episode_collisions': state_st.collisions_so_far
+        }
 
         obs, state = jax.tree.map(
             lambda x, y: jax.lax.select(dones["__all__"], x, y),
