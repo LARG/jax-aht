@@ -187,18 +187,25 @@ def train_autoencoder(rng, train_state, train_step_fn, padded_episodes, masks, n
     N = padded_episodes.shape[0]
     num_batches = max(1, N // batch_size)
 
-    for _ in range(num_epochs):
+    losses = []
+    for epoch in range(num_epochs):
         rng, rng_perm = jax.random.split(rng)
         perm = jax.random.permutation(rng_perm, N)
         padded_shuffled = padded_episodes[perm]
         masks_shuffled = masks[perm]
+        epoch_losses = []
         for batch_idx in range(num_batches):
             start = batch_idx * batch_size
             end = min(start + batch_size, N)
             batch_x = padded_shuffled[start:end]
             batch_mask = masks_shuffled[start:end]
-            train_state, _ = train_step_fn(train_state, batch_x, batch_mask)
-    return rng, train_state
+            train_state, loss = train_step_fn(train_state, batch_x, batch_mask)
+            epoch_losses.append(loss)
+        avg_loss = np.mean(epoch_losses)
+        losses.append(avg_loss)
+        if epoch % 10 == 0 or epoch == num_epochs - 1:
+            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.6f}")
+    return rng, train_state, losses
 
 
 def encode_episodes(model, train_state, episodes, max_seq_len):

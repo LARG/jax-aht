@@ -6,6 +6,7 @@ from pathlib import Path
 
 import jax
 import numpy as np
+import matplotlib.pyplot as plt
 
 from evaluation.trajectory_autoencoder import (
     init_autoencoder,
@@ -72,7 +73,7 @@ def main(
 
     print(f"Training on {len(all_episodes)} episodes (padded length {max_seq_len})")
     print(f"Model config: hidden_dim={hidden_dim}, latent_dim={latent_dim}")
-    rng, train_state = train_autoencoder(
+    rng, train_state, losses = train_autoencoder(
         rng,
         train_state,
         train_step,
@@ -99,6 +100,23 @@ def main(
     with open(model_file, "wb") as f:
         pickle.dump(checkpoint, f)
     print(f"Model saved to {model_file}")
+
+    # Save training losses
+    loss_file = model_path / "training_losses.npy"
+    np.save(loss_file, np.array(losses))
+    print(f"Training losses saved to {loss_file}")
+
+    # Plot loss curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(losses)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Autoencoder Training Loss Curve')
+    plt.grid(True)
+    loss_plot_file = model_path / "loss_curve.png"
+    plt.savefig(loss_plot_file)
+    plt.close()
+    print(f"Loss curve saved to {loss_plot_file}")
 
 
 if __name__ == "__main__":
