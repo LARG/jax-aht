@@ -223,9 +223,13 @@ LOAD = 5
 class GameSession:
     """Manages a single game session with environment state and agent state."""
 
-    def __init__(self, session_id, max_steps=50, env_kwargs: dict = None, is_warmup: bool = False, data_source: str = ""):
+    def __init__(self, session_id, max_steps=50, env_kwargs: dict = None, is_warmup: bool = False, data_source: str = "",
+                 prolific_pid=None, study_id=None, prolific_session_id=None):
         self.is_warmup = is_warmup
         self.data_source = data_source
+        self.prolific_pid = prolific_pid
+        self.study_id = study_id
+        self.prolific_session_id = prolific_session_id
         self.session_id = session_id
         self.max_steps = max_steps
         self.env_kwargs = env_kwargs or {}
@@ -477,6 +481,9 @@ class GameSession:
             "player_name": player_name,
             "session_id": self.session_id,
             "timestamp": timestamp,
+            "prolific_pid": self.prolific_pid,
+            "study_id": self.study_id,
+            "prolific_session_id": self.prolific_session_id,
             "total_steps": self.step_count,
             "total_rewards": {k: float(v) for k, v in self.total_rewards.items()},
             "grid_size": self.grid_size,
@@ -513,13 +520,17 @@ NUM_REAL_GAMES = 8
 
 class MultiGameSession:
     """Manages a sequence of GameSession instances played sequentially with lazy loading."""
-    def __init__(self, session_id, game_configs, first_game=None, num_warmup=NUM_WARMUP_GAMES, data_source=""):
+    def __init__(self, session_id, game_configs, first_game=None, num_warmup=NUM_WARMUP_GAMES, data_source="",
+                 prolific_pid=None, study_id=None, prolific_session_id=None):
         self.session_id = session_id
         self.config_list = game_configs  # All configs (used for lazy creation)
         self.games = [None] * len(game_configs)  # Placeholder for all games
         self.current_idx = 0
         self.num_warmup = num_warmup  # First N games are warmup
         self.data_source = data_source
+        self.prolific_pid = prolific_pid
+        self.study_id = study_id
+        self.prolific_session_id = prolific_session_id
         self.session_complete = False  # True when all games are done
         self.last_activity = time.time()
 
@@ -529,17 +540,23 @@ class MultiGameSession:
             first_game.session_id = session_id
             first_game.is_warmup = (0 < num_warmup)
             first_game.data_source = data_source
+            first_game.prolific_pid = prolific_pid
+            first_game.study_id = study_id
+            first_game.prolific_session_id = prolific_session_id
 
     def _ensure_game_loaded(self, idx):
         """Ensure game at index is loaded; fetch or create if needed."""
         if self.games[idx] is not None:
             return  # Already loaded
-        
+
         cfg = self.config_list[idx]
         game = get_or_create_game(cfg)
         game.session_id = self.session_id
         game.is_warmup = (idx < self.num_warmup)
         game.data_source = self.data_source
+        game.prolific_pid = self.prolific_pid
+        game.study_id = self.study_id
+        game.prolific_session_id = self.prolific_session_id
         self.games[idx] = game
 
     def _current(self):
@@ -689,7 +706,10 @@ def index():
 @app.route('/prolific')
 def prolific_index():
     """Serve the game page for Prolific participants (data saved to prolific-specific folders)."""
-    return render_template('index.html', data_source='prolific')
+    import base64
+    _completion_url = "https://app.prolific.com/submissions/complete?cc=C13XLNJ0"
+    _encoded = base64.b64encode(_completion_url.encode()).decode()
+    return render_template('index.html', data_source='prolific', prolific_completion=_encoded)
 
 
 @app.route('/api/new_game', methods=['POST'])
@@ -699,6 +719,10 @@ def new_game():
     # Sanitize data_source to prevent path traversal — only allow alphanumeric and hyphens
     raw_source = data.get('data_source', '')
     data_source = raw_source if raw_source.isalnum() or all(c.isalnum() or c == '-' for c in raw_source) else ''
+
+    prolific_pid = data.get('prolific_pid') or None
+    study_id = data.get('study_id') or None
+    prolific_session_id = data.get('prolific_session_id') or None
 
     session_id = str(uuid.uuid4())
 
@@ -710,7 +734,9 @@ def new_game():
     first_game = get_or_create_game(first_cfg)
 
     # Create MultiGameSession with lazy loading for remaining games
-    multi = MultiGameSession(session_id, conf_list, first_game=first_game, num_warmup=NUM_WARMUP_GAMES, data_source=data_source)
+    multi = MultiGameSession(session_id, conf_list, first_game=first_game, num_warmup=NUM_WARMUP_GAMES,
+                             data_source=data_source, prolific_pid=prolific_pid,
+                             study_id=study_id, prolific_session_id=prolific_session_id)
     with game_sessions_lock:
         game_sessions[session_id] = multi
 

@@ -671,7 +671,6 @@
             color: #888;
             margin-bottom: 8px;
         }
-
         .finish-confirmation-code {
             font-size: 1.6em;
             font-weight: 700;
@@ -684,7 +683,20 @@
             display: inline-block;
             letter-spacing: 0.5px;
             user-select: all;
-            cursor: text;
+            margin-bottom: 16px;
+        }
+        .finish-completion-btn {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #fff;
+            background: #667eea;
+            padding: 14px 28px;
+            border-radius: 10px;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .finish-completion-btn:hover {
+            background: #5a6fd8;
         }
     </style>
 </head>
@@ -806,10 +818,15 @@
                     <div class="finish-stat-label">Games Played</div>
                 </div>
             </div>
+            {% if prolific_completion %}
             <div class="finish-confirmation">
-                <div class="finish-confirmation-label">Your confirmation code:</div>
+                <div class="finish-confirmation-label">Your completion code:</div>
                 <div class="finish-confirmation-code" id="finishConfirmationCode"></div>
+                <a id="finishCompletionLink" href="#" target="_blank" class="finish-completion-btn">
+                    Click here to complete your submission
+                </a>
             </div>
+            {% endif %}
         </div>
     </div>
 
@@ -931,6 +948,7 @@
         let actionInProgress = false;
         let sessionComplete = false;
         const dataSource = {{ (data_source or '')|tojson }};
+        const _pc = {{ (prolific_completion or '')|tojson }};
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -1069,31 +1087,19 @@
         }
 
         // ===== FINISH SCREEN =====
-        const CONFIRMATION_WORDS = [
-            'apple', 'brave', 'coral', 'delta', 'eagle', 'flame', 'grove', 'haste',
-            'ivory', 'jewel', 'knoll', 'lemon', 'maple', 'noble', 'olive', 'pearl',
-            'quilt', 'ridge', 'stone', 'thorn', 'umbra', 'vivid', 'whale', 'xenon',
-            'yield', 'zephyr', 'amber', 'birch', 'cedar', 'drift', 'ember', 'frost',
-            'glyph', 'haven', 'inlet', 'joust', 'karma', 'lunar', 'marsh', 'nexus',
-            'oasis', 'plume', 'quest', 'rover', 'solar', 'trove', 'unity', 'vault',
-            'waltz', 'orbit', 'blaze', 'crest', 'dusk', 'fable', 'grain', 'heron',
-            'isle', 'junco', 'kelp', 'latch', 'mirth', 'north', 'onyx', 'prism'
-        ];
-
-        function generateConfirmationCode() {
-            const words = [];
-            for (let i = 0; i < 4; i++) {
-                const idx = Math.floor(Math.random() * CONFIRMATION_WORDS.length);
-                words.push(CONFIRMATION_WORDS[idx]);
-            }
-            return words.join('-');
-        }
-
         function showFinishScreen() {
             sessionComplete = true;
             const totalGames = gameState ? (gameState.total_games || 10) : 10;
             document.getElementById('finishGamesPlayed').textContent = totalGames;
-            document.getElementById('finishConfirmationCode').textContent = "unity-vivid-mirth-ember";
+            if (_pc) {
+                const url = atob(_pc);
+                const link = document.getElementById('finishCompletionLink');
+                link.href = url;
+                const code = new URL(url).searchParams.get('cc');
+                if (code) {
+                    document.getElementById('finishConfirmationCode').textContent = code;
+                }
+            }
             document.getElementById('finishModal').classList.add('show');
             document.body.style.overflow = 'hidden';
         }
@@ -1153,7 +1159,10 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        data_source: dataSource
+                        data_source: dataSource,
+                        prolific_pid: new URLSearchParams(window.location.search).get('PROLIFIC_PID'),
+                        study_id: new URLSearchParams(window.location.search).get('STUDY_ID'),
+                        prolific_session_id: new URLSearchParams(window.location.search).get('SESSION_ID')
                     })
                 });
                 
