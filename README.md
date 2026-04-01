@@ -214,6 +214,17 @@ However, the ego agent training workflow **requires** the user to specify a part
 A quick example of how to run an ego agent training algorithm with particular partner config is provided in our tutorial notebook.
 More details on how to specify the partner config are provided at the top of the ego agent training scripts.
 
+### XP Matrix Outputs and Heatmaps
+
+Run heldout cross-play (XP) evaluation with:
+
+```bash
+python3 evaluation/run.py --config-name heldout_xp task=lbf
+```
+
+For complete details on XP outputs, heatmap flags, tidy CSV format, and plotting commands,
+see [docs/evaluation_xp_heatmaps.md](docs/evaluation_xp_heatmaps.md).
+
 
 ### 🌳 Environments
 #### Level-Based Foraging (LBF)

@@ -612,7 +612,7 @@ class StackedEncoderModel(nn.Module):
     @staticmethod
     def initialize_carry(batch_size, hidden_size, n_layers):
         # Use a dummy key since the default state init fn is just zeros.
-        return [jnp.zeros((1, batch_size, hidden_size), dtype=jnp.complex64) for _ in range(n_layers)]
+        return jnp.zeros((n_layers, 1, batch_size, hidden_size), dtype=jnp.complex64) # [jnp.zeros((1, batch_size, hidden_size), dtype=jnp.complex64) for _ in range(n_layers)]
 
 class S5ActorCritic(nn.Module):
     action_dim: Sequence[int]
