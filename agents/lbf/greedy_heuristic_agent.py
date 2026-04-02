@@ -58,6 +58,13 @@ class GreedyHeuristicAgent(BaseAgent):
             self.heuristic = self.lowest_level
         elif heuristic == 'highest_level':
             self.heuristic = self.highest_level
+        self._jit_key = (type(self).__name__, grid_size, num_fruits, heuristic)
+
+    def __hash__(self):
+        return hash(self._jit_key)
+
+    def __eq__(self, other):
+        return isinstance(other, GreedyHeuristicAgent) and self._jit_key == other._jit_key
 
     def get_name(self):
         return f"GreedyHeuristicAgent({self.heuristic_name})"

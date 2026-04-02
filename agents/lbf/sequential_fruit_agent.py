@@ -57,6 +57,13 @@ class SequentialFruitAgent(BaseAgent):
         if ordering_strategy not in self.VALID_ORDERING_STRATEGIES:
              raise ValueError(f"Invalid ordering_strategy: '{ordering_strategy}'. Must be one of {self.VALID_ORDERING_STRATEGIES}")
         self.ordering_strategy = ordering_strategy # Store the chosen strategy string
+        self._jit_key = (type(self).__name__, grid_size, num_fruits, ordering_strategy)
+
+    def __hash__(self):
+        return hash(self._jit_key)
+
+    def __eq__(self, other):
+        return isinstance(other, SequentialFruitAgent) and self._jit_key == other._jit_key
 
     def get_name(self):
         return f"SequentialFruitAgent({self.ordering_strategy})"

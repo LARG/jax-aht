@@ -571,6 +571,8 @@ class MultiGameSession:
         # If current finished, advance to next game
         if cur.done and self.current_idx < len(self.games) - 1:
             self.current_idx += 1
+            # Release the completed game to free JAX arrays and env state
+            self.games[prev_idx] = None
             # Ensure next game is loaded before returning its state
             self._ensure_game_loaded(self.current_idx)
             result = self.get_state_dict()
