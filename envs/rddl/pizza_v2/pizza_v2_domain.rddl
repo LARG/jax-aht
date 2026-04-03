@@ -24,8 +24,9 @@ domain pizzav2 {
 
 	pvariables {
 
-		DELIVERY-REWARD : {non-fluent, real, default = 1.0};      // Reward for delivery
-		COLLISION-PENALTY : {non-fluent, real, default = 0.0};     // Penalty for collisions
+		DELIVERY-REWARD : {non-fluent, real, default = 10.0};      // Reward for delivery
+		COLLISION-PENALTY : {non-fluent, real, default = -20.0};     // Penalty for collisions
+		STEP-PENALTY : {non-fluent, real, default = -0.1};          // Penalty for each step taken (to encourage shorter plans)
 
     	CAPACITY(truck) : { non-fluent, int, default = 3 };		  // Capacity of each truck (number of pizzas it can hold at once)
 		CONNECTED(location, location) : { non-fluent, bool, default = false }; // like a one-way road connection
@@ -40,6 +41,7 @@ domain pizzav2 {
 		numOrdersRemaining(location) : { state-fluent, int, default = 0 }; // How many pizza deliveries will still be rewarded at this location (decreases when pizzas are delivered)
 		numPizzasInTruck(truck) : { state-fluent, int, default = 0 }; // How many pizzas are currently in this truck
 		collision(truck) : { state-fluent, bool, default = false }; // whether this truck was in a collision this turn
+		doneDelivering(truck) : { state-fluent, bool, default = false }; // true if this truck has no more possible deliveries it can make (there are no orders remaining at locations it can deliver to)
 
 		// Intemediate fluents
 		makesNext(truck, location) : { interm-fluent, bool, level = 1 };
@@ -52,6 +54,8 @@ domain pizzav2 {
 
 		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 4 }; // whether this truck's delivery to this location is rewarded
 		pizzaPickedUp(truck) : { interm-fluent, bool, level = 4 }; // whether this truck successfully picked up a pizza this turn
+
+		numDeliveriesMadeThisStep(truck) : { interm-fluent, int, level = 5 }; // how many deliveries this truck made this step
 
 		// Action variables
 		noop(truck) : { action-fluent, bool, default = false };
@@ -111,6 +115,9 @@ domain pizzav2 {
 			then (pickupPriorityRank(?t) < numShopPizzas) // check priority rank against pizzas available at the shop
 			else false; // if not trying to pick up, then not successful
 
+		// Count how many deliveries this truck made this step (for reward calculation)
+		numDeliveriesMadeThisStep(?t) = sum_{?l : location} [deliveryRewarded(?t, ?l)];
+
 		// Dynamics for state fluents
 		// shops lose pizzas when trucks successfully pick them up
 		numShopPizzas' = numShopPizzas - sum_{?t : truck} [pizzaPickedUp(?t)];
@@ -118,16 +125,27 @@ domain pizzav2 {
 		numOrdersRemaining'(?l) = numOrdersRemaining(?l) - sum_{?t : truck} [deliveryRewarded(?t, ?l)];
 		// trucks gain pizzas when they successfully pick them up, and lose pizzas when they successfully deliver them
 		numPizzasInTruck'(?t) = numPizzasInTruck(?t) +  pizzaPickedUp(?t) - (exists_{?l : location} [deliveryRewarded(?t, ?l)]);
+
+		doneDelivering'(?t) = 
+			if (doneDelivering(?t))
+				then true // once done delivering, always done delivering
+			// else if there are no orders remaining at locations this truck can deliver to, then done delivering
+			else (forall_{?l : location} [ (numOrdersRemaining(?l) == 0) | ~CAN-DELIVER(?t, ?l) ]); 
 	};
 
 	reward = [
 		sum_{?t : truck} [
 			// reward for deliveries
-			sum_{?l : location} [ 
-				deliveryRewarded(?t, ?l) * DELIVERY-REWARD
-			]
+			if (numDeliveriesMadeThisStep(?t) > 0)
+				then numDeliveriesMadeThisStep(?t) * DELIVERY-REWARD + STEP-PENALTY
 			// penalty for collisions
-			- (collision'(?t) * COLLISION-PENALTY)
+			else if (collision'(?t))
+				then COLLISION-PENALTY + STEP-PENALTY
+			else if (doneDelivering(?t))
+				then 0.0 // no penalty if truck is done delivering
+			// penalty for each step taken
+			else
+				STEP-PENALTY
 		]
 	];
 
@@ -140,15 +158,22 @@ domain pizzav2 {
 	action-preconditions {
 
 		// actions can only be taken by controllable trucks
-		forall_{?t : truck, ?l : location} [drive(?t, ?l) => CONTROLLABLE(?t)];
-		forall_{?t : truck, ?l : location} [deliver(?t, ?l) => CONTROLLABLE(?t)];
-		forall_{?t : truck} [load(?t) => CONTROLLABLE(?t)];
+		// that are not done delivering (if a truck is done delivering, it can't do anything else but noop)
+		forall_{?t : truck, ?l : location} [drive(?t, ?l) => (CONTROLLABLE(?t) ^ ~doneDelivering(?t))];
+		forall_{?t : truck, ?l : location} [deliver(?t, ?l) => (CONTROLLABLE(?t) ^ ~doneDelivering(?t))];
+		forall_{?t : truck} [load(?t) => (CONTROLLABLE(?t) ^ ~doneDelivering(?t))];
 
 		// can only load a truck up to its capacity
 		forall_{?t : truck} [(numPizzasInTruck(?t) + load(?t)) <= CAPACITY(?t)];
 
 		//pickup needs to happen at the shop when there are pizzas available
-		forall_{?t: truck}[load(?t) => (exists_{?l: location}[truckAt(?t, ?l) ^ SHOP(?l) ^ (numShopPizzas > 0)])];
+		forall_{?t: truck}[load(?t) => (
+			// need to be at a shop to pick up
+			exists_{?l: location}[truckAt(?t, ?l) ^ SHOP(?l) ^ (numShopPizzas > 0)]
+			// only pick up if this truck does not have enough pizzas to deliver all remaining orders it could deliver to
+			^ ((sum_{?l2 : location}[CAN-DELIVER(?t, ?l2) * numOrdersRemaining(?l2)] > numPizzasInTruck(?t)))
+			)
+		];
 
 		//can only drive one place per turn
  		forall_{?t : truck} [(sum_{?c : location} drive(?t, ?c)) <= 1];
