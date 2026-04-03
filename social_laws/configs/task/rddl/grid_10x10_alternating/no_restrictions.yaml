@@ -6,7 +6,7 @@ ENV_KWARGS: {domain: "no_restrictions/grid_10x10_alternating_domain.rddl",
              render: true,
              render_name: "grid_10x10_alternating_no_restrictions",
              render_dir: "render",
-             stochastic_movement_prob: 0.4,
+             stochastic_movement_prob: 0.1,
              enforce_action_constraints: true,
              vectorized: true,
              ego_centric_obs: true}
