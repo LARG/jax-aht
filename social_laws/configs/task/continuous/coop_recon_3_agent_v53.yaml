@@ -1,0 +1,26 @@
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 50
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_3_v53",
+    render_dir: "render",
+    num_agents: 3,
+    grid_size: 1.0,
+    ego_centric_obs: false,
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 100,
+    collision_radius: 0.05,
+    min_sep_goal: 0.30,  
+    # Social minimum distance law 
+    # Agents cannot DELIBERATELY move within this distance of another agent, but Gaussian noise (movement_noise_std=0.1) can still cause violations.
+    # Set to 0.0 to disable 
+    social_min_dist: 0.15,
+  }
+TASK_NAME: continuous/coop_recon_n_agent_3_v53
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+ALPHA_COST: false
