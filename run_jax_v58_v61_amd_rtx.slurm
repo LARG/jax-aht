@@ -35,7 +35,6 @@ module purge
 module load gcc/13.2.0 cuda/12.8
 
 cd /scratch/11079/jeffreychen287/jax-aht
-git pull origin collision_avoidance_social_law
 
 source /scratch/11079/jeffreychen287/jax-aht/venv/bin/activate
 
