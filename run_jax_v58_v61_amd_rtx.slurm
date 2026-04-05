@@ -32,7 +32,7 @@
 mkdir -p logs
 
 module purge
-module load gcc/13.2.0 cuda/12.8
+module load gcc/13.2.0 cuda/12.8 python
 
 cd /scratch/11079/jeffreychen287/jax-aht
 
