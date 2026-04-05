@@ -40,6 +40,10 @@ git pull origin collision_avoidance_social_law
 
 source /scratch/11079/jeffreychen287/jax-aht/venv/bin/activate
 
+# jaxmarl gets dropped when jax[cuda12] 0.9.2 is installed on amd-rtx.
+# Reinstall without deps (jax version already satisfied by cuda12 install).
+pip install jaxmarl --no-deps -q
+
 export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 
