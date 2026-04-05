@@ -40,13 +40,6 @@ git pull origin collision_avoidance_social_law
 
 source /scratch/11079/jeffreychen287/jax-aht/venv/bin/activate
 
-# amd-rtx venv is missing packages (different Python env from SPR/H100 nodes).
-# Install brax first (jaxmarl dep not in requirements.txt), then the full
-# project requirements. --upgrade-strategy keeps jax[cuda12] 0.9.2 pinned.
-pip install brax -q
-pip install -r /scratch/11079/jeffreychen287/jax-aht/requirements.txt \
-    --upgrade-strategy only-if-needed -q
-
 export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 
