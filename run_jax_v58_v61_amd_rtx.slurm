@@ -42,7 +42,7 @@ source /scratch/11079/jeffreychen287/jax-aht/venv/bin/activate
 
 # jaxmarl and its deps are not in the venv on amd-rtx nodes.
 # Install full chain, but keep jax[cuda12] pinned at 0.9.2.
-pip install jaxmarl chex flax optax distrax --upgrade-strategy only-if-needed -q
+pip install jaxmarl chex flax optax distrax matplotlib pygame imageio --upgrade-strategy only-if-needed -q
 
 export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
