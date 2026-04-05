@@ -23,7 +23,6 @@
 #SBATCH -A IRI26004
 #SBATCH -N 1
 #SBATCH -n 8
-#SBATCH --gpus=8
 #SBATCH -t 08:00:00
 #SBATCH -o logs/v58_v65_%j.out
 #SBATCH -e logs/v58_v65_%j.err
