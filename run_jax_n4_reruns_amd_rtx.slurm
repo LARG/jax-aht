@@ -12,7 +12,6 @@
 #SBATCH -A IRI26004
 #SBATCH -N 1
 #SBATCH -n 3
-#SBATCH --gpus=3
 #SBATCH -t 12:00:00
 #SBATCH -o logs/n4_rerun_%j.out
 #SBATCH -e logs/n4_rerun_%j.err
