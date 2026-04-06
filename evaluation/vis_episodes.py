@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 import os
-from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
+from envs.overcooked_v1.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
 
 
 def save_video(env, env_name, 

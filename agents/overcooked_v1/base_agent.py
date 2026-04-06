@@ -8,7 +8,7 @@ from jax import lax
 from jaxmarl.environments.overcooked.overcooked import Actions
 from jaxmarl.environments.overcooked.common import OBJECT_TO_INDEX
 
-from envs.overcooked.overcooked_wrapper import WrappedEnvState as WrappedOvercookedState
+from envs.overcooked_v1.overcooked_wrapper import WrappedEnvState as WrappedOvercookedState
 
 
 @struct.dataclass

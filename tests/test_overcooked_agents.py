@@ -2,11 +2,11 @@ import numpy as np
 from typing import Dict, Tuple
 
 import jax
-from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
-from envs.overcooked.overcooked_v1 import OvercookedV1
-from envs.overcooked.augmented_layouts import augmented_layouts
+from envs.overcooked_v1.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
+from envs.overcooked_v1.overcooked_v1 import OvercookedV1
+from envs.overcooked_v1.augmented_layouts import augmented_layouts
 from envs import make_env
-from agents.overcooked import OnionAgent, PlateAgent, IndependentAgent, StaticAgent, RandomAgent
+from agents.overcooked_v1 import OnionAgent, PlateAgent, IndependentAgent, StaticAgent, RandomAgent
 import time
 
 def run_episode(env, agent0, agent1, key) -> Tuple[Dict[str, float], int]:

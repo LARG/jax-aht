@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 from jaxmarl.environments.overcooked.overcooked import Actions
 from typing import Tuple, Dict, Any 
-from agents.overcooked.base_agent import BaseAgent, AgentState
+from agents.overcooked_v1.base_agent import BaseAgent, AgentState
 
 class StaticAgent(BaseAgent):
     """A static agent that always takes the stay action."""

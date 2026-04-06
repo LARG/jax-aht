@@ -14,7 +14,7 @@ from jaxmarl.environments.overcooked.common import (
     OBJECT_INDEX_TO_VEC,
     make_overcooked_map)
 
-from envs.overcooked.augmented_layouts import augmented_layouts as layouts
+from envs.overcooked_v1.augmented_layouts import augmented_layouts as layouts
 
 BASE_REW_SHAPING_PARAMS = {
     "PLACEMENT_IN_POT_REW": [3, 3], # reward for putting ingredients 

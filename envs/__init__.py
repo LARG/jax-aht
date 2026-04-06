@@ -103,8 +103,8 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             if key not in env_kwargs:
                 env_kwargs_copy[key] = default_env_kwargs[key]
 
-        from envs.overcooked.augmented_layouts import augmented_layouts
-        from envs.overcooked.overcooked_wrapper import OvercookedWrapper
+        from envs.overcooked_v1.augmented_layouts import augmented_layouts
+        from envs.overcooked_v1.overcooked_wrapper import OvercookedWrapper
 
         layout = augmented_layouts[env_kwargs['layout']]
         env_kwargs_copy["layout"] = layout

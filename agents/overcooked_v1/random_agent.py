@@ -4,7 +4,7 @@ from typing import Tuple, Dict, Any
 import jax
 import jax.numpy as jnp
 
-from agents.overcooked.base_agent import BaseAgent, AgentState
+from agents.overcooked_v1.base_agent import BaseAgent, AgentState
 
 
 class RandomAgent(BaseAgent):

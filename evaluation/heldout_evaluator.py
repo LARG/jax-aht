@@ -10,11 +10,12 @@ import os
 import hydra
 
 from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper
-from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
+from agents.overcooked_v1.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
     OvercookedOnionPolicyWrapper,
     OvercookedPlatePolicyWrapper,
     OvercookedStaticPolicyWrapper,
     OvercookedRandomPolicyWrapper)
+from agents.overcooked_v1.bc_agent import BCPolicy
 
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from common.run_episodes import run_episodes
@@ -23,7 +24,7 @@ from common.plot_utils import get_metric_names
 from common.stat_utils import compute_aggregate_stat_and_ci_per_task
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from envs.overcooked.augmented_layouts import augmented_layouts
+from envs.overcooked_v1.augmented_layouts import augmented_layouts
 
 
 def extract_params(params, init_params, idx_labels=None):
@@ -150,6 +151,8 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                 policy = OvercookedPlatePolicyWrapper(
                     aug_layout_dict, using_log_wrapper=True, 
                     p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
+            elif agent_config["actor_type"] == 'bc_proxy':
+                policy = BCPolicy(layout_name=env_kwargs["layout"], using_log_wrapper=True)
         else:
             raise ValueError(f"Unknown task: {task_name}")
         
