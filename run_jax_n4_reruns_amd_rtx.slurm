@@ -49,15 +49,15 @@ run_exp() {
         algorithm.EPSILON_OPTIMAL=0.01 \
         task.ENV_KWARGS.ego_centric_obs=true \
         label=$LABEL \
-        >> logs/${LABEL}_${SLURM_JOB_ID}.out 2>&1 &
-    echo "Launched $LABEL on GPU $GPU (PID $!)"
+        >> logs/${LABEL}_${SLURM_JOB_ID}.out 2>&1
+        
+    echo "Completed $LABEL gracefully!"
 }
 
-# ── Rerun the 3 crashed N=4 jobs ─────────────────────────────────────────────
+# ── Rerun sequentially to prevent RAM exhaustion ───────────────────────────────
+echo "Starting sequential batch for N=4..."
 run_exp 0 continuous/coop_recon_4_agent_v60 4 jax_coop_recon_v60_4agent_baseline_200ep
-run_exp 1 continuous/coop_recon_4_agent_v58 4 jax_coop_recon_v58_4agent_social_0.15_200ep
-run_exp 2 continuous/coop_recon_4_agent_v64 4 jax_coop_recon_v64_4agent_social_0.20_200ep
+run_exp 0 continuous/coop_recon_4_agent_v58 4 jax_coop_recon_v58_4agent_social_0.15_200ep
+run_exp 0 continuous/coop_recon_4_agent_v64 4 jax_coop_recon_v64_4agent_social_0.20_200ep
 
-echo "N=4 reruns launched. Waiting for completion..."
-wait
-echo "All N=4 experiments complete."
+echo "All N=4 experiments finished successfully."
