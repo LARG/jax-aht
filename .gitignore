@@ -25,3 +25,6 @@ __pycache__/
 *.pyc
 dist/
 build/
+
+val_teammates_v2/*
+val_teammates/*

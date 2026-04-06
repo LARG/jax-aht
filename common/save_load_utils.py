@@ -5,6 +5,7 @@ from flax.training import orbax_utils
 import jax
 import jax.numpy as jnp
 import numpy as np
+from orbax.checkpoint import ArrayRestoreArgs, RestoreArgs
 
 # suppress logging from orbax 
 import logging
@@ -86,7 +87,21 @@ def load_train_run(path):
         path = os.path.join(REPO_PATH, path)
     # load the checkpoint
     checkpointer = orbax.checkpoint.PyTreeCheckpointer()
-    restored = checkpointer.restore(path)
+    try:
+        restored = checkpointer.restore(path)
+    except ValueError as exc:
+        if "sharding passed to deserialization" not in str(exc):
+            raise
+
+        metadata = checkpointer.metadata(path)
+
+        def _mk_restore_args(leaf):
+            if hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
+                return ArrayRestoreArgs(restore_type=np.ndarray)
+            return RestoreArgs()
+
+        restore_args = jax.tree_util.tree_map(_mk_restore_args, metadata.tree)
+        restored = checkpointer.restore(path, restore_args=restore_args)
     # convert pytree leaves from np arrays to jax arrays
     restored = jax.tree_util.tree_map(
         lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,
