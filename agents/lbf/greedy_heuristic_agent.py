@@ -12,9 +12,10 @@ class GreedyHeuristicAgent(BaseAgent):
 
     Conditions (passed to __init__ as strings):
         'closest_self' - goes to the closest fruit
+        'closest_teammate' - goes to the fruit closest to the teammate 
         'closest_avg' - goes to the fruit closest to the average position of all agents
-        'closest_level' - goes to the closest fruit that the agent can consume by itself
-        'closest_combined_level' - goes to the closest fruit that the agent can consume by itself or with help from other agents
+        'lowest_level' - goes to the closest fruit that the agent can consume by itself (lowest level)
+        'highest_level' - goes to the closest fruit that the agent can consume with teammate (highest level)
     """
 
     @struct.dataclass
@@ -24,9 +25,10 @@ class GreedyHeuristicAgent(BaseAgent):
 
     VALID_HEURISTICS = [
         'closest_self',
-        # 'closest_avg', 
-        # 'closest_level', 
-        # 'closest_combined_level',
+        'closest_teammate',
+        'closest_avg',
+        'lowest_level', 
+        'highest_level'
     ]
 
     def __init__(self, grid_size: int = 7, num_fruits: int = 3, heuristic: str = 'closest_self'):
@@ -36,8 +38,20 @@ class GreedyHeuristicAgent(BaseAgent):
         self.num_fruits = num_fruits
         if heuristic not in self.VALID_HEURISTICS:
              raise ValueError(f"Invalid heuristic: '{heuristic}'. Must be one of {self.VALID_HEURISTICS}")
-        self.heuristic = heuristic # Store the chosen heuristic string
-  
+        
+        print(f"Initialized GreedyHeuristicAgent with heuristic: {heuristic}")
+
+        if heuristic == 'closest_self':
+            self.heuristic = self.closest_self
+        elif heuristic == 'closest_teammate':
+            self.heuristic = self.closest_teammate
+        elif heuristic == 'closest_avg':
+            self.heuristic = self.closest_avg
+        elif heuristic == 'lowest_level':
+            self.heuristic = self.lowest_level
+        elif heuristic == 'highest_level':
+            self.heuristic = self.highest_level
+
     def init_agent_state(self, agent_id: int):
         return GreedyHeuristicAgent.GreedyAgentState(agent_id=agent_id)
 
@@ -176,11 +190,9 @@ class GreedyHeuristicAgent(BaseAgent):
     ) -> Tuple[jnp.ndarray, GreedyAgentState]:
 
         agent_pos = env_state.agents.position[agent_state.agent_id]
+        teammate_pos = env_state.agents.position[1 - agent_state.agent_id]
 
-        target = self.closest_self(
-            agent_pos, 
-            env_state.food_items
-        )
+        target = self.heuristic(agent_pos, teammate_pos, env_state.food_items)
 
         # check if we can load the target fruit
         manhattan_dist = jnp.sum(jnp.abs(agent_pos - target))
@@ -215,7 +227,7 @@ class GreedyHeuristicAgent(BaseAgent):
         action = jnp.where(action == 0, move_action, action)
         return action, agent_state
 
-    def closest_self(self, agent_pos: jnp.ndarray, food_items):
+    def closest_self(self, agent_pos: jnp.ndarray, teammate_pos: jnp.ndarray, food_items):
         """Return the index of the closest fruit to the agent."""
         
         positions = food_items.position # Shape (F, 2)
@@ -227,4 +239,51 @@ class GreedyHeuristicAgent(BaseAgent):
         # return the location of the closest fruit
         closest_idx = jnp.argmin(distances)
         return positions[closest_idx]
+
+    def closest_teammate(self, agent_pos: jnp.ndarray, teammate_pos: jnp.ndarray, food_items):
+        """Return the index of the closest fruit to the teammate."""
+        
+        positions = food_items.position # Shape (F, 2)
+        eaten = food_items.eaten # Shape (F,)
+
+        distances = jnp.sum(jnp.abs(positions - teammate_pos), axis=1)
+        distances = jnp.where(eaten == 0, distances, jnp.inf)
+
+        # return the location of the closest fruit
+        closest_idx = jnp.argmin(distances)
+        return positions[closest_idx]
     
+    def closest_avg(self, agent_pos: jnp.ndarray, teammate_pos: jnp.ndarray, food_items):
+        """Return the index of the closest fruit to the average position of all agents."""
+        
+        positions = food_items.position # Shape (F, 2)
+        eaten = food_items.eaten # Shape (F,)
+
+        avg_pos = (agent_pos + teammate_pos) / 2.0
+
+        distances = jnp.sum(jnp.abs(positions - avg_pos), axis=1)
+        distances = jnp.where(eaten == 0, distances, jnp.inf)
+
+        # return the location of the closest fruit
+        closest_idx = jnp.argmin(distances)
+        return positions[closest_idx]
+
+    def lowest_level(self, agent_pos: jnp.ndarray, teammate_pos: jnp.ndarray, food_items):
+        """Return the location of the closest fruit that the agent can consume by itself (highest level)."""
+        
+        positions = food_items.position # Shape (F, 2)
+        eaten = food_items.eaten # Shape (F,)
+        levels = food_items.level # Shape (F,)
+
+        lowest_level_pos = jnp.argmin(jnp.where(eaten == 0, levels, jnp.inf))
+        return positions[lowest_level_pos]
+
+    def highest_level(self, agent_pos: jnp.ndarray, teammate_pos: jnp.ndarray, food_items):
+        """Return the location of the closest fruit that the agents can consume together (highest level)."""
+        
+        positions = food_items.position # Shape (F, 2)
+        eaten = food_items.eaten # Shape (F,)
+        levels = food_items.level # Shape (F,)
+
+        highest_level_pos = jnp.argmax(jnp.where(eaten == 0, levels, -jnp.inf))
+        return positions[highest_level_pos]

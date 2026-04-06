@@ -45,7 +45,7 @@ class ResetTransition(NamedTuple):
     conf_hstate: jnp.ndarray
     partner_hstate: jnp.ndarray
 
-def train_comedi_partners(train_rng, env, config):
+def train_comedi_partners(train_rng, wandb_logger, env, config):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -56,8 +56,19 @@ def train_comedi_partners(train_rng, env, config):
     # Right now assume control of both agent and its BR
     config["NUM_CONTROLLED_ACTORS"] = config["NUM_ACTORS"]
 
-    # Divide by 4 because we have 4 types of rollouts
-    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS_PER_ITERATION"] // ( 4 * num_agents * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
+    # Compute numbber of updates PER outermost iteration
+    # Calculate timesteps per update
+    # 1. Overhead from population selection rollouts
+    # We divide by 2 because for ease in Jax, this implementation uses a vmap over PARTNER_POP_SIZE to 
+    # evaluate the agent generated at each outermost iteration against all previously 
+    # generated agents, but a non-Jax implementation would only need to evaluate against 
+    # *previously* generated agents.
+    selection_steps = config["PARTNER_POP_SIZE"] * config["NUM_ARGMAX_ROLLOUT_EPS"] * config["ROLLOUT_LENGTH"] // 2
+    # 2. Training rollouts: 4 distinct rollout phases (SP, XP, MP, MP2) each using NUM_ENVS
+    training_steps = 4 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
+
+    steps_per_update = selection_steps + training_steps
+    config["NUM_UPDATES"] = int(config["TOTAL_TIMESTEPS_PER_ITERATION"] // steps_per_update)
 
     def make_comedi_agents(config):
         def linear_schedule(count):
@@ -72,7 +83,7 @@ def train_comedi_partners(train_rng, env, config):
             config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
             config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
             config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
-            out = make_ppo_train(config, env)(partner_rng) # train a single PPO agent
+            out = make_ppo_train(config, env, wandb_logger)(partner_rng) # train a single PPO agent
             return out
 
         def train(rng):
@@ -1045,7 +1056,10 @@ def run_comedi(config, wandb_logger):
     with jax.disable_jit(False):
         vmapped_train_fn = jax.jit(
             jax.vmap(
-                partial(train_comedi_partners, env=env, config=algorithm_config)
+                partial(train_comedi_partners, 
+                        wandb_logger=wandb_logger,
+                        env=env, 
+                        config=algorithm_config)
             )
         )
         out = vmapped_train_fn(rngs)

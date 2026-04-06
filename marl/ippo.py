@@ -7,6 +7,7 @@ import shutil
 import hydra
 import numpy as np
 import jax
+from tqdm import tqdm
 import jax.numpy as jnp
 import optax
 from flax.training.train_state import TrainState
@@ -33,7 +34,7 @@ def initialize_agent(actor_type, algorithm_config, env, init_rng):
         policy, init_params = initialize_pseudo_actor_with_conditional_critic(algorithm_config, env, init_rng)
     return policy, init_params
 
-def make_train(config, env):
+def make_train(config, env, logger, progress_callback=None):
     config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
     config["NUM_UPDATES"] = (
         config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
@@ -251,6 +252,14 @@ def make_train(config, env):
             metric = traj_batch.info
             metric["update_steps"] = update_steps
             
+            def callback(metrics):
+                log_metrics_intermediate(metrics, logger)
+                if progress_callback is not None:
+                    progress_callback()
+
+            # metrics: (ROLLOUT_LENGTH, NUM_ACTORS)
+            jax.experimental.io_callback(callback, None, metric)
+
             rng = update_state[-1]
             update_steps += 1
             runner_state = (train_state, env_state, last_obs, last_done, last_hstate, rng)
@@ -333,36 +342,47 @@ def run_ippo(config, logger):
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
     env = LogWrapper(env)
 
+    num_updates = (
+        algorithm_config["TOTAL_TIMESTEPS"] // algorithm_config["ROLLOUT_LENGTH"] // algorithm_config["NUM_ENVS"]
+    )
+    num_seeds = algorithm_config["NUM_SEEDS"]
+    pbar = tqdm(total=num_updates, desc="IPPO Training", unit="update")
+    pbar._call_count = 0
+
+    def update_progress_bar():
+        # vmap causes this to be called NUM_SEEDS times per update step
+        pbar._call_count += 1
+        if pbar._call_count % num_seeds == 0:
+            pbar.update(1)
+
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rngs = jax.random.split(rng, algorithm_config["NUM_SEEDS"])
     
+    
+
     with jax.disable_jit(False):
-        train_jit = jax.jit(jax.vmap(make_train(algorithm_config, env)))
+        train_jit = jax.jit(jax.vmap(make_train(algorithm_config, env, logger, progress_callback=update_progress_bar)))
         out = train_jit(rngs)
 
-    log_metrics(config, out, logger)
+    pbar.close()
+
+    # option for if you want to disable intermediate metrics logging
+    log_artifacts(config, out, logger)
+
     return out
 
-def log_metrics(config, out, logger):
-    '''Save train run output and log to wandb as artifact.'''    
-    train_metrics = out["metrics"]
-    metric_names = get_metric_names(config["ENV_NAME"])
-    train_stats = get_stats(train_metrics, metric_names)
-
-    # each key in train_stats is a metric name, and the value is an array of shape (num_seeds, num_updates, num_agents_per_game)
-    # where the last dimension contains the mean and std of the metric
+def log_metrics_intermediate(train_stats, logger):
+    # Log metrics for one update step
+    step = int(np.array(train_stats.pop("update_steps")))
+    # remaining values have shape (ROLLOUT_LENGTH, NUM_ACTORS); mean over axis 0 -> (NUM_ACTORS,)
     train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
-
-    # Log metrics for each update step
-    num_updates = train_metrics["returned_episode"].shape[1] # shape is (num_seeds, num_updates, rollout_len, num_envs*num_agents_per_game)
-    for step in range(num_updates):
-        for stat_name, stat_data in train_stats.items():
-            # second dimension contains the mean and std of the metric
-            stat_mean = stat_data[step, 0]
-            logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
-
+    for stat_name, stat_data in train_stats.items():
+        stat_mean = stat_data[0] # get the first agent
+        logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
     logger.commit()
 
+def log_artifacts(config, out, logger):
+    '''Save train run output and log to wandb as artifact.'''    
     # save artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     out_savepath = save_train_run(out, savedir, savename="saved_train_run")

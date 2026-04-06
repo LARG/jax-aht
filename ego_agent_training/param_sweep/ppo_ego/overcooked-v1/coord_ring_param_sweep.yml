@@ -1,0 +1,53 @@
+program: ego_agent_training/run.py
+name: ppo_ego-overcooked-v1-coord_ring
+method: grid # bayes
+entity: aht-project
+project: aht-parameter-sweep
+metric:
+  goal: maximize
+  name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
+
+# 450 Combinations: grid search possible instead of bayes
+parameters:
+  algorithm.TOTAL_TIMESTEPS:
+    values: [1.5e7]
+  algorithm.NUM_ENVS:
+    values: [128]
+  algorithm.ACTIVATION:
+    values: ["tanh", "relu"]
+  algorithm.LR:
+    values: [5e-5, 1e-5, 1e-4, 1e-3, 1e-2]
+  algorithm.ENT_COEF:
+    values: [0.1, 0.05, 0.01, 0.001, 0.0001]
+  algorithm.CLIP_EPS:
+    values: [0.5, 0.3, 0.2, 0.1, 0.01, 0.02, 0.03, 0.04, 0.05]
+
+  # Optional additional hyperparameters to sweep over (uncomment if desired)
+  # algorithm.EGO_ACTOR_TYPE:
+  #   values: ["mlp", "s5"]
+  # algorithm.UPDATE_EPOCHS:
+  #   values: [10, 15, 20]
+  # algorithm.NUM_MINIBATCHES:
+  #   values: [4, 8]
+  # algorithm.GAMMA:
+  #   values: [0.95, 0.99]
+  # algorithm.GAE_LAMBDA:
+  #   values: [0.9, 0.95, 0.98]
+  # algorithm.CLIP_EPS:
+  #   values: [0.5, 0.3, 0.2, 0.1, 0.01, 0.02, 0.03, 0.04, 0.05]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=overcooked-v1/coord_ring
+  - algorithm=ppo_ego/overcooked-v1/coord_ring
+  - run_heldout_eval=true
+  - logger.project=aht-parameter-sweep
+  - logger.entity=aht-project
+  - logger.mode=online
+  - logger.log_train_out=false
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - label="param_sweep"
+  - ${args_no_hyphens}
