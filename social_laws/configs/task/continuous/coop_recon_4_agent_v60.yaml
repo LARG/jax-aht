@@ -1,0 +1,27 @@
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 200
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_4_v60",
+    render_dir: "render",
+    num_agents: 4,
+    grid_size: 1.0,
+    ego_centric_obs: false,
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 150,
+    collision_radius: 0.05,
+    min_sep_goal: 0.30,
+    # NO collision avoidance — goal-allocation only.
+    # 200 eval episodes: fair ablation baseline for V58 (social_min_dist=0.15).
+    # Upgrades V49 (N=4, 50 ep) to match V58's eval count.
+    social_min_dist: 0.0,
+  }
+TASK_NAME: continuous/coop_recon_n_agent_4_v60
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+SINGLE_AGENT_4_PROJECTION: ""
+ALPHA_COST: false

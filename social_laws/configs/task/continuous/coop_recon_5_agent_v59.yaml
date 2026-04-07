@@ -1,0 +1,30 @@
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 200
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_5_v59",
+    render_dir: "render",
+    num_agents: 5,
+    grid_size: 1.0,
+    ego_centric_obs: false,
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 200,
+    collision_radius: 0.05,
+    min_sep_goal: 0.30,
+    # social_min_dist=0.15: consistent with V57/V58.
+    # At N=5 in a 1.0 grid, goal-allocation only (V50) gave α≈0.53 —
+    # the most severe degradation in the density sweep.
+    # Even recovering to α≈0.75+ would demonstrate the law's value.
+    # 200 eval episodes for reliable estimates at this density.
+    social_min_dist: 0.15,
+  }
+TASK_NAME: continuous/coop_recon_n_agent_5_v59
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+SINGLE_AGENT_4_PROJECTION: ""
+SINGLE_AGENT_5_PROJECTION: ""
+ALPHA_COST: false

@@ -3,9 +3,9 @@ import numpy as np
 import os
 from random import seed
 
-import jaxmarl
-import jumanji
-from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
+# jaxmarl, jumanji, and LbfGenerator are lazy-imported inside the branches
+# that actually use them. This avoids requiring their full dependency tree
+# (brax, matplotlib, pygame, etc.) on nodes running coop_recon experiments.
 
 
 def process_default_args(env_kwargs: dict, default_args: dict):
@@ -23,6 +23,10 @@ def process_default_args(env_kwargs: dict, default_args: dict):
 
 def make_env(env_name: str, env_kwargs: dict = {}):
     if env_name in ['lbf', 'lbf-reward-shaping']:
+        import jaxmarl  # noqa: F401 — imported for registry side-effects
+        import jumanji
+        from jumanji.environments.routing.lbf.generator import RandomGenerator as LbfGenerator
+
         default_generator_args = {
             "grid_size": 7,
             "fov": 7,

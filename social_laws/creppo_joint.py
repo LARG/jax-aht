@@ -936,6 +936,25 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         average_ckpt_optimal_collisions_per_iter = np.mean(all_ckpt_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
         average_agent_optimal_collisions_per_iter = np.mean(all_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
 
+    # Social law activation logging: how many steps did agents spend within social_min_dist?
+    # Only present when social_min_dist > 0 in env config; gracefully absent for old runs.
+    has_law_activations = "returned_episode_law_activations" in train_metrics["ckpt_eval_ep_last_info"][0]
+    if has_law_activations:
+        # Sum over agents (axis=3) to get total activations per episode, then mean over seeds/eps.
+        all_ckpt_wc_law = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_law_activations"])
+        all_wc_law      = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_law_activations"])
+        all_ckpt_wc_law  = np.sum(all_ckpt_wc_law, axis=3)  # sum over agents within episode
+        all_wc_law       = np.sum(all_wc_law,      axis=3)
+        all_ckpt_opt_law = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_law_activations"])
+        all_opt_law      = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_law_activations"])
+        all_ckpt_opt_law = np.sum(all_ckpt_opt_law, axis=3)
+        all_opt_law      = np.sum(all_opt_law,      axis=3)
+
+        avg_ckpt_wc_law_per_iter  = np.mean(all_ckpt_wc_law,  axis=(0, 2))  # (num_updates,)
+        avg_wc_law_per_iter       = np.mean(all_wc_law,        axis=(0, 2))
+        avg_ckpt_opt_law_per_iter = np.mean(all_ckpt_opt_law,  axis=(0, 2))
+        avg_opt_law_per_iter      = np.mean(all_opt_law,       axis=(0, 2))
+
 
     # Log metrics for each update step
     num_updates = len(avg_per_agent_alpha_losses[0])
@@ -957,6 +976,14 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
             logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCaseCollisions", average_ckpt_worst_case_collisions_per_iter[step], train_step=step, commit=True)
             logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalCollisions", average_agent_optimal_collisions_per_iter[step], train_step=step, commit=True)
             logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalCollisions", average_ckpt_optimal_collisions_per_iter[step], train_step=step, commit=True)
+
+        # Law activation counts: steps within social_min_dist (noise violations included).
+        # These metrics reveal how often the proximity zone was penetrated despite the law.
+        if has_law_activations:
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/WorstCase/LawActivations", avg_wc_law_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCase/LawActivations", avg_ckpt_wc_law_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/LawActivations", avg_opt_law_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimal/LawActivations", avg_ckpt_opt_law_per_iter[step], train_step=step, commit=True)
 
         for i in range(num_agents_log):
             prefix = f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Agent_{i + 1}"
