@@ -42,7 +42,8 @@ def ippo(config):
         else:
             params, policies, init_params = run_ippo(config, wandb_logger)
     else:
-        raise NotImplementedError(f"Algorithm {config.algorithm['ALG']} not implemented.")
+        alg_name = config.algorithm.get("ALG", "Unknown")
+        raise NotImplementedError(f"Algorithm {alg_name} not implemented.")
 
     wandb_logger.close()
 
