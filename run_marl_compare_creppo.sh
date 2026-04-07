@@ -7,6 +7,9 @@ export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_DEFAULT_MATMUL_PRECISION=highest
 
+# Ensure venv is active
+source /scratch/cluster/jeffrey9/jax-aht/venv/bin/activate
+
 # Redirect WandB artifacts to scratch to save home folder space
 mkdir -p /scratch/cluster/jeffrey9/wandb_cache
 export WANDB_DIR=/scratch/cluster/jeffrey9/wandb_cache
