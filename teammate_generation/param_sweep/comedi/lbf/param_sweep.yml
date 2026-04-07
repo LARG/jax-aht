@@ -12,7 +12,7 @@ parameters:
   algorithm.PARTNER_POP_SIZE:
     values: [8, 12, 16]
   algorithm.COMEDI_ALPHA:
-    values: [0.1, 0.2, 0.3, 0.4, 0.5]
+    values: [0.1, 0.3, 0.5, 0.7, 0.9]
   algorithm.COMEDI_BETA:
     values: [0.2, 0.4, 0.6, 0.8, 1.0]
   algorithm.LR:
