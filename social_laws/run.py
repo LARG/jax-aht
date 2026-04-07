@@ -177,12 +177,23 @@ def run_training(cfg):
                 agent_params.append(agent_param)
                 agent_eval_checkpoints.append(eval_checkpoints)
         else:
-            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+            # Add support for reverse training order diagnostic
+            train_order = list(range(cfg.NUM_EXPT_AGENTS))
+            if getattr(cfg.algorithm, "REVERSE_AGENT_TRAIN_ORDER", False):
+                train_order.reverse()
+                
+            # Initialize lists to proper size to allow out-of-order insertion
+            agent_policies = [None] * cfg.NUM_EXPT_AGENTS
+            agent_init_params = [None] * cfg.NUM_EXPT_AGENTS
+            agent_params = [None] * cfg.NUM_EXPT_AGENTS
+            agent_eval_checkpoints = [None] * cfg.NUM_EXPT_AGENTS
+            
+            for agent_idx in train_order:
                 agent_param, agent_policy, agent_init_param, eval_checkpoints = run_creppo_training(cfg, wandb_logger, agent_idx=agent_idx)
-                agent_policies.append(agent_policy)
-                agent_init_params.append(agent_init_param)
-                agent_params.append(agent_param)
-                agent_eval_checkpoints.append(eval_checkpoints)
+                agent_policies[agent_idx] = agent_policy
+                agent_init_params[agent_idx] = agent_init_param
+                agent_params[agent_idx] = agent_param
+                agent_eval_checkpoints[agent_idx] = eval_checkpoints
 
         env_kwargs = dict(cfg["algorithm"]["ENV_KWARGS"])
         env_kwargs["render_dir"] = os.path.join("render", "creppo", "Joint_Eval")

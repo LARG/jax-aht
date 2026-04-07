@@ -1,0 +1,23 @@
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 50  # Keep at 50 to avoid GPU OOM for N=4
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_4",
+    render_dir: "render",
+    num_agents: 4,
+    grid_size: 1.5,            # Scaled up from V40's 1.0 — density-normalized comparison vs V42
+    ego_centric_obs: true,
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 150,              # Same as V40
+    collision_radius: 0.05,
+    min_sep_goal: 0.30,        # Standard separation, easily feasible on 1.5 grid
+  }
+TASK_NAME: continuous/coop_recon_n_agent_4
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+SINGLE_AGENT_4_PROJECTION: ""
+ALPHA_COST: false

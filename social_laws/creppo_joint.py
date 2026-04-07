@@ -920,19 +920,21 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         average_ckpt_alpha_rets_per_iter = average_ckpt_worst_case_rets_per_iter / average_ckpt_optimal_rets_per_iter
         average_agent_alpha_rets_per_iter = average_agent_worst_case_rets_per_iter / average_agent_optimal_rets_per_iter
 
-    all_ckpt_worst_case_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_worst_case_collisions = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_ckpt_worst_case_collisions = np.sum(all_ckpt_worst_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
-    all_worst_case_collisions = np.sum(all_worst_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
-    all_ckpt_optimal_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_optimal_collisions = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_ckpt_optimal_collisions = np.sum(all_ckpt_optimal_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
-    all_optimal_collisions = np.sum(all_optimal_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
+    has_collisions = "returned_episode_collisions" in train_metrics["ckpt_eval_ep_last_info"][0]
+    if has_collisions:
+        all_ckpt_worst_case_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+        all_worst_case_collisions = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+        all_ckpt_worst_case_collisions = np.sum(all_ckpt_worst_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
+        all_worst_case_collisions = np.sum(all_worst_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
+        all_ckpt_optimal_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+        all_optimal_collisions = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+        all_ckpt_optimal_collisions = np.sum(all_ckpt_optimal_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
+        all_optimal_collisions = np.sum(all_optimal_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
 
-    average_ckpt_worst_case_collisions_per_iter = np.mean(all_ckpt_worst_case_collisions, axis=(0, 2)) # shape (num_updates,)
-    average_agent_worst_case_collisions_per_iter = np.mean(all_worst_case_collisions, axis=(0, 2)) # shape (num_updates,)
-    average_ckpt_optimal_collisions_per_iter = np.mean(all_ckpt_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
-    average_agent_optimal_collisions_per_iter = np.mean(all_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
+        average_ckpt_worst_case_collisions_per_iter = np.mean(all_ckpt_worst_case_collisions, axis=(0, 2)) # shape (num_updates,)
+        average_agent_worst_case_collisions_per_iter = np.mean(all_worst_case_collisions, axis=(0, 2)) # shape (num_updates,)
+        average_ckpt_optimal_collisions_per_iter = np.mean(all_ckpt_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
+        average_agent_optimal_collisions_per_iter = np.mean(all_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
 
 
     # Log metrics for each update step
@@ -950,10 +952,11 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/AlphaReturn", average_agent_alpha_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointAlphaReturn", average_ckpt_alpha_rets_per_iter[step], train_step=step, commit=True)
 
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/WorstCaseCollisions", average_agent_worst_case_collisions_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCaseCollisions", average_ckpt_worst_case_collisions_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalCollisions", average_agent_optimal_collisions_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalCollisions", average_ckpt_optimal_collisions_per_iter[step], train_step=step, commit=True)
+        if has_collisions:
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/WorstCaseCollisions", average_agent_worst_case_collisions_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCaseCollisions", average_ckpt_worst_case_collisions_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalCollisions", average_agent_optimal_collisions_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalCollisions", average_ckpt_optimal_collisions_per_iter[step], train_step=step, commit=True)
 
         for i in range(num_agents_log):
             prefix = f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Agent_{i + 1}"
