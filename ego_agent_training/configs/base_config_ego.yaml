@@ -2,7 +2,7 @@ defaults:
   - task: overcooked-v1/cramped_room # task configs
   - algorithm@algorithm: ppo_ego/${task} # task-specific algorithm configs
   - hydra: hydra_simple
-  - ../../evaluation/configs/global_heldout_settings
+  - ../../evaluation/configs/global_validation_settings
   - _self_         # Ensures that values in this file override imported ones if needed
 
 ENV_NAME: ${task.ENV_NAME}
