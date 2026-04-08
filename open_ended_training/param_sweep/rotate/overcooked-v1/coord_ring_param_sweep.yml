@@ -1,0 +1,29 @@
+program: open_ended_training/run.py
+name: rotate-overcooked-v1-coord_ring
+method: bayes
+entity: aht-project
+project: aht-parameter-sweep
+metric:
+  goal: maximize
+  name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
+
+parameters:
+  algorithm.REGRET_SP_WEIGHT:
+    values: [0.1, 0.5, 1, 1.5, 2, 2.5, 3]
+  algorithm.LR:
+    values: [1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
+  algorithm.ENT_COEF:
+    values: [0.1, 0.05, 0.03, 0.01, 0.005]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=overcooked-v1/coord_ring
+  - algorithm=rotate/overcooked-v1/coord_ring
+  - run_heldout_eval=true
+  - logger.log_train_out=false
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - label="param_sweep"
+  - ${args_no_hyphens}

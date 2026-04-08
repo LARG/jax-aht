@@ -62,3 +62,11 @@ include = ["agents*", "common*", "envs*", "evaluation*", "ego_agent_training*", 
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md"]
+
+[tool.pyrefly]
+project_includes = ["."]
+search_path = ["."]
+
+[tool.pyright]
+pythonVersion = "3.11"
+extraPaths = ["."]
