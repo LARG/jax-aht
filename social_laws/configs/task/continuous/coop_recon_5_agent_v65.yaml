@@ -1,0 +1,28 @@
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 200
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_5_v65",
+    render_dir: "render",
+    num_agents: 5,
+    grid_size: 1.0,
+    ego_centric_obs: false,
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 200,
+    collision_radius: 0.05,
+    min_sep_goal: 0.30,
+    # Law sensitivity test at N=5: same as V59 but threshold=0.20 vs 0.15.
+    # At N=5, the 1.0 grid is densely packed — 0.20 may over-constrain navigation.
+    # If 0.20 hurts more at N=5 than 0.15, confirms density-threshold interaction.
+    social_min_dist: 0.20,
+  }
+TASK_NAME: continuous/coop_recon_n_agent_5_v65
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+SINGLE_AGENT_4_PROJECTION: ""
+SINGLE_AGENT_5_PROJECTION: ""
+ALPHA_COST: false

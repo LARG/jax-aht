@@ -1,0 +1,28 @@
+ENV_NAME: continuous/coop_recon_n_agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 200
+ENV_KWARGS: {
+    instance: "",
+    render: true,
+    render_name: "coop_recon_n_agent_4_v58",
+    render_dir: "render",
+    num_agents: 4,
+    grid_size: 1.0,
+    ego_centric_obs: false,
+    movement_noise_std: 0.1,
+    done_condition: "all",
+    horizon: 150,
+    collision_radius: 0.05,
+    min_sep_goal: 0.30,
+    # social_min_dist=0.15: same threshold as best N=3 result (V57).
+    # At N=4 in a 1.0 grid, goal-allocation only (V49) gave α≈0.85–0.87.
+    # Hypothesis: combined law pushes N=4 α toward 0.95+.
+    # 200 eval episodes for tight confidence intervals.
+    social_min_dist: 0.15,
+  }
+TASK_NAME: continuous/coop_recon_n_agent_4_v58
+SINGLE_AGENT_1_PROJECTION: ""
+SINGLE_AGENT_2_PROJECTION: ""
+SINGLE_AGENT_3_PROJECTION: ""
+SINGLE_AGENT_4_PROJECTION: ""
+ALPHA_COST: false

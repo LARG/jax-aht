@@ -9,16 +9,26 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-import pyRDDLGym_jax
 
+from flax.struct import dataclass
+import pyRDDLGym_jax
 from pyRDDLGym_jax.core.env import JaxRDDLEnv, EnvState
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
 from envs.base_env import BaseEnv
-from envs.base_env import WrappedEnvState
+# from envs.base_env import WrappedEnvState
 from envs.rddl.pizza_v2.PizzaV2MultiAgentViz import PizzaV2MultiAgentVisualizer
 
 from pyRDDLGym.core.visualizer.movie import MovieGenerator
+
+@dataclass
+class WrappedEnvState:
+    env_state: Any
+    base_return_so_far: jnp.ndarray  # records the original return w/o reward shaping terms
+    avail_actions: jnp.ndarray
+    step: jnp.array
+    collisions_so_far: jnp.ndarray  # records the number of collisions so far in the episode
+    
 
 class PizzaWrapper(BaseEnv):
     """Use the RDDL JAX Environment with JaxMARL environments.
@@ -122,7 +132,8 @@ class PizzaWrapper(BaseEnv):
         state = WrappedEnvState(env_state,
                                 jnp.zeros(self.num_agents),
                                 self._extract_avail_actions(env_state),
-                                env_state.timestep)
+                                env_state.timestep,
+                                jnp.zeros(self.num_agents, dtype=jnp.int32))
         return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
@@ -189,15 +200,26 @@ class PizzaWrapper(BaseEnv):
             jax.debug.print("[PizzaWrapper.step] raw available (unsanitized) drive={drive}", drive=raw_avail.get('drive', jnp.array([])))
             jax.debug.print("[PizzaWrapper.step] raw available (unsanitized) deliver={deliver}", deliver=raw_avail.get('deliver', jnp.array([])))
             jax.debug.print("[PizzaWrapper.step] raw available (unsanitized) load={load}", load=raw_avail.get('load', jnp.array([])))
+        
         avail_actions = self._extract_avail_actions(env_state)
-        state_st = WrappedEnvState(env_state, jnp.zeros(self.num_agents), avail_actions, env_state.timestep)
+        done = self._extract_dones(timestep, timestep.observation)
+        # extract collision info
+        new_episode_collisions = state.collisions_so_far + timestep.observation['collision'].astype(jnp.int32)
+        
+        state_st = WrappedEnvState(
+            env_state, 
+            jnp.zeros(self.num_agents), 
+            avail_actions, 
+            env_state.timestep,
+            state.collisions_so_far * (1 - done["__all__"]) + new_episode_collisions * done["__all__"]
+        )
         obs_st = self._extract_observations(timestep.observation)
         reward = self._extract_rewards(timestep.reward)
-        done = self._extract_dones(timestep, timestep.observation)
         info = self._extract_infos(timestep)
         # Save the state before reset to info dict for rendering purposes
         info['pre_reset_state'] = state_st
         info['pre_reset_obs'] = obs_st
+        info['returned_episode_collisions'] = state_st.collisions_so_far
         # Auto-reset environment based on termination
         obs, state = jax.tree.map(
             lambda x, y: jax.lax.select(done["__all__"], x, y),

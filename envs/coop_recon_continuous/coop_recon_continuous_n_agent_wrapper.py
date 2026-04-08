@@ -41,12 +41,13 @@ class CoopReconNAgentEnvState:
 
 @dataclass
 class CoopReconWrappedEnvState:
-    """WrappedEnvState extended with per-agent collision counter."""
+    """WrappedEnvState extended with per-agent collision and social-law counters."""
     env_state: Any
     base_return_so_far: jnp.ndarray
     avail_actions: jnp.ndarray
     step: jnp.array
-    collisions_so_far: jnp.ndarray  # (N,) int32 — cumulative per-agent collision count
+    collisions_so_far: jnp.ndarray       # (N,) int32 — cumulative per-agent collision count
+    law_activations_so_far: jnp.ndarray  # (N,) int32 — steps agent was within social_min_dist of another
 
 
 class CoopReconContinuousNAgentWrapper(BaseEnv):
@@ -70,6 +71,11 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             ego_centric_obs (bool): Use relative observations. Default False.
             sap_domain_randomize_partner (bool): Randomize partner states. Default False.
             sap_focal_agent_idx (int): Focal agent for SAP randomization. Default 0.
+            social_min_dist (float): Minimum distance social law threshold. Default 0.0
+                (disabled). When > 0, any locomotion action (1-4) that would bring an
+                agent within this distance of another is masked unavailable. Gaussian
+                movement noise applied in step() can still cause violations — this is
+                intentional so the law governs deliberate actions only.
     """
 
     def __init__(self, **kwargs):
@@ -90,6 +96,9 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         self.collision_radius = kwargs.get('collision_radius', 0.05)
         self.step_penalty = kwargs.get('step_penalty', -0.01)
         self.min_sep_goal = kwargs.get('min_sep_goal', 0.30)
+        # Social minimum distance law. Default 0.0 = disabled (backward compatible).
+        # Must be > collision_radius to provide any protection before termination.
+        self.social_min_dist = kwargs.get('social_min_dist', 0.0)
 
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "coop_recon_n_agent")
@@ -249,7 +258,8 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             base_return_so_far=jnp.zeros(N, dtype=jnp.float32),
             avail_actions=avail_actions,
             step=timestep,
-            collisions_so_far=jnp.zeros(N, dtype=jnp.int32)
+            collisions_so_far=jnp.zeros(N, dtype=jnp.int32),
+            law_activations_so_far=jnp.zeros(N, dtype=jnp.int32),
         )
 
         return obs, state
@@ -295,6 +305,15 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         per_agent_collision = jnp.any((dists < self.collision_radius) & off_diag, axis=1) # (N,)
         new_episode_collisions = state.collisions_so_far + per_agent_collision.astype(jnp.int32)
 
+        # Social law proximity tracking: count steps where agent i ended up within
+        # social_min_dist of another agent (AFTER noise is applied). This captures
+        # both noise-driven violations and any collision-zone entries.
+        # When social_min_dist == 0.0 this is always False (no overhead).
+        per_agent_in_law_zone = jnp.any(
+            (dists < self.social_min_dist) & off_diag, axis=1
+        )  # (N,) bool
+        new_law_activations = state.law_activations_so_far + per_agent_in_law_zone.astype(jnp.int32)
+
         key_water, key_life = jax.random.split(key, 2)
         new_detected_water, new_detected_life, new_picture_taken, rewards = self._process_actions(
             key_water, key_life,
@@ -329,13 +348,21 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             base_return_so_far=jnp.zeros(self.num_agents, dtype=jnp.float32),
             avail_actions=avail_actions,
             step=new_timestep,
-            collisions_so_far=state.collisions_so_far * (1 - dones["__all__"]) + new_episode_collisions * dones["__all__"]
+            collisions_so_far=(
+                state.collisions_so_far * (1 - dones["__all__"])
+                + new_episode_collisions * dones["__all__"]
+            ),
+            law_activations_so_far=(
+                state.law_activations_so_far * (1 - dones["__all__"])
+                + new_law_activations * dones["__all__"]
+            ),
         )
 
         info = {
-            'pre_reset_state': state_st, 
+            'pre_reset_state': state_st,
             'pre_reset_obs': obs_st,
-            'returned_episode_collisions': state_st.collisions_so_far
+            'returned_episode_collisions': state_st.collisions_so_far,
+            'returned_episode_law_activations': state_st.law_activations_so_far,
         }
 
         obs, state = jax.tree.map(
@@ -558,9 +585,89 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             env_state.positions[:, None, :] - env_state.goal_pos[None, :, :], axis=-1)  # (N, N)
         at_goal = dists_to_goal < self.detection_radius  # (N, N)
 
-        # Goal-allocation: agent i → goal i
+        # Goal-allocation social law: agent i may only act at goal i.
         agent_goal_mask = jnp.eye(N, dtype=bool)
         at_goal = at_goal & agent_goal_mask  # (N, N)
+
+        # -------------------------------------------------------------------
+        # Social Minimum Distance Law
+        # -------------------------------------------------------------------
+        # For every locomotion action (1=N, 2=S, 3=E, 4=W) for every agent i,
+        # predict the next position using the same velocity physics as step():
+        #
+        #   new_vel  = 0.7 * vel_i + 0.3 * target_vel   (momentum smoothing)
+        #   new_vel  = new_vel * min(1, max_speed / ||new_vel||)  (speed clip)
+        #   pred_pos = pos_i + new_vel * dt              (Euler integration)
+        #
+        # If pred_pos would bring agent i within social_min_dist of any other
+        # agent j (using their CURRENT, pre-noise positions), that action is
+        # masked unavailable.
+        #
+        # Key properties:
+        #  - NOOP (0) and task actions (5/6/7) are NEVER restricted — agent
+        #    can always stand still or perform its reconnaissance task.
+        #  - Gaussian noise in step() is applied AFTER this check, so the law
+        #    governs deliberate actions only; noise-driven violations are still
+        #    possible (intentional, per PI specification).
+        #  - Because `self` is static_argnums=(0,), the `if` branch below is
+        #    evaluated at JIT compile time. When social_min_dist == 0.0 the
+        #    entire block is compiled away — zero runtime cost for old configs.
+        # -------------------------------------------------------------------
+        if self.social_min_dist > 0.0:
+            # Predicted velocity for each agent × each of the 8 actions.
+            # Shapes: velocities (N, 2), action_to_vel (8, 2)
+            # → new_vels (N, 8, 2) via broadcasting
+            new_vels = (
+                0.7 * env_state.velocities[:, None, :]   # (N, 1, 2)
+                + 0.3 * self.action_to_vel[None, :, :]   # (1, 8, 2)
+            )  # (N, 8, 2)
+
+            # Speed-clip each (agent, action) velocity to max_speed.
+            speeds = jnp.linalg.norm(new_vels, axis=-1, keepdims=True)  # (N, 8, 1)
+            scale  = jnp.minimum(1.0, self.max_speed / (speeds + 1e-8))  # (N, 8, 1)
+            new_vels = new_vels * scale  # (N, 8, 2)
+
+            # Completed agents stop moving regardless of the chosen action.
+            done_mask = env_state.picture_taken[:, None, None]  # (N, 1, 1) bool
+            new_vels = jnp.where(done_mask, jnp.zeros_like(new_vels), new_vels)
+
+            # Predicted positions (no noise — deliberate-action check only).
+            pred_pos = (
+                env_state.positions[:, None, :]   # (N, 1, 2)
+                + new_vels * self.dt               # (N, 8, 2)
+            )  # (N, 8, 2)
+            pred_pos = jnp.clip(pred_pos, 0.0, self.grid_size)
+
+            # Distance from each (agent_i, action_k) predicted position to every
+            # agent_j's CURRENT position.
+            # pred_pos[:, :, None, :] : (N, 8, 1, 2)
+            # positions[None, None, :, :] : (1, 1, N, 2)
+            # → pred_dists : (N, 8, N)
+            pred_diffs = (
+                pred_pos[:, :, None, :]                      # (N, 8, 1, 2)
+                - env_state.positions[None, None, :, :]      # (1, 1, N, 2)
+            )  # (N, 8, N, 2)
+            pred_dists = jnp.linalg.norm(pred_diffs, axis=-1)  # (N, 8, N)
+
+            # Exclude self-distance: off_diag[i, j] = (i != j).
+            # Shape (N, N) -> (N, 1, N) broadcasts to (N, 8, N).
+            off_diag_3d = (~jnp.eye(N, dtype=bool))[:, None, :]  # (N, 1, N)
+
+            # For each (agent_i, action_k): would the move violate min_dist?
+            would_violate = jnp.any(
+                (pred_dists < self.social_min_dist) & off_diag_3d,
+                axis=-1,
+            )  # (N, 8)
+
+            # Only restrict locomotion actions 1-4 (N/S/E/W).
+            # Actions 0 (noop), 5 (water), 6 (life), 7 (picture) are never
+            # restricted by the minimum-distance law.
+            is_locomotion = jnp.array(
+                [False, True, True, True, True, False, False, False], dtype=bool
+            )  # (8,)
+
+            # social_law_ok[i, k] = True means action k is ALLOWED for agent i.
+            social_law_ok = ~(would_violate & is_locomotion[None, :])  # (N, 8)
 
         avail_actions = {}
         for i, agent in enumerate(self.agents):
@@ -575,9 +682,18 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
                 True, True, True, True, True,
                 can_water, can_life, can_pic
             ], dtype=jnp.float32)
-            noop_mask = jnp.array([True, False, False, False, False, False, False, False], dtype=jnp.float32)
+            noop_mask = jnp.array(
+                [True, False, False, False, False, False, False, False], dtype=jnp.float32
+            )
 
-            avail_actions[agent] = jnp.where(agent_done, noop_mask, full_mask)
+            mask = jnp.where(agent_done, noop_mask, full_mask)
+
+            # Apply social minimum distance masking (AND with social_law_ok[i]).
+            # This is a compile-time branch — elided entirely when social_min_dist==0.
+            if self.social_min_dist > 0.0:
+                mask = mask * social_law_ok[i].astype(jnp.float32)
+
+            avail_actions[agent] = mask
 
         return avail_actions
 
