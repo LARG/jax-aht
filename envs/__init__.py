@@ -131,9 +131,45 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         
         env = HanabiWrapper(**env_kwargs_copy)
 
+    elif env_name == 'dsse':
+        # DSSE (Drone Swarm Search Environment). The headline AHT
+        # configurations are in writeup/dsse.tex: 4-drone MARL self-play
+        # uses n_drones=4, n_targets=2; 2-drone ego training uses n_drones=2,
+        # n_targets=1. Both run at grid_size=7, n_drones_to_rescue=2,
+        # target_cluster_radius=1 (the stag hunt regime the validity
+        # ablations are built on).
+        from envs.dsse.dsse_wrapper import DSSEWrapper
+
+        default_dsse_kwargs = {
+            "grid_size": 7,
+            "n_drones": 4,
+            "n_targets": 2,
+            "n_drones_to_rescue": 2,
+            "target_cluster_radius": 1,
+            "timestep_limit": 100,
+            "probability_of_detection": 0.9,
+            "vector_x": 1.1,
+            "vector_y": 1.0,
+            "dispersion_start": 0.5,
+            "dispersion_inc": 0.1,
+            "leave_grid_penalty": 0.0,
+            "pre_render_steps": 0,
+            "share_rewards": True,
+        }
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        for key in default_dsse_kwargs:
+            if key not in env_kwargs_copy:
+                env_kwargs_copy[key] = default_dsse_kwargs[key]
+
+        # Convert num_agents to n_drones if provided
+        if "num_agents" in env_kwargs_copy:
+            env_kwargs_copy["n_drones"] = env_kwargs_copy.pop("num_agents")
+
+        env = DSSEWrapper(**env_kwargs_copy)
+
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
-    
+
     return env
 
 if __name__ == "__main__":
@@ -141,6 +177,8 @@ if __name__ == "__main__":
     env = make_env('lbf-reward-shaping', {'num_agents': 3, 'grid_size': 9})
     print(env)
     env = make_env('overcooked-v1', {'layout': 'cramped_room'})
+    print(env)
+    env = make_env('dsse', {'n_drones': 4, 'grid_size': 15})
     print(env)
     env = make_env('hanabi', {'num_agents': 2})
     print(env)

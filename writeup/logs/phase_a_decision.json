@@ -1,0 +1,49 @@
+{
+  "results": {
+    "ppo_ego": {
+      "run": "results/dsse/ppo_ego_s5/phase_a_ppo_ego_5seed/2026-04-07_01-01-44",
+      "per_seed": [
+        0.09149999916553497,
+        0.0860000029206276,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mean": 0.03550000116229057,
+      "std": 0.0435132160782814,
+      "n": 5
+    },
+    "liam_trained": {
+      "run": "results/dsse/liam_ego_mlp/phase_a_liam_trained_5seed/2026-04-07_01-01-44",
+      "per_seed": [
+        0.6425000429153442,
+        0.0,
+        0.0,
+        0.4309999942779541,
+        0.47349995374679565
+      ],
+      "mean": 0.3093999922275543,
+      "std": 0.2623462378978729,
+      "n": 5
+    },
+    "liam_frozen": {
+      "run": "results/dsse/liam_ego_mlp/phase_a_liam_frozen_5seed/2026-04-07_01-11-42",
+      "per_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mean": 0.0,
+      "std": 0.0,
+      "n": 5
+    }
+  },
+  "gap_full": 0.27389999106526375,
+  "gap_encoder": 0.3093999922275543,
+  "gap_capacity": -0.03550000116229057,
+  "threshold": 0.17822687327861786,
+  "verdict": "COORDINATION_SIGNAL",
+  "next_step": "PROCEED to Phase B (10 seeds) and Phase C (3-partner population). Encoder learning is contributing real signal."
+}

@@ -1,0 +1,77 @@
+./.venv/lib/python3.12/site-packages/jumanji/environments/routing/cvrp/viewer.py:21: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+task:
+  ENV_NAME: dsse
+  ROLLOUT_LENGTH: 100
+  ENV_KWARGS:
+    grid_size: 7
+    n_drones: 4
+    n_targets: 2
+    timestep_limit: 100
+    vector_x: 1.1
+    vector_y: 1.0
+    dispersion_inc: 0.1
+    n_drones_to_rescue: 2
+  TASK_NAME: dsse
+algorithm:
+  ALG: ippo
+  TOTAL_TIMESTEPS: 100000
+  ACTOR_TYPE: mlp
+  NUM_CHECKPOINTS: 5
+  GAMMA: 0.99
+  GAE_LAMBDA: 0.95
+  VF_COEF: 0.5
+  MAX_GRAD_NORM: 1.0
+  ANNEAL_LR: true
+  SEED: 42
+  LR: 0.0003
+  NUM_ENVS: 16
+  UPDATE_EPOCHS: 10
+  NUM_MINIBATCHES: 4
+  CLIP_EPS: 0.2
+  ENT_COEF: 0.01
+  NUM_SEEDS: 3
+  TRAIN_SEED: 20374
+  ENV_NAME: dsse
+  ENV_KWARGS:
+    grid_size: 7
+    n_drones: 4
+    n_targets: 2
+    timestep_limit: 100
+    vector_x: 1.1
+    vector_y: 1.0
+    dispersion_inc: 0.1
+    n_drones_to_rescue: 2
+  ROLLOUT_LENGTH: 100
+ENV_NAME: dsse
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 4
+  n_targets: 2
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+  n_drones_to_rescue: 2
+ROLLOUT_LENGTH: 100
+TASK_NAME: dsse
+label: scale_bench_16
+name: dsse/ippo/scale_bench_16
+logger:
+  project: aht-benchmark
+  entity: aht-project
+  tags:
+  - ippo
+  - dsse
+  - seed=20374
+  - scale_bench_16
+  mode: disabled
+  verbose: false
+  log_train_out: true
+  log_eval_out: true
+local_logger:
+  save_train_out: true
+  save_eval_out: true
+
+IPPO Training:   0%|          | 0/62 [00:00<?, ?update/s]IPPO Training:   2%|▏         | 1/62 [00:11<11:43, 11.54s/update]IPPO Training:  13%|█▎        | 8/62 [00:11<00:57,  1.06s/update]IPPO Training:  24%|██▍       | 15/62 [00:11<00:22,  2.12update/s]IPPO Training:  37%|███▋      | 23/62 [00:11<00:09,  3.97update/s]IPPO Training:  50%|█████     | 31/62 [00:11<00:04,  6.45update/s]IPPO Training:  63%|██████▎   | 39/62 [00:12<00:02,  9.69update/s]IPPO Training:  76%|███████▌  | 47/62 [00:12<00:01, 13.78update/s]IPPO Training:  89%|████████▊ | 55/62 [00:12<00:00, 18.77update/s]IPPO Training: 100%|██████████| 62/62 [00:12<00:00,  5.00update/s]
+wandb: Adding directory to artifact (./results/dsse/ippo/scale_bench_16/2026-04-06_23-19-02/saved_train_run)... Done. 0.0s

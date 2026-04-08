@@ -48,6 +48,20 @@ def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None)
             return out[ckpt_key]
     elif custom_loader_cfg["name"] == "partial_load":
         return _load_partial(path, ckpt_key)
+    elif custom_loader_cfg["name"] == "fcp":
+        # FCP saves checkpoints with shape
+        #   (NUM_SEEDS, PARTNER_POP_SIZE, NUM_CHECKPOINTS, ...)
+        # Reshape to the (NUM_SEEDS, FCP_POP_SIZE, ...) layout that
+        # AgentPopulation expects, where FCP_POP_SIZE = PARTNER_POP_SIZE *
+        # NUM_CHECKPOINTS. Mirrors get_fcp_population in
+        # teammate_generation/fcp.py so a saved FCP run can be reused as a
+        # partner pool by ego_agent_training/run.py.
+        restored = load_train_run(path)
+        ckpts = restored[ckpt_key]
+        return jax.tree.map(
+            lambda x: x.reshape(x.shape[0], x.shape[1] * x.shape[2], *x.shape[3:]),
+            ckpts,
+        )
     else:
         raise ValueError(f"Invalid custom loader name: {custom_loader_cfg['name']}")
 

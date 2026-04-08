@@ -1,0 +1,18 @@
+# DSSE (Drone Swarm Search Environment) -- open-ended training task config.
+# Mirrors ego_agent_training/configs/task/dsse.yaml because open_ended_training
+# methods (ROTATE, PAIRED, Open-Ended Minimax) inherit the num_agents == 2
+# assertion via the ego training subroutine. The 4-drone variant in
+# marl/configs/task/dsse.yaml is reserved for MARL self-play.
+ENV_NAME: dsse
+ROLLOUT_LENGTH: 100
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 2
+  n_targets: 1
+  n_drones_to_rescue: 2
+  target_cluster_radius: 1
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+TASK_NAME: dsse

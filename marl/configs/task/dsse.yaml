@@ -1,0 +1,20 @@
+# DSSE (Drone Swarm Search Environment) -- 4-drone config used for
+# MARL self-play in the writeup. See writeup/dsse.tex.
+#
+# n_drones_to_rescue >= 2 with target_cluster_radius=1 turns the task into a
+# coordination task: a target is rescued only when at least n_drones_to_rescue agents
+# execute SEARCH on the same cell within target_cluster_radius. This is the
+# coordination signal MARL/AHT methods exploit.
+ENV_NAME: dsse
+ROLLOUT_LENGTH: 100
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 4
+  n_targets: 2
+  n_drones_to_rescue: 2
+  target_cluster_radius: 1
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+TASK_NAME: dsse

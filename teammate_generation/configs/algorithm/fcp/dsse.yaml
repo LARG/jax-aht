@@ -1,0 +1,21 @@
+defaults:
+  - fcp/_base_
+  - _self_
+
+# DSSE 2-drone coordination FCP config. Pre-trains a population of IPPO partners
+# via marl/ippo and then trains an ego agent against them. Inherits
+# num_agents == 2 from ppo_ego, so DSSE is run in 2-drone mode.
+TOTAL_TIMESTEPS: 1e7
+LR: 3e-4
+NUM_ENVS: 32
+UPDATE_EPOCHS: 10
+NUM_MINIBATCHES: 4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+ego_train_algorithm:
+  TOTAL_TIMESTEPS: 1e7
+  LR: 3e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: false
+  UPDATE_EPOCHS: 10

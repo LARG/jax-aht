@@ -1,0 +1,21 @@
+# DSSE (Drone Swarm Search Environment) -- 2-drone stag-hunt ego training config.
+# This config uses n_drones=2 because ego_agent_training/{ppo_ego,liam_ego,
+# meliba_ego}.py asserts num_agents == 2. The 4-drone variant in
+# marl/configs/task/dsse.yaml is used for MARL self-play. See writeup/dsse.tex
+# Limitations section for the framework-level work needed to lift this restriction.
+#
+# n_drones_to_rescue=2 with target_cluster_radius=1 makes the task a stag hunt:
+# both drones must execute SEARCH on the same cell to rescue the target.
+ENV_NAME: dsse
+ROLLOUT_LENGTH: 100
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 2
+  n_targets: 1
+  n_drones_to_rescue: 2
+  target_cluster_radius: 1
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+TASK_NAME: dsse

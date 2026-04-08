@@ -1,0 +1,86 @@
+{
+  "label": "pr_long",
+  "methods": [
+    {
+      "method": "brdiv",
+      "run_dir": "results/dsse/brdiv/pr_long/2026-04-07_21-58-44",
+      "shape": [
+        1,
+        6,
+        64,
+        2
+      ],
+      "per_partner": {
+        "ippo_seed123_pop3_0": 0.028593750670552254,
+        "ippo_seed123_pop3_1": 0.0,
+        "ippo_seed123_pop3_2": 0.0,
+        "random_agent": 0.0,
+        "greedy_search_agent": 0.0,
+        "sweep_agent": 0.0
+      },
+      "ippo_mean": 0.009531250223517418,
+      "heuristics_mean": 0.0,
+      "overall": 0.004765625111758709,
+      "diagnostics": {
+        "nonzero_episodes": 2,
+        "total_episodes": 768,
+        "targets_found_total": 2,
+        "all_found_total": 2
+      }
+    },
+    {
+      "method": "comedi",
+      "run_dir": "results/dsse/comedi/pr_long/2026-04-07_21-58-46",
+      "shape": [
+        1,
+        6,
+        64,
+        2
+      ],
+      "per_partner": {
+        "ippo_seed123_pop3_0": 0.018125001341104507,
+        "ippo_seed123_pop3_1": 0.0,
+        "ippo_seed123_pop3_2": 0.0,
+        "random_agent": 0.0,
+        "greedy_search_agent": 0.0,
+        "sweep_agent": 0.0
+      },
+      "ippo_mean": 0.006041666958481073,
+      "heuristics_mean": 0.0,
+      "overall": 0.0030208334792405367,
+      "diagnostics": {
+        "nonzero_episodes": 2,
+        "total_episodes": 768,
+        "targets_found_total": 2,
+        "all_found_total": 2
+      }
+    },
+    {
+      "method": "lbrdiv",
+      "run_dir": "results/dsse/lbrdiv/pr_long/2026-04-07_22-02-37",
+      "shape": [
+        1,
+        6,
+        64,
+        2
+      ],
+      "per_partner": {
+        "ippo_seed123_pop3_0": 0.0,
+        "ippo_seed123_pop3_1": 0.0,
+        "ippo_seed123_pop3_2": 0.0,
+        "random_agent": 0.0,
+        "greedy_search_agent": 0.0,
+        "sweep_agent": 0.0
+      },
+      "ippo_mean": 0.0,
+      "heuristics_mean": 0.0,
+      "overall": 0.0,
+      "diagnostics": {
+        "nonzero_episodes": 0,
+        "total_episodes": 768,
+        "targets_found_total": 0,
+        "all_found_total": 0
+      }
+    }
+  ]
+}
