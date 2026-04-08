@@ -106,10 +106,11 @@ def run_training(cfg):
         env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
         env = LogWrapper(env)
 
-        run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
-                                    agent_eval_checkpoints, agent_policies, env.horizon,
-                                    cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
-                                    render=True, agent_test_mode=False)
+        if cfg.algorithm.get("ALPHA_VERIFICATION", True):
+            run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
+                                        agent_eval_checkpoints, agent_policies, env.horizon,
+                                        cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
+                                        render=True, agent_test_mode=False)
 
         # Value function estimation for joint policies
         # Creates value functions for joint policies for all agents in the environment

@@ -35,6 +35,7 @@ run_exp() {
         label=$LABEL \
         logger.project=NEURIPS-2026 \
         logger.mode=online \
+        algorithm.ALPHA_VERIFICATION=false \
         >> logs/${LABEL}_${SLURM_JOB_ID:+$SLURM_JOB_ID}.out 2>&1 &
 }
 
