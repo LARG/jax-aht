@@ -7,7 +7,7 @@ TOTAL_TIMESTEPS_DECAY: 6e7
 
 NUM_ENVS: 1000 # parallel environments
 NUM_EPOCHS: 8 # number of epochs per update
-NUM_MINIBATCHES: 128 # minibatches per epoch
+NUM_MINIBATCHES: 100 # minibatches per epoch
 
 LR: 0.0003
 
