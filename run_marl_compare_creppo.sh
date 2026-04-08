@@ -22,7 +22,7 @@ run_exp() {
     local LABEL=$4
 
     CUDA_VISIBLE_DEVICES=$GPU \
-    /scratch/cluster/jeffrey9/jax-aht/venv/bin/python social_laws/run.py \
+    ./marl_train social_laws/run.py \
         task=$TASK \
         algorithm=creppo/continuous/coop_recon \
         algorithm.TRAIN_SEED=72128 \

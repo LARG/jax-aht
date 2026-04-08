@@ -21,7 +21,7 @@ run_exp() {
     local LABEL=$3
 
     CUDA_VISIBLE_DEVICES=$GPU \
-    /scratch/cluster/jeffrey9/jax-aht/venv/bin/python social_laws/experiments/run_marl_compare_coop_recon.py \
+    ./marl_train social_laws/experiments/run_marl_compare_coop_recon.py \
         task=$TASK \
         algorithm=ippo/continuous/coop_recon \
         algorithm.TRAIN_SEED=72128 \

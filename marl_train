@@ -1,0 +1,4 @@
+#!/bin/bash
+# Thin wrapper around the venv Python that renames the process to "marl_train"
+# so nvidia-smi shows "marl_train" instead of the full scratch path.
+exec -a marl_train /scratch/cluster/jeffrey9/jax-aht/venv/bin/python "$@"
