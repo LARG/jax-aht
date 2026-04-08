@@ -22,7 +22,7 @@ run_exp() {
     local LABEL=$4
 
     CUDA_VISIBLE_DEVICES=$GPU \
-    python social_laws/run.py \
+    /scratch/cluster/jeffrey9/jax-aht/venv/bin/python social_laws/run.py \
         task=$TASK \
         algorithm=ppo/continuous/coop_recon \
         value_function=dqnppo/continuous/coop_recon \
