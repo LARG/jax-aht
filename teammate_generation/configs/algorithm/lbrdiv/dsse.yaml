@@ -1,0 +1,22 @@
+defaults:
+  - lbrdiv/_base_
+  - _self_
+
+# DSSE 2-drone coordination LBRDiv config. LBRDiv emulates the minimum coverage
+# set via best-response diversity. Inherits num_agents == 2
+# from ppo_ego, so DSSE is run in 2-drone mode.
+TOTAL_TIMESTEPS: 2e7
+PARTNER_POP_SIZE: 3
+NUM_ENVS: 32
+LR: 3e-4
+UPDATE_EPOCHS: 10
+NUM_MINIBATCHES: 4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+ego_train_algorithm:
+  TOTAL_TIMESTEPS: 1e7
+  LR: 3e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: false
+  UPDATE_EPOCHS: 10

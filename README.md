@@ -61,8 +61,9 @@ Our modularization is restricted to environments, agents, and populations, which
 
 | Environment | Source | Description | Variants | Evaluation Teammates |
 |-------------|--------|-------------|----------|----------------------|
-| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | 7x7 grid with full observability | ✅ |
-| **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | ✅  |
+| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | 7x7 grid with full observability | yes |
+| **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | yes |
+| **DSSE (Drone Swarm Search)** | [pfeinsper/drone-swarm-search](https://github.com/pfeinsper/drone-swarm-search) reimplemented in JAX | Multi-agent search-and-rescue with an optional coordination coordination requirement: at least `n_drones_to_rescue` agents must execute SEARCH on the same cell to rescue a target | 7x7 4-drone coordination (MARL self-play), 7x7 2-drone coordination (ego training) | partial |
 
 
 ##  Table of Contents
@@ -80,6 +81,7 @@ Our modularization is restricted to environments, agents, and populations, which
   - [🌳 Environments](#-environments)
     - [Level-Based Foraging (LBF)](#lbf)
     - [Overcooked-v1](#overcooked-v1)
+    - [DSSE (Drone Swarm Search)](#dsse-drone-swarm-search)
 - [📄 License](#-license)
 - [🔗 See Also](#-see-also)
 
@@ -224,6 +226,26 @@ We made some modifications to the JaxMARL Overcooked environment to improve the 
 
 - **Initialization randomization**: Previously, setting `random_reset` would lead to random initial agent positions, and randomized initial object states (e.g. pot might be initialized with onions already in it, agents might be initialized holding plates, etc.). We separate the functionality of the argument `random_reset` into two arguments: `random_reset` and `random_obj_state`, where `random_reset` only controls the initial positions of the two agents.
 - **Agent initial positions**: previously, in a map with disconnected components, it was possible for two agents to be spawned in the same component, making it impossible to solve the task. The Overcooked-v1 environment initializes agents such that one is always spawned on each side of the map.
+
+#### DSSE (Drone Swarm Search)
+DSSE is a JAX reimplementation of the [pfeinsper/drone-swarm-search](https://github.com/pfeinsper/drone-swarm-search) PettingZoo environment. The backend lives at `envs/dsse/dsse_jax.py`, the `BaseEnv` wrapper at `envs/dsse/dsse_wrapper.py`, and a smoke + coordination invariant test at `tests/test_dsse_wrapper.py`. Run the test with `python tests/test_dsse_wrapper.py`.
+
+A team of drones must locate and rescue moving targets on a `grid_size x grid_size` grid. The position belief over each target is a Gaussian-blurred heatmap that drifts and disperses each step. Drones move in eight directions or execute SEARCH on the current cell. Setting `n_drones_to_rescue >= 2` together with `target_cluster_radius=1` turns the task into a coordination task: a target is rescued only when at least `n_drones_to_rescue` drones execute SEARCH on the same cell within the same step. This is the coordination signal AHT/NAHT methods exploit, and it is what makes naive self-play insufficient.
+
+Two canonical configurations are shipped:
+- **MARL self-play (4-drone coordination)**: `marl/configs/task/dsse.yaml` (`grid_size=7, n_drones=4, n_targets=2, n_drones_to_rescue=2`).
+- **Ego training (2-drone coordination)**: `ego_agent_training/configs/task/dsse.yaml` (`grid_size=7, n_drones=2, n_targets=1, n_drones_to_rescue=2`). Two drones are used because `ego_agent_training/{ppo_ego,liam_ego,meliba_ego}.py` currently asserts `num_agents == 2`.
+
+Run IPPO self-play on the 4-drone coordination with:
+```bash
+python marl/run.py task=dsse algorithm=ippo/dsse
+```
+Run PPO and LIAM ego training on the 2-drone coordination with:
+```bash
+python ego_agent_training/run.py task=dsse algorithm=ppo_ego/dsse
+python ego_agent_training/run.py task=dsse algorithm=liam_ego/dsse
+```
+Heuristic teammates (`agents/dsse/{random,greedy_search,sweep}_agent.py`) are provided as a baseline behavioural pool. Full empirical evaluation, ablations, and reproduction instructions are in [writeup/dsse.tex](writeup/dsse.tex).
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

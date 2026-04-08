@@ -306,3 +306,46 @@ heldout_set:
       performance_bounds:
         base_return: [0.0, 61.88]
         returned_episode_returns: [0.0, 65.22]
+  dsse: # 2-drone coordination task held-out partner set
+    # The ippo_seed123_pop3 path below points at the stable fixture
+    # symlink under evaluation/fixtures/, which scripts/regenerate_partner_fixtures.sh
+    # populates either by training fresh seed-123 IPPO partners or by
+    # symlinking the most recent results/dsse/ippo/...seed123/ directory.
+    # On a fresh checkout, the three heuristic partners in this block
+    # (random_agent, greedy_search_agent, sweep_agent) work without any
+    # download. The ippo_seed123_pop3 block requires running
+    # `bash scripts/regenerate_partner_fixtures.sh` once to create the
+    # symlink. A Hugging Face upload to jaxaht/eval-teammates (to match
+    # the LBF / Overcooked eval_teammates/ pattern) is queued as follow-up
+    # work and will replace this fixture indirection.
+    #
+    # Held-out IPPO partners trained from a different seed than the ego-training
+    # partners (seed 123 vs seed 42). NUM_SEEDS=3 in marl/ippo.py means each
+    # checkpoint contains 3 independently-trained partners; we use all of them.
+    # Same env config as the training partners (7x7, ndr=2, cluster_radius=1).
+    # Performance bounds are loose [0, 1] since DSSE returns are sparse and
+    # vary by episode; refine after Phase D rolls these in.
+    ippo_seed123_pop3:
+      path: "evaluation/fixtures/dsse_ippo_seed123_pop3/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0, 1, 2]
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]
+    # Heuristic teammates that any DSSE-trained ego must coordinate with.
+    # These cover the natural "skill axis" of the task: zero coordination
+    # (random), greedy local optimum, and exhaustive coverage (sweep). Used
+    # to detect ego agents that overfit to RL-style partners only.
+    random_agent:
+      actor_type: random_agent
+      performance_bounds:
+        returned_episode_returns: [0.0, 1.0]
+    greedy_search_agent:
+      actor_type: greedy_search_agent
+      performance_bounds:
+        returned_episode_returns: [0.0, 1.0]
+    sweep_agent:
+      actor_type: sweep_agent
+      performance_bounds:
+        returned_episode_returns: [0.0, 1.0]

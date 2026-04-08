@@ -1,0 +1,19 @@
+defaults:
+  - open_ended_minimax/_base_
+  - _self_
+
+# DSSE 2-drone Open-Ended Minimax config. Trains a worst-case
+# confederate against the ego agent in an alternating loop. Inherits the
+# num_agents == 2 assertion from ppo_ego, so DSSE is run in 2-drone mode.
+TIMESTEPS_PER_ITER_PARTNER: 1e6
+TIMESTEPS_PER_ITER_EGO: 1e6
+NUM_OPEN_ENDED_ITERS: 20
+LR: 3e-4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+EGO_ARGS:
+  LR: 3e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: false
+  UPDATE_EPOCHS: 10

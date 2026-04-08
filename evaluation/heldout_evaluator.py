@@ -10,11 +10,14 @@ import os
 import hydra
 
 from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper
-from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
+from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper,
     OvercookedOnionPolicyWrapper,
     OvercookedPlatePolicyWrapper,
     OvercookedStaticPolicyWrapper,
     OvercookedRandomPolicyWrapper)
+from agents.dsse.agent_policy_wrappers import (DSSERandomPolicyWrapper,
+    DSSEGreedySearchPolicyWrapper,
+    DSSESweepPolicyWrapper)
 
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from common.run_episodes import run_episodes
@@ -101,6 +104,10 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
     '''
     heldout_agents = {}
     for agent_name, agent_config in heldout_config.items():
+        # Allow env-specific configs to null out entries inherited from a base
+        # config (e.g. dropping an Overcooked-only partner when running DSSE).
+        if agent_config is None:
+            continue
         params_list = None
         idx_labels = None
         test_mode = agent_config.get("test_mode", False)
@@ -148,8 +155,20 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                     p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0))
             elif agent_config["actor_type"] == 'plate_agent':
                 policy = OvercookedPlatePolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
+                    aug_layout_dict, using_log_wrapper=True,
                     p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
+
+        elif task_name == 'dsse':
+            performance_bounds = agent_config.get("performance_bounds", None)
+            grid_size = env_kwargs.get("grid_size", 7)
+            if agent_config["actor_type"] == 'random_agent':
+                policy = DSSERandomPolicyWrapper(using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'greedy_search_agent':
+                policy = DSSEGreedySearchPolicyWrapper(grid_size=grid_size, using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'sweep_agent':
+                policy = DSSESweepPolicyWrapper(grid_size=grid_size, using_log_wrapper=True)
+            else:
+                raise ValueError(f"Unknown DSSE actor_type: {agent_config['actor_type']}")
         else:
             raise ValueError(f"Unknown task: {task_name}")
         

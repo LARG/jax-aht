@@ -1,0 +1,12 @@
+defaults:
+  - ippo/_base_
+  - _self_
+
+TOTAL_TIMESTEPS: 1e7
+SEED: 12345
+LR: .0003
+NUM_ENVS: 64
+UPDATE_EPOCHS: 10
+NUM_MINIBATCHES: 4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01

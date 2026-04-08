@@ -1,0 +1,163 @@
+{
+  "phase_a_ppo_ego_5seed": {
+    "n_seeds": 5,
+    "per_seed": [
+      0.09149999916553497,
+      0.0860000029206276,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean": 0.03550000116229057,
+    "std": 0.0435132160782814,
+    "heldout_mean": null,
+    "heldout_std": null,
+    "heldout_per_seed": null,
+    "display": "Phase A PPO ego (ndr=2)",
+    "run": "results/dsse/ppo_ego_s5/phase_a_ppo_ego_5seed/2026-04-07_01-01-44"
+  },
+  "phase_a_liam_trained_5seed": {
+    "n_seeds": 5,
+    "per_seed": [
+      0.6425000429153442,
+      0.0,
+      0.0,
+      0.4309999942779541,
+      0.47349995374679565
+    ],
+    "mean": 0.3093999922275543,
+    "std": 0.2623462378978729,
+    "heldout_mean": null,
+    "heldout_std": null,
+    "heldout_per_seed": null,
+    "display": "Phase A LIAM trained (ndr=2)",
+    "run": "results/dsse/liam_ego_mlp/phase_a_liam_trained_5seed/2026-04-07_01-01-44"
+  },
+  "phase_a_liam_frozen_5seed": {
+    "n_seeds": 5,
+    "per_seed": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean": 0.0,
+    "std": 0.0,
+    "heldout_mean": null,
+    "heldout_std": null,
+    "heldout_per_seed": null,
+    "display": "Phase A LIAM frozen (ndr=2)",
+    "run": "results/dsse/liam_ego_mlp/phase_a_liam_frozen_5seed/2026-04-07_01-11-42"
+  },
+  "phase_b_ppo_ndr1_10seed": {
+    "n_seeds": 10,
+    "per_seed": [
+      1.1725000143051147,
+      1.381500005722046,
+      0.9475000500679016,
+      1.0529999732971191,
+      0.8330000042915344,
+      1.087499976158142,
+      1.312999963760376,
+      0.909000039100647,
+      1.1004999876022339,
+      1.280500054359436
+    ],
+    "mean": 1.107800006866455,
+    "std": 0.17182289063930511,
+    "heldout_mean": null,
+    "heldout_std": null,
+    "heldout_per_seed": null,
+    "display": "Phase B PPO ego (ndr=1)",
+    "run": "results/dsse/ppo_ego_s5/phase_b_ppo_ndr1_10seed/2026-04-07_01-36-53"
+  },
+  "phase_b_liam_ndr1_10seed": {
+    "n_seeds": 10,
+    "per_seed": [
+      1.43149995803833,
+      1.3015000820159912,
+      1.2660000324249268,
+      1.3009998798370361,
+      1.2200000286102295,
+      1.5475000143051147,
+      1.4149999618530273,
+      1.374000072479248,
+      1.3065000772476196,
+      1.2829999923706055
+    ],
+    "mean": 1.3446000814437866,
+    "std": 0.09233005344867706,
+    "heldout_mean": null,
+    "heldout_std": null,
+    "heldout_per_seed": null,
+    "display": "Phase B LIAM ego (ndr=1)",
+    "run": "results/dsse/liam_ego_mlp/phase_b_liam_ndr1_10seed/2026-04-07_01-36-53"
+  },
+  "phase_d_ppo_pop3_heldout": {
+    "n_seeds": 10,
+    "per_seed": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.01783333159983158,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean": 0.0017833331367000937,
+    "std": 0.005349998828023672,
+    "heldout_mean": 0.0032031249720603228,
+    "heldout_std": 0.003994778264313936,
+    "heldout_per_seed": [
+      0.0,
+      0.0,
+      0.0,
+      0.00755208358168602,
+      0.0,
+      0.0,
+      0.009427082724869251,
+      0.0,
+      0.0063020833767950535,
+      0.008750000037252903
+    ],
+    "display": "Phase D PPO ego (ndr=2, pop=3)",
+    "run": "results/dsse/ppo_ego_s5/phase_d_ppo_pop3_heldout/2026-04-07_01-17-31"
+  },
+  "phase_d_liam_pop3_heldout": {
+    "n_seeds": 10,
+    "per_seed": [
+      0.03233333304524422,
+      0.07633332908153534,
+      0.0,
+      0.054499998688697815,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0690000057220459,
+      0.0
+    ],
+    "mean": 0.023216666653752327,
+    "std": 0.030353479087352753,
+    "heldout_mean": 0.02189062535762787,
+    "heldout_std": 0.02939007803797722,
+    "heldout_per_seed": [
+      0.02500000037252903,
+      0.05390625074505806,
+      0.0,
+      0.07703124731779099,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.06296875327825546,
+      0.0
+    ],
+    "display": "Phase D LIAM ego (ndr=2, pop=3)",
+    "run": "results/dsse/liam_ego_mlp/phase_d_liam_pop3_heldout/2026-04-07_01-17-31"
+  }
+}

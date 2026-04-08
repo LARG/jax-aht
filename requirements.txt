@@ -26,6 +26,11 @@ moviepy
 prettytable
 rliable
 matplotlib
+# wandb is inherited from upstream jax-aht. The DSSE phase scripts
+# (Phase A/B/D/E/F + regenerate_partner_fixtures.sh) all run with
+# logger.mode=offline and rely on Sacred + the JSON aggregators in
+# writeup/logs/ for results. wandb is only touched by
+# common/wandb_visualizations.py, which no DSSE config imports.
 wandb
 omegaconf
 hydra-core

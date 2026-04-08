@@ -1,0 +1,23 @@
+defaults:
+  - ppo_br/_base_
+  - _self_
+
+# DSSE 2-drone PPO best-response config. Trains an ego via PPO against a
+# single frozen scripted partner, defaulting to greedy_search_agent. Not
+# used by any phase script in this PR; shipped as a drop-in for anyone
+# who wants a BR baseline on DSSE. The _base_ partner_agent block targets
+# the Overcooked independent_agent which does not exist for DSSE, so we
+# override it to point at the DSSE heuristic agents; random_agent and
+# sweep_agent can be substituted via command-line override.
+TOTAL_TIMESTEPS: 10000000
+NUM_ENVS: 32
+NUM_EGO_TRAIN_SEEDS: 3
+LR: 3e-4
+ENT_COEF: 0.01
+CLIP_EPS: 0.2
+ANNEAL_LR: false
+UPDATE_EPOCHS: 10
+partner_agent:
+  independent_agent_0.6: null  # clear Overcooked partner inherited from _base_
+  greedy_search_agent:
+    actor_type: greedy_search_agent

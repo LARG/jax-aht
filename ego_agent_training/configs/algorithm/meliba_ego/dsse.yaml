@@ -1,0 +1,16 @@
+defaults:
+  - meliba_ego/_base_
+  - _self_
+
+# DSSE 2-drone stag-hunt MeLIBA ego config. Mirrors liam_ego/dsse.yaml since
+# both methods share the encoder-decoder architecture. Note: MeLIBA on DSSE
+# has not been benchmarked end-to-end in the writeup; treat as a starting
+# point for exploration.
+TOTAL_TIMESTEPS: 10000000
+NUM_ENVS: 32
+NUM_EGO_TRAIN_SEEDS: 3
+LR: 3e-4
+ENT_COEF: 0.01
+CLIP_EPS: 0.1
+ANNEAL_LR: false
+UPDATE_EPOCHS: 5

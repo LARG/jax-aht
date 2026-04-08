@@ -1,0 +1,22 @@
+defaults:
+  - comedi/_base_
+  - _self_
+
+# DSSE 2-drone coordination CoMeDi config. CoMeDi generates diverse partners by
+# optimizing mixed-play between best-response and self-play. Inherits
+# num_agents == 2 from ppo_ego, so DSSE is run in 2-drone mode.
+TOTAL_TIMESTEPS_PER_ITERATION: 2e6
+PARTNER_POP_SIZE: 5
+LR: 3e-4
+UPDATE_EPOCHS: 10
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+COMEDI_ALPHA: 0.2
+COMEDI_BETA: 0.4
+ego_train_algorithm:
+  TOTAL_TIMESTEPS: 1e7
+  LR: 3e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: false
+  UPDATE_EPOCHS: 10

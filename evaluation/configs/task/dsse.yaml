@@ -1,0 +1,17 @@
+# DSSE (Drone Swarm Search Environment) -- evaluation task config.
+# Used by evaluation/heldout_eval.py when invoked standalone with task=dsse.
+# Defaults match the 4-drone MARL/self-play canonical config; ego training
+# pipelines override n_drones=2 from their own task config.
+ENV_NAME: dsse
+ROLLOUT_LENGTH: 100
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 4
+  n_targets: 2
+  n_drones_to_rescue: 2
+  target_cluster_radius: 1
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+TASK_NAME: dsse

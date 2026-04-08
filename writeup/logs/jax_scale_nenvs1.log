@@ -1,0 +1,77 @@
+./.venv/lib/python3.12/site-packages/jumanji/environments/routing/cvrp/viewer.py:21: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+task:
+  ENV_NAME: dsse
+  ROLLOUT_LENGTH: 100
+  ENV_KWARGS:
+    grid_size: 7
+    n_drones: 4
+    n_targets: 2
+    timestep_limit: 100
+    vector_x: 1.1
+    vector_y: 1.0
+    dispersion_inc: 0.1
+    n_drones_to_rescue: 2
+  TASK_NAME: dsse
+algorithm:
+  ALG: ippo
+  TOTAL_TIMESTEPS: 100000
+  ACTOR_TYPE: mlp
+  NUM_CHECKPOINTS: 5
+  GAMMA: 0.99
+  GAE_LAMBDA: 0.95
+  VF_COEF: 0.5
+  MAX_GRAD_NORM: 1.0
+  ANNEAL_LR: true
+  SEED: 42
+  LR: 0.0003
+  NUM_ENVS: 1
+  UPDATE_EPOCHS: 10
+  NUM_MINIBATCHES: 4
+  CLIP_EPS: 0.2
+  ENT_COEF: 0.01
+  NUM_SEEDS: 3
+  TRAIN_SEED: 20374
+  ENV_NAME: dsse
+  ENV_KWARGS:
+    grid_size: 7
+    n_drones: 4
+    n_targets: 2
+    timestep_limit: 100
+    vector_x: 1.1
+    vector_y: 1.0
+    dispersion_inc: 0.1
+    n_drones_to_rescue: 2
+  ROLLOUT_LENGTH: 100
+ENV_NAME: dsse
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 4
+  n_targets: 2
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+  n_drones_to_rescue: 2
+ROLLOUT_LENGTH: 100
+TASK_NAME: dsse
+label: scale_bench_1
+name: dsse/ippo/scale_bench_1
+logger:
+  project: aht-benchmark
+  entity: aht-project
+  tags:
+  - ippo
+  - dsse
+  - seed=20374
+  - scale_bench_1
+  mode: disabled
+  verbose: false
+  log_train_out: true
+  log_eval_out: true
+local_logger:
+  save_train_out: true
+  save_eval_out: true
+
+IPPO Training:   0%|          | 0/1000 [00:00<?, ?update/s]IPPO Training:   0%|          | 1/1000 [00:08<2:19:24,  8.37s/update]IPPO Training:   1%|          | 10/1000 [00:08<10:08,  1.63update/s] IPPO Training:   2%|▏         | 19/1000 [00:08<04:25,  3.69update/s]IPPO Training:   3%|▎         | 29/1000 [00:08<02:23,  6.78update/s]IPPO Training:   4%|▍         | 39/1000 [00:08<01:28, 10.86update/s]IPPO Training:   5%|▍         | 49/1000 [00:08<00:59, 16.08update/s]IPPO Training:   6%|▌         | 59/1000 [00:09<00:41, 22.50update/s]IPPO Training:   7%|▋         | 69/1000 [00:09<00:30, 30.06update/s]IPPO Training:   8%|▊         | 79/1000 [00:09<00:23, 38.49update/s]IPPO Training:   9%|▉         | 89/1000 [00:09<00:19, 47.34update/s]IPPO Training:  10%|▉         | 99/1000 [00:09<00:16, 56.05update/s]IPPO Training:  11%|█         | 109/1000 [00:09<00:13, 64.15update/s]IPPO Training:  12%|█▏        | 119/1000 [00:09<00:12, 71.23update/s]IPPO Training:  13%|█▎        | 129/1000 [00:09<00:11, 77.08update/s]IPPO Training:  14%|█▍        | 139/1000 [00:09<00:10, 81.81update/s]IPPO Training:  15%|█▍        | 149/1000 [00:09<00:09, 85.46update/s]IPPO Training:  16%|█▌        | 159/1000 [00:10<00:09, 88.14update/s]IPPO Training:  17%|█▋        | 169/1000 [00:10<00:09, 90.20update/s]IPPO Training:  18%|█▊        | 179/1000 [00:10<00:08, 91.72update/s]IPPO Training:  19%|█▉        | 189/1000 [00:10<00:08, 92.83update/s]IPPO Training:  20%|█▉        | 199/1000 [00:10<00:08, 93.59update/s]IPPO Training:  21%|██        | 209/1000 [00:10<00:08, 94.16update/s]IPPO Training:  22%|██▏       | 219/1000 [00:10<00:08, 94.49update/s]IPPO Training:  23%|██▎       | 229/1000 [00:10<00:08, 94.77update/s]IPPO Training:  24%|██▍       | 239/1000 [00:10<00:08, 94.95update/s]IPPO Training:  25%|██▍       | 249/1000 [00:10<00:07, 95.09update/s]IPPO Training:  26%|██▌       | 259/1000 [00:11<00:07, 95.17update/s]IPPO Training:  27%|██▋       | 269/1000 [00:11<00:07, 95.25update/s]IPPO Training:  28%|██▊       | 279/1000 [00:11<00:07, 95.26update/s]IPPO Training:  29%|██▉       | 289/1000 [00:11<00:07, 95.29update/s]IPPO Training:  30%|██▉       | 299/1000 [00:11<00:07, 95.33update/s]IPPO Training:  31%|███       | 309/1000 [00:11<00:07, 95.35update/s]IPPO Training:  32%|███▏      | 319/1000 [00:11<00:07, 95.31update/s]IPPO Training:  33%|███▎      | 329/1000 [00:11<00:07, 95.34update/s]IPPO Training:  34%|███▍      | 339/1000 [00:11<00:06, 95.36update/s]IPPO Training:  35%|███▍      | 349/1000 [00:12<00:06, 95.36update/s]IPPO Training:  36%|███▌      | 359/1000 [00:12<00:06, 95.32update/s]IPPO Training:  37%|███▋      | 369/1000 [00:12<00:06, 95.27update/s]IPPO Training:  38%|███▊      | 379/1000 [00:12<00:06, 95.27update/s]IPPO Training:  39%|███▉      | 389/1000 [00:12<00:06, 95.33update/s]IPPO Training:  40%|███▉      | 399/1000 [00:12<00:06, 95.34update/s]IPPO Training:  41%|████      | 409/1000 [00:12<00:06, 95.32update/s]IPPO Training:  42%|████▏     | 419/1000 [00:12<00:06, 95.04update/s]IPPO Training:  43%|████▎     | 429/1000 [00:12<00:06, 95.06update/s]IPPO Training:  44%|████▍     | 439/1000 [00:12<00:05, 95.13update/s]IPPO Training:  45%|████▍     | 449/1000 [00:13<00:05, 95.17update/s]IPPO Training:  46%|████▌     | 459/1000 [00:13<00:05, 95.21update/s]IPPO Training:  47%|████▋     | 469/1000 [00:13<00:05, 95.27update/s]IPPO Training:  48%|████▊     | 479/1000 [00:13<00:05, 95.33update/s]IPPO Training:  49%|████▉     | 489/1000 [00:13<00:05, 95.39update/s]IPPO Training:  50%|████▉     | 499/1000 [00:13<00:05, 95.43update/s]IPPO Training:  51%|█████     | 509/1000 [00:13<00:05, 95.35update/s]IPPO Training:  52%|█████▏    | 519/1000 [00:13<00:05, 95.35update/s]IPPO Training:  53%|█████▎    | 529/1000 [00:13<00:04, 95.33update/s]IPPO Training:  54%|█████▍    | 539/1000 [00:14<00:04, 95.36update/s]IPPO Training:  55%|█████▍    | 549/1000 [00:14<00:04, 95.36update/s]IPPO Training:  56%|█████▌    | 559/1000 [00:14<00:04, 95.40update/s]IPPO Training:  57%|█████▋    | 569/1000 [00:14<00:04, 95.43update/s]IPPO Training:  58%|█████▊    | 579/1000 [00:14<00:04, 95.46update/s]IPPO Training:  59%|█████▉    | 589/1000 [00:14<00:04, 95.48update/s]IPPO Training:  60%|█████▉    | 599/1000 [00:14<00:04, 95.46update/s]IPPO Training:  61%|██████    | 609/1000 [00:14<00:04, 95.42update/s]IPPO Training:  62%|██████▏   | 619/1000 [00:14<00:03, 95.41update/s]IPPO Training:  63%|██████▎   | 629/1000 [00:14<00:03, 95.43update/s]IPPO Training:  64%|██████▍   | 639/1000 [00:15<00:03, 95.46update/s]IPPO Training:  65%|██████▍   | 649/1000 [00:15<00:03, 95.47update/s]IPPO Training:  66%|██████▌   | 659/1000 [00:15<00:03, 95.48update/s]IPPO Training:  67%|██████▋   | 669/1000 [00:15<00:03, 95.50update/s]IPPO Training:  68%|██████▊   | 679/1000 [00:15<00:03, 95.51update/s]IPPO Training:  69%|██████▉   | 689/1000 [00:15<00:03, 95.51update/s]IPPO Training:  70%|██████▉   | 699/1000 [00:15<00:03, 95.40update/s]IPPO Training:  71%|███████   | 709/1000 [00:15<00:03, 95.39update/s]IPPO Training:  72%|███████▏  | 719/1000 [00:15<00:02, 95.42update/s]IPPO Training:  73%|███████▎  | 729/1000 [00:16<00:02, 95.41update/s]IPPO Training:  74%|███████▍  | 739/1000 [00:16<00:02, 95.44update/s]IPPO Training:  75%|███████▍  | 749/1000 [00:16<00:02, 95.39update/s]IPPO Training:  76%|███████▌  | 759/1000 [00:16<00:02, 95.40update/s]IPPO Training:  77%|███████▋  | 769/1000 [00:16<00:02, 95.43update/s]IPPO Training:  78%|███████▊  | 779/1000 [00:16<00:02, 95.46update/s]IPPO Training:  79%|███████▉  | 789/1000 [00:16<00:02, 95.45update/s]IPPO Training:  80%|███████▉  | 799/1000 [00:16<00:02, 95.42update/s]IPPO Training:  81%|████████  | 809/1000 [00:16<00:02, 95.45update/s]IPPO Training:  82%|████████▏ | 819/1000 [00:16<00:01, 95.46update/s]IPPO Training:  83%|████████▎ | 829/1000 [00:17<00:01, 95.46update/s]IPPO Training:  84%|████████▍ | 839/1000 [00:17<00:01, 95.47update/s]IPPO Training:  85%|████████▍ | 849/1000 [00:17<00:01, 95.47update/s]IPPO Training:  86%|████████▌ | 859/1000 [00:17<00:01, 95.47update/s]IPPO Training:  87%|████████▋ | 869/1000 [00:17<00:01, 95.49update/s]IPPO Training:  88%|████████▊ | 879/1000 [00:17<00:01, 95.51update/s]IPPO Training:  89%|████████▉ | 889/1000 [00:17<00:01, 95.43update/s]IPPO Training:  90%|████████▉ | 899/1000 [00:17<00:01, 95.44update/s]IPPO Training:  91%|█████████ | 909/1000 [00:17<00:00, 95.45update/s]IPPO Training:  92%|█████████▏| 919/1000 [00:18<00:00, 95.46update/s]IPPO Training:  93%|█████████▎| 929/1000 [00:18<00:00, 95.48update/s]IPPO Training:  94%|█████████▍| 939/1000 [00:18<00:00, 95.49update/s]IPPO Training:  95%|█████████▍| 949/1000 [00:18<00:00, 95.46update/s]IPPO Training:  96%|█████████▌| 959/1000 [00:18<00:00, 95.46update/s]IPPO Training:  97%|█████████▋| 969/1000 [00:18<00:00, 95.48update/s]IPPO Training:  98%|█████████▊| 979/1000 [00:18<00:00, 95.44update/s]IPPO Training:  99%|█████████▉| 989/1000 [00:18<00:00, 95.39update/s]IPPO Training: 100%|█████████▉| 999/1000 [00:18<00:00, 95.42update/s]IPPO Training: 100%|██████████| 1000/1000 [00:18<00:00, 53.00update/s]
+wandb: Adding directory to artifact (./results/dsse/ippo/scale_bench_1/2026-04-06_23-18-20/saved_train_run)... Done. 0.0s

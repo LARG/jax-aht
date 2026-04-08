@@ -1,0 +1,77 @@
+./.venv/lib/python3.12/site-packages/jumanji/environments/routing/cvrp/viewer.py:21: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+task:
+  ENV_NAME: dsse
+  ROLLOUT_LENGTH: 100
+  ENV_KWARGS:
+    grid_size: 7
+    n_drones: 4
+    n_targets: 2
+    timestep_limit: 100
+    vector_x: 1.1
+    vector_y: 1.0
+    dispersion_inc: 0.1
+    n_drones_to_rescue: 2
+  TASK_NAME: dsse
+algorithm:
+  ALG: ippo
+  TOTAL_TIMESTEPS: 500000
+  ACTOR_TYPE: mlp
+  NUM_CHECKPOINTS: 5
+  GAMMA: 0.99
+  GAE_LAMBDA: 0.95
+  VF_COEF: 0.5
+  MAX_GRAD_NORM: 1.0
+  ANNEAL_LR: true
+  SEED: 42
+  LR: 0.0003
+  NUM_ENVS: 64
+  UPDATE_EPOCHS: 10
+  NUM_MINIBATCHES: 4
+  CLIP_EPS: 0.2
+  ENT_COEF: 0.01
+  NUM_SEEDS: 3
+  TRAIN_SEED: 20374
+  ENV_NAME: dsse
+  ENV_KWARGS:
+    grid_size: 7
+    n_drones: 4
+    n_targets: 2
+    timestep_limit: 100
+    vector_x: 1.1
+    vector_y: 1.0
+    dispersion_inc: 0.1
+    n_drones_to_rescue: 2
+  ROLLOUT_LENGTH: 100
+ENV_NAME: dsse
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 4
+  n_targets: 2
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+  n_drones_to_rescue: 2
+ROLLOUT_LENGTH: 100
+TASK_NAME: dsse
+label: speedup_500k_nenvs64
+name: dsse/ippo/speedup_500k_nenvs64
+logger:
+  project: aht-benchmark
+  entity: aht-project
+  tags:
+  - ippo
+  - dsse
+  - seed=20374
+  - speedup_500k_nenvs64
+  mode: disabled
+  verbose: false
+  log_train_out: true
+  log_eval_out: true
+local_logger:
+  save_train_out: true
+  save_eval_out: true
+
+IPPO Training:   0%|          | 0/78 [00:00<?, ?update/s]IPPO Training:   1%|▏         | 1/78 [00:11<15:14, 11.88s/update]IPPO Training:   9%|▉         | 7/78 [00:11<01:29,  1.26s/update]IPPO Training:  17%|█▋        | 13/78 [00:12<00:36,  1.78update/s]IPPO Training:  24%|██▍       | 19/78 [00:12<00:18,  3.12update/s]IPPO Training:  32%|███▏      | 25/78 [00:12<00:10,  4.94update/s]IPPO Training:  40%|███▉      | 31/78 [00:12<00:06,  7.32update/s]IPPO Training:  47%|████▋     | 37/78 [00:12<00:03, 10.37update/s]IPPO Training:  55%|█████▌    | 43/78 [00:12<00:02, 14.12update/s]IPPO Training:  63%|██████▎   | 49/78 [00:12<00:01, 18.54update/s]IPPO Training:  71%|███████   | 55/78 [00:12<00:00, 23.44update/s]IPPO Training:  78%|███████▊  | 61/78 [00:12<00:00, 28.60update/s]IPPO Training:  86%|████████▌ | 67/78 [00:13<00:00, 33.70update/s]IPPO Training:  94%|█████████▎| 73/78 [00:13<00:00, 38.43update/s]IPPO Training: 100%|██████████| 78/78 [00:13<00:00,  5.88update/s]
+wandb: Adding directory to artifact (./results/dsse/ippo/speedup_500k_nenvs64/2026-04-06_23-17-43/saved_train_run)... Done. 0.0s

@@ -1,0 +1,17 @@
+# DSSE (Drone Swarm Search Environment) -- teammate generation task config.
+# Mirrors ego_agent_training/configs/task/dsse.yaml because teammate_generation
+# methods (BRDiv, FCP, LBRDiv, CoMeDi) call into ego_agent_training as a
+# subroutine, which inherits the num_agents == 2 assertion.
+ENV_NAME: dsse
+ROLLOUT_LENGTH: 100
+ENV_KWARGS:
+  grid_size: 7
+  n_drones: 2
+  n_targets: 1
+  n_drones_to_rescue: 2
+  target_cluster_radius: 1
+  timestep_limit: 100
+  vector_x: 1.1
+  vector_y: 1.0
+  dispersion_inc: 0.1
+TASK_NAME: dsse
