@@ -33,7 +33,8 @@ run_exp() {
         value_function.FIXED_EVAL=true \
         NUM_EXPT_AGENTS=$N \
         label=$LABEL \
-        logger.project=NEURIPS-2026 \
+        logger.project=aht-benchmark \
+        logger.entity=jeffreychen287-the-university-of-texas-at-austin \
         logger.mode=online \
         algorithm.ALPHA_VERIFICATION=false \
         >> logs/${LABEL}_${SLURM_JOB_ID:+$SLURM_JOB_ID}.out 2>&1 &
