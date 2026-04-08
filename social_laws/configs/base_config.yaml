@@ -13,9 +13,8 @@ NUM_EVAL_EPISODES: ${task.NUM_EVAL_EPISODES}
 
 NUM_EXPT_AGENTS: 2
 
-# partner configs are specified in each algorithm _base_ config file
-# note that ppo_ego and ppo_br support different types of partner configs
 algorithm:
+  ALPHA_VERIFICATION: true
   USE_SAME_SEED: false
   TRAIN_SEED:
   EVAL_SEED:

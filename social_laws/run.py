@@ -114,7 +114,7 @@ def run_training(cfg):
         # Value function estimation for joint policies
         # Creates value functions for joint policies for all agents in the environment
         # conditioned on their single agent projections
-        if cfg["value_function"]["ALG"] == "dqnppo":
+        if cfg["value_function"]["ALG"] == "dqnppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
             if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
                 agent_vf_param, agent_vf, agent_vf_init_param = run_dqnppo_value_estimation(cfg, wandb_logger, agent_params[0], agent_policies[0], agent_idx=0)
                 for agent_idx in range(cfg.NUM_EXPT_AGENTS):
@@ -127,7 +127,7 @@ def run_training(cfg):
                     agent_vf_params.append(agent_vf_param)
                     agent_vf_policies.append(agent_vf)
                     agent_vf_init_params.append(agent_vf_init_param)
-        elif cfg["value_function"]["ALG"] == "drqnppo":
+        elif cfg["value_function"]["ALG"] == "drqnppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
             if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
                 agent_vf_param, agent_vf, agent_vf_init_param = run_drqnppo_value_estimation(cfg, wandb_logger, agent_params[0], agent_policies[0], agent_idx=0)
                 for agent_idx in range(cfg.NUM_EXPT_AGENTS):
@@ -181,13 +181,13 @@ def run_training(cfg):
             train_order = list(range(cfg.NUM_EXPT_AGENTS))
             if getattr(cfg.algorithm, "REVERSE_AGENT_TRAIN_ORDER", False):
                 train_order.reverse()
-                
+
             # Initialize lists to proper size to allow out-of-order insertion
             agent_policies = [None] * cfg.NUM_EXPT_AGENTS
             agent_init_params = [None] * cfg.NUM_EXPT_AGENTS
             agent_params = [None] * cfg.NUM_EXPT_AGENTS
             agent_eval_checkpoints = [None] * cfg.NUM_EXPT_AGENTS
-            
+
             for agent_idx in train_order:
                 agent_param, agent_policy, agent_init_param, eval_checkpoints = run_creppo_training(cfg, wandb_logger, agent_idx=agent_idx)
                 agent_policies[agent_idx] = agent_policy
@@ -209,7 +209,7 @@ def run_training(cfg):
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment
     # conditioned on their single agent projections
-    if cfg["algorithm"]["ALG"] == "ppo":
+    if cfg["algorithm"]["ALG"] == "ppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
             for agent_idx in range(cfg.NUM_EXPT_AGENTS):
                 joint_param, joint_policy, joint_init_param = run_ppo_joint_centralized_training(cfg, wandb_logger,
@@ -233,7 +233,7 @@ def run_training(cfg):
                 joint_init_params.append(joint_init_param)
                 joint_params.append(joint_param)
 
-    elif cfg["algorithm"]["ALG"] == "reppo":
+    elif cfg["algorithm"]["ALG"] == "reppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
             pass
         else:
@@ -246,7 +246,7 @@ def run_training(cfg):
                 joint_init_params.append(joint_init_param)
                 joint_params.append(joint_param)
 
-    elif cfg["algorithm"]["ALG"] == "creppo":
+    elif cfg["algorithm"]["ALG"] == "creppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
         if cfg["algorithm"]["JOINT_CENTRALIZED"]:
                 joint_param, joint_policy, joint_init_param = run_creppo_joint_centralized_training(cfg, wandb_logger,
                                                                                       agent_params,
