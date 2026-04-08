@@ -85,6 +85,10 @@ class Grid10x10AlternatingWrapper(BaseEnv):
                 self.uncontrolled_agents.append(agent_idx)
         self.single_agent_projection = len(self.controlled_agents) == 1 and self.uncontrolled_agents_exist
         self.limit_goals_to_inner_grid = kwargs.get("limit_goals_to_inner_grid", True)
+        self.enforce_goal_neighbor_constraint = kwargs.get("enforce_goal_neighbor_constraint", True)
+        self.goal_neighbor_distance = int(kwargs.get("goal_neighbor_distance", 1))
+        self.max_goal_neighbors = int(kwargs.get("max_goal_neighbors", 1))
+        self.goal_resample_attempts = int(kwargs.get("goal_resample_attempts", 200))
 
         self._xpos_list = list(self.env.model.type_to_objects['xpos'])
         self._ypos_list = list(self.env.model.type_to_objects['ypos'])
@@ -638,6 +642,29 @@ class Grid10x10AlternatingWrapper(BaseEnv):
 
         return is_blocking_agent | is_blocking_goal | jnp.logical_not(found)
 
+    def _goal_candidate_is_valid(self, goal_pos_arr, placed_mask, candidate_x, candidate_y):
+        """Checks whether adding a candidate goal keeps local goal density bounded."""
+        dist_limit = jnp.maximum(self.goal_neighbor_distance, 0)
+        max_neighbors = jnp.maximum(self.max_goal_neighbors, 0)
+
+        dx = jnp.abs(goal_pos_arr[:, 0] - candidate_x)
+        dy = jnp.abs(goal_pos_arr[:, 1] - candidate_y)
+        candidate_within = (jnp.maximum(dx, dy) <= dist_limit) & placed_mask
+        candidate_neighbor_count = jnp.sum(candidate_within.astype(jnp.int32))
+        candidate_ok = candidate_neighbor_count <= max_neighbors
+
+        pair_dx = jnp.abs(goal_pos_arr[:, None, 0] - goal_pos_arr[None, :, 0])
+        pair_dy = jnp.abs(goal_pos_arr[:, None, 1] - goal_pos_arr[None, :, 1])
+        within_existing = jnp.maximum(pair_dx, pair_dy) <= dist_limit
+        not_self = jnp.logical_not(jnp.eye(self.num_agents, dtype=jnp.bool_))
+        placed_pairs = placed_mask[:, None] & placed_mask[None, :]
+        existing_neighbor_counts = jnp.sum((within_existing & not_self & placed_pairs).astype(jnp.int32), axis=1)
+
+        new_existing_counts = existing_neighbor_counts + candidate_within.astype(jnp.int32)
+        existing_ok = jnp.all(jnp.where(placed_mask, new_existing_counts <= max_neighbors, True))
+
+        return candidate_ok & existing_ok
+
     def _randomize_initial_positions(self, key: chex.PRNGKey, env_state, timestep):
         '''Randomizes initial positions of agents and goals using full JAX operations'''
 
@@ -693,15 +720,48 @@ class Grid10x10AlternatingWrapper(BaseEnv):
         # Sample goal positions using scan
         def sample_goal(carry, agent_idx):
             key, occupied, goal_at_arr, goal_arr, goal_pos_arr = carry
-            key, subkey = jax.random.split(key)
-
             available = valid_goal_mask & jnp.logical_not(occupied)
             flat_available = available.flatten()
             flat_probs = flat_available.astype(jnp.float32) / jnp.sum(flat_available)
 
-            pos_idx = jax.random.choice(subkey, num_x * num_y, p=flat_probs)
-            goal_x = pos_idx // num_y
-            goal_y = pos_idx % num_y
+            def sample_goal_with_constraint(loop_carry):
+                key, goal_x, goal_y, attempt, is_valid = loop_carry
+                key, subkey = jax.random.split(key)
+
+                pos_idx = jax.random.choice(subkey, num_x * num_y, p=flat_probs)
+                sampled_x = pos_idx // num_y
+                sampled_y = pos_idx % num_y
+
+                placed_mask = jnp.arange(self.num_agents) < agent_idx
+                valid = self._goal_candidate_is_valid(goal_pos_arr, placed_mask, sampled_x, sampled_y)
+
+                return key, sampled_x, sampled_y, attempt + 1, valid
+
+            def sample_goal_with_constraint_cond(loop_carry):
+                _, _, _, attempt, is_valid = loop_carry
+                return jnp.logical_not(is_valid) & (attempt < self.goal_resample_attempts)
+
+            def sample_without_constraint(sample_key):
+                sample_key, subkey = jax.random.split(sample_key)
+                pos_idx = jax.random.choice(subkey, num_x * num_y, p=flat_probs)
+                sampled_x = pos_idx // num_y
+                sampled_y = pos_idx % num_y
+                return sample_key, sampled_x, sampled_y
+
+            def sample_with_constraint(sample_key):
+                key_out, goal_x_out, goal_y_out, _, _ = jax.lax.while_loop(
+                    sample_goal_with_constraint_cond,
+                    sample_goal_with_constraint,
+                    (sample_key, jnp.int32(0), jnp.int32(0), jnp.int32(0), False)
+                )
+                return key_out, goal_x_out, goal_y_out
+
+            key, goal_x, goal_y = jax.lax.cond(
+                self.enforce_goal_neighbor_constraint,
+                sample_with_constraint,
+                sample_without_constraint,
+                operand=key
+            )
 
             goal_at_arr = goal_at_arr.at[agent_idx, goal_x, goal_y].set(True)
             goal_arr = goal_arr.at[agent_idx, goal_x, goal_y].set(True)
