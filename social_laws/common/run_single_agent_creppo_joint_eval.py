@@ -196,10 +196,15 @@ def run_single_agent_joint_eval(logger, eval_seed, env, agent_params, agent_poli
                 else:
                     rng, eval_rng = jax.random.split(rng)
 
-                out = run_episodes_vmap(
-                    eval_rng, env, ck_agent_params, agent_policies,
-                    max_episode_steps, num_eps, render, agent_test_mode
-                )
+                def scan_episode(carry, ep_rng):
+                    out = run_single_episode(
+                        ep_rng, env, ck_agent_params, agent_policies,
+                        max_episode_steps, render, agent_test_mode
+                    )
+                    return carry, out
+
+                ep_rngs = jax.random.split(eval_rng, num_eps)
+                _, out = jax.lax.scan(scan_episode, None, ep_rngs)
                 return rng, out
 
             _, eval_outputs = jax.lax.scan(checkpoint_scan_fn, rng_eval, agent_params)
