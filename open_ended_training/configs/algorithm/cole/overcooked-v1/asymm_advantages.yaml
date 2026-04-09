@@ -1,13 +1,10 @@
 defaults:
-  - ippo/_base_
+  - cole/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 1e7
-SEED: 12345
+TOTAL_TIMESTEPS: 6e6
+PARTNER_POP_SIZE: 10
 LR: .0001
-NUM_ENVS: 128
 UPDATE_EPOCHS: 15
-NUM_MINIBATCHES: 8
-CLIP_EPS: 0.03
+CLIP_EPS: 0.3
 ENT_COEF: 0.01
-ANNEAL_LR: false
