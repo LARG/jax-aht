@@ -2,6 +2,7 @@
 
 ## Overview
 This guide explains how to run hyperparameter sweeps using Weights & Biases.
+We use the teammate generation entry point and the FCP algorithm / LBF environment as an example.
 
 ## Usage
 
