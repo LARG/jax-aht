@@ -40,5 +40,5 @@ logger:
 
 # Local logger
 local_logger:
-  save_train_out: true
+  save_train_out: false
   save_eval_out: true
