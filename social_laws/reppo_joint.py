@@ -873,14 +873,14 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     # algorithm_config["TARGET_ENTROPY_MULT"] = algorithm_config["TARGET_ENTROPY_MULT"] * -1
 
     # Create only one environment instance
-    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs = dict(algorithm_config["ENV_KWARGS"])
     env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
     env_kwargs["done_condition"] = f"agent_{agent_idx}"  # End only when focal agent finishes; adversary cannot exploit early termination
 
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
-    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs = dict(algorithm_config["ENV_KWARGS"])
     env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
     env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as agent i takes its picture

@@ -581,7 +581,7 @@ def run_training(config, wandb_logger, ppo_params, ppo_policy, agent_idx=0):
     algorithm_config["EPSILON_ANNEAL_TIME"] = algorithm_config["TOTAL_TIMESTEPS"] * algorithm_config["EPSILON_EXPLORATION_FRACTION"]
 
     # Create only one environment instance
-    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs = dict(algorithm_config["ENV_KWARGS"])
 
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
     env_kwargs["render_dir"] = os.path.join("render", "drqnppo", f"agent_{agent_idx + 1}")
