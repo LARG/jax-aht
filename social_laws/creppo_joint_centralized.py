@@ -757,8 +757,7 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     # Create only one environment instance
     env_kwargs = dict(algorithm_config["ENV_KWARGS"])
     env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
-    with open_dict(env_kwargs):
-        env_kwargs["done_condition"] = f"agent_{agent_idx}"  # End only when focal agent finishes; adversary cannot exploit early termination
+    env_kwargs["done_condition"] = f"agent_{agent_idx}"  # End only when focal agent finishes; adversary cannot exploit early termination
 
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
@@ -766,8 +765,7 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     env_kwargs = dict(algorithm_config["ENV_KWARGS"])
     env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
-    with open_dict(env_kwargs):
-        env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as agent i takes its picture
+    env_kwargs["done_condition"] = "any"  # SAP: terminate as soon as agent i takes its picture
     optimal_env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     optimal_env = LogWrapper(optimal_env)
 
