@@ -22,6 +22,9 @@ command:
   - task=lbf
   - algorithm=rotate/lbf
   - run_heldout_eval=true
+  - logger.project=${project}
+  - logger.entity=${entity}
+  - logger.mode=online
   - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
