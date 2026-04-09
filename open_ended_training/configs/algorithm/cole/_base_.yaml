@@ -1,0 +1,29 @@
+# @package algorithm
+# ^ tells hydra to place these value directly under algorithm key
+ALG: cole
+TOTAL_TIMESTEPS_PER_ITERATION: 1.2e7  # number of steps used to train each comedi agent at each iteration
+NUM_CHECKPOINTS: 5
+PARTNER_POP_SIZE: 4
+NUM_ENVS: 48
+LR: 1e-4
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 8
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.05
+ENT_COEF: 0.01
+VF_COEF: 0.5
+MAX_GRAD_NORM: 1.0
+ANNEAL_LR: false
+ACTOR_TYPE: mlp # choices: s5, rnn, mlp
+XP_EVAL_ROLLOUT_EPS: 20
+COLE_ALPHA: 0.5
+C_UCT: 0.1
+#####
+# metasolver parameters
+METASOLVE_MODE: shapley    # choices: shapley, returns
+# shapley metasolver parameters
+SHAPLEY_MAX_ITER: 50          # Number of coalition samples when computing Shapley values
+SHAPLEY_SIGMA_TEMP: 10.0      # difficulty-weight temperature
+SHAPLEY_PAGERANK_DAMPING: 0.85         # PageRank damping coefficient
+SHAPLEY_PAGERANK_ITER: 100    # Number of PageRank power iterations
