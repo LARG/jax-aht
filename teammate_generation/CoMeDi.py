@@ -1086,33 +1086,40 @@ def compute_sp_mask_and_ids(pop_size):
 
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
-    num_seeds, pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
+    # trained_pop_size excludes the initial policy
+    num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
     # TODO: add the eval_ep_last_info metrics
 
     ### Log evaluation metrics
-    # we plot XP return curves separately from SP return curves
-    # shape (num_seeds, num_updates, pop_size,  num_eval_episodes, num_agents_per_game)
+    # xp_eval_returns and sp_eval_returns logged at each evaluation only.
+    algorithm_config = config["algorithm"]
+    ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
+    # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
+    eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
+    if (num_updates - 1) not in eval_steps:
+        eval_steps.append(num_updates - 1)
+
+    # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
-    # shape (num_seeds, num_updates, pop_size, pop_size, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
     all_returns_xp = np.asarray(outs["last_ep_infos_xp"]["returned_episode_returns"])
-    xs = list(range(num_updates))
 
     # Average over seeds, then over agent pairs, episodes and num_agents_per_game
-    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))
-    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))
+    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))  # shape (pop_size - 1, num_updates)
+    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))  # shape (pop_size - 1, num_updates, pop_size)
 
-    for num_add_policies in range(pop_size):
-        for step in range(num_updates):
-            logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, step], train_step=step)
-            mean_xp_returns = xp_return_curve[num_add_policies][:, :(num_add_policies+1)].mean(axis=-1)
-            logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[step], train_step=step)
+    for num_add_policies in range(trained_pop_size):
+        for update_step in eval_steps:
+            logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
+            mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
+            logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[update_step], train_step=update_step)
     logger.commit()
 
     ### Log population loss as multi-line plots, where each line is a different population member
-    # both xp and xp metrics has shape (num_seeds, pop_size, num_updates, update_epochs, num_minibatches)
+    # both xp and xp metrics has shape (num_seeds, pop_size - 1, num_updates, update_epochs, num_minibatches)
     # Average over seeds
     processed_losses = {
-        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size, num_updates)
+        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size - 1, num_updates)
         "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=(0, 3, 4)),
         "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=(0, 3, 4)),
         "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=(0, 3, 4)),
