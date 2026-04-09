@@ -119,8 +119,17 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         }
 
         from envs.hanabi.hanabi_wrapper import HanabiWrapper
-        env_kwargs = default_env_kwargs
-        env = HanabiWrapper(**env_kwargs)
+
+        # Use the right kwargs 
+        env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
+        for key in default_env_kwargs:
+            if key not in env_kwargs_copy:
+                env_kwargs_copy[key] = default_env_kwargs[key]
+        # Hydra loads YAML lists as Python lists, but HanabiEnv expects a numpy array
+        if "num_cards_of_rank" in env_kwargs_copy and not isinstance(env_kwargs_copy["num_cards_of_rank"], np.ndarray):
+            env_kwargs_copy["num_cards_of_rank"] = np.array(env_kwargs_copy["num_cards_of_rank"])
+        
+        env = HanabiWrapper(**env_kwargs_copy)
 
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
