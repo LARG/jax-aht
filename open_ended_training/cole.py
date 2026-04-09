@@ -5,7 +5,7 @@ Code: https://github.com/liyang619/COLE-Platform/tree/COLE_training
 
 Suggested debug command:
 python open_ended_training/run.py
-    algorithm=cole/lbf
+    algorithm=cole/lbf 
     task=lbf
     label=test_cole
     run_heldout_eval=false
@@ -220,11 +220,13 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                     receive probability zero (untrained agents are excluded).    
 
                     returns:
+                        This is the metasolver used by ZSCEval's COLE.
                         Negative return heuristic on the row for agent_idx:
                         partners that agent_idx performs *worse* against
                         receive higher probability (harder partners prioritised).
 
                     shapley:
+                        This is the metasolver of original COLE paper.
                         Compute Shapley values over the valid sub-matrix of the
                         XP matrix using coalition-aware weighted PageRank. 
                         Higher probability given to agents with higher Shapley value
@@ -251,9 +253,27 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                             sigma_temperature=config["SHAPLEY_SIGMA_TEMP"],
                         )  # (POP_SIZE,)
 
-                        # Zero out untrained agents, then softmax over valid ones
-                        # using the masked_softmax helper (handles -inf and normalisation).
-                        sampling_dist = masked_softmax(phi, valid_mask, temperature=1.0)
+                        # The paper uses a linear inversion to prioritise agents with lower Shapley values:
+                        # phi = phi / sum(phi)
+                        # phi = (1 - phi) / sum(1 - phi)
+                        # We use min-max normalisation over the valid agents to safely handle negative 
+                        # marginal contributions without losing scaling and relative ordering.
+                        valid_phi_min = jnp.where(valid_mask, phi, jnp.finfo(phi.dtype).max)
+                        phi_min = jnp.min(valid_phi_min)
+                        
+                        valid_phi_max = jnp.where(valid_mask, phi, jnp.finfo(phi.dtype).min)
+                        phi_max = jnp.max(valid_phi_max)
+                        
+                        phi_range = jnp.maximum(phi_max - phi_min, 1e-8)
+                        phi_minmax_norm = jnp.where(valid_mask, (phi - phi_min) / phi_range, 0.0)
+                        
+                        sum_phi = jnp.sum(phi_minmax_norm)
+                        phi_norm = jnp.where(sum_phi > 0, phi_minmax_norm / sum_phi, uniform)
+
+                        # Invert probabilities: lower Shapley value -> higher sampling probability
+                        phi_inv = jnp.where(valid_mask, 1.0 - phi_norm, 0.0)
+                        sum_phi_inv = jnp.sum(phi_inv)
+                        sampling_dist = jnp.where(sum_phi_inv > 0, phi_inv / sum_phi_inv, uniform)
 
                     elif config["METASOLVE_MODE"] == "returns":
                         xp_row = xp_matrix[num_prev_trained_agents - 1]  # (POP_SIZE,)
