@@ -24,9 +24,8 @@ domain pizzav2 {
 
 	pvariables {
 
-		DELIVERY-REWARD : {non-fluent, real, default = 10.0};      // Reward for delivery
-		COLLISION-PENALTY : {non-fluent, real, default = -20.0};     // Penalty for collisions
-		STEP-PENALTY : {non-fluent, real, default = -0.1};          // Penalty for each step taken (to encourage shorter plans)
+		COLLISION-PENALTY : {non-fluent, real, default = -130.0};     // Penalty for collisions
+		STEP-PENALTY : {non-fluent, real, default = -1};          // Penalty for each step taken per pizza undelivered (to encourage faster deliveries)
 
     	CAPACITY(truck) : { non-fluent, int, default = 3 };		  // Capacity of each truck (number of pizzas it can hold at once)
 		CONNECTED(location, location) : { non-fluent, bool, default = false }; // like a one-way road connection
@@ -55,7 +54,8 @@ domain pizzav2 {
 		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 4 }; // whether this truck's delivery to this location is rewarded
 		pizzaPickedUp(truck) : { interm-fluent, bool, level = 4 }; // whether this truck successfully picked up a pizza this turn
 
-		numDeliveriesMadeThisStep(truck) : { interm-fluent, int, level = 5 }; // how many deliveries this truck made this step
+		// This value will determine the penalty for each truck for this step, based on how many deliveries
+		deliveryCreditRemaining(truck) : { interm-fluent, real, level = 5 };
 
 		// Action variables
 		noop(truck) : { action-fluent, bool, default = false };
@@ -115,9 +115,6 @@ domain pizzav2 {
 			then (pickupPriorityRank(?t) < numShopPizzas) // check priority rank against pizzas available at the shop
 			else false; // if not trying to pick up, then not successful
 
-		// Count how many deliveries this truck made this step (for reward calculation)
-		numDeliveriesMadeThisStep(?t) = sum_{?l : location} [deliveryRewarded(?t, ?l)];
-
 		// Dynamics for state fluents
 		// shops lose pizzas when trucks successfully pick them up
 		numShopPizzas' = numShopPizzas - sum_{?t : truck} [pizzaPickedUp(?t)];
@@ -130,22 +127,29 @@ domain pizzav2 {
 			if (doneDelivering(?t))
 				then true // once done delivering, always done delivering
 			// else if there are no orders remaining at locations this truck can deliver to, then done delivering
-			else (forall_{?l : location} [ (numOrdersRemaining(?l) == 0) | ~CAN-DELIVER(?t, ?l) ]); 
+			else (forall_{?l : location} [ (numOrdersRemaining'(?l) == 0) | ~CAN-DELIVER(?t, ?l) ]); 
+		
+		// Count how many deliveries this truck is still responsible for that could be rewarded, split among trucks with the same responsibility
+		deliveryCreditRemaining(?t) = sum_{?l : location} [
+			// can't use next state fluent here, so reuse calculation for numOrdersRemaining'(?l)
+			(numOrdersRemaining(?l) - sum_{?t2 : truck} [deliveryRewarded(?t2, ?l)])
+			* CAN-DELIVER(?t, ?l)
+			// divide responsibility for deliveries to this location among all trucks that can deliver there
+			/ (1 + sum_{?t2 : truck} [ ( ?t ~= ?t2 ) ^ CAN-DELIVER(?t2, ?l) ])
+		];
 	};
 
 	reward = [
 		sum_{?t : truck} [
-			// reward for deliveries
-			if (numDeliveriesMadeThisStep(?t) > 0)
-				then numDeliveriesMadeThisStep(?t) * DELIVERY-REWARD + STEP-PENALTY
 			// penalty for collisions
-			else if (collision'(?t))
-				then COLLISION-PENALTY + STEP-PENALTY
-			else if (doneDelivering(?t))
+			if (collision'(?t))
+				then COLLISION-PENALTY + (STEP-PENALTY * deliveryCreditRemaining(?t))
+			else if (doneDelivering'(?t))
 				then 0.0 // no penalty if truck is done delivering
 			// penalty for each step taken
+			// size of penalty depends on how many deliveries this truck is still responsible for that could be rewarded (to encourage faster deliveries)
 			else
-				STEP-PENALTY
+				(STEP-PENALTY * deliveryCreditRemaining(?t))
 		]
 	];
 
