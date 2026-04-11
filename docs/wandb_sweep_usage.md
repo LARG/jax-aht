@@ -22,10 +22,10 @@ Launch one or more agents to execute the sweep runs:
 PYTHONPATH=<PATH_TO_REPO_DIR>/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb agent <sweep_id>
 ```
 
-Or with your entity/project:
+If using the Bayesian sweep, you can limit the total number of runs by adding the `--count <num_runs>` flag:
 
 ```
-PYTHONPATH=<PATH_TO_REPO_DIR>/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb agent <entity>/<project>/<sweep_id>
+PYTHONPATH=<PATH_TO_REPO_DIR>/jax-aht XLA_PYTHON_CLIENT_PREALLOCATE="false" wandb agent <sweep_id> --count 100
 ```
 
 ### Step 3: Monitor Results

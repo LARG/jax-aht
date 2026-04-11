@@ -2,7 +2,7 @@ defaults:
   - cole/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS_PER_ITERATION: 6e6
+TOTAL_TIMESTEPS_PER_ITERATION: 7e6
 PARTNER_POP_SIZE: 10
 LR: 5e-4
 UPDATE_EPOCHS: 15
