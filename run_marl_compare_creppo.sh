@@ -20,12 +20,13 @@ run_exp() {
     local TASK=$2
     local N=$3
     local LABEL=$4
+    local SEED=$5
 
     CUDA_VISIBLE_DEVICES=$GPU \
     ./marl_train social_laws/run.py \
         task=$TASK \
         algorithm=creppo/continuous/coop_recon \
-        algorithm.TRAIN_SEED=72128 \
+        algorithm.TRAIN_SEED=$SEED \
         algorithm.USE_SAME_SEED=true \
         algorithm.FIXED_EVAL=true \
         NUM_EXPT_AGENTS=$N \
@@ -34,25 +35,31 @@ run_exp() {
         logger.entity=jeffreychen287-the-university-of-texas-at-austin \
         logger.mode=online \
         +algorithm.ALPHA_VERIFICATION=false \
-        >> logs/${LABEL}_${SLURM_JOB_ID:+$SLURM_JOB_ID}.out 2>&1 &
+        >> logs/${LABEL}_seed${SEED}_${SLURM_JOB_ID:+$SLURM_JOB_ID}.out 2>&1 &
 }
 
-echo "Starting CREPPO Phase E Comparisons Batch 1 (4 jobs on 4 GPUs)..."
+echo "Starting CREPPO Phase E Multi-Seed Comparisons (4 jobs on 4 GPUs per batch)..."
 
-# Batch 1: No Law (Baseline)
-run_exp 0 continuous/coop_recon_compare_no_law_2_agent 2 creppo_no_law_2_agent
-run_exp 1 continuous/coop_recon_compare_no_law_3_agent 3 creppo_no_law_3_agent
-run_exp 2 continuous/coop_recon_compare_no_law_4_agent 4 creppo_no_law_4_agent
-run_exp 3 continuous/coop_recon_compare_no_law_5_agent 5 creppo_no_law_5_agent
+for SEED in 42 123 999; do
+    echo "=== Running CREPPO with SEED=$SEED ==="
 
-wait
-echo "Batch 1 finished! Starting Batch 2..."
+    # Batch 1: No Law (Baseline)
+    run_exp 0 continuous/coop_recon_compare_no_law_2_agent 2 creppo_no_law_2_agent $SEED
+    run_exp 1 continuous/coop_recon_compare_no_law_3_agent 3 creppo_no_law_3_agent $SEED
+    run_exp 2 continuous/coop_recon_compare_no_law_4_agent 4 creppo_no_law_4_agent $SEED
+    run_exp 3 continuous/coop_recon_compare_no_law_5_agent 5 creppo_no_law_5_agent $SEED
 
-# Batch 2: Social Law
-run_exp 0 continuous/coop_recon_compare_law_2_agent 2 creppo_law_2_agent
-run_exp 1 continuous/coop_recon_compare_law_3_agent 3 creppo_law_3_agent
-run_exp 2 continuous/coop_recon_compare_law_4_agent 4 creppo_law_4_agent
-run_exp 3 continuous/coop_recon_compare_law_5_agent 5 creppo_law_5_agent
+    wait
+    echo "Seed $SEED Batch 1 finished! Starting Batch 2..."
 
-wait
-echo "All CREPPO comparisons finished."
+    # Batch 2: Social Law
+    run_exp 0 continuous/coop_recon_compare_law_2_agent 2 creppo_law_2_agent $SEED
+    run_exp 1 continuous/coop_recon_compare_law_3_agent 3 creppo_law_3_agent $SEED
+    run_exp 2 continuous/coop_recon_compare_law_4_agent 4 creppo_law_4_agent $SEED
+    run_exp 3 continuous/coop_recon_compare_law_5_agent 5 creppo_law_5_agent $SEED
+
+    wait
+    echo "Seed $SEED Batch 2 finished!"
+done
+
+echo "All CREPPO multi-seed comparisons finished."
