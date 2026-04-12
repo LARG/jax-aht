@@ -8,12 +8,16 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_DEFAULT_MATMUL_PRECISION=highest
 
 # Ensure venv is active
-source /scratch/cluster/jeffrey9/jax-aht/venv/bin/activate
+if [ -d "venv" ]; then
+    source venv/bin/activate
+elif [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
 
-# Redirect WandB artifacts to scratch to save home folder space
-mkdir -p /scratch/cluster/jeffrey9/wandb_cache
-export WANDB_DIR=/scratch/cluster/jeffrey9/wandb_cache
-export WANDB_CACHE_DIR=/scratch/cluster/jeffrey9/wandb_cache
+# Redirect WandB artifacts to a local directory to save home folder space
+mkdir -p wandb_cache
+export WANDB_DIR=$PWD/wandb_cache
+export WANDB_CACHE_DIR=$PWD/wandb_cache
 
 run_exp() {
     local GPU=$1
@@ -23,7 +27,7 @@ run_exp() {
     local SEED=$5
 
     CUDA_VISIBLE_DEVICES=$GPU \
-    ./marl_train social_laws/run.py \
+    python social_laws/run.py \
         task=$TASK \
         algorithm=creppo/continuous/coop_recon \
         algorithm.TRAIN_SEED=$SEED \
