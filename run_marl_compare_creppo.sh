@@ -8,10 +8,12 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_DEFAULT_MATMUL_PRECISION=highest
 
 # Ensure venv is active
-if [ -d "venv" ]; then
-    source venv/bin/activate
-elif [ -d ".venv" ]; then
-    source .venv/bin/activate
+if [ -f "venv/bin/python" ]; then
+    VENV_PYTHON="$PWD/venv/bin/python"
+elif [ -f ".venv/bin/python" ]; then
+    VENV_PYTHON="$PWD/.venv/bin/python"
+else
+    VENV_PYTHON="python"
 fi
 
 # Redirect WandB artifacts to a local directory to save home folder space
@@ -27,7 +29,7 @@ run_exp() {
     local SEED=$5
 
     CUDA_VISIBLE_DEVICES=$GPU \
-    python social_laws/run.py \
+    $VENV_PYTHON social_laws/run.py \
         task=$TASK \
         algorithm=creppo/continuous/coop_recon \
         algorithm.TRAIN_SEED=$SEED \
