@@ -51,20 +51,22 @@ echo "Starting CREPPO Phase E Multi-Seed Comparisons (4 jobs on 4 GPUs per batch
 for SEED in 721280 721281 721282 721283; do
     echo "=== Running CREPPO with SEED=$SEED ==="
 
-    # Batch 1: No Law (Baseline)
-    run_exp 0 continuous/coop_recon_compare_no_law_2_agent 2 creppo_no_law_2_agent $SEED
-    run_exp 1 continuous/coop_recon_compare_no_law_3_agent 3 creppo_no_law_3_agent $SEED
-    run_exp 2 continuous/coop_recon_compare_no_law_4_agent 4 creppo_no_law_4_agent $SEED
-    run_exp 3 continuous/coop_recon_compare_no_law_5_agent 5 creppo_no_law_5_agent $SEED
+    # Batch 1: No Law (Baseline) — 3 parallel on GPUs 1,2,3 then N=5 serialized
+    run_exp 1 continuous/coop_recon_compare_no_law_2_agent 2 creppo_no_law_2_agent $SEED
+    run_exp 2 continuous/coop_recon_compare_no_law_3_agent 3 creppo_no_law_3_agent $SEED
+    run_exp 3 continuous/coop_recon_compare_no_law_4_agent 4 creppo_no_law_4_agent $SEED
+    wait
+    run_exp 1 continuous/coop_recon_compare_no_law_5_agent 5 creppo_no_law_5_agent $SEED
 
     wait
     echo "Seed $SEED Batch 1 finished! Starting Batch 2..."
 
-    # Batch 2: Social Law
-    run_exp 0 continuous/coop_recon_compare_law_2_agent 2 creppo_law_2_agent $SEED
-    run_exp 1 continuous/coop_recon_compare_law_3_agent 3 creppo_law_3_agent $SEED
-    run_exp 2 continuous/coop_recon_compare_law_4_agent 4 creppo_law_4_agent $SEED
-    run_exp 3 continuous/coop_recon_compare_law_5_agent 5 creppo_law_5_agent $SEED
+    # Batch 2: Social Law — 3 parallel on GPUs 1,2,3 then N=5 serialized
+    run_exp 1 continuous/coop_recon_compare_law_2_agent 2 creppo_law_2_agent $SEED
+    run_exp 2 continuous/coop_recon_compare_law_3_agent 3 creppo_law_3_agent $SEED
+    run_exp 3 continuous/coop_recon_compare_law_4_agent 4 creppo_law_4_agent $SEED
+    wait
+    run_exp 1 continuous/coop_recon_compare_law_5_agent 5 creppo_law_5_agent $SEED
 
     wait
     echo "Seed $SEED Batch 2 finished!"
