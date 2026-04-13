@@ -1,5 +1,6 @@
 #!/bin/bash
-# Phase E: MARL Comparison PPO (Hazard 4-GPU tmux launcher)
+# Phase E: MARL Comparison PPO — Multi-Seed (aaronson 4-GPU tmux launcher)
+# Seeds follow PI convention: base seed 72128 → 721280, 721281, 721282, 721283
 
 mkdir -p logs
 
@@ -16,10 +17,10 @@ else
     VENV_PYTHON="python"
 fi
 
-# Redirect WandB artifacts to a local directory to save home folder space
-mkdir -p wandb_cache
-export WANDB_DIR=$PWD/wandb_cache
-export WANDB_CACHE_DIR=$PWD/wandb_cache
+# Redirect WandB artifacts to scratch to save home folder space
+mkdir -p /scratch/cluster/jeffrey9/wandb_cache
+export WANDB_DIR=/scratch/cluster/jeffrey9/wandb_cache
+export WANDB_CACHE_DIR=/scratch/cluster/jeffrey9/wandb_cache
 
 run_exp() {
     local GPU=$1
@@ -49,7 +50,8 @@ run_exp() {
 
 echo "Starting PPO Phase E Multi-Seed Comparisons (4 jobs on 4 GPUs per batch)..."
 
-for SEED in 42 123 999; do
+# PI seed convention: original seed 72128 → append zero + increment
+for SEED in 721280 721281 721282 721283; do
     echo "=== Running PPO with SEED=$SEED ==="
 
     # Batch 1: No Law (Baseline)
