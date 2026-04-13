@@ -8,6 +8,7 @@ from common.wandb_visualizations import Logger
 from open_ended_training.rotate import run_rotate
 from open_ended_minimax import run_minimax
 from paired import run_paired
+from trajedi import run_trajedi
 
 @hydra.main(version_base=None, config_path="configs", config_name="base_config_oel")
 def run_training(cfg):
@@ -20,6 +21,8 @@ def run_training(cfg):
         ego_policy, final_ego_params, init_ego_params = run_minimax(cfg, wandb_logger)
     elif cfg.algorithm["ALG"] == "paired":
         ego_policy, final_ego_params, init_ego_params = run_paired(cfg, wandb_logger)
+    elif cfg.algorithm["ALG"] == "trajedi":
+        ego_policy, final_ego_params, init_ego_params = run_trajedi(cfg, wandb_logger)
     else:
         raise NotImplementedError("Selected method not implemented.")
 
