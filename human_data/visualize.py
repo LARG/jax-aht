@@ -38,7 +38,7 @@ PAGE_SIZE        = 15
 # Flagging thresholds — tune these based on researcher feedback
 FLAG_SCORE       = 0.0    # avg score at or below this is suspicious
 FLAG_NOOP        = 0.60   # noop rate at or above this is suspicious
-BORDERLINE_NOOP  = 0.40   # lower borderline threshold (more eager flagging)
+BORDERLINE_NOOP  = 0.55   # borderline noop threshold
 LOOP_WINDOW      = 6      # detect repeated action loops within this window
 LOOP_THRESHOLD   = 0.75   # fraction of steps that are the same action = loop
 MIN_DURATION     = 5.0    # seconds — games shorter than this are suspicious
@@ -165,8 +165,6 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             sus_reasons.append("repetitive action loop detected")
         if short_games >= 2:
             sus_reasons.append(f"{short_games} very short games (<{MIN_DURATION}s)")
-        if noop_rate >= FLAG_NOOP and avg_score <= 0.15:
-            sus_reasons.append("high noop rate")
         if avg_score <= FLAG_SCORE and noop_rate < FLAG_NOOP:
             sus_reasons.append("zero score (actively moving)")
 
@@ -174,7 +172,7 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             status = "flagged"
         elif sus_reasons:
             status = "borderline"
-        elif noop_rate >= BORDERLINE_NOOP and avg_score <= 0.20:
+        elif noop_rate >= BORDERLINE_NOOP and avg_score <= 0.10:
             status = "borderline"
         else:
             status = "ok"
@@ -859,11 +857,13 @@ function openReplay(games, sid) {
   games.forEach(function(gm,i){
     var card = document.createElement('div');
     card.className = 'game-card';
+    card.id = 'gamecard-'+i;
     card.innerHTML =
       '<div class="game-card-header">'
       +'<span>Game '+(i+1)+'</span>'
       +'<span class="gc-score">Score: '+gm.score.toFixed(3)+'</span>'
       +'<span class="gc-noop">Noop: '+(gm.noop_rate*100).toFixed(0)+'%</span>'
+      +'<span class="gc-done" id="done-'+i+'" style="display:none;color:#52be80;font-weight:700">✓ Done</span>'
       +'<span class="gc-action" id="action-'+i+'">—</span>'
       +'</div>'
       +'<div class="grid-canvas-wrap">'
@@ -895,11 +895,16 @@ function renderReplayFrame(stepIdx) {
 
   replayGames.forEach(function(gm,i){
     var frames = gm.frames;
-    // Use last available frame if this game is shorter
+    var isDone = stepIdx >= frames.length;
     var fi = Math.min(stepIdx, frames.length-1);
     var frame = frames[fi];
-    drawGrid(i, gm.grid_size, frame);
+    drawGrid(i, gm.grid_size, frame, isDone, stepIdx===fi&&fi===frames.length-1);
 
+    // Done badge
+    var doneEl = document.getElementById('done-'+i);
+    if(doneEl) doneEl.style.display = isDone ? 'inline' : 'none';
+    var card = document.getElementById('gamecard-'+i);
+    if(card) card.style.opacity = isDone ? '0.7' : '1';
     // Action label
     var ha = stepIdx<frames.length ? frame.human_action : null;
     var aa = stepIdx<frames.length ? frame.ai_action : null;
@@ -922,63 +927,99 @@ function renderReplayFrame(stepIdx) {
   });
 }
 
-function drawGrid(gameIdx, gridSize, frame) {
+function drawGrid(gameIdx, gridSize, frame, isDone, isLastFrame) {
   var canvas = document.getElementById('canvas-'+gameIdx);
   if(!canvas) return;
   var ctx = canvas.getContext('2d');
   var W=canvas.width, H=canvas.height;
   var cell = W/gridSize;
 
-  // Background
-  ctx.fillStyle = CELL_COLORS.bg;
+  // Background — dim if game is done
+  ctx.fillStyle = isDone ? '#1e2d26' : CELL_COLORS.bg;
   ctx.fillRect(0,0,W,H);
 
   // Grid lines
-  ctx.strokeStyle = CELL_COLORS.grid;
+  ctx.strokeStyle = isDone ? '#283d30' : CELL_COLORS.grid;
   ctx.lineWidth = 0.5;
   for(var i=0;i<=gridSize;i++){
     ctx.beginPath(); ctx.moveTo(i*cell,0); ctx.lineTo(i*cell,H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0,i*cell); ctx.lineTo(W,i*cell); ctx.stroke();
   }
 
-  // Food
+  // Food — fade eaten fruits, and at last frame fade ALL collected ones more visibly
   var fpos = frame.food_positions||[], featen=frame.food_eaten||[], flvl=frame.food_levels||[];
   fpos.forEach(function(fp,fi){
     var eaten=featen[fi];
-    ctx.fillStyle = eaten ? CELL_COLORS.eaten : CELL_COLORS.fruit;
     var px=fp[1]*cell, py=fp[0]*cell;
     var pad=cell*0.15;
-    ctx.beginPath();
-    ctx.roundRect(px+pad, py+pad, cell-pad*2, cell-pad*2, 3);
-    ctx.fill();
-    if(!eaten){
-      ctx.fillStyle='rgba(0,0,0,0.5)';
-      ctx.font='bold '+(cell*0.35)+'px sans-serif';
+    if(eaten) {
+      // Faded eaten fruit — slightly more visible at game end
+      ctx.globalAlpha = isDone ? 0.25 : 0.35;
+      ctx.fillStyle = CELL_COLORS.fruit;
+      ctx.beginPath();
+      ctx.roundRect(px+pad, py+pad, cell-pad*2, cell-pad*2, 3);
+      ctx.fill();
+      // Checkmark
+      ctx.globalAlpha = isDone ? 0.4 : 0.5;
+      ctx.fillStyle = '#aaffaa';
+      ctx.font='bold '+(cell*0.4)+'px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('✓', px+cell/2, py+cell/2);
+      ctx.globalAlpha = 1.0;
+    } else {
+      ctx.globalAlpha = isDone ? 0.5 : 1.0;
+      ctx.fillStyle = CELL_COLORS.fruit;
+      ctx.beginPath();
+      ctx.roundRect(px+pad, py+pad, cell-pad*2, cell-pad*2, 3);
+      ctx.fill();
+      ctx.fillStyle='rgba(0,0,0,0.6)';
+      ctx.font='bold '+(cell*0.38)+'px sans-serif';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(flvl[fi]||'', px+cell/2, py+cell/2);
+      ctx.globalAlpha = 1.0;
     }
   });
 
-  // Agents
+  // Agents — fade if done
   var apos=frame.agent_positions||[], alvl=frame.agent_levels||[];
+  ctx.globalAlpha = isDone ? 0.45 : 1.0;
   apos.forEach(function(ap,ai){
     var color = ai===0 ? CELL_COLORS.human : CELL_COLORS.ai;
     var px=ap[1]*cell, py=ap[0]*cell;
-    var pad=cell*0.1;
+    var r = cell/2 - cell*0.08;
+    // Clean circle — no level badge
     ctx.fillStyle=color;
     ctx.beginPath();
-    ctx.arc(px+cell/2, py+cell/2, cell/2-pad, 0, Math.PI*2);
+    ctx.arc(px+cell/2, py+cell/2, r, 0, Math.PI*2);
     ctx.fill();
-    // Label
-    ctx.fillStyle='rgba(0,0,0,0.75)';
-    ctx.font='bold '+(cell*0.38)+'px sans-serif';
+    // Subtle ring
+    ctx.strokeStyle='rgba(255,255,255,0.3)';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+    // Letter
+    ctx.fillStyle='rgba(0,0,0,0.8)';
+    ctx.font='bold '+(cell*0.42)+'px sans-serif';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(ai===0?'H':'A', px+cell/2, py+cell/2);
-    // Level badge
-    ctx.fillStyle='rgba(0,0,0,0.5)';
-    ctx.font=(cell*0.28)+'px sans-serif';
-    ctx.fillText('L'+(alvl[ai]||'?'), px+cell*0.78, py+cell*0.25);
+    // Small level indicator — cleaner, bottom-right inside circle
+    ctx.fillStyle='rgba(255,255,255,0.7)';
+    ctx.font=(cell*0.24)+'px sans-serif';
+    ctx.fillText(''+( alvl[ai]||''), px+cell*0.72, py+cell*0.72);
   });
+  ctx.globalAlpha = 1.0;
+
+  // DONE overlay
+  if(isDone) {
+    ctx.fillStyle='rgba(0,0,0,0.38)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,0.92)';
+    ctx.font='bold '+(cell*1.1)+'px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('✓', W/2, H/2 - cell*0.6);
+    ctx.fillStyle='rgba(200,255,200,0.9)';
+    ctx.font='bold '+(cell*0.55)+'px sans-serif';
+    ctx.fillText('DONE', W/2, H/2 + cell*0.3);
+  }
 }
 
 function replayStep(dir) {
