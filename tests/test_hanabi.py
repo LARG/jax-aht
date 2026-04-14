@@ -2,9 +2,8 @@ import jax
 import jax.numpy as jnp
 from envs import make_env
 
-# Disable JIT for Hanabi testing due to JaxMARL bugs
-# TODO: look into this
-jax.config.update('jax_disable_jit', True)
+# JIT works with JaxMARL Hanabi (verified on RTX 6000 Ada, JAX 0.5.3).
+# The jax_disable_jit flag was removed after Phase 0 verification.
 
 env = make_env(
     env_name='hanabi',

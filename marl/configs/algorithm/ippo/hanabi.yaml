@@ -1,21 +1,29 @@
 defaults:
   - ippo/_base_
-  - _self_ # values from this file override the values from the base file
+  - _self_
 
-# Warning: This will need ~1e10 timesteps to run properly
-# You might need to make some adjustments to this training code to support more timesteps
-
-TOTAL_TIMESTEPS: 1e5
+# Full 2-player Hanabi IPPO. Hyperparameters from JaxMARL Table 6
+# (NeurIPS 2024) and the "Entropy is all you need" paper.
+#
+# JaxMARL achieves ~24/25 at 1e10 steps with NUM_ENVS=1024.
+# At NUM_ENVS=128 (memory limited), scale proportionally.
+# 1e9 steps with 128 envs = ~61K updates.
+#
+# The original config had TOTAL_TIMESTEPS=1e5 with NUM_ENVS=1024,
+# yielding 0 training iterations (Johnny's bug). Fixed and tuned.
+NUM_SEEDS: 1
+TOTAL_TIMESTEPS: 1e9
 SEED: 12345
-LR: .0005
-NUM_ENVS: 1024
+LR: 5e-4
+NUM_ENVS: 128
 UPDATE_EPOCHS: 4
 NUM_MINIBATCHES: 4
 CLIP_EPS: 0.2
 ENT_COEF: 0.01
-
-ANNEAL_LR: False
+ANNEAL_LR: true
 MAX_GRAD_NORM: 0.5
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
 
 ACTOR_TYPE: mlp
 FC_HIDDEN_DIM: 512

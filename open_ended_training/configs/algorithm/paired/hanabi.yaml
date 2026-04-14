@@ -1,0 +1,13 @@
+defaults:
+  - paired/_base_
+  - _self_
+
+# Full 2-player Hanabi PAIRED config. Co-trains a confederate population
+# and an ego agent against a regret objective.
+TOTAL_TIMESTEPS: 3e7
+LR: 3e-4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+NUM_ENVS: 32
+UPDATE_EPOCHS: 10
+NUM_MINIBATCHES: 4

@@ -1,0 +1,28 @@
+defaults:
+  - ippo/_base_
+  - _self_
+
+# Full Hanabi IPPO with Other-Play augmentation (Hu et al. 2020).
+# Randomly permutes colors for agent 1 during training to learn
+# convention-invariant policies that generalize to unseen partners.
+# Compare cross-play scores against standard IPPO (ippo/hanabi.yaml).
+NUM_SEEDS: 1
+TOTAL_TIMESTEPS: 1e9
+SEED: 12345
+LR: 5e-4
+NUM_ENVS: 128
+UPDATE_EPOCHS: 4
+NUM_MINIBATCHES: 4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+ANNEAL_LR: true
+MAX_GRAD_NORM: 0.5
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+
+ACTOR_TYPE: mlp
+FC_HIDDEN_DIM: 512
+ACTIVATION: 'relu'
+
+# Other-Play specific
+USE_OTHER_PLAY: true

@@ -8,4 +8,4 @@ ENV_KWARGS:
   max_info_tokens: 5
   max_life_tokens: 3
   num_cards_of_rank: [2, 2, 1]
-TASK_NAME: hanabi
+TASK_NAME: mini-hanabi

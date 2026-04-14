@@ -25,3 +25,6 @@ __pycache__/
 *.pyc
 dist/
 build/
+
+# pretrained OBL weights (downloaded by agents/hanabi/download_obl_r2d2.sh)
+agents/hanabi/obl-r2d2-flax/

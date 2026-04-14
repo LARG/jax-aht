@@ -87,18 +87,21 @@ def train_meliba_ego_agent(config, env, train_rng,
             return config["LR"] * frac
 
         def train(rng):
+            # Default stays RMSProp so LBF and Overcooked keep behaving the
+            # same. Hanabi configs set POLICY_OPTIMIZER: adam because
+            # RMSProp wouldn't converge there (reward stuck near zero
+            # through 1e7 steps).
+            policy_opt = config.get("POLICY_OPTIMIZER", "rmsprop").lower()
             if config["ANNEAL_LR"]:
-                tx = optax.chain(
-                    optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
-                    # optax.adam(learning_rate=linear_schedule, eps=1e-5),
-                    optax.rmsprop(learning_rate=linear_schedule),
-                )
+                lr = linear_schedule
+                inner = optax.adam(learning_rate=lr, eps=1e-5) if policy_opt == "adam" else optax.rmsprop(learning_rate=lr)
             else:
-                tx = optax.chain(
-                    optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
-                    # optax.adam(config["LR"], eps=1e-5),
-                    optax.rmsprop(config["LR"]),
-                )
+                lr = config["LR"]
+                inner = optax.adam(lr, eps=1e-5) if policy_opt == "adam" else optax.rmsprop(lr)
+            tx = optax.chain(
+                optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
+                inner,
+            )
 
             train_state = TrainState.create(
                 apply_fn=ego_policy.policy.network.apply,
@@ -532,6 +535,13 @@ def run_ego_training(config, wandb_logger):
     # Set the policy input dimension for the meliba policy
     # (Latent dim * 4) + observation dimension
     algorithm_config['POLICY_INPUT_DIM'] = (algorithm_config['ENCODER_LATENT_DIM'] * 4) + env.observation_space(env.agents[0]).shape[0]
+
+    # Derive DECODER_OUTPUT_DIM from the partner's action space instead
+    # of using the hardcoded 32 from _base_.yaml. 32 happens to match
+    # Overcooked so it never crashed there, but Hanabi has 21 actions
+    # (and DSSE has yet another number), so the reconstruction head was
+    # silently producing logits for nonexistent actions before this.
+    algorithm_config['DECODER_OUTPUT_DIM'] = env.action_space(env.agents[1]).n
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rng, init_partner_rng, init_ego_rng, train_rng = jax.random.split(rng, 4)

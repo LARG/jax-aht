@@ -1,0 +1,21 @@
+defaults:
+  - comedi/_base_
+  - _self_
+
+# Full 2-player Hanabi CoMeDi config. Generates diverse partners by
+# optimizing mixed-play between best-response and self-play.
+TOTAL_TIMESTEPS_PER_ITERATION: 2e6
+PARTNER_POP_SIZE: 5
+LR: 3e-4
+UPDATE_EPOCHS: 10
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+COMEDI_ALPHA: 0.2
+COMEDI_BETA: 0.4
+ego_train_algorithm:
+  TOTAL_TIMESTEPS: 1e7
+  LR: 3e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: false
+  UPDATE_EPOCHS: 10

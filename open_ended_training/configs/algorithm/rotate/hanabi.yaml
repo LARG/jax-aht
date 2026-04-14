@@ -1,0 +1,20 @@
+defaults:
+  - rotate/_base_
+  - _self_
+
+# Full 2-player Hanabi ROTATE config. Produces an open-ended training
+# curriculum by alternating confederate and ego updates.
+TIMESTEPS_PER_ITER_PARTNER: 2e6
+TIMESTEPS_PER_ITER_EGO: 1e6
+NUM_OPEN_ENDED_ITERS: 20
+REGRET_SP_WEIGHT: 1.0
+LR: 3e-4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+ANNEAL_LR: false
+EGO_ARGS:
+  LR: 3e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: false
+  UPDATE_EPOCHS: 10
