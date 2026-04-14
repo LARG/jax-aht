@@ -57,6 +57,7 @@ class Grid10x10AlternatingWrapper(BaseEnv):
         self._init_timestep = None
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
+        self._world_state = kwargs.get('world_state', False)
 
         # Stochastic movement
         self.stochastic_movement_prob = kwargs.get('stochastic_movement_prob', 0.0)
@@ -119,6 +120,8 @@ class Grid10x10AlternatingWrapper(BaseEnv):
             for agent_idx, agent in enumerate(self.agents)
         }
 
+        self.state_spaces = self._convert_rddl_state_spec_to_jaxmarl_space(self.env.observation_space)
+
         if self._single_task:
             _single_task_seed = jax.random.PRNGKey(kwargs.get('single_task_seed', 0))
             reset_key, randomize_key = jax.random.split(_single_task_seed)
@@ -134,13 +137,17 @@ class Grid10x10AlternatingWrapper(BaseEnv):
             timestep = deepcopy(self._init_timestep)
         else:
             env_state, timestep = self._randomize_initial_positions(randomize_key, env_state, timestep)
-        obs = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
+        obs, world_state = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
         state = WrappedEnvState(env_state,
                                 jnp.zeros(self.num_agents),
                                 self._extract_avail_actions(env_state),
                                 env_state.timestep,
                                 jnp.zeros(self.num_agents, dtype=jnp.int32))
-        return obs, state
+
+        if self._world_state:
+            return obs, world_state, state
+        else:
+            return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
@@ -166,20 +173,30 @@ class Grid10x10AlternatingWrapper(BaseEnv):
                                    avail_actions,
                                    env_state.timestep,
                                    state.collisions_so_far * (1 - done["__all__"]) + new_episode_collsions * done["__all__"])
-        obs_st = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
+        obs_st, world_state_st = self._extract_observations(timestep.observation, env_state.subs['OBSTACLE'])
         reward = self._extract_rewards(timestep.reward)
         info = self._extract_infos(timestep)
         # Save the state before reset to info dict for rendering purposes
         info['pre_reset_state'] = state_st
         info['pre_reset_obs'] = obs_st
         info["returned_episode_collisions"] = state_st.collisions_so_far
-        # Auto-reset environment based on termination
-        obs, state = jax.tree.map(
-            lambda x, y: jax.lax.select(done["__all__"], x, y),
-            self.reset(key_reset),
-            (obs_st, state_st)
-        )
-        return obs, state, reward, done, info
+
+        if self._world_state:
+            # Auto-reset environment based on termination
+            obs, world_state, state = jax.tree.map(
+                lambda x, y: jax.lax.select(done["__all__"], x, y),
+                self.reset(key_reset),
+                (obs_st, world_state_st, state_st)
+            )
+            return obs, world_state, state, reward, done, info
+        else:
+            # Auto-reset environment based on termination
+            obs, state = jax.tree.map(
+                lambda x, y: jax.lax.select(done["__all__"], x, y),
+                self.reset(key_reset),
+                (obs_st, state_st)
+            )
+            return obs, state, reward, done, info
 
     def observation_space(self, agent: str, observation_type: str = "agent") -> jaxmarl_spaces.Space:
         if observation_type == "agent":
@@ -191,6 +208,9 @@ class Grid10x10AlternatingWrapper(BaseEnv):
 
     def action_space(self, agent: str):
         return self.action_spaces[agent]
+
+    def state_space(self):
+        return self.state_spaces
 
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
@@ -242,9 +262,15 @@ class Grid10x10AlternatingWrapper(BaseEnv):
                 obs_x = (sorted_idx // num_y).astype(jnp.float32)
                 obs_y = (sorted_idx %  num_y).astype(jnp.float32)
                 obstacle_xy = jnp.stack([obs_x, obs_y], axis=-1).flatten()  # (num_obstacles * 2,)
+                # state = jnp.concatenate([all_agent_xy, all_goal_xy, goal_reached, obstacle_xy])
+            #     state = jnp.concatenate([all_agent_xy, all_goal_xy, obstacle_xy])
+            # else:
+            #     state = jnp.concatenate([all_agent_xy, all_goal_xy])#, goal_reached])
+            # state = state[None].repeat(self.num_agents, axis=0)  # (num_agents, state_dim)
 
             obs_agent = {}
             obs_full = {}
+            state = {}
             for agent_idx, agent in enumerate(self.agents):
                 if self._ego_centric_obs:
                     # Reorder so this agent's information comes first
@@ -266,18 +292,22 @@ class Grid10x10AlternatingWrapper(BaseEnv):
                     # Partial obs: own goal only; full obs: all goals
                     agent_vals = [agent_xy_ego, grid_to_xy(observation['goal-at'][agent_idx])]#, goal_reached_ego]
                     full_vals  = [agent_xy_ego, goal_xy_ego]#, goal_reached_ego]
+                    state_vals = [agent_xy_ego, goal_xy_ego]#, goal_reached_ego]
                 else:
                     agent_vals = [all_agent_xy, grid_to_xy(observation['goal-at'][agent_idx])]#, goal_reached]
                     full_vals  = [all_agent_xy, all_goal_xy]#, goal_reached]
+                    state_vals = [all_agent_xy, all_goal_xy]#, goal_reached]
 
                 if self.num_obstacles > 0:
                     agent_vals.append(obstacle_xy)
                     full_vals.append(obstacle_xy)
+                    state_vals.append(obstacle_xy)
 
                 obs_agent[agent] = jnp.concatenate(agent_vals).astype(self.observation_spaces[agent].dtype)
                 obs_full[agent]  = jnp.concatenate(full_vals).astype(self.observation_spaces[agent].dtype)
+                state[agent]  = jnp.concatenate(state_vals).astype(self.state_spaces.dtype)
 
-            return obs_agent, obs_full
+            return (obs_agent, obs_full), state
         else:
             raise NotImplementedError("Non-vectorized observations not implemented yet.")
 
@@ -336,6 +366,33 @@ class Grid10x10AlternatingWrapper(BaseEnv):
             return avail_actions
         else:
             raise NotImplementedError("Non-vectorized avail_actions not implemented yet.")
+
+    def _convert_rddl_state_spec_to_jaxmarl_space(self, space: pyRDDLGym_jax.core.spaces.Dict):
+        """Converts the observation spec for each agent to a JaxMARL space.
+
+        Observation layout (coordinate-based):
+          Full obs:   all agent (x,y) [num_agents*2]
+                    + all goals (x,y) [num_agents*2]
+                    + all goal-reached [num_agents]
+                    + obstacle (x,y)s [num_obstacles*2]  (if any)
+        """
+        if self.vectorized:
+            obs_full_size = self.num_agents * 2 + self.num_agents * 2 #+ self.num_agents
+
+            if self.num_obstacles > 0:
+                obs_full_size += self.num_obstacles * 2
+
+            num_x = len(self._xpos_list)
+            num_y = len(self._ypos_list)
+            obs_high = max(num_x, num_y) - 1
+
+            state_space = jaxmarl_spaces.Box(
+                low=0, high=obs_high, shape=(obs_full_size,), dtype=jnp.float32
+            )
+        else:
+            raise NotImplementedError("Non-vectorized state space not implemented yet.")
+
+        return state_space
 
     def _convert_rddl_obs_spec_to_jaxmarl_space(self, space: pyRDDLGym_jax.core.spaces.Dict):
         """Converts the observation spec for each agent to a JaxMARL space.
