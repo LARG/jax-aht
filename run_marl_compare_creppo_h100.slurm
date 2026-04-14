@@ -3,11 +3,7 @@
 # Phase E Multi-Seed: CREPPO — H100 (Stampede3)
 #
 # Seeds: 721280, 721281, 721282, 721283
-# (PI convention: base seed 72128, append 0, increment)
-#
-# H100 has 1 GPU per node, so all experiments run
-# sequentially. Estimated runtime: ~30-40h total.
-# Requesting 48h to be safe.
+
 #----------------------------------------------------
 #SBATCH -J creppo_multiseed_h100
 #SBATCH -o logs/creppo_multiseed_%j.out
@@ -15,7 +11,7 @@
 #SBATCH -p h100
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=96
 #SBATCH -t 48:00:00
 #SBATCH --mail-user=jeffreychen287@utexas.edu
 #SBATCH --mail-type=end,fail
@@ -37,14 +33,16 @@ mkdir -p /scratch/11079/jeffreychen287/wandb_cache
 
 VENV_PYTHON=/scratch/11079/jeffreychen287/jax-aht/venv/bin/python
 
-# Helper: run one experiment and wait for it to finish
+# Helper: run one experiment and background it
 run_exp() {
-    local TASK=$1
-    local N=$2
-    local LABEL=$3
-    local SEED=$4
+    local GPU=$1
+    local TASK=$2
+    local N=$3
+    local LABEL=$4
+    local SEED=$5
 
-    echo ">>> Starting: $LABEL (seed=$SEED, N=$N)"
+    echo ">>> Starting: $LABEL (seed=$SEED, N=$N) on GPU $GPU"
+    CUDA_VISIBLE_DEVICES=$GPU \
     $VENV_PYTHON social_laws/run.py \
         task=$TASK \
         algorithm=creppo/continuous/coop_recon \
@@ -57,8 +55,7 @@ run_exp() {
         logger.entity=jeffreychen287-the-university-of-texas-at-austin \
         logger.mode=online \
         +algorithm.ALPHA_VERIFICATION=false \
-        >> logs/${LABEL}_seed${SEED}_${SLURM_JOB_ID}.out 2>&1
-    echo "<<< Finished: $LABEL (seed=$SEED)"
+        >> logs/${LABEL}_seed${SEED}_${SLURM_JOB_ID}.out 2>&1 &
 }
 
 echo "========================================"
@@ -70,17 +67,19 @@ for SEED in 721280 721281 721282 721283; do
     echo ""
     echo "=== SEED=$SEED ==="
 
-    # No Law runs
-    run_exp continuous/coop_recon_compare_no_law_2_agent 2 creppo_no_law_2_agent $SEED
-    run_exp continuous/coop_recon_compare_no_law_3_agent 3 creppo_no_law_3_agent $SEED
-    run_exp continuous/coop_recon_compare_no_law_4_agent 4 creppo_no_law_4_agent $SEED
-    run_exp continuous/coop_recon_compare_no_law_5_agent 5 creppo_no_law_5_agent $SEED
+    # Batch 1: No Law runs
+    run_exp 0 continuous/coop_recon_compare_no_law_2_agent 2 creppo_no_law_2_agent $SEED
+    run_exp 1 continuous/coop_recon_compare_no_law_3_agent 3 creppo_no_law_3_agent $SEED
+    run_exp 2 continuous/coop_recon_compare_no_law_4_agent 4 creppo_no_law_4_agent $SEED
+    run_exp 3 continuous/coop_recon_compare_no_law_5_agent 5 creppo_no_law_5_agent $SEED
+    wait
 
-    # Law runs
-    run_exp continuous/coop_recon_compare_law_2_agent 2 creppo_law_2_agent $SEED
-    run_exp continuous/coop_recon_compare_law_3_agent 3 creppo_law_3_agent $SEED
-    run_exp continuous/coop_recon_compare_law_4_agent 4 creppo_law_4_agent $SEED
-    run_exp continuous/coop_recon_compare_law_5_agent 5 creppo_law_5_agent $SEED
+    # Batch 2: Law runs
+    run_exp 0 continuous/coop_recon_compare_law_2_agent 2 creppo_law_2_agent $SEED
+    run_exp 1 continuous/coop_recon_compare_law_3_agent 3 creppo_law_3_agent $SEED
+    run_exp 2 continuous/coop_recon_compare_law_4_agent 4 creppo_law_4_agent $SEED
+    run_exp 3 continuous/coop_recon_compare_law_5_agent 5 creppo_law_5_agent $SEED
+    wait
 
     echo "=== Seed $SEED complete ==="
 done
