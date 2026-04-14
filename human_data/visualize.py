@@ -159,20 +159,31 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
 
         # Flagging — err on the side of eager
         sus_reasons = []
+
+        # Primary flag: zero/near-zero score AND high noop
         if avg_score <= FLAG_SCORE and noop_rate >= FLAG_NOOP:
             sus_reasons.append("zero score + high noop")
-        if any_loop:
-            sus_reasons.append("repetitive action loop detected")
-        if short_games >= 2:
-            sus_reasons.append(f"{short_games} very short games (<{MIN_DURATION}s)")
-        if avg_score <= FLAG_SCORE and noop_rate < FLAG_NOOP:
-            sus_reasons.append("zero score (actively moving)")
 
-        if len(sus_reasons) >= 2 or (sus_reasons and "zero score + high noop" in sus_reasons):
+        # High noop alone is suspicious regardless of score
+        if noop_rate >= FLAG_NOOP:
+            sus_reasons.append(f"very high noop rate ({noop_rate:.0%})")
+
+        # Loop only suspicious when combined with low score or high noop
+        if any_loop and (avg_score <= 0.15 or noop_rate >= BORDERLINE_NOOP):
+            sus_reasons.append("repetitive loop + low performance")
+
+        # Many very short games
+        if short_games >= 3:
+            sus_reasons.append(f"{short_games} very short games (<{MIN_DURATION}s)")
+
+        # Deduplicate reasons
+        sus_reasons = list(dict.fromkeys(sus_reasons))
+
+        if noop_rate >= FLAG_NOOP or len(sus_reasons) >= 2:
             status = "flagged"
         elif sus_reasons:
             status = "borderline"
-        elif noop_rate >= BORDERLINE_NOOP and avg_score <= 0.10:
+        elif noop_rate >= BORDERLINE_NOOP and avg_score <= 0.15:
             status = "borderline"
         else:
             status = "ok"
