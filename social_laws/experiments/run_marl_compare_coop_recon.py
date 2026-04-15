@@ -10,6 +10,7 @@ import numpy as np
 from common.wandb_visualizations import Logger
 from social_laws.ippo import run_training as run_ippo
 from social_laws.ippo_centralized import run_training as run_ippo_centralized
+from social_laws.mappo import run_training as run_mappo
 
 SEEDRANGE = (1, int(1e9))
 
@@ -42,18 +43,16 @@ def ippo(config):
         else:
             params, policies, init_params = run_ippo(config, wandb_logger)
     elif config.algorithm["ALG"] == "mappo":
-        from social_laws.mappo import train_mappo_agent, initialize_ma_agent
-        import jax
-        rng = jax.random.PRNGKey(config.algorithm.TRAIN_SEED)
-        
-        # Instantiate environment to pass to initialize_ma_agent
-        from envs import make_env
-        env = make_env(config.task)
-        
-        policy, init_params = initialize_ma_agent(
-            config.algorithm.get("ACTOR_TYPE", "mlp"), config.algorithm, env, rng
-        )
-        train_mappo_agent(config, env, rng, policy, init_params)
+        # mappo.run_training reads ENV_NAME/ENV_KWARGS from algorithm config,
+        # so we merge the task config in (matching how ippo.run_training works).
+        from omegaconf import open_dict
+        with open_dict(config):
+            config.algorithm.ENV_NAME = config.task.ENV_NAME
+            config.algorithm.ENV_KWARGS = config.task.ENV_KWARGS
+            config.algorithm.ENV_KWARGS.world_state = True
+            config.algorithm.ROLLOUT_LENGTH = config.task.ROLLOUT_LENGTH
+            config.algorithm.NUM_EVAL_EPISODES = config.task.NUM_EVAL_EPISODES
+        params, policy, init_params = run_mappo(config, wandb_logger)
     else:
         alg_name = config.algorithm.get("ALG", "Unknown")
         raise NotImplementedError(f"Algorithm {alg_name} not implemented.")
