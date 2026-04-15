@@ -8,11 +8,11 @@ export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_DEFAULT_MATMUL_PRECISION=highest
 
-# Ensure venv is active
-if [ -f "venv_aaronson/bin/python" ]; then
-    VENV_PYTHON="$PWD/venv_aaronson/bin/python"
-elif [ -f "venv/bin/python" ]; then
+# Ensure venv is active - Prioritize 'venv' as it works on debruyne
+if [ -f "venv/bin/python" ]; then
     VENV_PYTHON="$PWD/venv/bin/python"
+elif [ -f "venv_aaronson/bin/python" ]; then
+    VENV_PYTHON="$PWD/venv_aaronson/bin/python"
 elif [ -f ".venv/bin/python" ]; then
     VENV_PYTHON="$PWD/.venv/bin/python"
 else
