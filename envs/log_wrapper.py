@@ -29,6 +29,7 @@ class LogWrapper(JaxMARLWrapper):
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey) -> Tuple[chex.Array, State]:
+
         if self._world_state:
             obs, world_state, env_state = self._env.reset(key)
             state = LogEnvState(
@@ -39,6 +40,7 @@ class LogWrapper(JaxMARLWrapper):
                 jnp.zeros((self._env.num_agents,)),
             )
             return obs, world_state, state
+
         else:
             obs, env_state = self._env.reset(key)
             state = LogEnvState(

@@ -41,10 +41,11 @@ run_exp() {
         logger.project=aht-benchmark \
         logger.entity=jeffreychen287-the-university-of-texas-at-austin \
         logger.mode=online \
+        task.ENV_KWARGS.world_state=true \
         >> logs/${LABEL}_seed${SEED}_${SLURM_JOB_ID:+$SLURM_JOB_ID}.out 2>&1 &
 }
 
-echo "Starting MAPPO Phase E Multi-Seed Comparisons (4 jobs on 4 GPUs per batch)..."
+echo "Starting MAPPO Phase E Multi-Seed Comparisons (3 jobs parallel on GPUs 1,2,3 - avoid GPU 0)..."
 
 # PI seed convention: original seed 72128 → append zero + increment
 for SEED in 721280 721281 721282 721283; do

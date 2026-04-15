@@ -105,11 +105,12 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         self._render_dir = kwargs.get('render_dir', "render")
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
-        self._world_state = kwargs.get('world_state', False)
 
         N = self.num_agents
         self.agents = [f"agent_{i}" for i in range(N)]
         self.name = f"CoopReconContinuous{N}Agent"
+
+        self._world_state = kwargs.get('world_state', False)
 
         # Obs dims:
         # Ego: 2*(N-1) rel_pos + 2*N vel + 2*N goal_vec + 3*N task = 7N + 2(N-1) = 9N - 2
@@ -134,12 +135,6 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
                 shape=(obs_full_size,),
                 dtype=jnp.float32
             )
-        
-        self.state_spaces = jaxmarl_spaces.Box(
-            low=-self.grid_size * 2, high=self.grid_size * 2,
-            shape=(obs_full_size,),
-            dtype=jnp.float32
-        )
 
         # Actions: 8 discrete
         # 0=noop, 1=north, 2=south, 3=east, 4=west, 5=detect_water, 6=detect_life, 7=picture
@@ -269,11 +264,12 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             law_activations_so_far=jnp.zeros(N, dtype=jnp.int32),
         )
 
+        obs_dict, obs_full_dict = self._get_obs(env_state)
+
         if self._world_state:
-            # obs is (obs_dict, obs_full_dict). We use obs_full_dict as the world_state.
-            return obs, obs[1], state
+            return obs_dict, obs_full_dict, state
         else:
-            return obs, state
+            return obs_dict, state
 
     # -------------------------------------------------------------------------
     # STEP
@@ -349,7 +345,7 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             collision_happened=new_collision_happened,
         )
 
-        obs_st = self._get_obs(env_state_next)
+        obs_st, obs_full_st = self._get_obs(env_state_next)
         avail_actions = self._get_avail_actions(env_state_next)
         dones = self._get_dones(env_state_next)
 
@@ -371,21 +367,19 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
 
         info = {
             'pre_reset_state': state_st,
-            'pre_reset_obs': obs_st[0] if isinstance(obs_st, tuple) else obs_st,
+            'pre_reset_obs': obs_st,
             'returned_episode_collisions': state_st.collisions_so_far,
             'returned_episode_law_activations': state_st.law_activations_so_far,
         }
 
         if self._world_state:
-            # Auto-reset environment based on termination
             obs, world_state, state = jax.tree.map(
                 lambda x, y: jax.lax.select(dones["__all__"], x, y),
                 self.reset(key_reset),
-                (obs_st[0], obs_st[1], state_st)
+                (obs_st, obs_full_st, state_st)
             )
             return obs, world_state, state, rewards, dones, info
         else:
-            # Auto-reset environment based on termination
             obs, state = jax.tree.map(
                 lambda x, y: jax.lax.select(dones["__all__"], x, y),
                 self.reset(key_reset),
@@ -729,11 +723,12 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         else:
             raise ValueError(f"Unknown observation_type: {observation_type}")
 
+    def state_space(self):
+        # MAPPO critic expects continuous vector
+        return self.observation_full_spaces[self.agents[0]]
+
     def action_space(self, agent: str):
         return self.action_spaces[agent]
-        
-    def state_space(self):
-        return self.state_spaces
 
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
