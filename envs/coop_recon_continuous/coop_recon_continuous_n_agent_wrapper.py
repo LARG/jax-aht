@@ -105,6 +105,7 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         self._render_dir = kwargs.get('render_dir', "render")
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
+        self._world_state = kwargs.get('world_state', False)
 
         N = self.num_agents
         self.agents = [f"agent_{i}" for i in range(N)]
@@ -133,6 +134,12 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
                 shape=(obs_full_size,),
                 dtype=jnp.float32
             )
+        
+        self.state_spaces = jaxmarl_spaces.Box(
+            low=-self.grid_size * 2, high=self.grid_size * 2,
+            shape=(obs_full_size,),
+            dtype=jnp.float32
+        )
 
         # Actions: 8 discrete
         # 0=noop, 1=north, 2=south, 3=east, 4=west, 5=detect_water, 6=detect_life, 7=picture
@@ -262,7 +269,11 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             law_activations_so_far=jnp.zeros(N, dtype=jnp.int32),
         )
 
-        return obs, state
+        if self._world_state:
+            # obs is (obs_dict, obs_full_dict). We use obs_full_dict as the world_state.
+            return obs, obs[1], state
+        else:
+            return obs, state
 
     # -------------------------------------------------------------------------
     # STEP
@@ -360,18 +371,27 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
 
         info = {
             'pre_reset_state': state_st,
-            'pre_reset_obs': obs_st,
+            'pre_reset_obs': obs_st[0] if isinstance(obs_st, tuple) else obs_st,
             'returned_episode_collisions': state_st.collisions_so_far,
             'returned_episode_law_activations': state_st.law_activations_so_far,
         }
 
-        obs, state = jax.tree.map(
-            lambda x, y: jax.lax.select(dones["__all__"], x, y),
-            self.reset(key_reset),
-            (obs_st, state_st)
-        )
-
-        return obs, state, rewards, dones, info
+        if self._world_state:
+            # Auto-reset environment based on termination
+            obs, world_state, state = jax.tree.map(
+                lambda x, y: jax.lax.select(dones["__all__"], x, y),
+                self.reset(key_reset),
+                (obs_st[0], obs_st[1], state_st)
+            )
+            return obs, world_state, state, rewards, dones, info
+        else:
+            # Auto-reset environment based on termination
+            obs, state = jax.tree.map(
+                lambda x, y: jax.lax.select(dones["__all__"], x, y),
+                self.reset(key_reset),
+                (obs_st, state_st)
+            )
+            return obs, state, rewards, dones, info
 
     # -------------------------------------------------------------------------
     # VELOCITY UPDATE
@@ -711,6 +731,9 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
 
     def action_space(self, agent: str):
         return self.action_spaces[agent]
+        
+    def state_space(self):
+        return self.state_spaces
 
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:

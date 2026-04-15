@@ -10,6 +10,7 @@ import numpy as np
 from common.wandb_visualizations import Logger
 from social_laws.ippo import run_training as run_ippo
 from social_laws.ippo_centralized import run_training as run_ippo_centralized
+from social_laws.mappo import run_training as run_mappo
 
 SEEDRANGE = (1, int(1e9))
 
@@ -41,6 +42,8 @@ def ippo(config):
             params, policy, init_params = run_ippo_centralized(config, wandb_logger)
         else:
             params, policies, init_params = run_ippo(config, wandb_logger)
+    elif config.algorithm["ALG"] == "mappo":
+        params, policy, init_params = run_mappo(config, wandb_logger)
     else:
         alg_name = config.algorithm.get("ALG", "Unknown")
         raise NotImplementedError(f"Algorithm {alg_name} not implemented.")
