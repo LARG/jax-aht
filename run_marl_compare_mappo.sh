@@ -43,7 +43,7 @@ run_exp() {
         logger.project=aht-benchmark \
         logger.entity=jeffreychen287-the-university-of-texas-at-austin \
         logger.mode=online \
-        task.ENV_KWARGS.world_state=true \
+        +task.ENV_KWARGS.world_state=true \
         >> logs/${LABEL}_seed${SEED}_${SLURM_JOB_ID:+$SLURM_JOB_ID}.out 2>&1 &
 }
 
