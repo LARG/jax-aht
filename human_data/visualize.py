@@ -112,6 +112,21 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             s.get("human_action") for s in trajectory
             if s.get("human_action") is not None
         ]
+
+        # Reaction times: elapsed[i] - elapsed[i-1] in milliseconds
+        reaction_times_ms = []
+        prev_elapsed = None
+        for s in trajectory:
+            if s.get("human_action") is None:
+                prev_elapsed = s.get("elapsed", None)
+                continue
+            curr_elapsed = s.get("elapsed", None)
+            if curr_elapsed is not None and prev_elapsed is not None:
+                dt_ms = (curr_elapsed - prev_elapsed) * 1000
+                if dt_ms > 0:
+                    reaction_times_ms.append(dt_ms)
+            prev_elapsed = curr_elapsed
+
         # Track which SPACE presses actually collected fruit
         food_eaten_per_action = []
         prev_eaten = None
@@ -171,9 +186,12 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             "grid_size":        grid_size,
             "num_fruits":       num_fruits,
             "agent_type":       agent_type,
-            "has_loop":         has_loop,
-            "file":             ep.get("_file", ""),
-            "replay_frames":    replay_frames,
+            "has_loop":          has_loop,
+            "file":              ep.get("_file", ""),
+            "replay_frames":     replay_frames,
+            "reaction_times_ms": reaction_times_ms,
+            "median_rt_ms":      float(np.median(reaction_times_ms)) if reaction_times_ms else None,
+            "pct10_rt_ms":       float(np.percentile(reaction_times_ms, 10)) if reaction_times_ms else None,
         })
 
     rows = []
@@ -190,6 +208,15 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
         any_loop       = any(s["loop_flags"])
         zero_games     = sum(1 for sc in s["scores"] if sc <= FLAG_SCORE)
         short_games   = 0  # reserved for future reaction-time metric
+
+        # Aggregate reaction times across all games in session
+        all_rts = []
+        for gd in s["game_details"]:
+            all_rts.extend(gd.get("reaction_times_ms", []))
+        session_median_rt = float(np.median(all_rts)) if all_rts else None
+        session_min_rt    = float(np.min(all_rts))    if all_rts else None
+        session_pct10_rt  = float(np.percentile(all_rts, 10)) if all_rts else None
+        rt_suspicious     = session_pct10_rt is not None and session_pct10_rt < 150
 
         # Flagging — err on the side of eager
         sus_reasons = []
@@ -241,6 +268,9 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             "any_loop":      any_loop,
             "short_games":   short_games,
             "zero_games":    zero_games,
+            "median_rt_ms":  session_median_rt,
+            "pct10_rt_ms":   session_pct10_rt,
+            "rt_suspicious": rt_suspicious,
             "sus_reasons":   sus_reasons,
             "status":        status,
             "game_details":  game_details,
@@ -313,6 +343,10 @@ def render_game_detail_table(games: list[dict]) -> str:
         ic      = noop_to_color(gm["idle_rate"])
         loop_ic = ' <span title="Idle sequence detected" style="color:#e05050">⟳</span>' if gm["has_loop"] else ""
         dur_s   = f"{gm['duration']:.1f}s" if gm["duration"] is not None else "—"
+        med_rt  = gm.get("median_rt_ms")
+        p10_rt  = gm.get("pct10_rt_ms")
+        rt_str  = f"{med_rt:.0f}ms" if med_rt is not None else "—"
+        rt_color = "#e05050" if (p10_rt is not None and p10_rt < 150) else "#555"
         rows.append(
             f'<tr>'
             f'<td>Game {i+1}{loop_ic}</td>'
@@ -322,6 +356,7 @@ def render_game_detail_table(games: list[dict]) -> str:
             f'Q:{gm["noop_count"]} SPACE-wasted:{gm["wasted_load"]}</td>'
             f'<td>{gm["steps"]}</td>'
             f'<td>{dur_s}</td>'
+            f'<td style="color:{rt_color};font-weight:bold">{e(rt_str)}</td>'
             f'<td>{e(gm["grid_size"])}×{e(gm["grid_size"])}, {e(gm["num_fruits"])} fruits</td>'
             f'</tr>'
         )
@@ -329,8 +364,8 @@ def render_game_detail_table(games: list[dict]) -> str:
         '<table class="detail-table">'
         '<thead><tr>'
         '<th>#</th><th>Score</th><th>Idle rate</th>'
-        '<th>Breakdown</th>'
-        '<th>Steps</th><th>Duration</th><th>Config</th>'
+        '<th>Breakdown (Q presses / wasted SPACE)</th>'
+        '<th>Steps</th><th>Duration</th><th>Median RT</th><th>Config</th>'
         '</tr></thead>'
         f'<tbody>{"".join(rows)}</tbody>'
         '</table>'
@@ -361,6 +396,12 @@ def build_html(sessions: list[dict], generated: str) -> str:
         detail_tbl = render_game_detail_table(s["game_details"])
         reasons    = "; ".join(s["sus_reasons"]) if s["sus_reasons"] else "none"
         loop_warn  = ' <span class="loop-warn" title="Repetitive loop detected in one or more games">⟳ loop</span>' if s["any_loop"] else ""
+        s_med_rt   = s.get("median_rt_ms")
+        s_p10_rt   = s.get("pct10_rt_ms")
+        s_rt_warn  = s.get("rt_suspicious", False)
+        s_rt_disp  = f"{s_med_rt:.0f}ms" if s_med_rt is not None else "—"
+        s_p10_disp = f"{s_p10_rt:.0f}ms" if s_p10_rt is not None else "—"
+        s_rt_col   = "#e05050" if s_rt_warn else "#888"
 
         row_class = {
             "flagged": "row-flagged",
@@ -401,6 +442,11 @@ def build_html(sessions: list[dict], generated: str) -> str:
             f'      <div class="detail-meta">'
             f'        <div>Full session ID: <code>{e(sid)}</code></div>'
             f'        <div class="sus-reasons">Flagged for: <strong>{e(reasons)}</strong></div>'
+            f'        <div style="font-size:11.5px;color:{e(s_rt_col)};margin-top:4px">'
+            f'&#9201; Median reaction time: <strong>{e(s_rt_disp)}</strong>'
+            f' &nbsp;&#183;&nbsp; 10th pct: <strong>{e(s_p10_disp)}</strong>'
+            f'{"" if not s_rt_warn else " &nbsp;<span style=&#39;color:#e05050;font-weight:700&#39;>&#9888; suspiciously fast (p10 &lt; 150ms)</span>"}'
+            f'        </div>'
             f'      </div>'
             f'      {detail_tbl}'
             f'      <button class="replay-btn" '
@@ -1124,6 +1170,369 @@ document.addEventListener('keydown',function(e){
     return body
 
 
+
+
+def build_scatter_html(sessions: list[dict], generated: str) -> str:
+    """
+    Standalone scatter plot: median reaction time (x) vs avg score (y).
+    One dot per session, colored by status, sized by number of games.
+    Helps visualize whether thinking time correlates with performance.
+    """
+    import json as json_mod
+
+    # Build data points
+    points = []
+    for s in sessions:
+        if s.get("median_rt_ms") is None:
+            continue
+        points.append({
+            "sid":       s["session_id"],
+            "short":     s["session_short"],
+            "med_rt":    round(s["median_rt_ms"], 1),
+            "p10_rt":    round(s["pct10_rt_ms"], 1) if s["pct10_rt_ms"] else None,
+            "score":     round(s["avg_score"], 4),
+            "noop":      round(s["noop_rate"], 4),
+            "idle":      round(s["idle_rate"], 4),
+            "games":     s["num_games"],
+            "status":    s["status"],
+            "rt_warn":   s.get("rt_suspicious", False),
+            "reasons":   "; ".join(s["sus_reasons"]) if s["sus_reasons"] else "none",
+        })
+
+    points_json = json_mod.dumps(points)
+
+    status_colors = {
+        "flagged":      "#e05050",
+        "disqualified": "#ba68c8",
+        "ok":           "#52be80",
+    }
+
+    color_map = json_mod.dumps(status_colors)
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LBF Reaction Time vs Score</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: #f4f5f7; color: #222; font-size: 13px; }}
+  .header {{ background: #1a1f2e; color: white; padding: 16px 28px; }}
+  .header h1 {{ font-size: 18px; font-weight: 700; }}
+  .header .sub {{ font-size: 12.5px; color: #9aa; margin-top: 4px; }}
+  .container {{ padding: 20px 28px; }}
+  .chart-wrap {{ background: white; border-radius: 8px; padding: 20px;
+                 box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: relative; }}
+  canvas {{ display: block; width: 100%; cursor: crosshair; }}
+  .tooltip {{
+    position: fixed; background: #1a1f2e; color: white;
+    padding: 9px 13px; border-radius: 8px; font-size: 12px;
+    line-height: 1.7; pointer-events: none; z-index: 999;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3); display: none; min-width: 200px;
+  }}
+  .legend {{ display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap; align-items: center; }}
+  .legend-item {{ display: flex; align-items: center; gap: 6px; font-size: 12px; }}
+  .legend-dot {{ width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }}
+  .threshold-note {{ font-size: 11.5px; color: #888; margin-top: 8px; }}
+  .stats-row {{ display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }}
+  .stat-card {{ background: white; border-radius: 8px; padding: 12px 18px;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08); }}
+  .stat-card .label {{ font-size: 11px; color: #888; text-transform: uppercase;
+                       letter-spacing: .5px; font-weight: 600; }}
+  .stat-card .val {{ font-size: 20px; font-weight: 700; margin-top: 2px; }}
+  .controls {{ display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }}
+  .ctrl-label {{ font-size: 12px; color: #555; font-weight: 600; }}
+  select {{ padding: 4px 8px; border-radius: 6px; border: 1.5px solid #ccc;
+            font-size: 12px; background: white; cursor: pointer; }}
+  input[type=range] {{ accent-color: #2d6cdf; }}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Reaction Time vs Performance — LBF Human Players</h1>
+  <div class="sub">
+    Each dot = one player session &nbsp;·&nbsp;
+    X axis = median time between actions &nbsp;·&nbsp;
+    Y axis = avg score per game &nbsp;·&nbsp;
+    Generated {e(generated)}
+  </div>
+</div>
+<div style="background:#fff8e1;border-left:4px solid #f9a825;padding:12px 28px;font-size:12.5px;color:#555;line-height:1.7">
+  <strong>How to read this chart:</strong>
+  Dots further <strong>left</strong> = players who acted quickly between steps.
+  Dots further <strong>right</strong> = players who paused longer between actions.
+  Dots higher up = better average score.
+  <strong>Red dots</strong> = flagged sessions &nbsp;·&nbsp;
+  <strong>Red ring</strong> = suspiciously fast (10th percentile reaction time &lt; 150ms — possible key-holding or bot).
+  The blue trend line shows whether thinking time correlates with performance — a flat line (r ≈ 0) means no strong relationship.
+  Use the X-axis dropdown to switch between median reaction time and the 10th percentile (fastest actions).
+</div>
+<div class="container">
+  <div class="stats-row" id="statsRow"></div>
+  <div class="controls">
+    <span class="ctrl-label">X axis:</span>
+    <select id="xAxis" onchange="redraw()">
+      <option value="med_rt">Median reaction time (ms)</option>
+      <option value="p10_rt">10th pct reaction time (ms) — fastest actions</option>
+    </select>
+    <span class="ctrl-label" style="margin-left:12px">X max:</span>
+    <input type="range" id="xMax" min="500" max="10000" step="500" value="5000" oninput="redraw()">
+    <span id="xMaxLabel" style="font-size:12px;color:#555;min-width:60px">5000ms</span>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="scatter" height="500"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="threshold-note">
+      <strong>Red dashed line</strong> = 150ms — on the p10 view, sessions left of this line had their fastest 10% of actions under 150ms, which is suspicious (possible key-holding or automation).
+      <strong>Dot size</strong> = number of games played (larger = more games).
+      <strong>Jitter</strong> applied to reduce overlap — hover dots for exact values.
+    </div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const POINTS = {points_json};
+const STATUS_COLORS = {color_map};
+const SUSPICIOUS_RT = 150;
+
+const PAD = {{top:40, right:40, bottom:60, left:70}};
+
+function getCanvas() {{ return document.getElementById('scatter'); }}
+function getCtx()    {{ return getCanvas().getContext('2d'); }}
+
+function getXField() {{
+  return document.getElementById('xAxis').value;
+}}
+function getXMax() {{
+  const v = parseInt(document.getElementById('xMax').value);
+  document.getElementById('xMaxLabel').textContent = v + 'ms';
+  return v;
+}}
+
+function dataToCanvas(x, y, xMin, xMax, yMin, yMax, W, H) {{
+  const cx = PAD.left + (x - xMin) / (xMax - xMin) * (W - PAD.left - PAD.right);
+  const cy = H - PAD.bottom - (y - yMin) / (yMax - yMin) * (H - PAD.top - PAD.bottom);
+  return [cx, cy];
+}}
+
+function redraw() {{
+  const canvas = getCanvas();
+  const W = canvas.offsetWidth;
+  canvas.width  = W * window.devicePixelRatio;
+  canvas.height = 500 * window.devicePixelRatio;
+  canvas.style.height = '500px';
+  const ctx = getCtx();
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const H = 500;
+
+  const xField = getXField();
+  const xMax   = getXMax();
+  const xMin   = 0;
+  const yMin   = 0;
+  const yMax   = 0.55;
+
+  // Background
+  ctx.fillStyle = '#fafafa';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 1;
+  for (let y = 0; y <= 0.5; y += 0.1) {{
+    const [,cy] = dataToCanvas(0, y, xMin, xMax, yMin, yMax, W, H);
+    ctx.beginPath(); ctx.moveTo(PAD.left, cy); ctx.lineTo(W-PAD.right, cy); ctx.stroke();
+    ctx.fillStyle='#999'; ctx.font='11px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(y.toFixed(1), PAD.left-6, cy+4);
+  }}
+  for (let x = 0; x <= xMax; x += xMax/10) {{
+    const [cx,] = dataToCanvas(x, 0, xMin, xMax, yMin, yMax, W, H);
+    ctx.beginPath(); ctx.moveTo(cx, PAD.top); ctx.lineTo(cx, H-PAD.bottom); ctx.stroke();
+    ctx.fillStyle='#999'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(Math.round(x)+'ms', cx, H-PAD.bottom+16);
+  }}
+
+  // Suspicious RT threshold line (only for p10 x-axis)
+  if (xField === 'p10_rt' && SUSPICIOUS_RT <= xMax) {{
+    const [cx,] = dataToCanvas(SUSPICIOUS_RT, 0, xMin, xMax, yMin, yMax, W, H);
+    ctx.strokeStyle='#e05050'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(cx, PAD.top); ctx.lineTo(cx, H-PAD.bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#e05050'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('150ms', cx, PAD.top-6);
+  }}
+
+  // Max score reference line
+  {{
+    const [,cy] = dataToCanvas(0, 0.5, xMin, xMax, yMin, yMax, W, H);
+    ctx.strokeStyle='#1a6e2e'; ctx.lineWidth=1.2; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(PAD.left, cy); ctx.lineTo(W-PAD.right, cy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#1a6e2e'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('max score 0.5', PAD.left+4, cy-5);
+  }}
+
+  // Axes labels
+  ctx.fillStyle='#333'; ctx.font='bold 12px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(xField==='med_rt'?'Median reaction time (ms)':'10th percentile reaction time (ms)',
+               PAD.left + (W-PAD.left-PAD.right)/2, H-8);
+  ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Avg score per game', 0, 0); ctx.restore();
+
+  // Dots — with deterministic jitter to reduce overlap
+  const valid = POINTS.filter(p => p[xField] !== null && p[xField] <= xMax);
+  // Deterministic jitter based on session short id hash
+  function hashJitter(str, scale) {{
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    return ((h & 0xffff) / 0xffff - 0.5) * scale;
+  }}
+  valid.forEach(p => {{
+    const jx = hashJitter(p.short + 'x', xMax * 0.012);
+    const jy = hashJitter(p.short + 'y', 0.018);
+    const [cx, cy] = dataToCanvas(p[xField] + jx, p.score + jy, xMin, xMax, yMin, yMax, W, H);
+    const r = 5 + p.games * 1.0;
+    const col = STATUS_COLORS[p.status] || '#888';
+    ctx.globalAlpha = 0.78;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+    if (p.rt_warn) {{
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#e05050'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(cx, cy, r+4, 0, Math.PI*2); ctx.stroke();
+    }}
+    ctx.globalAlpha = 1;
+  }});
+
+  // Trend line (simple linear regression on ok sessions)
+  const okPts = valid.filter(p => p.status==='ok' && p[xField] !== null);
+  if (okPts.length > 3) {{
+    const xs = okPts.map(p => p[xField]);
+    const ys = okPts.map(p => p.score);
+    const n  = xs.length;
+    const mx = xs.reduce((a,b)=>a+b,0)/n;
+    const my = ys.reduce((a,b)=>a+b,0)/n;
+    const num = xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);
+    const den = xs.reduce((s,x)=>s+(x-mx)**2,0);
+    if (den > 0) {{
+      const slope = num/den, intercept = my - slope*mx;
+      const x1=xMin, x2=xMax;
+      const y1=slope*x1+intercept, y2=slope*x2+intercept;
+      const [cx1,cy1] = dataToCanvas(x1,y1,xMin,xMax,yMin,yMax,W,H);
+      const [cx2,cy2] = dataToCanvas(x2,y2,xMin,xMax,yMin,yMax,W,H);
+      ctx.strokeStyle='rgba(45,108,223,0.5)'; ctx.lineWidth=2; ctx.setLineDash([8,5]);
+      ctx.beginPath(); ctx.moveTo(cx1,cy1); ctx.lineTo(cx2,cy2); ctx.stroke();
+      ctx.setLineDash([]);
+      // Correlation label
+      const r2 = num / Math.sqrt(den * ys.reduce((s,y)=>s+(y-my)**2,0));
+      ctx.fillStyle='rgba(45,108,223,0.8)'; ctx.font='11px sans-serif'; ctx.textAlign='right';
+      ctx.fillText('r = '+r2.toFixed(2)+' (OK sessions)', W-PAD.right-4, PAD.top+14);
+    }}
+  }}
+}}
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+getCanvas().addEventListener('mousemove', function(e) {{
+  const canvas = getCanvas();
+  const rect   = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const W  = canvas.offsetWidth;
+  const H  = 500;
+  const xField = getXField();
+  const xMax   = getXMax();
+
+  let closest = null, minDist = 20;
+  const valid = POINTS.filter(p => p[xField] !== null && p[xField] <= xMax);
+  valid.forEach(p => {{
+    const [cx,cy] = dataToCanvas(p[xField], p.score, 0, xMax, 0, 0.55, W, H);
+    const d = Math.hypot(mx-cx, my-cy);
+    if (d < minDist) {{ minDist=d; closest=p; }}
+  }});
+
+  if (closest) {{
+    const statusLabel = closest.status.charAt(0).toUpperCase()+closest.status.slice(1);
+    tooltip.innerHTML =
+      '<strong>'+closest.short+'…</strong><br>'+
+      '<span style="color:#aac">Status</span>: <strong>'+statusLabel+'</strong><br>'+
+      '<span style="color:#aac">Score</span>: <strong>'+closest.score.toFixed(3)+'</strong><br>'+
+      '<span style="color:#aac">Median RT</span>: <strong>'+closest.med_rt+'ms</strong><br>'+
+      '<span style="color:#aac">10th pct RT</span>: <strong>'+(closest.p10_rt||'—')+'ms</strong><br>'+
+      '<span style="color:#aac">Games</span>: <strong>'+closest.games+'</strong><br>'+
+      (closest.reasons!=='none'?'<span style="color:#e09090">'+closest.reasons+'</span>':'');
+    tooltip.style.display = 'block';
+    let tx = e.clientX+14, ty = e.clientY-10;
+    if (tx+210>window.innerWidth) tx=e.clientX-220;
+    tooltip.style.left=tx+'px'; tooltip.style.top=ty+'px';
+  }} else {{
+    tooltip.style.display='none';
+  }}
+}});
+getCanvas().addEventListener('mouseleave', ()=>tooltip.style.display='none');
+
+// Stats cards
+function buildStats() {{
+  const ok = POINTS.filter(p=>p.status==='ok'&&p.med_rt!==null);
+  const flagged = POINTS.filter(p=>p.status==='flagged'&&p.med_rt!==null);
+  const allRts  = POINTS.filter(p=>p.med_rt!==null).map(p=>p.med_rt).sort((a,b)=>a-b);
+  const medAll  = allRts[Math.floor(allRts.length/2)]||0;
+  const suspicious = POINTS.filter(p=>p.rt_warn).length;
+
+  const cards = [
+    {{label:'Sessions with RT data', val: POINTS.filter(p=>p.med_rt!==null).length}},
+    {{label:'Median RT (all sessions)', val: Math.round(medAll)+'ms'}},
+    {{label:'Median RT (OK sessions)', val: Math.round(ok.map(p=>p.med_rt).sort((a,b)=>a-b)[Math.floor(ok.length/2)]||0)+'ms'}},
+    {{label:'Suspicious (p10 < 150ms)', val: suspicious, color: suspicious>0?'#e05050':undefined}},
+  ];
+  const row = document.getElementById('statsRow');
+  cards.forEach(c=>{{
+    const d=document.createElement('div'); d.className='stat-card';
+    d.innerHTML='<div class="label">'+c.label+'</div>'+
+      '<div class="val"'+(c.color?' style="color:'+c.color+'"':'')+'>'+(c.val||0)+'</div>';
+    row.appendChild(d);
+  }});
+}}
+
+// Legend
+function buildLegend() {{
+  const items = [
+    {{color:'#52be80', label:'OK'}},
+    {{color:'#e05050', label:'Flagged'}},
+    {{color:'#ba68c8', label:'Disqualified'}},
+    {{color:'rgba(45,108,223,0.5)', label:'Trend line (OK sessions)', dash:true}},
+  ];
+  // Red ring item
+  const ringItem = document.createElement('div');
+  ringItem.className = 'legend-item';
+  ringItem.innerHTML =
+    '<svg width="22" height="22" style="flex-shrink:0"><circle cx="11" cy="11" r="8" fill="rgba(45,180,100,0.5)" stroke="#e05050" stroke-width="2.5"/></svg>' +
+    'Red ring = p10 RT &lt; 150ms (suspiciously fast)';
+  document.getElementById('legend').appendChild(ringItem);
+  const leg = document.getElementById('legend');
+  items.forEach(it=>{{
+    const d=document.createElement('div'); d.className='legend-item';
+    d.innerHTML='<div class="legend-dot" style="background:'+it.color+
+      (it.dash?';border-radius:0;height:3px;width:20px':'')+'"></div>'+it.label;
+    leg.appendChild(d);
+  }});
+  const sz = document.createElement('div'); sz.className='legend-item';
+  sz.style.marginLeft='12px'; sz.style.color='#888';
+  sz.textContent='Dot size = number of games played';
+  leg.appendChild(sz);
+}}
+
+window.addEventListener('resize', redraw);
+buildStats();
+buildLegend();
+redraw();
+</script>
+</body>
+</html>"""
+
+
 # ── Report ────────────────────────────────────────────────────────────────────
 
 def print_report(sessions: list[dict]) -> None:
@@ -1194,6 +1603,12 @@ def main():
     out_path  = PLOTS_DIR / "effort_analysis.html"
     out_path.write_text(html, encoding="utf-8")
     print(f"[html] Saved → {out_path}")
+
+    scatter_html = build_scatter_html(sessions, generated)
+    scatter_path = PLOTS_DIR / "reaction_time_scatter.html"
+    scatter_path.write_text(scatter_html, encoding="utf-8")
+    print(f"[html] Saved → {scatter_path}")
+
     print_report(sessions)
 
 
