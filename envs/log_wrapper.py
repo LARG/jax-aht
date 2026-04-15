@@ -31,7 +31,7 @@ class LogWrapper(JaxMARLWrapper):
     def reset(self, key: chex.PRNGKey) -> Tuple[chex.Array, State]:
 
         if self._world_state:
-            obs, world_state, env_state = self._env.reset(key)
+            (obs, obs_full), world_state, env_state = self._env.reset(key)
             state = LogEnvState(
                 env_state,
                 jnp.zeros((self._env.num_agents,)),
@@ -39,7 +39,7 @@ class LogWrapper(JaxMARLWrapper):
                 jnp.zeros((self._env.num_agents,)),
                 jnp.zeros((self._env.num_agents,)),
             )
-            return obs, world_state, state
+            return (obs, obs_full), world_state, state
 
         else:
             obs, env_state = self._env.reset(key)
@@ -60,7 +60,7 @@ class LogWrapper(JaxMARLWrapper):
         action: Union[int, float],
     ) -> Tuple[chex.Array, LogEnvState, float, bool, dict]:
         if self._world_state:
-            obs, world_state, env_state, reward, done, info = self._env.step(
+            (obs, obs_full), world_state, env_state, reward, done, info = self._env.step(
                 key, state.env_state, action
             )
         else:
@@ -99,6 +99,6 @@ class LogWrapper(JaxMARLWrapper):
             state)
 
         if self._world_state:
-            return obs, world_state, state, reward, done, info
+            return (obs, obs_full), world_state, state, reward, done, info
         else:
             return obs, state, reward, done, info
