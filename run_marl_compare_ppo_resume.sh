@@ -1,7 +1,7 @@
 #!/bin/bash
 # PPO Resume Script — picks up from where seed 721281 N=5 no_law crashed
 # Seeds remaining: 721281 (partial), 721282, 721283
-# All 4 GPUs available (Isaac Sim gone from GPU 0)
+# All 4 GPUs available — N=5 gets dedicated GPU 3 (no more serialization)
 
 mkdir -p logs
 
@@ -9,7 +9,6 @@ export PYTHONPATH=$PYTHONPATH:$PWD
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export JAX_DEFAULT_MATMUL_PRECISION=highest
 
-# Use venv_aaronson if present, else freshly built venv
 if [ -f "venv_aaronson/bin/python" ]; then
     VENV_PYTHON="$PWD/venv_aaronson/bin/python"
 elif [ -f "venv/bin/python" ]; then
@@ -48,53 +47,63 @@ run_ppo() {
         >> logs/${LABEL}_seed${SEED}.out 2>&1 &
 }
 
-echo "=== PPO RESUME: Completing seed 721281 from N=5 no_law ==="
+echo "Starting PPO Phase E Multi-Seed Resume..."
 
-# Seed 721281 — only no_law_5 failed; skip N=2,3,4 (already done)
+# ---------------------------------------------------------------
+# Seed 721281 — no_law N=2,3,4 already done; only N=5 failed.
+# Resume: no_law N=5, then full law batch (all 4 N in parallel).
+# ---------------------------------------------------------------
+echo "=== Seed 721281: resuming no_law_5, then law batch ==="
 SEED=721281
-run_ppo 0 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
-wait
-echo "Seed 721281 no_law_5 done! Starting law batch..."
 
-run_ppo 0 continuous/coop_recon_compare_law_2_agent 2 ppo_law_2_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
-run_ppo 3 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
+# No-law N=5 on GPU 3 (only missing piece)
+run_ppo 3 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
 wait
-run_ppo 0 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
+echo "Seed 721281 no_law_5 done!"
+
+# Law batch — all 4 N in parallel across all 4 GPUs
+run_ppo 0 continuous/coop_recon_compare_law_2_agent 2 ppo_law_2_agent $SEED
+run_ppo 1 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
 wait
 echo "Seed 721281 fully complete!"
 
-echo "=== PPO RESUME: Full run for seed 721282 ==="
+# ---------------------------------------------------------------
+# Seed 721282 — full run, all 4 N in parallel per batch
+# ---------------------------------------------------------------
+echo "=== Seed 721282: full run ==="
 SEED=721282
+
 run_ppo 0 continuous/coop_recon_compare_no_law_2_agent 2 ppo_no_law_2_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
-run_ppo 3 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
-wait
-run_ppo 0 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
+run_ppo 1 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
 wait
 
 run_ppo 0 continuous/coop_recon_compare_law_2_agent 2 ppo_law_2_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
-run_ppo 3 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
-wait
-run_ppo 0 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
+run_ppo 1 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
 wait
 echo "Seed 721282 fully complete!"
 
-echo "=== PPO RESUME: Full run for seed 721283 ==="
+# ---------------------------------------------------------------
+# Seed 721283 — full run, all 4 N in parallel per batch
+# ---------------------------------------------------------------
+echo "=== Seed 721283: full run ==="
 SEED=721283
+
 run_ppo 0 continuous/coop_recon_compare_no_law_2_agent 2 ppo_no_law_2_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
-run_ppo 3 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
-wait
-run_ppo 0 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
+run_ppo 1 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
 wait
 
 run_ppo 0 continuous/coop_recon_compare_law_2_agent 2 ppo_law_2_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
-run_ppo 3 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
-wait
-run_ppo 0 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
+run_ppo 1 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
 wait
 echo "Seed 721283 fully complete!"
 
