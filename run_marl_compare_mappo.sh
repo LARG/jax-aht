@@ -38,12 +38,10 @@ run_exp() {
         algorithm.TRAIN_SEED=$SEED \
         algorithm.USE_SAME_SEED=true \
         algorithm.FIXED_EVAL=true \
-        NUM_EXPT_AGENTS=$N \
         label=$LABEL \
         logger.project=aht-benchmark \
         logger.entity=jeffreychen287-the-university-of-texas-at-austin \
         logger.mode=online \
-        +task.ENV_KWARGS.world_state=true \
         >> logs/${LABEL}_seed${SEED}_${SLURM_JOB_ID:+$SLURM_JOB_ID}.out 2>&1 &
 }
 
@@ -54,21 +52,21 @@ for SEED in 721280 721281 721282 721283; do
     echo "=== Running MAPPO with SEED=$SEED ==="
 
     # Batch 1: No Law (Baseline) — 3 parallel on GPUs 1,2,3 then N=5 serialized
-    run_exp 0 continuous/coop_recon_compare_no_law_2_agent 2 mappo_no_law_2_agent $SEED
+    run_exp 1 continuous/coop_recon_compare_no_law_2_agent 2 mappo_no_law_2_agent $SEED
     run_exp 2 continuous/coop_recon_compare_no_law_3_agent 3 mappo_no_law_3_agent $SEED
     run_exp 3 continuous/coop_recon_compare_no_law_4_agent 4 mappo_no_law_4_agent $SEED
     wait
-    run_exp 0 continuous/coop_recon_compare_no_law_5_agent 5 mappo_no_law_5_agent $SEED
+    run_exp 1 continuous/coop_recon_compare_no_law_5_agent 5 mappo_no_law_5_agent $SEED
 
     wait
     echo "Seed $SEED Batch 1 finished! Starting Batch 2..."
 
-    # Batch 2: Social Law — 3 parallel on GPUs 0,2,3 then N=5 serialized
-    run_exp 0 continuous/coop_recon_compare_law_2_agent 2 mappo_law_2_agent $SEED
+    # Batch 2: Social Law — 3 parallel on GPUs 1,2,3 then N=5 serialized
+    run_exp 1 continuous/coop_recon_compare_law_2_agent 2 mappo_law_2_agent $SEED
     run_exp 2 continuous/coop_recon_compare_law_3_agent 3 mappo_law_3_agent $SEED
     run_exp 3 continuous/coop_recon_compare_law_4_agent 4 mappo_law_4_agent $SEED
     wait
-    run_exp 0 continuous/coop_recon_compare_law_5_agent 5 mappo_law_5_agent $SEED
+    run_exp 1 continuous/coop_recon_compare_law_5_agent 5 mappo_law_5_agent $SEED
 
     wait
     echo "Seed $SEED Batch 2 finished!"
