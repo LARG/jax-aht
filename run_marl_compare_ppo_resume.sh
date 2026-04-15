@@ -57,8 +57,8 @@ wait
 echo "Seed 721281 no_law_5 done! Starting law batch..."
 
 run_ppo 0 continuous/coop_recon_compare_law_2_agent 2 ppo_law_2_agent $SEED
-run_ppo 1 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
 wait
 run_ppo 0 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
 wait
@@ -67,15 +67,15 @@ echo "Seed 721281 fully complete!"
 echo "=== PPO RESUME: Full run for seed 721282 ==="
 SEED=721282
 run_ppo 0 continuous/coop_recon_compare_no_law_2_agent 2 ppo_no_law_2_agent $SEED
-run_ppo 1 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
 wait
 run_ppo 0 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
 wait
 
 run_ppo 0 continuous/coop_recon_compare_law_2_agent 2 ppo_law_2_agent $SEED
-run_ppo 1 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
 wait
 run_ppo 0 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
 wait
@@ -84,15 +84,15 @@ echo "Seed 721282 fully complete!"
 echo "=== PPO RESUME: Full run for seed 721283 ==="
 SEED=721283
 run_ppo 0 continuous/coop_recon_compare_no_law_2_agent 2 ppo_no_law_2_agent $SEED
-run_ppo 1 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_no_law_3_agent 3 ppo_no_law_3_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_no_law_4_agent 4 ppo_no_law_4_agent $SEED
 wait
 run_ppo 0 continuous/coop_recon_compare_no_law_5_agent 5 ppo_no_law_5_agent $SEED
 wait
 
 run_ppo 0 continuous/coop_recon_compare_law_2_agent 2 ppo_law_2_agent $SEED
-run_ppo 1 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
-run_ppo 2 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
+run_ppo 2 continuous/coop_recon_compare_law_3_agent 3 ppo_law_3_agent $SEED
+run_ppo 3 continuous/coop_recon_compare_law_4_agent 4 ppo_law_4_agent $SEED
 wait
 run_ppo 0 continuous/coop_recon_compare_law_5_agent 5 ppo_law_5_agent $SEED
 wait
