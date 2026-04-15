@@ -58,7 +58,15 @@ def main(
     print(f"Loaded {len(all_episodes)} episodes.")
 
     obs_dim = get_obs_dim(env_name)
-    padded_episodes, masks, max_seq_len = pad_episodes(all_episodes)
+    padded_episodes, masks, max_seq_len, agent_indices = pad_episodes(all_episodes)
+    
+    # Log agent pair information if available
+    if agent_indices is not None:
+        unique_pairs = np.unique(agent_indices, axis=0)
+        print(f"Found {len(unique_pairs)} unique agent pairs:")
+        for agent_idx, br_idx in unique_pairs:
+            count = np.sum((agent_indices == [agent_idx, br_idx]).all(axis=1))
+            print(f"  Agent {agent_idx} vs BR {br_idx}: {count} trajectories")
 
     rng = jax.random.PRNGKey(42)
     rng, train_state, model = init_autoencoder(
@@ -66,8 +74,8 @@ def main(
         obs_dim,
         max_seq_len,
         hidden_dim=hidden_dim,
-        latent_dim=latent_dim,
         learning_rate=learning_rate,
+        latent_dim=latent_dim,
     )
     train_step = make_train_step(model, obs_dim)
 

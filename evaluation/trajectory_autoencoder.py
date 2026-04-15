@@ -8,6 +8,9 @@ from flax.linen.initializers import constant, orthogonal
 from flax.training.train_state import TrainState
 import numpy as np
 
+# Embedding dimension constant - modify this to change the latent space size
+LATENT_DIM = 16
+
 
 class MaskedLSTMCell(nn.Module):
     """LSTM cell that conditionally updates carry based on a mask."""
@@ -46,7 +49,7 @@ class AutoregressiveLSTMCell(nn.Module):
 
 class LSTMTrajectoryEncoder(nn.Module):
     hidden_dim: int
-    latent_dim: int
+    latent_dim: int = LATENT_DIM
 
     def setup(self):
         self.input_proj = nn.Dense(self.hidden_dim, kernel_init=orthogonal(jnp.sqrt(2)), bias_init=constant(0.0))
@@ -106,7 +109,7 @@ class LSTMTrajectoryAutoencoder(nn.Module):
     obs_dim: int
     max_seq_len: int
     hidden_dim: int
-    latent_dim: int
+    latent_dim: int = LATENT_DIM
 
     def setup(self):
         self.encoder = LSTMTrajectoryEncoder(
@@ -129,22 +132,44 @@ class LSTMTrajectoryAutoencoder(nn.Module):
 
 
 def pad_episodes(episodes):
-    max_len = max(len(ep) for ep in episodes)
-    obs_dim = episodes[0].shape[-1]
-    N = len(episodes)
+    """Pad episodes to the same length.
+    
+    Handles both legacy format (just arrays) and new format (tuples with agent indices).
+    
+    Returns:
+        padded: (N, max_len, obs_dim) array of padded observations
+        masks: (N, max_len) array indicating valid timesteps
+        max_len: maximum sequence length
+        agent_indices: (N, 2) array of (agent_idx, br_idx) pairs or None
+    """
+    # Detect format: check if first element is tuple or array
+    is_new_format = isinstance(episodes[0], tuple)
+    
+    if is_new_format:
+        # Extract observations and indices
+        obs_list = [ep[0] for ep in episodes]
+        agent_indices = np.array([(ep[1], ep[2]) for ep in episodes])
+    else:
+        # Legacy format - backward compatibility
+        obs_list = episodes
+        agent_indices = None
+    
+    max_len = max(len(ep) for ep in obs_list)
+    obs_dim = obs_list[0].shape[-1]
+    N = len(obs_list)
 
     padded = np.zeros((N, max_len, obs_dim), dtype=np.float32)
     masks = np.zeros((N, max_len), dtype=np.float32)
 
-    for i, ep in enumerate(episodes):
+    for i, ep in enumerate(obs_list):
         L = len(ep)
         padded[i, :L] = ep
         masks[i, :L] = 1.0
 
-    return jnp.array(padded), jnp.array(masks), max_len
+    return jnp.array(padded), jnp.array(masks), max_len, agent_indices
 
 
-def create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim):
+def create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim=LATENT_DIM):
     return LSTMTrajectoryAutoencoder(
         obs_dim=obs_dim,
         max_seq_len=max_seq_len,
@@ -153,7 +178,7 @@ def create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim):
     )
 
 
-def init_autoencoder(rng, obs_dim, max_seq_len, hidden_dim, latent_dim, learning_rate):
+def init_autoencoder(rng, obs_dim, max_seq_len, hidden_dim, learning_rate, latent_dim=LATENT_DIM):
     model = create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim)
     rng, rng_init = jax.random.split(rng)
     dummy_x = jnp.zeros((max_seq_len, obs_dim))
@@ -209,14 +234,37 @@ def train_autoencoder(rng, train_state, train_step_fn, padded_episodes, masks, n
 
 
 def encode_episodes(model, train_state, episodes, max_seq_len):
-    obs_dim = episodes[0].shape[-1]
+    """Encode episodes using the trained autoencoder model.
+    
+    Handles both legacy format (arrays) and new format (tuples with agent indices).
+    
+    Args:
+        model: The autoencoder model
+        train_state: Training state with parameters
+        episodes: List of episodes (either arrays or tuples with indices)
+        max_seq_len: Maximum sequence length for padding
+        
+    Returns:
+        Array of shape (N, latent_dim) containing latent encodings
+    """
+    # Detect format: check if first element is tuple or array
+    is_new_format = isinstance(episodes[0], tuple)
+    
+    if is_new_format:
+        # Extract observation arrays from tuples
+        obs_list = [ep[0] for ep in episodes]
+    else:
+        # Legacy format - use directly
+        obs_list = episodes
+    
+    obs_dim = obs_list[0].shape[-1]
 
     @jax.jit
     def encode_one(params, x, mask):
         return model.apply(params, x, mask, method=model.encode)
 
     latents = []
-    for ep in episodes:
+    for ep in obs_list:
         L = len(ep)
         padded = np.zeros((max_seq_len, obs_dim), dtype=np.float32)
         mask = np.zeros((max_seq_len,), dtype=np.float32)

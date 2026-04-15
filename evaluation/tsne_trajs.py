@@ -2,6 +2,7 @@
 
 import argparse
 import jax
+import numpy as np
 
 from envs import make_env
 from evaluation.trajectory_autoencoder import (
@@ -49,14 +50,22 @@ def main(env_name=DEFAULT_ENV_NAME, k=DEFAULT_K, num_envs=DEFAULT_NUM_ENVS, roll
     )
     print(f"Collected {len(all_episodes)} heldout pairwise episodes.")
 
-    padded_episodes, masks, max_seq_len = pad_episodes(all_episodes)
+    padded_episodes, masks, max_seq_len, agent_indices = pad_episodes(all_episodes)
+    
+    # Log agent pair information if available
+    if agent_indices is not None:
+        unique_pairs = np.unique(agent_indices, axis=0)
+        print(f"Found {len(unique_pairs)} unique agent pairs:")
+        for agent_idx, br_idx in unique_pairs:
+            count = np.sum((agent_indices == [agent_idx, br_idx]).all(axis=1))
+            print(f"  Agent {agent_idx} vs BR {br_idx}: {count} trajectories")
     rng, train_state, model = init_autoencoder(
         rng,
         obs_dim,
         max_seq_len,
         hidden_dim=DEFAULT_HIDDEN_DIM,
-        latent_dim=DEFAULT_LATENT_DIM,
         learning_rate=DEFAULT_LEARNING_RATE,
+        latent_dim=DEFAULT_LATENT_DIM,
     )
     train_step = make_train_step(model, obs_dim)
 

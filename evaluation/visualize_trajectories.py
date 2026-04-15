@@ -83,6 +83,7 @@ def main(
 
     # Encode heldout episodes
     print("Encoding heldout trajectories...")
+    # encode_episodes now handles both formats (tuples with indices or arrays)
     heldout_latents = encode_episodes(model, train_state, heldout_episodes, max_seq_len)
 
     # Collect and encode trajectories for each agent-BR pair
@@ -116,11 +117,23 @@ def main(
 
     print(f"Found {len(agent_to_brs)} agent groups with BRs")
 
+    # Create mappings from agent/BR names to indices for tracking
+    agent_name_to_idx = {agent_name: idx for idx, agent_name in enumerate(sorted(agent_to_brs.keys()))}
+    
     pair_latents = {}
+    agent_idx_counter = 0
+    br_idx_map = {}  # map from br_name to idx
+    
     for agent_name, br_list in agent_to_brs.items():
-        for br_name, br_cfg in br_list:
+        agent_idx = agent_name_to_idx[agent_name]
+        for br_idx_in_list, (br_name, br_cfg) in enumerate(br_list):
+            if br_name not in br_idx_map:
+                br_idx_map[br_name] = agent_idx_counter
+                agent_idx_counter += 1
+            br_idx = br_idx_map[br_name]
+            
             pair_key = f"{agent_name}_vs_{br_name}"
-            print(f"Collecting trajectories for {pair_key}...")
+            print(f"Collecting trajectories for {pair_key} (agent_idx={agent_idx}, br_idx={br_idx})...")
 
             # Load agents
             from common.agent_loader_from_config import initialize_rl_agent_from_config
@@ -144,7 +157,7 @@ def main(
             rng, rng_br = jax.random.split(rng)
             br_policy, br_params, _ = _load_agent(br_cfg, br_name, env, rng_br)
 
-            # Collect trajectories for this pair
+            # Collect trajectories for this pair with indices
             rng, pair_episodes = collect_pair_trajectories(
                 rng,
                 env,
@@ -155,11 +168,13 @@ def main(
                 num_rollouts=k,
                 rollout_steps=rollout_steps,
                 num_envs=num_envs,
+                agent_idx=agent_idx,
+                br_idx=br_idx,
             )
 
             print(f"Collected {len(pair_episodes)} episodes for {pair_key}")
 
-            # Encode episodes
+            # Encode episodes (encode_episodes handles both tuple and array formats)
             pair_latents[pair_key] = encode_episodes(model, train_state, pair_episodes, max_seq_len)
 
     # Combine all latents for plotting
