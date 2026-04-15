@@ -29,7 +29,9 @@ import numpy as np
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
+# Path to directory containing collected JSON episode files (one file per game)
 DATA_DIR  = Path("human_data/collected_data_prolific")
+# Output directory for generated HTML dashboards
 PLOTS_DIR = Path("human_data/plots")
 
 # Action mapping (from app.py / README controls):
@@ -37,21 +39,25 @@ PLOTS_DIR = Path("human_data/plots")
 #   3 = Down                4 = Left  5 = Collect/Load (SPACE)
 NOOP_ACTION      = 0   # Q key — true idle/wait action
 COLLECT_ACTION   = 5   # SPACE — food collection attempt
-PAGE_SIZE        = 15
-REQUIRED_GAMES   = 8   # expected number of games per complete session
+PAGE_SIZE        = 15  # sessions shown per page in the dashboard
+REQUIRED_GAMES   = 8   # expected number of games per complete session; fewer → disqualified
 
 # Flagging thresholds — tune these based on researcher feedback
-FLAG_SCORE       = 0.0    # avg score at or below this is suspicious
-FLAG_IDLE        = 0.35   # idle rate (Q + unproductive SPACE) at or above this → flagged
-IDLE_SEQ_LEN     = 6      # consecutive idle actions (Q or SPACE) of this length = suspicious
-IDLE_SEQ_THRESH  = 0.75   # fraction of window that must be idle to count as a sequence
-MIN_LEVELS       = 1
+FLAG_SCORE       = 0.0    # sessions with avg score at or below this are flagged
+FLAG_IDLE        = 0.35   # sessions with idle rate at or above this are flagged
+                          # idle rate = (Q presses + unproductive SPACE) / total actions
+IDLE_SEQ_LEN     = 6      # window size for idle sequence detection (informational only, not used for flagging)
+IDLE_SEQ_THRESH  = 0.75   # fraction of window that must be idle to count as a suspicious sequence
+MIN_LEVELS       = 1      # sessions with fewer games than this are excluded entirely
 
 ACTION_NAMES = {0: "Noop(Q)", 1: "Up", 2: "Down", 3: "Left", 4: "Right", 5: "Load(SPACE)"}
 
 # ── Load & aggregate ──────────────────────────────────────────────────────────
 
 def load_episodes(data_dir: Path) -> list[dict]:
+    # Read all JSON episode files from data_dir, sorted by filename for reproducibility.
+    # Each file is one game. Attaches the filename as "_file" for debugging.
+    # Skips and warns about any files that fail to parse.
     episodes, missing = [], []
     for fpath in sorted(data_dir.glob("*.json")):
         try:
@@ -77,12 +83,15 @@ def detect_idle_sequence(actions: list[int], food_eaten_per_step: list[bool],
     Idle = Q (noop) OR SPACE (collect) when no fruit was collected that step.
     This catches both Q-spammers and SPACE-spammers who aren't actually collecting.
     """
+    # Not enough actions to fill even one window — can't be suspicious
     if len(actions) < window:
         return False
+    # Mark each action as idle: Q key is always idle; SPACE is idle if it didn't collect food
     idle = [
         a == NOOP_ACTION or (a == COLLECT_ACTION and not food_eaten_per_step[i])
         for i, a in enumerate(actions)
     ]
+    # Slide a window across the action sequence; flag if any window is mostly idle
     for i in range(len(idle) - window + 1):
         w = idle[i:i + window]
         if sum(w) / window >= threshold:
@@ -113,11 +122,15 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             if s.get("human_action") is not None
         ]
 
-        # Reaction times: elapsed[i] - elapsed[i-1] in milliseconds
+        # Compute per-step reaction times from the elapsed timestamp in each trajectory step.
+        # elapsed is in seconds; we convert to ms. We only record the gap between consecutive
+        # steps where the human acted — skipping the initial null-action env step.
+        # A dt of 0 or negative is discarded (can happen at episode boundaries).
         reaction_times_ms = []
         prev_elapsed = None
         for s in trajectory:
             if s.get("human_action") is None:
+                # Initial env step before human acts — just record timestamp, skip RT
                 prev_elapsed = s.get("elapsed", None)
                 continue
             curr_elapsed = s.get("elapsed", None)
@@ -127,7 +140,10 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
                     reaction_times_ms.append(dt_ms)
             prev_elapsed = curr_elapsed
 
-        # Track which SPACE presses actually collected fruit
+        # For each human action, record whether that step resulted in food being collected.
+        # We detect collection by comparing the food_eaten boolean array between consecutive steps.
+        # A change in food_eaten means at least one fruit was picked up this step.
+        # This is used to distinguish productive SPACE presses from wasted ones.
         food_eaten_per_action = []
         prev_eaten = None
         for s in trajectory:
@@ -139,18 +155,24 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             food_eaten_per_action.append(collected)
             prev_eaten = curr_eaten
 
+        # Count pure Q presses (unambiguous waiting)
         noop_count       = sum(1 for a in human_actions if a == NOOP_ACTION)
+        # Count SPACE presses that didn't collect food (could be legitimate near high-level fruit)
         wasted_load_count= sum(
             1 for a, collected in zip(human_actions, food_eaten_per_action)
             if a == COLLECT_ACTION and not collected
         )
+        # Combined idle count and rate — primary metric for effort flagging
         idle_count  = noop_count + wasted_load_count
         idle_rate   = idle_count / len(human_actions) if human_actions else 0.0
         noop_count  = noop_count  # keep for display
+        # Pure Q-key rate — used as a secondary, unambiguous signal
         noop_rate   = noop_count / len(human_actions) if human_actions else 0.0
+        # Informational only — not used for flagging (too many false positives)
         has_loop    = detect_idle_sequence(human_actions, food_eaten_per_action)
 
-        # Store full trajectory for replay (compact — only what renderer needs)
+        # Extract a compact replay-ready representation of each trajectory step.
+        # Only the fields needed by the JS canvas renderer are kept to limit HTML size.
         replay_frames = []
         for s in trajectory:
             state = s.get("state", {})
@@ -199,26 +221,34 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
         if s["num_games"] < MIN_LEVELS:
             continue
 
+        # Aggregate raw counts across all games in this session
         total_actions  = sum(s["total_steps"])
         total_noops    = sum(s["noop_counts"])
         avg_score      = float(np.mean(s["scores"]))
+        # Session-level Q-key rate: total Q presses / total actions across all games
         noop_rate      = total_noops / total_actions if total_actions else 0.0
-        # Idle rate = (Q presses + unproductive SPACE presses) / total actions
+        # Session-level idle rate: average of per-game idle rates
         idle_rate      = float(np.mean([gd["idle_rate"] for gd in s["game_details"]]))
+        # True if any single game had a suspicious idle sequence (shown in UI, not used for flagging)
         any_loop       = any(s["loop_flags"])
+        # Count games where human scored exactly zero
         zero_games     = sum(1 for sc in s["scores"] if sc <= FLAG_SCORE)
         short_games   = 0  # reserved for future reaction-time metric
 
-        # Aggregate reaction times across all games in session
+        # Pool all per-step reaction times across every game in the session
         all_rts = []
         for gd in s["game_details"]:
             all_rts.extend(gd.get("reaction_times_ms", []))
         session_median_rt = float(np.median(all_rts)) if all_rts else None
         session_min_rt    = float(np.min(all_rts))    if all_rts else None
+        # 10th percentile = the player's fastest 10% of actions.
+        # A very low p10 means some actions were taken inhumanly fast (key-holding / bot).
         session_pct10_rt  = float(np.percentile(all_rts, 10)) if all_rts else None
+        # Suspicious if fastest 10% of actions are under 150ms — informational, not a flag
         rt_suspicious     = session_pct10_rt is not None and session_pct10_rt < 150
 
-        # Flagging — err on the side of eager
+        # Build list of flagging reasons. A session is flagged if this list is non-empty.
+        # Each check appends a human-readable string explaining why it triggered.
         sus_reasons = []
 
         # High idle rate (Q presses + wasted SPACE as fraction of total actions)
@@ -247,7 +277,10 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
         # Deduplicate
         sus_reasons = list(dict.fromkeys(sus_reasons))
 
-        # Disqualified = didn't finish all games (separate from effort flagging)
+        # Status assignment — disqualified takes priority over flagged.
+        # Disqualified = didn't complete enough games (data is incomplete, not just bad effort).
+        # Flagged = completed enough games but triggered one or more effort checks.
+        # OK = completed all games with no suspicious signals.
         if s["num_games"] < REQUIRED_GAMES:
             status = "disqualified"
         elif sus_reasons:
@@ -268,9 +301,6 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             "any_loop":      any_loop,
             "short_games":   short_games,
             "zero_games":    zero_games,
-            "median_rt_ms":  session_median_rt,
-            "pct10_rt_ms":   session_pct10_rt,
-            "rt_suspicious": rt_suspicious,
             "sus_reasons":   sus_reasons,
             "status":        status,
             "game_details":  game_details,
@@ -283,10 +313,12 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
 # ── HTML helpers ──────────────────────────────────────────────────────────────
 
 def e(s) -> str:
-    """HTML-escape a value for safe interpolation."""
+    """HTML-escape a value for safe interpolation. Used on all user data
+    inserted into HTML to prevent XSS in the generated dashboard."""
     return html_lib.escape(str(s), quote=True)
 
 def score_to_color(score: float, max_score: float = 0.5) -> str:
+    # Maps a score in [0, max_score] to a CSS rgb color: red (low) → green (high)
     pct = min(score / max_score, 1.0) if max_score > 0 else 0
     r = int(220 - pct * 150)
     g = int(120 + pct * 120)
@@ -294,6 +326,7 @@ def score_to_color(score: float, max_score: float = 0.5) -> str:
     return f"rgb({r},{g},{b})"
 
 def noop_to_color(rate: float) -> str:
+    # Maps an idle/noop rate to a CSS color: blue (active) → orange → red (idle)
     pct = min(rate, 1.0)
     if pct >= FLAG_IDLE:
         return "#e05050"
@@ -323,6 +356,8 @@ def bar_html(value: float, max_val: float = 0.5, width_pct: int = 100) -> str:
             f'</div>')
 
 def level_sparkline(games: list[dict]) -> str:
+    # Renders a row of small colored squares — one per game in the session.
+    # Fill color = score, border color = idle rate. Hover tooltip shows game stats.
     dots = []
     for i, gm in enumerate(games):
         color  = score_to_color(gm["score"])
@@ -338,6 +373,8 @@ def level_sparkline(games: list[dict]) -> str:
     return f'<div class="sparkline">{"".join(dots)}</div>'
 
 def render_game_detail_table(games: list[dict]) -> str:
+    # Renders the expanded per-game breakdown table shown when a session row is clicked.
+    # Columns: #, Score, Idle rate, Breakdown (Q/SPACE counts), Steps, Duration, Median RT, Config.
     rows = []
     for i, gm in enumerate(games):
         ic      = noop_to_color(gm["idle_rate"])
@@ -445,7 +482,7 @@ def build_html(sessions: list[dict], generated: str) -> str:
             f'        <div style="font-size:11.5px;color:{e(s_rt_col)};margin-top:4px">'
             f'&#9201; Median reaction time: <strong>{e(s_rt_disp)}</strong>'
             f' &nbsp;&#183;&nbsp; 10th pct: <strong>{e(s_p10_disp)}</strong>'
-            f'{"" if not s_rt_warn else " &nbsp;<span style=&#39;color:#e05050;font-weight:700&#39;>&#9888; suspiciously fast (p10 &lt; 150ms)</span>"}'
+            f'{" &nbsp;<span style=\"color:#e05050;font-weight:700\">&#9888; suspiciously fast (p10 &lt; 150ms)</span>" if s_rt_warn else ""}'
             f'        </div>'
             f'      </div>'
             f'      {detail_tbl}'
@@ -1180,7 +1217,8 @@ def build_scatter_html(sessions: list[dict], generated: str) -> str:
     """
     import json as json_mod
 
-    # Build data points
+    # Build one data point per session. Sessions without RT data (no elapsed field
+    # in their trajectory) are excluded — they have nothing to plot on the x axis.
     points = []
     for s in sessions:
         if s.get("median_rt_ms") is None:
@@ -1536,6 +1574,9 @@ redraw();
 # ── Report ────────────────────────────────────────────────────────────────────
 
 def print_report(sessions: list[dict]) -> None:
+    # Print a plain-text summary to stdout after the HTML files are saved.
+    # Shows overall counts, lists all flagged/disqualified sessions with reasons,
+    # and prints score/noop rate distribution statistics.
     flagged      = [s for s in sessions if s["status"] == "flagged"]
     disqualified = [s for s in sessions if s["status"] == "disqualified"]
     zero_score   = [s for s in sessions if s["avg_score"] <= FLAG_SCORE]
