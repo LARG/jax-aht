@@ -40,9 +40,8 @@ class LogWrapper(JaxMARLWrapper):
                 jnp.zeros((self._env.num_agents,)),
             )
             return (obs, obs_full), world_state, state
-
         else:
-            obs, env_state = self._env.reset(key)
+            (obs, obs_full), env_state = self._env.reset(key)
             state = LogEnvState(
                 env_state,
                 jnp.zeros((self._env.num_agents,)),
@@ -50,7 +49,7 @@ class LogWrapper(JaxMARLWrapper):
                 jnp.zeros((self._env.num_agents,)),
                 jnp.zeros((self._env.num_agents,)),
             )
-            return obs, state
+            return (obs, obs_full), state
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
@@ -64,7 +63,7 @@ class LogWrapper(JaxMARLWrapper):
                 key, state.env_state, action
             )
         else:
-            obs, env_state, reward, done, info = self._env.step(
+            (obs, obs_full), env_state, reward, done, info = self._env.step(
                 key, state.env_state, action
             )
         ep_done = done["__all__"]
@@ -101,4 +100,4 @@ class LogWrapper(JaxMARLWrapper):
         if self._world_state:
             return (obs, obs_full), world_state, state, reward, done, info
         else:
-            return obs, state, reward, done, info
+            return (obs, obs_full), state, reward, done, info

@@ -269,7 +269,7 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         if self._world_state:
             return (obs_dict, obs_full_dict), obs_full_dict, state
         else:
-            return obs_dict, state
+            return (obs_dict, obs_full_dict), state
 
     # -------------------------------------------------------------------------
     # STEP
@@ -383,7 +383,7 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             obs, state = jax.tree.map(
                 lambda x, y: jax.lax.select(dones["__all__"], x, y),
                 self.reset(key_reset),
-                (obs_st, state_st)
+                ((obs_st, obs_full_st), state_st)
             )
             return obs, state, rewards, dones, info
 
