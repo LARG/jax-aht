@@ -32,19 +32,22 @@ import numpy as np
 DATA_DIR  = Path("human_data/collected_data_prolific")
 PLOTS_DIR = Path("human_data/plots")
 
-NOOP_ACTION      = 5
+# Action mapping (from app.py / README controls):
+#   0 = Noop/Wait (Q key)   1 = Up    2 = Right
+#   3 = Down                4 = Left  5 = Collect/Load (SPACE)
+NOOP_ACTION      = 0   # Q key — true idle/wait action
+COLLECT_ACTION   = 5   # SPACE — food collection attempt
 PAGE_SIZE        = 15
+REQUIRED_GAMES   = 8   # expected number of games per complete session
 
 # Flagging thresholds — tune these based on researcher feedback
 FLAG_SCORE       = 0.0    # avg score at or below this is suspicious
-FLAG_NOOP        = 0.60   # noop rate at or above this is suspicious
-BORDERLINE_NOOP  = 0.55   # borderline noop threshold
-LOOP_WINDOW      = 6      # detect repeated action loops within this window
-LOOP_THRESHOLD   = 0.75   # fraction of steps that are the same action = loop
-MIN_DURATION     = 5.0    # seconds — games shorter than this are suspicious
+FLAG_IDLE        = 0.35   # idle rate (Q + unproductive SPACE) at or above this → flagged
+IDLE_SEQ_LEN     = 6      # consecutive idle actions (Q or SPACE) of this length = suspicious
+IDLE_SEQ_THRESH  = 0.75   # fraction of window that must be idle to count as a sequence
 MIN_LEVELS       = 1
 
-ACTION_NAMES = {0: "None", 1: "Up", 2: "Right", 3: "Down", 4: "Left", 5: "Noop"}
+ACTION_NAMES = {0: "Noop(Q)", 1: "Up", 2: "Down", 3: "Left", 4: "Right", 5: "Load(SPACE)"}
 
 # ── Load & aggregate ──────────────────────────────────────────────────────────
 
@@ -66,15 +69,23 @@ def load_episodes(data_dir: Path) -> list[dict]:
     return episodes
 
 
-def detect_loop(actions: list[int], window: int = LOOP_WINDOW,
-                threshold: float = LOOP_THRESHOLD) -> bool:
-    """True if any sliding window is dominated by one repeated action."""
+def detect_idle_sequence(actions: list[int], food_eaten_per_step: list[bool],
+                         window: int = IDLE_SEQ_LEN,
+                         threshold: float = IDLE_SEQ_THRESH) -> bool:
+    """
+    True if any sliding window is dominated by idle actions.
+    Idle = Q (noop) OR SPACE (collect) when no fruit was collected that step.
+    This catches both Q-spammers and SPACE-spammers who aren't actually collecting.
+    """
     if len(actions) < window:
         return False
-    for i in range(len(actions) - window + 1):
-        w = actions[i:i + window]
-        most_common = max(set(w), key=w.count)
-        if w.count(most_common) / window >= threshold:
+    idle = [
+        a == NOOP_ACTION or (a == COLLECT_ACTION and not food_eaten_per_step[i])
+        for i, a in enumerate(actions)
+    ]
+    for i in range(len(idle) - window + 1):
+        w = idle[i:i + window]
+        if sum(w) / window >= threshold:
             return True
     return False
 
@@ -83,7 +94,7 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
     sessions = defaultdict(lambda: {
         "scores": [], "noop_counts": [], "total_steps": [],
         "num_games": 0, "game_details": [], "timestamps": [],
-        "durations": [], "loop_flags": [],
+        "durations": [], "loop_flags": [], "idle_rates": [],
     })
 
     for ep in episodes:
@@ -101,9 +112,28 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             s.get("human_action") for s in trajectory
             if s.get("human_action") is not None
         ]
-        noop_count = sum(1 for a in human_actions if a == NOOP_ACTION)
-        noop_rate  = noop_count / len(human_actions) if human_actions else 0.0
-        has_loop   = detect_loop(human_actions)
+        # Track which SPACE presses actually collected fruit
+        food_eaten_per_action = []
+        prev_eaten = None
+        for s in trajectory:
+            ha = s.get("human_action")
+            if ha is None:
+                continue
+            curr_eaten = tuple(s.get("state", {}).get("food_eaten", []))
+            collected  = prev_eaten is not None and curr_eaten != prev_eaten
+            food_eaten_per_action.append(collected)
+            prev_eaten = curr_eaten
+
+        noop_count       = sum(1 for a in human_actions if a == NOOP_ACTION)
+        wasted_load_count= sum(
+            1 for a, collected in zip(human_actions, food_eaten_per_action)
+            if a == COLLECT_ACTION and not collected
+        )
+        idle_count  = noop_count + wasted_load_count
+        idle_rate   = idle_count / len(human_actions) if human_actions else 0.0
+        noop_count  = noop_count  # keep for display
+        noop_rate   = noop_count / len(human_actions) if human_actions else 0.0
+        has_loop    = detect_idle_sequence(human_actions, food_eaten_per_action)
 
         # Store full trajectory for replay (compact — only what renderer needs)
         replay_frames = []
@@ -130,18 +160,20 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
         sess["durations"].append(duration)
         sess["loop_flags"].append(has_loop)
         sess["game_details"].append({
-            "score":         human_score,
-            "noop_count":    noop_count,
-            "noop_rate":     noop_rate,
-            "steps":         total_steps,
-            "timestamp":     timestamp,
-            "duration":      duration,
-            "grid_size":     grid_size,
-            "num_fruits":    num_fruits,
-            "agent_type":    agent_type,
-            "has_loop":      has_loop,
-            "file":          ep.get("_file", ""),
-            "replay_frames": replay_frames,
+            "score":            human_score,
+            "noop_count":       noop_count,
+            "noop_rate":        noop_rate,
+            "idle_rate":        idle_rate,
+            "wasted_load":      wasted_load_count,
+            "steps":            total_steps,
+            "timestamp":        timestamp,
+            "duration":         duration,
+            "grid_size":        grid_size,
+            "num_fruits":       num_fruits,
+            "agent_type":       agent_type,
+            "has_loop":         has_loop,
+            "file":             ep.get("_file", ""),
+            "replay_frames":    replay_frames,
         })
 
     rows = []
@@ -149,42 +181,50 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
         if s["num_games"] < MIN_LEVELS:
             continue
 
-        total_actions = sum(s["total_steps"])
-        total_noops   = sum(s["noop_counts"])
-        avg_score     = float(np.mean(s["scores"]))
-        noop_rate     = total_noops / total_actions if total_actions else 0.0
-        any_loop      = any(s["loop_flags"])
-        durations     = [d for d in s["durations"] if d is not None]
-        short_games   = sum(1 for d in durations if d < MIN_DURATION)
+        total_actions  = sum(s["total_steps"])
+        total_noops    = sum(s["noop_counts"])
+        avg_score      = float(np.mean(s["scores"]))
+        noop_rate      = total_noops / total_actions if total_actions else 0.0
+        # Idle rate = (Q presses + unproductive SPACE presses) / total actions
+        idle_rate      = float(np.mean([gd["idle_rate"] for gd in s["game_details"]]))
+        any_loop       = any(s["loop_flags"])
+        zero_games     = sum(1 for sc in s["scores"] if sc <= FLAG_SCORE)
+        short_games   = 0  # reserved for future reaction-time metric
 
         # Flagging — err on the side of eager
         sus_reasons = []
 
-        # Primary flag: zero/near-zero score AND high noop
-        if avg_score <= FLAG_SCORE and noop_rate >= FLAG_NOOP:
-            sus_reasons.append("zero score + high noop")
+        # High idle rate (Q presses + wasted SPACE as fraction of total actions)
+        # Note: wasted SPACE alone is unreliable — player may be attempting
+        # to collect a fruit that requires combined agent levels. Only flag
+        # if the overall idle rate is very high.
+        if idle_rate >= FLAG_IDLE:
+            sus_reasons.append(f"high idle rate ({idle_rate:.0%} of actions were Q or wasted SPACE)")
 
-        # High noop alone is suspicious regardless of score
-        if noop_rate >= FLAG_NOOP:
-            sus_reasons.append(f"very high noop rate ({noop_rate:.0%})")
+        # High Q-key rate alone (pure waiting, no ambiguity)
+        noop_only_rate = noop_rate  # Q presses / total actions
+        if noop_only_rate >= 0.15:
+            sus_reasons.append(f"high Q-key rate ({noop_only_rate:.0%} of actions were pure waits)")
 
-        # Loop only suspicious when combined with low score or high noop
-        if any_loop and (avg_score <= 0.15 or noop_rate >= BORDERLINE_NOOP):
-            sus_reasons.append("repetitive loop + low performance")
+        # Low score — exact zero average
+        if avg_score <= FLAG_SCORE:
+            sus_reasons.append("zero average score")
 
-        # Many very short games
-        if short_games >= 3:
-            sus_reasons.append(f"{short_games} very short games (<{MIN_DURATION}s)")
+        # Many zero-score games even if avg > 0 (one lucky game shouldn't save them)
+        if zero_games >= 5 and s["num_games"] >= 6:
+            sus_reasons.append(f"{zero_games}/{s['num_games']} games scored zero")
 
-        # Deduplicate reasons
+        # (Short game duration check removed — will be replaced by
+        #  per-step reaction time metric which is more reliable)
+
+        # Deduplicate
         sus_reasons = list(dict.fromkeys(sus_reasons))
 
-        if noop_rate >= FLAG_NOOP or len(sus_reasons) >= 2:
-            status = "flagged"
+        # Disqualified = didn't finish all games (separate from effort flagging)
+        if s["num_games"] < REQUIRED_GAMES:
+            status = "disqualified"
         elif sus_reasons:
-            status = "borderline"
-        elif noop_rate >= BORDERLINE_NOOP and avg_score <= 0.15:
-            status = "borderline"
+            status = "flagged"
         else:
             status = "ok"
 
@@ -197,8 +237,10 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             "avg_score":     avg_score,
             "score_std":     float(np.std(s["scores"])),
             "noop_rate":     noop_rate,
+            "idle_rate":     idle_rate,
             "any_loop":      any_loop,
             "short_games":   short_games,
+            "zero_games":    zero_games,
             "sus_reasons":   sus_reasons,
             "status":        status,
             "game_details":  game_details,
@@ -221,11 +263,11 @@ def score_to_color(score: float, max_score: float = 0.5) -> str:
     b = int(100 - pct * 60)
     return f"rgb({r},{g},{b})"
 
-def noop_to_color(noop_rate: float) -> str:
-    pct = min(noop_rate, 1.0)
-    if pct >= FLAG_NOOP:
+def noop_to_color(rate: float) -> str:
+    pct = min(rate, 1.0)
+    if pct >= FLAG_IDLE:
         return "#e05050"
-    elif pct >= BORDERLINE_NOOP:
+    elif pct >= 0.20:
         return "#e09020"
     else:
         r = int(80  + pct * 100)
@@ -235,9 +277,9 @@ def noop_to_color(noop_rate: float) -> str:
 
 def status_badge(status: str) -> str:
     cfg = {
-        "flagged":   ("FLAGGED",    "#c0392b", "#fff"),
-        "borderline":("BORDERLINE", "#ca6f1e", "#fff"),
-        "ok":        ("OK",         "#1e8449", "#fff"),
+        "flagged":      ("FLAGGED",       "#c0392b", "#fff"),
+        "disqualified": ("DISQUALIFIED",  "#7b1fa2", "#fff"),
+        "ok":           ("OK",            "#1e8449", "#fff"),
     }
     label, bg, fg = cfg.get(status, ("UNKNOWN", "#888", "#fff"))
     return f'<span class="badge" style="background:{e(bg)};color:{e(fg)}">{e(label)}</span>'
@@ -268,14 +310,16 @@ def level_sparkline(games: list[dict]) -> str:
 def render_game_detail_table(games: list[dict]) -> str:
     rows = []
     for i, gm in enumerate(games):
-        nc      = noop_to_color(gm["noop_rate"])
-        loop_ic = ' <span title="Repetitive action loop detected" style="color:#e05050">⟳</span>' if gm["has_loop"] else ""
+        ic      = noop_to_color(gm["idle_rate"])
+        loop_ic = ' <span title="Idle sequence detected" style="color:#e05050">⟳</span>' if gm["has_loop"] else ""
         dur_s   = f"{gm['duration']:.1f}s" if gm["duration"] is not None else "—"
         rows.append(
             f'<tr>'
             f'<td>Game {i+1}{loop_ic}</td>'
             f'<td>{bar_html(gm["score"], 0.5, 80)}</td>'
-            f'<td style="color:{nc};font-weight:bold">{gm["noop_rate"]:.1%}</td>'
+            f'<td style="color:{ic};font-weight:bold">{gm["idle_rate"]:.1%}</td>'
+            f'<td style="color:#888;font-size:11px">'
+            f'Q:{gm["noop_count"]} SPACE-wasted:{gm["wasted_load"]}</td>'
             f'<td>{gm["steps"]}</td>'
             f'<td>{dur_s}</td>'
             f'<td>{e(gm["grid_size"])}×{e(gm["grid_size"])}, {e(gm["num_fruits"])} fruits</td>'
@@ -284,8 +328,9 @@ def render_game_detail_table(games: list[dict]) -> str:
     return (
         '<table class="detail-table">'
         '<thead><tr>'
-        '<th>#</th><th>Score</th><th>Noop rate</th>'
-        '<th>Steps (trajectory length)</th><th>Duration</th><th>Config</th>'
+        '<th>#</th><th>Score</th><th>Idle rate</th>'
+        '<th>Breakdown</th>'
+        '<th>Steps</th><th>Duration</th><th>Config</th>'
         '</tr></thead>'
         f'<tbody>{"".join(rows)}</tbody>'
         '</table>'
@@ -295,9 +340,9 @@ def render_game_detail_table(games: list[dict]) -> str:
 def build_html(sessions: list[dict], generated: str) -> str:
     import json as json_mod
 
-    n_flagged    = sum(1 for s in sessions if s["status"] == "flagged")
-    n_borderline = sum(1 for s in sessions if s["status"] == "borderline")
-    n_ok         = sum(1 for s in sessions if s["status"] == "ok")
+    n_flagged      = sum(1 for s in sessions if s["status"] == "flagged")
+    n_disqualified = sum(1 for s in sessions if s["status"] == "disqualified")
+    n_ok           = sum(1 for s in sessions if s["status"] == "ok")
     total_games  = sum(s["num_games"] for s in sessions)
     avg_score    = float(np.mean([s["avg_score"] for s in sessions]))
     avg_noop     = float(np.mean([s["noop_rate"] for s in sessions]))
@@ -311,13 +356,16 @@ def build_html(sessions: list[dict], generated: str) -> str:
         badge      = status_badge(stat)
         bar        = bar_html(s["avg_score"])
         spark      = level_sparkline(s["game_details"])
-        nc         = noop_to_color(s["noop_rate"])
+        nc         = noop_to_color(s["idle_rate"])
         std_s      = f"±{s['score_std']:.3f}" if s["num_games"] > 1 else "—"
         detail_tbl = render_game_detail_table(s["game_details"])
         reasons    = "; ".join(s["sus_reasons"]) if s["sus_reasons"] else "none"
         loop_warn  = ' <span class="loop-warn" title="Repetitive loop detected in one or more games">⟳ loop</span>' if s["any_loop"] else ""
 
-        row_class = {"flagged": "row-flagged", "borderline": "row-borderline", "ok": ""}[stat]
+        row_class = {
+            "flagged": "row-flagged",
+            "disqualified": "row-disqualified", "ok": ""
+        }.get(stat, "")
 
         # Replay data — embed trajectory JSON per game (compact)
         replay_games = []
@@ -439,7 +487,8 @@ def build_html(sessions: list[dict], generated: str) -> str:
   }
   .session-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
   .session-row.row-flagged { border-left: 4px solid #c0392b; background: #fff8f8; }
-  .session-row.row-borderline { border-left: 4px solid #ca6f1e; background: #fff9f2; }
+  .session-row.row-disqualified { border-left: 4px solid #7b1fa2; background: #fdf4ff; }
+  .stat-pill.disqualified .val { color: #ba68c8; }
 
   .row-main {
     display: grid;
@@ -612,7 +661,7 @@ def build_html(sessions: list[dict], generated: str) -> str:
     <div class="stat-pill"><span>Sessions</span><span class="val">{len(sessions)}</span></div>
     <div class="stat-pill"><span>Total games</span><span class="val">{total_games}</span></div>
     <div class="stat-pill flagged"><span>⚑ Flagged</span><span class="val">{n_flagged}</span></div>
-    <div class="stat-pill borderline"><span>~ Borderline</span><span class="val">{n_borderline}</span></div>
+    <div class="stat-pill disqualified"><span>✗ Disqualified</span><span class="val">{n_disqualified}</span></div>
     <div class="stat-pill ok"><span>✓ OK</span><span class="val">{n_ok}</span></div>
     <div class="stat-pill"><span>Avg score</span><span class="val">{avg_score:.3f}</span></div>
     <div class="stat-pill"><span>Avg noop</span><span class="val">{avg_noop:.1%}</span></div>
@@ -621,8 +670,8 @@ def build_html(sessions: list[dict], generated: str) -> str:
 
 <div class="legend">
   <span class="legend-title">Row status</span>
-  <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div>&#9873; FLAGGED — suspicious play detected</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#ca6f1e"></div>~ BORDERLINE — some suspicious signals</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#c0392b"></div>&#9873; FLAGGED — suspicious play, review before using data</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#7b1fa2"></div>&#10007; DISQUALIFIED — incomplete session (&lt;8 games), exclude from analysis</div>
   <div class="legend-item"><div class="legend-dot" style="background:#1e8449"></div>&#10003; OK — normal player</div>
   <div class="legend-item" style="color:#e05050;gap:4px">&#9; ⟳ loop = repetitive action loop detected in a game</div>
 
@@ -654,7 +703,7 @@ def build_html(sessions: list[dict], generated: str) -> str:
   <span class="legend-title">Filter</span>
   <button class="filter-btn active" onclick="setFilter('all',this)">All ({len(sessions)})</button>
   <button class="filter-btn" onclick="setFilter('flagged',this)">⚑ Flagged ({n_flagged})</button>
-  <button class="filter-btn" onclick="setFilter('borderline',this)">~ Borderline ({n_borderline})</button>
+  <button class="filter-btn" onclick="setFilter('disqualified',this)">✗ Disqualified ({n_disqualified})</button>
   <button class="filter-btn" onclick="setFilter('ok',this)">✓ OK ({n_ok})</button>
   &nbsp;&nbsp;
   <label>Sort by</label>
@@ -670,7 +719,7 @@ def build_html(sessions: list[dict], generated: str) -> str:
 <div class="table-header">
   <div>Session ID</div>
   <div>Avg score per game <span style="font-weight:400;text-transform:none">(max ≈ 0.5)</span></div>
-  <div>Noop rate</div>
+  <div>Idle rate</div>
   <div>Games played</div>
   <div>Score std dev</div>
   <div>Per-game scores</div>
@@ -846,9 +895,9 @@ render();
 // ── Replay engine ────────────────────────────────────────────────────────────
 var replayGames=[], replayStep_=0, replayPlaying=false, replayTimer=null;
 var CELL_COLORS = {bg:'#2d4a3e', grid:'#3a5a4a', human:'#4fc3f7', ai:'#ef9a9a', fruit:'#ffb74d', eaten:'#555'};
-var ACTION_NAMES = {0:'None',1:'Up',2:'Right',3:'Down',4:'Left',5:'Noop',null:'—'};
+var ACTION_NAMES = {0:'Noop(Q)',1:'Up',2:'Down',3:'Left',4:'Right',5:'Load(SPACE)',null:'—'};
 var NOOP_COLOR   = '#e05050';
-var ACTION_COLORS= {0:'#888',1:'#81d4fa',2:'#81d4fa',3:'#81d4fa',4:'#81d4fa',5:NOOP_COLOR};
+var ACTION_COLORS= {0:NOOP_COLOR,1:'#81d4fa',2:'#81d4fa',3:'#81d4fa',4:'#81d4fa',5:'#81c784'};
 
 function openReplay(games, sid) {
   replayGames = games;
@@ -1078,9 +1127,9 @@ document.addEventListener('keydown',function(e){
 # ── Report ────────────────────────────────────────────────────────────────────
 
 def print_report(sessions: list[dict]) -> None:
-    flagged    = [s for s in sessions if s["status"] == "flagged"]
-    borderline = [s for s in sessions if s["status"] == "borderline"]
-    zero_score = [s for s in sessions if s["avg_score"] <= FLAG_SCORE]
+    flagged      = [s for s in sessions if s["status"] == "flagged"]
+    disqualified = [s for s in sessions if s["status"] == "disqualified"]
+    zero_score   = [s for s in sessions if s["avg_score"] <= FLAG_SCORE]
 
     print("\n" + "=" * 70)
     print("  LBF HUMAN DATA — EFFORT ANALYSIS REPORT")
@@ -1088,18 +1137,19 @@ def print_report(sessions: list[dict]) -> None:
     print(f"  Total sessions    : {len(sessions)}")
     print(f"  Total games       : {sum(s['num_games'] for s in sessions)}")
     print(f"  Zero-score sess.  : {len(zero_score)}  ({len(zero_score)/len(sessions):.1%})")
-    print(f"  Flagged           : {len(flagged)}")
-    print(f"  Borderline        : {len(borderline)}")
+    print(f"  Flagged           : {len(flagged)}  (review before using data)")
+    print(f"  Disqualified      : {len(disqualified)}  (incomplete, exclude from analysis)")
+    print(f"  OK                : {len(sessions)-len(flagged)-len(disqualified)}")
     print("=" * 70)
 
     for label, subset in [
-        ("FLAGGED — recommended for removal", flagged),
-        ("BORDERLINE — manual review suggested", borderline),
+        ("FLAGGED — review before using", flagged),
+        ("DISQUALIFIED — incomplete sessions (<8 games)", disqualified),
     ]:
         if not subset:
             continue
         print(f"\n  {label}")
-        print(f"  {'Session ID':<38} {'Games':>5} {'AvgScore':>9} {'NoopRate':>9}  Reasons")
+        print(f"  {'Session ID':<38} {'Games':>5} {'AvgScore':>9} {'IdleRate':>9}  Reasons")
         print(f"  {'-'*38} {'-'*5} {'-'*9} {'-'*9}  {'-'*30}")
         for s in sorted(subset, key=lambda x: -x["noop_rate"]):
             reasons = "; ".join(s["sus_reasons"]) if s["sus_reasons"] else "—"
