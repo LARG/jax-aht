@@ -104,8 +104,6 @@ flags low-effort or bad-faith players, and produces two interactive HTML dashboa
 ### Usage
 
 ```bash
-conda activate jax-aht
-cd ~/aht/jax-aht
 python human_data/visualize.py
 ```
 
