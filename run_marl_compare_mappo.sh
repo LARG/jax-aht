@@ -48,7 +48,7 @@ run_exp() {
 echo "Starting MAPPO Phase E Multi-Seed Comparisons (3 jobs parallel on GPUs 1,2,3 - avoid GPU 0)..."
 
 # PI seed convention: original seed 72128 → append zero + increment
-for SEED in 721280 721281 721282 721283; do
+for SEED in 72128 721280 721281 721282 721283; do
     echo "=== Running MAPPO with SEED=$SEED ==="
 
     # Batch 1: No Law (Baseline) — 3 parallel on GPUs 1,2,3 then N=5 serialized
