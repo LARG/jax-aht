@@ -9,6 +9,7 @@ import jax.nn
 import jax.numpy as jnp
 import numpy as np
 import optax
+from typing import NamedTuple
 from flax.training.train_state import TrainState
 
 from agents.mlp_actor_critic_agent import ActorWithDoubleCriticPolicy, MLPActorCriticPolicy, ActorWithConditionalCriticPolicy
@@ -144,15 +145,14 @@ def train_trajedi_partners(config, env, partner_rng):
             
             train_state_conf = init_train_states(all_conf_init_rngs)
 
-            def forward_pass_conf(params, obs, id, done, avail_actions, hstate, rng):
+            def forward_pass_conf(params, obs, done, avail_actions, hstate, rng):
                 act, val, pi, new_hstate = confederate_policy.get_action_value_policy(
                     params=params,
                     obs=obs[jnp.newaxis, ...],
                     done=done[jnp.newaxis, ...],
                     avail_actions=avail_actions,
                     hstate=hstate,
-                    rng=rng,
-                    aux_obs=id[jnp.newaxis, ...]
+                    rng=rng
                 )
                 return act, val, pi, new_hstate
 
@@ -225,8 +225,9 @@ def train_trajedi_partners(config, env, partner_rng):
                 # Agent_0 action
                 act0_rng_sp = jax.random.split(act0_rng_sp, config["NUM_CONF_ACTORS"])
                 act_0, (val_0, val_0_unused), pi_0, new_conf_h_p1 = jax.vmap(forward_pass_conf)(
-                    updated_conf_params, last_obs["agent_0"], updated_conf_onehot_ids, 
-                    last_done["agent_0"], avail_actions_0, updated_conf_h_p1, act0_rng_sp
+                    updated_conf_params, last_obs["agent_0"], 
+                    last_done["agent_0"], avail_actions_0, 
+                    updated_conf_h_p1, act0_rng_sp
                 )
                 logp_0 = pi_0.log_prob(act_0)
                 act_0, val_0, logp_0 = act_0.squeeze(), val_0.squeeze(), logp_0.squeeze()
@@ -234,8 +235,9 @@ def train_trajedi_partners(config, env, partner_rng):
                 # Agent_1 action
                 act1_rng_sp = jax.random.split(act1_rng_sp, config["NUM_CONF_ACTORS"])
                 act_1, (val_1, val_1_unused), pi_1, new_conf_h_p2 = jax.vmap(forward_pass_conf)(
-                    updated_conf_params, last_obs["agent_1"], updated_conf_onehot_ids, 
-                    last_done["agent_1"], avail_actions_1, updated_conf_h_p2, act1_rng_sp
+                    updated_conf_params, last_obs["agent_1"], 
+                    last_done["agent_1"], avail_actions_1, 
+                    updated_conf_h_p2, act1_rng_sp
                 )
                 logp_1 = pi_1.log_prob(act_1)
                 act_1, val_1, logp_1 = act_1.squeeze(), val_1.squeeze(), logp_1.squeeze()
@@ -291,8 +293,8 @@ def train_trajedi_partners(config, env, partner_rng):
 
                 new_runner_state = (all_train_state_conf, updated_conf_ids, 
                                     env_state_next, obs_next, done, new_conf_h_p1, 
-                                    last_eps_counter, last_timestep_counter,
-                                    new_conf_h_p2, rng)
+                                    new_conf_h_p2, last_eps_counter, last_timestep_counter, 
+                                    rng)
                 return new_runner_state, (transition_0, transition_1)
 
             def _env_step_confs_xp(runner_state, unused):
@@ -348,16 +350,18 @@ def train_trajedi_partners(config, env, partner_rng):
                 avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
 
                 # Agent_0 action
-                act0_rng_sp = jax.random.split(act0_rng_sp, config["NUM_CONF_ACTORS"])
+                act0_rng_xp = jax.random.split(act0_rng_xp, config["NUM_CONF_ACTORS"])
                 act_0, (val_0_unused, val_0), pi_0, new_conf_h = jax.vmap(forward_pass_conf)(
-                    updated_conf_params, last_obs["agent_0"], updated_conf_onehot_ids, 
-                    last_done["agent_0"], avail_actions_0, updated_conf_h, act0_rng_xp
+                    updated_conf_params, last_obs["agent_0"],  
+                    last_done["agent_0"], avail_actions_0,
+                    updated_conf_h, act0_rng_xp
                 )
                 logp_0 = pi_0.log_prob(act_0)
                 act_0, val_0, logp_0 = act_0.squeeze(), val_0.squeeze(), logp_0.squeeze()
 
                 # Agent_1 action
-                act1_rng_xp = jax.random.split(act1_rng_xp, config["NUM_CONF_ACTORS"])
+
+                act1_rng_xp, _ = jax.random.split(act1_rng_xp, 2)
                 act_1, val_1, pi_1, new_ego_h = ego_policy.get_action_value_policy(
                     params=train_state_ego.params,
                     obs=last_obs["agent_1"].reshape(1, config["NUM_CONF_ACTORS"], -1),
@@ -439,20 +443,8 @@ def train_trajedi_partners(config, env, partner_rng):
                 
                 # Reset the hidden states for resampled conf and br if they are not None
                 # WARNING: BRDiv was not tested with recurrent actors, so the code for if the hstate is not None may not work
-                if (last_br_h_p1 is not None):
-                    updated_br_h_p1 = jnp.where(
-                        needs_resample,
-                        init_ego_hstate_sp,
-                        last_br_h_p1
-                    )
-                    updated_br_h_p2 = jnp.where(
-                        needs_resample,
-                        init_ego_hstate_sp,
-                        last_br_h_p2
-                    )
-                else:
-                    updated_br_h_p1 = last_br_h_p1
-                    updated_br_h_p2 = last_br_h_p2
+                updated_br_h_p1 = last_br_h_p1
+                updated_br_h_p2 = last_br_h_p2
 
                 # Get available actions for agent 0 from environment state
                 avail_actions = jax.vmap(env.get_avail_actions)(env_state_br_sp.env_state)
@@ -461,7 +453,7 @@ def train_trajedi_partners(config, env, partner_rng):
                 avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
 
                 # Agent_0 action
-                act0_rng_xp = jax.random.split(act0_rng_xp, config["NUM_EGO_ACTORS"])
+                act0_rng_br_sp, _ = jax.random.split(act0_rng_br_sp, 2)
                 act_0, val_0, pi_0, new_br_h_p1 = ego_policy.get_action_value_policy(
                     params=train_state_ego.params,
                     obs=last_obs_br_sp["agent_0"].reshape(1, config["NUM_EGO_ACTORS"], -1),
@@ -474,7 +466,7 @@ def train_trajedi_partners(config, env, partner_rng):
                 act_0, val_0, logp_0 = act_0.squeeze(), val_0.squeeze(), logp_0.squeeze()
 
                 # Agent_1 action
-                act1_rng_xp = jax.random.split(act1_rng_xp, config["NUM_EGO_ACTORS"])
+                act1_rng_br_sp, _ = jax.random.split(act1_rng_br_sp, 2)
                 act_1, val_1, pi_1, new_br_h_p2 = ego_policy.get_action_value_policy(
                     params=train_state_ego.params,
                     obs=last_obs_br_sp["agent_1"].reshape(1, config["NUM_EGO_ACTORS"], -1),
@@ -512,9 +504,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     log_prob=logp_0,
                     obs=last_obs_br_sp["agent_0"],
                     info=info_0,
-                    avail_actions=avail_actions_0,
-                    episode_id=jnp.zeros_like(done["agent_0"].astype(int)),
-                    time_id=jnp.zeros_like(done["agent_0"].astype(int))
+                    avail_actions=avail_actions_0
                 )
 
                 transition_1 = TransitionEgo(
@@ -525,9 +515,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     log_prob=logp_1,
                     obs=last_obs_br_sp["agent_1"],
                     info=info_1,
-                    avail_actions=avail_actions_1,
-                    episode_id=jnp.zeros_like(done["agent_1"].astype(int)),
-                    time_id=jnp.zeros_like(done["agent_1"].astype(int))
+                    avail_actions=avail_actions_1
                 )
 
                 (
@@ -585,7 +573,7 @@ def train_trajedi_partners(config, env, partner_rng):
                         # get policy and value of confederate versus ego and best response agents respectively
 
                         _, (value_conf_sp1, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
-                            params=param,
+                            params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                             obs=traj_batch_conf_sp1.obs,
                             done=traj_batch_conf_sp1.done,
                             avail_actions=traj_batch_conf_sp1.avail_actions,
@@ -594,7 +582,7 @@ def train_trajedi_partners(config, env, partner_rng):
                         )
 
                         _, (value_conf_sp2, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
-                            params=param,
+                            params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                             obs=traj_batch_conf_sp2.obs,
                             done=traj_batch_conf_sp2.done,
                             avail_actions=traj_batch_conf_sp2.avail_actions,
@@ -603,7 +591,7 @@ def train_trajedi_partners(config, env, partner_rng):
                         )
 
                         _, (_, value_conf_xp), pi_conf_xp, _ = confederate_policy.get_action_value_policy(
-                            params=param,
+                            params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                             obs=traj_batch_conf_xp.obs,
                             done=traj_batch_conf_xp.done,
                             avail_actions=traj_batch_conf_xp.avail_actions,
@@ -616,19 +604,19 @@ def train_trajedi_partners(config, env, partner_rng):
                         log_prob_conf_xp = pi_conf_xp.log_prob(traj_batch_conf_xp.action)
 
                         is_relevant_sp1 = jnp.equal(
-                            jnp.argmax(traj_batch_conf_sp1.self_onehot_id, axis=-1),
+                            jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1),
                             agent_id
                         )
                         loss_weights_sp1 = jnp.where(is_relevant_sp1, 1, 0).astype(jnp.float32)
 
                         is_relevant_sp2 = jnp.equal(
-                            jnp.argmax(traj_batch_conf_sp2.self_onehot_id, axis=-1),
+                            jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1),
                             agent_id
                         )
                         loss_weights_sp2 = jnp.where(is_relevant_sp2, 1, 0).astype(jnp.float32)
 
                         is_relevant_xp = jnp.equal(
-                            jnp.argmax(traj_batch_conf_xp.self_onehot_id, axis=-1),
+                            jnp.argmax(traj_batch_conf_xp.agent_onehot_id, axis=-1),
                             agent_id
                         )
                         loss_weights_xp = jnp.where(is_relevant_xp, 1, 0).astype(jnp.float32)
@@ -647,16 +635,15 @@ def train_trajedi_partners(config, env, partner_rng):
                             def _compute_indiv_pol_sp_log_probs(agent_id):                    
                                 param = gather_params(train_state_conf.params, agent_id)
                                 _, (_, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
-                                    params=param,
+                                    params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                                     obs=traj_batch_conf_sp1.obs,
                                     done=traj_batch_conf_sp1.done,
                                     avail_actions=traj_batch_conf_sp1.avail_actions,
                                     hstate=init_hstate_conf_sp1,
                                     rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
                                 )
-
                                 _, (_, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
-                                    params=param,
+                                    params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                                     obs=traj_batch_conf_sp2.obs,
                                     done=traj_batch_conf_sp2.done,
                                     avail_actions=traj_batch_conf_sp2.avail_actions,
@@ -674,23 +661,27 @@ def train_trajedi_partners(config, env, partner_rng):
 
                             # pop x time x batch
                             selected_indices_sp1 = jnp.expand_dims(
-                                jnp.argmax(traj_batch_conf_sp1.self_onehot_id, axis=-1), axis=0
+                                jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1), axis=0
                             )
                             selected_indices_sp2 = jnp.expand_dims(
-                                jnp.argmax(traj_batch_conf_sp2.self_onehot_id, axis=-1), axis=0
+                                jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1), axis=0
                             )
 
-                            selected_log_probs_sp1 = jnp.take_along_axis(all_sp_log_probs_sp1, selected_indices_sp1, axis=0)
-                            selected_log_probs_sp2 = jnp.take_along_axis(all_sp_log_probs_sp2, selected_indices_sp2, axis=0)
+                            selected_log_probs_sp1 = jnp.squeeze(
+                                jnp.take_along_axis(all_sp_log_probs_sp1, selected_indices_sp1, axis=0), axis=0
+                            )
+                            selected_log_probs_sp2 = jnp.squeeze(
+                                jnp.take_along_axis(all_sp_log_probs_sp2, selected_indices_sp2, axis=0), axis=0
+                            )
 
-                            copied_episode_counters_sp1 = jnp.tile(traj_batch_conf_sp1.episode_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1)) 
-                            copied_episode_counters_sp2 = jnp.tile(traj_batch_conf_sp2.episode_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1)) 
-                            copied_timestep_counters_sp1 = jnp.tile(traj_batch_conf_sp1.time_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1)) 
-                            copied_timestep_counters_sp2 = jnp.tile(traj_batch_conf_sp2.time_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1)) 
-                            copied_all_sp_log_probs_sp1 = jnp.tile(all_sp_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1))
-                            copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1))
-                            copied_selected_sp_log_probs_sp1 = jnp.tile(selected_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1))
-                            copied_selected_sp_log_probs_sp2 = jnp.tile(selected_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1))
+                            copied_episode_counters_sp1 = jnp.tile(traj_batch_conf_sp1.episode_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1)) 
+                            copied_episode_counters_sp2 = jnp.tile(traj_batch_conf_sp2.episode_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1)) 
+                            copied_timestep_counters_sp1 = jnp.tile(traj_batch_conf_sp1.time_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1)) 
+                            copied_timestep_counters_sp2 = jnp.tile(traj_batch_conf_sp2.time_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1)) 
+                            copied_all_sp_log_probs_sp1 = jnp.tile(all_sp_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1, 1))
+                            copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1, 1))
+                            copied_selected_sp_log_probs_sp1 = jnp.tile(selected_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1))
+                            copied_selected_sp_log_probs_sp2 = jnp.tile(selected_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1))
 
                             def per_step_aggregate(
                                     all_eps_id_sp1, all_eps_id_sp2, 
@@ -739,24 +730,27 @@ def train_trajedi_partners(config, env, partner_rng):
                                 )
 
                                 # Compute mean policy trajectory log probs
-                                copied_weight_sp1 = jnp.tile(is_relevant_weight_sp1[None, ...], (config["PARTNER_POP_SIZE"], 1))
-                                copied_weight_sp2 = jnp.tile(is_relevant_weight_sp2[None, ...], (config["PARTNER_POP_SIZE"], 1))
-                                copied_mult1_weight = jnp.tile(log_mult1_weight[None, ...], (config["PARTNER_POP_SIZE"], 1))
-                                copied_mult2_weight = jnp.tile(log_mult2_weight[None, ...], (config["PARTNER_POP_SIZE"], 1))
+                                copied_weight_sp1 = jnp.tile(is_relevant_weight_sp1[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
+                                copied_weight_sp2 = jnp.tile(is_relevant_weight_sp2[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
+                                copied_mult1_weight = jnp.tile(log_mult1_weight[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
+                                copied_mult2_weight = jnp.tile(log_mult2_weight[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
 
+                                def logmeanexp(inp_array, axis=0):
+                                    return jnp.log(jnp.mean(jnp.exp(inp_array), axis=axis))
+                                
                                 traj_log_prob_sp1 = jnp.sum(all_sp_log_probs_sp1*copied_weight_sp1, axis=1)
                                 traj_log_prob_sp2 = jnp.sum(all_sp_log_probs_sp2*copied_weight_sp2, axis=1)
-                                avg_pol_traj_log_prob_sp1 = jax.nn.logmeanexp(traj_log_prob_sp1, axis=0)
-                                avg_pol_traj_log_prob_sp2 = jax.nn.logmeanexp(traj_log_prob_sp2, axis=0)
+                                avg_pol_traj_log_prob_sp1 = logmeanexp(traj_log_prob_sp1, axis=0)
+                                avg_pol_traj_log_prob_sp2 = logmeanexp(traj_log_prob_sp2, axis=0)
 
-                                log_delta_hat_t_sp1 = jax.nn.logmeanexp(
+                                log_delta_hat_t_sp1 = logmeanexp(
                                     jnp.sum(
                                         all_sp_log_probs_sp1*copied_mult1_weight,
                                         axis=1
                                     ), axis=0
                                 )
 
-                                log_delta_hat_t_sp2 = jax.nn.logmeanexp(
+                                log_delta_hat_t_sp2 = logmeanexp(
                                     jnp.sum(
                                         all_sp_log_probs_sp2*copied_mult2_weight,
                                         axis=1
@@ -899,8 +893,6 @@ def train_trajedi_partners(config, env, partner_rng):
                         return total_loss, (value_loss_conf_xp, value_loss_conf_sp1+value_loss_conf_sp2, pg_loss_conf_xp, pg_loss_conf_sp1+pg_loss_conf_sp2, entropy_conf_xp, entropy_conf_sp1+entropy_conf_sp2, trajedi_loss_sp1+trajedi_loss_sp2)
 
 
-                    all_possible_probs = jax.vmap(gather_conf_params_and_return_grads)(possible_agent_ids)
-                    possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
                     grad_fn = jax.value_and_grad(_loss_fn_policy, has_aux=True)
 
                     def gather_conf_params_and_return_grads(agent_id):
@@ -914,6 +906,7 @@ def train_trajedi_partners(config, env, partner_rng):
                         )
                         return (loss_val_conf, aux_vals_conf), grads_conf
 
+                    possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
                     (loss_val_conf, aux_vals_conf), grads_conf = jax.vmap(gather_conf_params_and_return_grads)(possible_agent_ids)
                     grads_conf_new = jax.tree.map(lambda x: jnp.squeeze(x, 1), grads_conf)
                     train_state_conf = train_state_conf.apply_gradients(grads=grads_conf_new)
@@ -966,6 +959,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy
                             return total_loss, (value_loss, pg_loss, entropy)
                         
+                        print(init_conf_hstate_xp, init_hstate_ego_sp1, init_hstate_ego_sp2)
                         xp_total_loss, (xp_value_loss, xp_pg_loss, xp_entropy) = compute_single_minibatch_loss(
                             init_hstate_ego_xp, traj_batch_ego_xp, advantages_xp, returns_xp
                         )
@@ -1005,9 +999,9 @@ def train_trajedi_partners(config, env, partner_rng):
                     rng_conf, rng_br
                 ) = update_state
 
-                init_hstate_conf = ego_policy.init_hstate(config["NUM_CONF_ACTORS"])
-                init_hstate_br_xp = confederate_policy.init_hstate(config["NUM_CONF_ACTORS"])
-                init_hstate_br_sp = confederate_policy.init_hstate(config["NUM_EGO_ACTORS"])
+                init_hstate_conf = confederate_policy.init_hstate(config["NUM_CONF_ACTORS"])
+                init_hstate_br_xp = ego_policy.init_hstate(config["NUM_CONF_ACTORS"])
+                init_hstate_br_sp = ego_policy.init_hstate(config["NUM_EGO_ACTORS"])
 
                 rng_conf, perm_rng_conf_sp1, perm_rng_conf_sp2, perm_rng_conf_xp = jax.random.split(rng_conf, 4)
                 rng_br, perm_rng_br_sp1, perm_rng_br_sp2, perm_rng_br_xp = jax.random.split(rng_br, 4)
@@ -1095,6 +1089,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     last_conf_h_sp_p2, last_eps_counter, 
                     last_timestep_counter, rng_conf
                 )
+
                 runner_state_conf_sp, (traj_batch_conf_p0, traj_batch_conf_p1) = jax.lax.scan(
                     _env_step_confs_sp, runner_state_conf_sp, None, config["ROLLOUT_LENGTH"])
                 (
@@ -1138,15 +1133,15 @@ def train_trajedi_partners(config, env, partner_rng):
                     '''Value_idx argument is to support the ActorWithDoubleCritic (confederate) policy, which
                     has two value heads. Value head 0 models the ego agent while value head 1 models the best response.'''
                     avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)[agent_name].astype(jnp.float32)
-                    specific_policy_params = gather_params(policy_params.params, last_conf_ids)
-                    _, vals, _, _ = confederate_policy.get_action_value_policy(
-                        params=specific_policy_params,
-                        obs=last_obs[agent_name].reshape(1, batch_size, -1),
-                        done=last_dones[agent_name].reshape(1, batch_size),
-                        avail_actions=jax.lax.stop_gradient(avail_actions),
-                        hstate=policy_hstate,
-                        rng=jax.random.PRNGKey(0)  # dummy key as we don't sample actions
+                    rng_key = jax.random.PRNGKey(0)  # dummy key as we don't sample actions
+                    rng_keys = jax.random.split(rng_key, last_obs[agent_name].shape[0])
+                    specific_policy_params = gather_params(policy_params, last_conf_ids)
+                    _, vals, _, _ = jax.vmap(forward_pass_conf)(
+                        specific_policy_params, last_obs[agent_name], 
+                        last_dones[agent_name], jax.lax.stop_gradient(avail_actions), 
+                        policy_hstate, rng_keys  # dummy key as we don't sample actions
                     )
+                
                     if value_idx is None:
                         last_val = vals.squeeze()
                     else:
@@ -1159,9 +1154,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     '''Value_idx argument is to support the ActorWithDoubleCritic (confederate) policy, which
                     has two value heads. Value head 0 models the ego agent while value head 1 models the best response.'''
                     avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)[agent_name].astype(jnp.float32)
-                    specific_policy_params = gather_params(policy_params.params, last_conf_ids)
                     _, vals, _, _ = ego_policy.get_action_value_policy(
-                        params=specific_policy_params,
+                        params=policy_params,
                         obs=last_obs[agent_name].reshape(1, batch_size, -1),
                         done=last_dones[agent_name].reshape(1, batch_size),
                         avail_actions=jax.lax.stop_gradient(avail_actions),
@@ -1302,6 +1296,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     eval_info_ego
                 ) = state_with_ckpt
 
+
                 # Single PPO update
                 (new_runner_state, metric) = _update_step(
                     (
@@ -1381,11 +1376,11 @@ def train_trajedi_partners(config, env, partner_rng):
                 def skip_ckpt(args):
                     return args
 
-                (checkpoint_array_and_infos, rng_ego, ckpt_idx) = jax.lax.cond(
+                (checkpoint_array_and_infos, rng_br, ckpt_idx) = jax.lax.cond(
                     to_store,
                     store_and_eval_ckpt,
                     skip_ckpt,
-                    ((checkpoint_array_conf, checkpoint_array_ego, eval_info_ego), rng_ego, ckpt_idx)
+                    ((checkpoint_array_conf, checkpoint_array_ego, eval_info_ego), rng_br, ckpt_idx)
                 )
                 checkpoint_array_conf, checkpoint_array_ego, ep_info_ego = checkpoint_array_and_infos
                 metric["eval_ep_last_info_ego"] = ep_info_ego
