@@ -482,7 +482,7 @@ def build_html(sessions: list[dict], generated: str) -> str:
             f'        <div style="font-size:11.5px;color:{e(s_rt_col)};margin-top:4px">'
             f'&#9201; Median reaction time: <strong>{e(s_rt_disp)}</strong>'
             f' &nbsp;&#183;&nbsp; 10th pct: <strong>{e(s_p10_disp)}</strong>'
-            f'{" &nbsp;<span style=\"color:#e05050;font-weight:700\">&#9888; suspiciously fast (p10 &lt; 150ms)</span>" if s_rt_warn else ""}'
+            f'{"" if not s_rt_warn else " &nbsp;<span style=&#39;color:#e05050;font-weight:700&#39;>&#9888; suspiciously fast (p10 &lt; 150ms)</span>"}'
             f'        </div>'
             f'      </div>'
             f'      {detail_tbl}'
