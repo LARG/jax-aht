@@ -219,7 +219,7 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
         xs = [p[0] for p in self._node_positions.values()] or [0.0]
         ys = [p[1] for p in self._node_positions.values()] or [0.0]
         pad = 0.9
-        ax.set_xlim(min(xs) - pad, max(xs) + pad + 2.6)
+        ax.set_xlim(min(xs) - pad, max(xs) + pad + 2.15)
         ax.set_ylim(min(ys) - pad, max(ys) + pad)
         ax.set_aspect("equal")
         ax.axis("off")
@@ -227,21 +227,48 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
         return fig, ax
 
     def render_edges(self):
+        edge_set = set(self._nonfluents_layout["connected"])
+        node_radius = 0.22
+
         for src, dst in self._nonfluents_layout["connected"]:
             if src not in self._node_positions or dst not in self._node_positions:
                 continue
+
             x0, y0 = self._node_positions[src]
             x1, y1 = self._node_positions[dst]
+
+            dx = x1 - x0
+            dy = y1 - y0
+            dist = math.hypot(dx, dy)
+            if dist < 1e-8:
+                continue
+
+            ux = dx / dist
+            uy = dy / dist
+
+            # Start/end on node boundaries so arrowheads are visible and directional.
+            sx = x0 + ux * (node_radius + 0.03)
+            sy = y0 + uy * (node_radius + 0.03)
+            ex = x1 - ux * (node_radius + 0.04)
+            ey = y1 - uy * (node_radius + 0.04)
+
+            # If both directions exist, curve opposite directions so arrows are distinct.
+            reverse_exists = (dst, src) in edge_set
+            if reverse_exists:
+                rad = 0.18 if src < dst else -0.18
+            else:
+                rad = 0.0
+
             arrow = mpatches.FancyArrowPatch(
-                (x0, y0),
-                (x1, y1),
+                (sx, sy),
+                (ex, ey),
                 arrowstyle="-|>",
-                mutation_scale=12,
-                linewidth=1.6,
-                color="#8C8C8C",
-                alpha=0.65,
+                mutation_scale=18,
+                linewidth=2.0,
+                color="#5C5C5C",
+                alpha=0.9,
                 zorder=1,
-                connectionstyle="arc3,rad=0.08",
+                connectionstyle=f"arc3,rad={rad}",
             )
             self._ax.add_patch(arrow)
 
@@ -385,8 +412,8 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
 
         self._ax.legend(
             handles=legend_elements,
-            loc="upper left",
-            bbox_to_anchor=(1.02, 1.0),
+            loc="upper right",
+            bbox_to_anchor=(0.98, 0.98),
             fontsize=self._fontsize - 1,
             frameon=True,
         )
@@ -416,8 +443,8 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
                 status_lines.append(f"  event={meta}")
 
         self._ax.text(
-            1.02,
-            0.5,
+            0.67,
+            0.52,
             "\n".join(status_lines),
             transform=self._ax.transAxes,
             fontsize=self._fontsize,

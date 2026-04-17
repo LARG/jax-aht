@@ -40,7 +40,7 @@ name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.ACTOR_TYPE}/${label}
 # WandB Params
 logger:
   project: stochastic-policies-jax
-  entity: social-laws-project
+  entity: tylerblee9
   tags:
     - ${algorithm.ALG}
     - ${TASK_NAME}
