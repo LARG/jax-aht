@@ -301,6 +301,9 @@ def compute_session_stats(episodes: list[dict]) -> list[dict]:
             "any_loop":      any_loop,
             "short_games":   short_games,
             "zero_games":    zero_games,
+            "median_rt_ms":  session_median_rt,
+            "pct10_rt_ms":   session_pct10_rt,
+            "rt_suspicious": rt_suspicious,
             "sus_reasons":   sus_reasons,
             "status":        status,
             "game_details":  game_details,
@@ -394,6 +397,7 @@ def render_game_detail_table(games: list[dict]) -> str:
             f'<td>{gm["steps"]}</td>'
             f'<td>{dur_s}</td>'
             f'<td style="color:{rt_color};font-weight:bold">{e(rt_str)}</td>'
+            f'<td>{e(gm.get("agent_type", "—"))}</td>'
             f'<td>{e(gm["grid_size"])}×{e(gm["grid_size"])}, {e(gm["num_fruits"])} fruits</td>'
             f'</tr>'
         )
@@ -402,7 +406,7 @@ def render_game_detail_table(games: list[dict]) -> str:
         '<thead><tr>'
         '<th>#</th><th>Score</th><th>Idle rate</th>'
         '<th>Breakdown (Q presses / wasted SPACE)</th>'
-        '<th>Steps</th><th>Duration</th><th>Median RT</th><th>Config</th>'
+        '<th>Steps</th><th>Duration</th><th>Median RT</th><th>Agent type</th><th>Config</th>'
         '</tr></thead>'
         f'<tbody>{"".join(rows)}</tbody>'
         '</table>'
