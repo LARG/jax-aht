@@ -32,6 +32,7 @@ dependencies = [
     "orbax-export==0.0.6",
     # Core dependencies
     "numpy",
+    "pandas<=2.3.3",
     "gymnax",
     "distrax",
     "safetensors",
