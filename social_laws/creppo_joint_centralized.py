@@ -911,7 +911,7 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         for stat_name, stat_data in train_stats.items():
             # second dimension contains the mean and std of the metric
             stat_mean = stat_data[step, 0]
-            logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{stat_name}", stat_mean, train_step=step, commit=True)
+            logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/{stat_name}", stat_mean, train_step=step, commit=True)
 
         logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}Return", average_agent_case_rets_per_iter[step], train_step=step, commit=True)
         logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}Return", average_ckpt_case_rets_per_iter[step], train_step=step, commit=True)
@@ -930,13 +930,13 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
             logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalCollisions", average_ckpt_optimal_collisions_per_iter[step], train_step=step, commit=True)
 
         # Log centralized joint policy metrics
-        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/AlphaLoss", avg_alpha_loss[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Alpha", avg_alpha[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/KL", avg_kl[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Entropy", avg_entropy[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/CriticLoss", avg_critic_loss[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/QValueMean", avg_q_values[step], train_step=step, commit=True)
-        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/QValueError", avg_q_error[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/AlphaLoss", avg_alpha_loss[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Alpha", avg_alpha[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/KL", avg_kl[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Entropy", avg_entropy[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/CriticLoss", avg_critic_loss[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/QValueMean", avg_q_values[step], train_step=step, commit=True)
+        logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/QValueError", avg_q_error[step], train_step=step, commit=True)
         logger.commit()
 
     # Saving artifacts
@@ -971,9 +971,9 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
                     path=os.path.join(optimal_env._render_dir, "Optimal", f"{optimal_env._render_name}_ep_{eval_ep}.gif")
                 )
 
-    out_savepath = save_train_run(train_out, savedir, savename=f"CREPPO_Joint_Agent_{agent_idx + 1}_Optimize_Train_Run")
+    out_savepath = save_train_run(train_out, savedir, savename=f"CREPPO_Joint_Agent_{agent_idx + 1}_Optimize_Train_Run-{case_name}")
     if config["logger"]["log_train_out"]:
-        logger.log_artifact(name=f"CREPPO_Joint_Agent_{agent_idx + 1}_Optimize_Train_Run", path=out_savepath, type_name="joint_train_run")
+        logger.log_artifact(name=f"CREPPO_Joint_Agent_{agent_idx + 1}_Optimize_Train_Run-{case_name}", path=out_savepath, type_name="joint_train_run")
 
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)

@@ -975,10 +975,10 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         for stat_name, stat_data in train_stats.items():
             # second dimension contains the mean and std of the metric
             stat_mean = stat_data[step, 0]
-            logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{stat_name}", stat_mean, train_step=step, commit=True)
+            logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/{stat_name}", stat_mean, train_step=step, commit=True)
 
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}Return", average_agent_case_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}Return", average_ckpt_case_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Return", average_agent_case_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}/Return", average_ckpt_case_rets_per_iter[step], train_step=step, commit=True)
 
         if config["algorithm"]["WORST_CASE"]:
             logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalReturn", average_agent_optimal_rets_per_iter[step], train_step=step, commit=True)
@@ -987,8 +987,8 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
             logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointAlphaReturn", average_ckpt_alpha_rets_per_iter[step], train_step=step, commit=True)
 
         if has_collisions:
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}Collisions", average_agent_case_collisions_per_iter[step], train_step=step, commit=True)
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}Collisions", average_ckpt_case_collisions_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Collisions", average_agent_case_collisions_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}/Collisions", average_ckpt_case_collisions_per_iter[step], train_step=step, commit=True)
 
             if config["algorithm"]["WORST_CASE"]:
                 logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalCollisions", average_agent_optimal_collisions_per_iter[step], train_step=step, commit=True)
@@ -1005,7 +1005,7 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
                 logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimal/LawActivations", avg_ckpt_opt_law_per_iter[step], train_step=step, commit=True)
 
         for i in range(num_agents_log):
-            prefix = f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Agent_{i + 1}"
+            prefix = f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Agent_{i + 1}"
             logger.log_item(f"{prefix}/AlphaLoss", avg_per_agent_alpha_losses[i][step], train_step=step, commit=True)
             logger.log_item(f"{prefix}/Alpha", avg_per_agent_alpha[i][step], train_step=step, commit=True)
             logger.log_item(f"{prefix}/KL", avg_per_agent_kl[i][step], train_step=step, commit=True)
