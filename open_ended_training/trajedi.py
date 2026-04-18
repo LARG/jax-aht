@@ -959,7 +959,6 @@ def train_trajedi_partners(config, env, partner_rng):
                             total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy
                             return total_loss, (value_loss, pg_loss, entropy)
                         
-                        print(init_conf_hstate_xp, init_hstate_ego_sp1, init_hstate_ego_sp2)
                         xp_total_loss, (xp_value_loss, xp_pg_loss, xp_entropy) = compute_single_minibatch_loss(
                             init_hstate_ego_xp, traj_batch_ego_xp, advantages_xp, returns_xp
                         )
@@ -1364,12 +1363,11 @@ def train_trajedi_partners(config, env, partner_rng):
                         )
                         return ep_infos
             
-                    last_ep_info_with_ego = run_all_episodes_xp(eval_rng, env,
-                        agent_0_param=all_train_state_conf.params, agent_0_policy=confederate_policy,
-                        agent_1_param=train_state_ego.params, agent_1_policy=ego_policy,
-                        max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]
+                    last_ep_info_with_ego = run_all_episodes_xp(
+                        eval_rng,
+                        all_train_state_conf, 
+                        train_state_ego
                     )
-                    
 
                     return ((new_ckpt_arr_conf, new_ckpt_arr_ego, last_ep_info_with_ego), rng, cidx + 1)
 
@@ -1633,4 +1631,4 @@ def run_trajedi(config, wandb_logger):
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
     log_metrics(config, wandb_logger, outs, metric_names)
 
-    return ego_policy, outs["final_params_ego"], init_ego_params
+    return ego_policy, outs["final_params_br"], init_ego_params
