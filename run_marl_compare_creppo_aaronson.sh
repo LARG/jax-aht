@@ -1,7 +1,5 @@
 #!/bin/bash
-# CREPPO Multi-Seed Resume — aaronson A100s
-# Runs the 4 missing variance seeds (721280-721283) for all 8 conditions
-# Seeds 721280, 721281, 721282, 721283 across no_law and law variants N=2,3,4,5
+# CREPPO Missing-Seed Resume
 
 mkdir -p logs
 
@@ -47,32 +45,34 @@ run_exp() {
 }
 
 echo "========================================"
-echo "CREPPO Multi-Seed Resume — aaronson A100"
-echo "Seeds: 721280, 721281, 721282, 721283"
+echo "CREPPO Missing-Seed Resume — aaronson A100"
+echo "No-Law missing: 721282, 721283"
+echo "Law missing:    721281, 721282, 721283"
 echo "========================================"
 
-for SEED in 721280 721281 721282 721283; do
+# ── No Law: seeds 721282 and 721283 ──────────────────────────────────────────
+for SEED in 721282 721283; do
     echo ""
-    echo "=== SEED=$SEED ==="
-
-    # Batch 1: No Law — all 4 N in parallel across GPUs 0,1,2,3
-    echo ">> Batch 1: No Law (N=2,3,4,5) in parallel"
+    echo "=== NO-LAW SEED=$SEED ==="
     run_exp 0 continuous/coop_recon_compare_no_law_2_agent 2 creppo_no_law_2_agent $SEED
     run_exp 1 continuous/coop_recon_compare_no_law_3_agent 3 creppo_no_law_3_agent $SEED
     run_exp 2 continuous/coop_recon_compare_no_law_4_agent 4 creppo_no_law_4_agent $SEED
     run_exp 3 continuous/coop_recon_compare_no_law_5_agent 5 creppo_no_law_5_agent $SEED
     wait
-    echo "=== Seed $SEED Batch 1 (No Law) complete! ==="
+    echo "=== No-Law Seed $SEED complete! ==="
+done
 
-    # Batch 2: Law — all 4 N in parallel across GPUs 0,1,2,3
-    echo ">> Batch 2: Law (N=2,3,4,5) in parallel"
+# ── Law: seeds 721281, 721282, 721283 ────────────────────────────────────────
+for SEED in 721281 721282 721283; do
+    echo ""
+    echo "=== LAW SEED=$SEED ==="
     run_exp 0 continuous/coop_recon_compare_law_2_agent 2 creppo_law_2_agent $SEED
     run_exp 1 continuous/coop_recon_compare_law_3_agent 3 creppo_law_3_agent $SEED
     run_exp 2 continuous/coop_recon_compare_law_4_agent 4 creppo_law_4_agent $SEED
     run_exp 3 continuous/coop_recon_compare_law_5_agent 5 creppo_law_5_agent $SEED
     wait
-    echo "=== Seed $SEED complete! ==="
+    echo "=== Law Seed $SEED complete! ==="
 done
 
 echo ""
-echo "All CREPPO multi-seed runs complete!"
+echo "All missing CREPPO seeds complete!"
