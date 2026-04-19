@@ -2,7 +2,7 @@
 
 # Algorithm to run
 algo="ippo"
-label="val_teammates"
+label="eval_teammates"
 num_seeds=3
 seed=39852
 wandb_mode="online"

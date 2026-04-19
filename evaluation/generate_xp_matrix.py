@@ -46,6 +46,8 @@ def heldout_crossplay(config, env, rng, num_episodes, heldout_agents, br_agents)
     
     # Double for loop implementation is necessary because the heldout agents have heterogeneous policy and 
     # param structures. 
+    warned_missing_row_bounds = set()
+
     for i in range(num_heldout_agents):
         heldout_agent1 = heldout_agent_list[i]
         policy1, param1, test_mode1, performance_bounds1 = heldout_agent1
@@ -65,27 +67,20 @@ def heldout_crossplay(config, env, rng, num_episodes, heldout_agents, br_agents)
             eval_metrics = eval_pair_fn(rng2, policy1, param1, test_mode1, policy2, param2, test_mode2)
 
             if config["global_heldout_settings"]["NORMALIZE_RETURNS"]:
-                if performance_bounds1 is not None and performance_bounds2 is not None:
-                    merged_perf_bounds = merge_performance_bounds(performance_bounds1, performance_bounds2)
-                    eval_metrics = normalize_metrics(eval_metrics, merged_perf_bounds)
-                else:
-                    print(f"Warning: no performance bounds provided for {heldout_agent_names[i]} and {br_agent_names[j]}. Skipping normalization.")
+                # XP row normalization: use the heldout-row agent bounds only.
+                if performance_bounds1 is not None:
+                    eval_metrics = normalize_metrics(eval_metrics, performance_bounds1)
+                elif heldout_agent_names[i] not in warned_missing_row_bounds:
+                    print(
+                        f"Warning: missing row performance bounds for {heldout_agent_names[i]}; "
+                        "skipping normalization for this entire row."
+                    )
+                    warned_missing_row_bounds.add(heldout_agent_names[i])
 
             partner_i_metrics.append(eval_metrics)
 
         all_metrics.append(tree_stack(partner_i_metrics))    
     return tree_stack(all_metrics)
-
-def merge_performance_bounds(perf_bounds1, perf_bounds2):
-    '''Merge two performance bounds dictionaries.
-    We take the min of the lower bounds and the min of the upper bounds.
-    '''
-    merged_perf_bounds = {}
-    for k, v in perf_bounds1.items():
-        lower1, upper1 = v[0], v[1]
-        lower2, upper2 = perf_bounds2[k][0], perf_bounds2[k][1]
-        merged_perf_bounds[k] = [min(lower1, lower2), max(upper1, upper2)]
-    return merged_perf_bounds
 
 def run_heldout_xp_evaluation(config, print_metrics=False):
     '''Run heldout evaluation'''
