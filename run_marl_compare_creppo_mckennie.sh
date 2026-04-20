@@ -1,14 +1,13 @@
 #!/bin/bash
-# CREPPO Full Rerun — mckennie (run_w_best_case)
+# CREPPO Full Rerun w/ Best Case — mckennie (all 4 A100s)
 #
-# All seeds must be rerun with run_w_best_case.py (trains both worst-case
-# AND best-case joint policies, required for alpha comparison).
+# Uses run_w_best_case.py which trains:
+#   1. SAP (single-agent projections, worst-case)
+#   2. Worst-case joint policy
+#   3. Best-case joint policy  ← new, required for alpha comparison
 #
-# Seeds to run: 42, 721280, 721281, 721282, 721283
-# Conditions:   no_law and law, N=2,3,4,5
-#
-# GPU layout: adjust sub-batches below after checking nvidia-smi on mckennie.
-# Default: uses GPUs 0 and 1 (update GPU count if more are free).
+# Seeds: 42, 721280, 721281, 721282, 721283
+# Conditions: no_law and law, N=2,3,4,5
 
 mkdir -p logs
 
@@ -58,23 +57,17 @@ run_cond() {
     local LABEL_PREFIX=$2  # e.g. "creppo_no_law"
     local SEED=$3
 
-    # Sub-batch A: N=2 on GPU 0, N=3 on GPU 1
-    echo "  >> Sub-batch A: N=2,3 in parallel"
+    # All 4 N-values in parallel across all 4 GPUs
     run_exp 0 continuous/${TASK_PREFIX}_2_agent 2 ${LABEL_PREFIX}_2_agent $SEED
     run_exp 1 continuous/${TASK_PREFIX}_3_agent 3 ${LABEL_PREFIX}_3_agent $SEED
+    run_exp 2 continuous/${TASK_PREFIX}_4_agent 4 ${LABEL_PREFIX}_4_agent $SEED
+    run_exp 3 continuous/${TASK_PREFIX}_5_agent 5 ${LABEL_PREFIX}_5_agent $SEED
     wait
-    echo "  Sub-batch A (N=2,3) done for seed=$SEED"
-
-    # Sub-batch B: N=4 on GPU 0, N=5 on GPU 1
-    echo "  >> Sub-batch B: N=4,5 in parallel"
-    run_exp 0 continuous/${TASK_PREFIX}_4_agent 4 ${LABEL_PREFIX}_4_agent $SEED
-    run_exp 1 continuous/${TASK_PREFIX}_5_agent 5 ${LABEL_PREFIX}_5_agent $SEED
-    wait
-    echo "  Sub-batch B (N=4,5) done for seed=$SEED"
+    echo "  All N done for seed=$SEED"
 }
 
 echo "========================================================"
-echo "CREPPO Full Rerun w/ Best Case — mckennie"
+echo "CREPPO Full Rerun w/ Best Case — mckennie (4x A100)"
 echo "Entry point: social_laws/run_w_best_case.py"
 echo "Seeds: 42, 721280, 721281, 721282, 721283"
 echo "Conditions: no_law + law, N=2,3,4,5"
