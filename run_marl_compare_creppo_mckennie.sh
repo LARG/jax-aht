@@ -47,7 +47,7 @@ run_exp() {
         logger.project=aht-benchmark \
         logger.entity=jeffreychen287-the-university-of-texas-at-austin \
         logger.mode=online \
-        +algorithm.ALPHA_VERIFICATION=false \
+        algorithm.ALPHA_VERIFICATION=false \
         >> logs/${LABEL}_seed${SEED}.out 2>&1 &
     echo "    PID=$! | log: logs/${LABEL}_seed${SEED}.out"
 }
