@@ -6,8 +6,9 @@
 #   2. Worst-case joint policy
 #   3. Best-case joint policy  ← new, required for alpha comparison
 #
-# Seeds: 42, 721280, 721281, 721282, 721283
+# Seeds: 42, 72128, 721280, 721281, 721282, 721283
 # Conditions: no_law and law, N=2,3,4,5
+
 
 mkdir -p logs
 
@@ -69,12 +70,12 @@ run_cond() {
 echo "========================================================"
 echo "CREPPO Full Rerun w/ Best Case — mckennie (4x A100)"
 echo "Entry point: social_laws/run_w_best_case.py"
-echo "Seeds: 42, 721280, 721281, 721282, 721283"
+echo "Seeds: 42, 72128, 721280, 721281, 721282, 721283"
 echo "Conditions: no_law + law, N=2,3,4,5"
 echo "========================================================"
 
 # ── No Law ───────────────────────────────────────────────────────────────────
-for SEED in 42 721280 721281 721282 721283; do
+for SEED in 42 72128 721280 721281 721282 721283; do
     echo ""
     echo "=== NO-LAW SEED=$SEED ==="
     run_cond "coop_recon_compare_no_law" "creppo_no_law" $SEED
@@ -82,7 +83,7 @@ for SEED in 42 721280 721281 721282 721283; do
 done
 
 # ── Law ──────────────────────────────────────────────────────────────────────
-for SEED in 42 721280 721281 721282 721283; do
+for SEED in 42 72128 721280 721281 721282 721283; do
     echo ""
     echo "=== LAW SEED=$SEED ==="
     run_cond "coop_recon_compare_law" "creppo_law" $SEED
