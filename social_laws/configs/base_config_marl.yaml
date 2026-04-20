@@ -10,6 +10,8 @@ ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
 TASK_NAME: ${task.TASK_NAME}
 NUM_EVAL_EPISODES: ${task.NUM_EVAL_EPISODES}
 
+NUM_EXPT_AGENTS: 2
+
 # partner configs are specified in each algorithm _base_ config file
 # note that ppo_ego and ppo_br support different types of partner configs
 algorithm:
@@ -23,6 +25,7 @@ algorithm:
   ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
 
 label: "default_label"
+social_law_label: null # if not null, this will be added as a tag in WandB and appended to the name.
 name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.ACTOR_TYPE}/${label}
 
 # WandB Params
@@ -33,6 +36,8 @@ logger:
     - ${algorithm.ALG}
     - ${TASK_NAME}
     - ${label}
+    - ${NUM_EXPT_AGENTS} agents
+    - ${social_law_label} # Must be last tag in the list since it may be popped if null.
   mode: online # options: online, offline, disabled
   verbose: false
   log_train_out: false # whether to log the out dictionary

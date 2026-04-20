@@ -31,6 +31,8 @@ ANNEAL_LR: false # LR_LINEAR_DECAY
 FIXED_EVAL: false
 TRAIN_EVAL: true
 
+CENTRALIZED: false
+
 WORST_CASE: true
 
 JOINT_USE_FULL_OBS: true

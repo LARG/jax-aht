@@ -63,6 +63,10 @@ def run_training(cfg):
             cfg.task.ENV_KWARGS.single_task_seed = cfg.algorithm.TRAIN_SEED
 
     print(OmegaConf.to_yaml(cfg, resolve=True))
+    if cfg['social_law_label'] is None:
+        cfg['logger']['tags'].pop()
+    if cfg["algorithm"]["CENTRALIZED"]:
+        cfg['logger']['tags'].append("centralized")
     wandb_logger = Logger(cfg)
 
     agent_policies = []

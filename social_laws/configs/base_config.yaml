@@ -35,6 +35,7 @@ value_function:
   ALPHA_COST: ${task.ALPHA_COST}
 
 label: "default_label"
+social_law_label: null # if not null, this will be added as a tag in WandB and appended to the name.
 name: ${TASK_NAME}/${algorithm.ALG}_${algorithm.ACTOR_TYPE}/${label}
 
 # WandB Params
@@ -45,6 +46,8 @@ logger:
     - ${algorithm.ALG}
     - ${TASK_NAME}
     - ${label}
+    - ${NUM_EXPT_AGENTS} agents
+    - ${social_law_label} # Must be last tag in the list since it may be popped if null.
   mode: online # options: online, offline, disabled
   verbose: false
   log_train_out: false # whether to log the out dictionary
