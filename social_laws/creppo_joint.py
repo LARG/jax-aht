@@ -17,6 +17,8 @@ import logging
 from copy import deepcopy
 from functools import partial
 
+from setuptools import config
+
 import distrax
 import jax
 import jax.numpy as jnp
@@ -258,7 +260,10 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
 
                 info = jax.tree_util.tree_map_with_path(partial(filter_agent_info, idx=agent_idx), info)
 
-                negative_reward = get_agent_data(reward, agent_idx) * -1
+                if config["WORST_CASE"]:
+                    case_reward = get_agent_data(reward, agent_idx) * -1
+                else:
+                    case_reward = get_agent_data(reward, agent_idx)
 
                 # Next values - per agent
                 next_avail_actions = env.get_avail_actions(env_state_next.env_state)
@@ -311,7 +316,7 @@ def train_creppo_joint_agents(config, env, optimal_env, train_rng,
                             obs=get_agent_data(prev_full_obs, i) if config["JOINT_USE_FULL_OBS"] else get_agent_data(prev_obs, i),
                             action=acts[i],
                             action_logp=entropy,
-                            reward=negative_reward,
+                            reward=case_reward,
                             done=get_agent_data(done_next, i),
                             avail_actions=optimal_restricted_avail_actions[i],
                             next_obs=get_agent_data(obs_full_next, i) if config["JOINT_USE_FULL_OBS"] else get_agent_data(obs_next, i),
@@ -775,14 +780,15 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     '''
     algorithm_config = dict(config["algorithm"])
 
-    VMIN = algorithm_config["VMIN"]
-    VMAX = algorithm_config["VMAX"]
+    if config["algorithm"]["WORST_CASE"]:
+        VMIN = algorithm_config["VMIN"]
+        VMAX = algorithm_config["VMAX"]
 
-    algorithm_config = algorithm_config.copy()
-    algorithm_config["VMIN"] = algorithm_config.get("JOINT_VMIN", VMAX * -1)
-    algorithm_config["VMAX"] = algorithm_config.get("JOINT_VMAX", VMIN * -1)
+        algorithm_config = algorithm_config.copy()
+        algorithm_config["VMIN"] = algorithm_config.get("JOINT_VMIN", VMAX * -1)
+        algorithm_config["VMAX"] = algorithm_config.get("JOINT_VMAX", VMIN * -1)
 
-    # algorithm_config["TARGET_ENTROPY_MULT"] = algorithm_config["TARGET_ENTROPY_MULT"] * -1
+        # algorithm_config["TARGET_ENTROPY_MULT"] = algorithm_config["TARGET_ENTROPY_MULT"] * -1
 
     # Create only one environment instance
     env_kwargs = dict(algorithm_config["ENV_KWARGS"])
@@ -840,7 +846,10 @@ def run_training(config, wandb_logger, optimal_params, optimal_policies,
     log.info(f"Starting CREPPO joint logging optimizing for agent {agent_idx}...")
     start_time = time.perf_counter()
     # metric_names = get_metric_names(config["ENV_NAME"])
-    metric_names = get_metric_names(f"social_laws_joint-{config['ENV_NAME']}")
+    if config["algorithm"]["WORST_CASE"]:
+        metric_names = get_metric_names(f"social_laws_joint-{config['ENV_NAME']}_worst_case")
+    else:
+        metric_names = get_metric_names(f"{config['ENV_NAME']}")
     log_metrics(env, optimal_env, config, out, wandb_logger, metric_names, agent_idx)
     elapsed_time = time.perf_counter() - start_time
     hours, rem = divmod(elapsed_time, 3600)
@@ -869,7 +878,11 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
     train_metrics = train_out["metrics"]
 
     # Add additional metrics for logging
-    train_metrics["returned_episode_minimized_returns"] = train_metrics["returned_episode_returns"].clone() * -1
+    if config["algorithm"]["WORST_CASE"]:
+        train_metrics["returned_episode_minimized_returns"] = train_metrics["returned_episode_returns"].clone() * -1
+        case_name = "WorstCase"
+    else:
+        case_name = "BestCase"
 
     #### Extract train metrics ####
     train_stats = get_stats(train_metrics, metric_names)
@@ -897,40 +910,40 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
     # Eval metrics include worst-case returns and optimal returns, which we can use to compute alpha-returns.
     # Process these metrics by averaging across train seeds and eval episodes for each checkpoint, then
     # compute alpha-returns using the formula: alpha_return = worst_case_return / optimal_return.
-    all_ckpt_worst_case_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_worst_case_returns = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-    all_ckpt_worst_case_returns = all_ckpt_worst_case_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
-    all_worst_case_returns = all_worst_case_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    all_ckpt_case_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_case_returns = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+    all_ckpt_case_returns = all_ckpt_case_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
+    all_case_returns = all_case_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_ckpt_optimal_returns = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_optimal_returns = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_returns"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
     all_ckpt_optimal_returns = all_ckpt_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
     all_optimal_returns = all_optimal_returns[:, :, :, agent_idx] # shape (n_train_seeds, num_updates, num_eval_episodes)
 
-    average_ckpt_worst_case_rets_per_iter = np.mean(all_ckpt_worst_case_returns, axis=(0, 2)) # shape (num_updates,)
-    average_agent_worst_case_rets_per_iter = np.mean(all_worst_case_returns, axis=(0, 2)) # shape (num_updates,)
+    average_ckpt_case_rets_per_iter = np.mean(all_ckpt_case_returns, axis=(0, 2)) # shape (num_updates,)
+    average_agent_case_rets_per_iter = np.mean(all_case_returns, axis=(0, 2)) # shape (num_updates,)
     average_ckpt_optimal_rets_per_iter = np.mean(all_ckpt_optimal_returns, axis=(0, 2)) # shape (num_updates,)
     average_agent_optimal_rets_per_iter = np.mean(all_optimal_returns, axis=(0, 2)) # shape (num_updates,)
 
     if config["algorithm"].get("ALPHA_COST", False):
-        average_ckpt_alpha_rets_per_iter = average_ckpt_optimal_rets_per_iter / average_ckpt_worst_case_rets_per_iter
-        average_agent_alpha_rets_per_iter = average_agent_optimal_rets_per_iter / average_agent_worst_case_rets_per_iter
+        average_ckpt_alpha_rets_per_iter = average_ckpt_optimal_rets_per_iter / average_ckpt_case_rets_per_iter
+        average_agent_alpha_rets_per_iter = average_agent_optimal_rets_per_iter / average_agent_case_rets_per_iter
     else:
-        average_ckpt_alpha_rets_per_iter = average_ckpt_worst_case_rets_per_iter / average_ckpt_optimal_rets_per_iter
-        average_agent_alpha_rets_per_iter = average_agent_worst_case_rets_per_iter / average_agent_optimal_rets_per_iter
+        average_ckpt_alpha_rets_per_iter = average_ckpt_case_rets_per_iter / average_ckpt_optimal_rets_per_iter
+        average_agent_alpha_rets_per_iter = average_agent_case_rets_per_iter / average_agent_optimal_rets_per_iter
 
     has_collisions = "returned_episode_collisions" in train_metrics["ckpt_eval_ep_last_info"][0]
     if has_collisions:
-        all_ckpt_worst_case_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-        all_worst_case_collisions = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
-        all_ckpt_worst_case_collisions = np.sum(all_ckpt_worst_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
-        all_worst_case_collisions = np.sum(all_worst_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
+        all_ckpt_case_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+        all_case_collisions = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
+        all_ckpt_case_collisions = np.sum(all_ckpt_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
+        all_case_collisions = np.sum(all_case_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
         all_ckpt_optimal_collisions = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
         all_optimal_collisions = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_collisions"]) # shape (n_train_seeds, num_updates, num_eval_episodes, num_agents_per_game)
         all_ckpt_optimal_collisions = np.sum(all_ckpt_optimal_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
         all_optimal_collisions = np.sum(all_optimal_collisions, axis=3) # shape (n_train_seeds, num_updates, num_eval_episodes)
 
-        average_ckpt_worst_case_collisions_per_iter = np.mean(all_ckpt_worst_case_collisions, axis=(0, 2)) # shape (num_updates,)
-        average_agent_worst_case_collisions_per_iter = np.mean(all_worst_case_collisions, axis=(0, 2)) # shape (num_updates,)
+        average_ckpt_case_collisions_per_iter = np.mean(all_ckpt_case_collisions, axis=(0, 2)) # shape (num_updates,)
+        average_agent_case_collisions_per_iter = np.mean(all_case_collisions, axis=(0, 2)) # shape (num_updates,)
         average_ckpt_optimal_collisions_per_iter = np.mean(all_ckpt_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
         average_agent_optimal_collisions_per_iter = np.mean(all_optimal_collisions, axis=(0, 2)) # shape (num_updates,)
 
@@ -939,19 +952,19 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
     has_law_activations = "returned_episode_law_activations" in train_metrics["ckpt_eval_ep_last_info"][0]
     if has_law_activations:
         # Sum over agents (axis=3) to get total activations per episode, then mean over seeds/eps.
-        all_ckpt_wc_law = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_law_activations"])
-        all_wc_law      = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_law_activations"])
-        all_ckpt_wc_law  = np.sum(all_ckpt_wc_law, axis=3)  # sum over agents within episode
-        all_wc_law       = np.sum(all_wc_law,      axis=3)
+        all_ckpt_case_law = np.asarray(train_metrics["ckpt_eval_ep_last_info"][0]["returned_episode_law_activations"])
+        all_case_law = np.asarray(train_metrics["eval_ep_last_info"][0]["returned_episode_law_activations"])
+        all_ckpt_case_law  = np.sum(all_ckpt_case_law, axis=3)  # sum over agents within episode
+        all_case_law = np.sum(all_case_law, axis=3)
         all_ckpt_opt_law = np.asarray(train_metrics["ckpt_eval_ep_last_info"][1]["returned_episode_law_activations"])
-        all_opt_law      = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_law_activations"])
+        all_opt_law = np.asarray(train_metrics["eval_ep_last_info"][1]["returned_episode_law_activations"])
         all_ckpt_opt_law = np.sum(all_ckpt_opt_law, axis=3)
-        all_opt_law      = np.sum(all_opt_law,      axis=3)
+        all_opt_law = np.sum(all_opt_law, axis=3)
 
-        avg_ckpt_wc_law_per_iter  = np.mean(all_ckpt_wc_law,  axis=(0, 2))  # (num_updates,)
-        avg_wc_law_per_iter       = np.mean(all_wc_law,        axis=(0, 2))
+        avg_ckpt_case_law_per_iter = np.mean(all_ckpt_case_law, axis=(0, 2))  # (num_updates,)
+        avg_case_law_per_iter = np.mean(all_case_law, axis=(0, 2))
         avg_ckpt_opt_law_per_iter = np.mean(all_ckpt_opt_law,  axis=(0, 2))
-        avg_opt_law_per_iter      = np.mean(all_opt_law,       axis=(0, 2))
+        avg_opt_law_per_iter = np.mean(all_opt_law, axis=(0, 2))
 
 
     # Log metrics for each update step
@@ -960,31 +973,37 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
         for stat_name, stat_data in train_stats.items():
             # second dimension contains the mean and std of the metric
             stat_mean = stat_data[step, 0]
-            logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{stat_name}", stat_mean, train_step=step, commit=True)
+            logger.log_item(f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/{stat_name}", stat_mean, train_step=step, commit=True)
 
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/WorstCaseReturn", average_agent_worst_case_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCaseReturn", average_ckpt_worst_case_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalReturn", average_agent_optimal_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalReturn", average_ckpt_optimal_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/AlphaReturn", average_agent_alpha_rets_per_iter[step], train_step=step, commit=True)
-        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointAlphaReturn", average_ckpt_alpha_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Return", average_agent_case_rets_per_iter[step], train_step=step, commit=True)
+        logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}/Return", average_ckpt_case_rets_per_iter[step], train_step=step, commit=True)
+
+        if config["algorithm"]["WORST_CASE"]:
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalReturn", average_agent_optimal_rets_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalReturn", average_ckpt_optimal_rets_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/AlphaReturn", average_agent_alpha_rets_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointAlphaReturn", average_ckpt_alpha_rets_per_iter[step], train_step=step, commit=True)
 
         if has_collisions:
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/WorstCaseCollisions", average_agent_worst_case_collisions_per_iter[step], train_step=step, commit=True)
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCaseCollisions", average_ckpt_worst_case_collisions_per_iter[step], train_step=step, commit=True)
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalCollisions", average_agent_optimal_collisions_per_iter[step], train_step=step, commit=True)
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalCollisions", average_ckpt_optimal_collisions_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Collisions", average_agent_case_collisions_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}/Collisions", average_ckpt_case_collisions_per_iter[step], train_step=step, commit=True)
+
+            if config["algorithm"]["WORST_CASE"]:
+                logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/OptimalCollisions", average_agent_optimal_collisions_per_iter[step], train_step=step, commit=True)
+                logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimalCollisions", average_ckpt_optimal_collisions_per_iter[step], train_step=step, commit=True)
 
         # Law activation counts: steps within social_min_dist (noise violations included).
         # These metrics reveal how often the proximity zone was penetrated despite the law.
         if has_law_activations:
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/WorstCase/LawActivations", avg_wc_law_per_iter[step], train_step=step, commit=True)
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointWorstCase/LawActivations", avg_ckpt_wc_law_per_iter[step], train_step=step, commit=True)
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/LawActivations", avg_opt_law_per_iter[step], train_step=step, commit=True)
-            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimal/LawActivations", avg_ckpt_opt_law_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/LawActivations", avg_case_law_per_iter[step], train_step=step, commit=True)
+            logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Checkpoint{case_name}/LawActivations", avg_ckpt_case_law_per_iter[step], train_step=step, commit=True)
+
+            if config["algorithm"]["WORST_CASE"]:
+                logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/LawActivations", avg_opt_law_per_iter[step], train_step=step, commit=True)
+                logger.log_item(f"Eval/Joint/Agent_{agent_idx + 1}_Optimize/CheckpointOptimal/LawActivations", avg_ckpt_opt_law_per_iter[step], train_step=step, commit=True)
 
         for i in range(num_agents_log):
-            prefix = f"Train/Joint/Agent_{agent_idx + 1}_Optimize/Agent_{i + 1}"
+            prefix = f"Train/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Agent_{i + 1}"
             logger.log_item(f"{prefix}/AlphaLoss", avg_per_agent_alpha_losses[i][step], train_step=step, commit=True)
             logger.log_item(f"{prefix}/Alpha", avg_per_agent_alpha[i][step], train_step=step, commit=True)
             logger.log_item(f"{prefix}/KL", avg_per_agent_kl[i][step], train_step=step, commit=True)
@@ -1000,23 +1019,31 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
     if env._render:
         # shape of render_outs should be (num_train_seeds, num_eps, max_episode_steps, ...)
         eval_render_init_env_state = train_out['render_outs'][2].env_state.env_state # LogEnvState
-        eval_render_optimal_env_state = train_out['render_outs'][1][-1]['pre_reset_state'].env_state # WrappedEnvState
-        eval_render_optimal_dones = train_out['render_outs'][1][4]['__all__']
-        eval_render_worst_case_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
-        eval_render_worst_case_dones = train_out['render_outs'][0][4]['__all__']
-        num_episodes = eval_render_worst_case_dones.shape[1]
-        optimal_env.animate((eval_render_init_env_state, eval_render_optimal_env_state), eval_render_optimal_dones, num_episodes, extra_dir="Optimal", debug=True)
-        env.animate((eval_render_init_env_state, eval_render_worst_case_env_state), eval_render_worst_case_dones, num_episodes, extra_dir="WorstCase", debug=True)
+
+        if config["algorithm"]["WORST_CASE"]:
+            eval_render_optimal_env_state = train_out['render_outs'][1][-1]['pre_reset_state'].env_state # WrappedEnvState
+            eval_render_optimal_dones = train_out['render_outs'][1][4]['__all__']
+
+        eval_render_case_env_state = train_out['render_outs'][0][-1]['pre_reset_state'].env_state # WrappedEnvState
+        eval_render_case_dones = train_out['render_outs'][0][4]['__all__']
+        num_episodes = eval_render_case_dones.shape[1]
+
+        if config["algorithm"]["WORST_CASE"]:
+            optimal_env.animate((eval_render_init_env_state, eval_render_optimal_env_state), eval_render_optimal_dones, num_episodes, extra_dir="Optimal", debug=True)
+
+        env.animate((eval_render_init_env_state, eval_render_case_env_state), eval_render_case_dones, num_episodes, extra_dir=case_name, debug=True)
 
         for eval_ep in range(num_episodes):
             logger.log_video(
-                tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/WorstCase/Episode_{eval_ep}",
-                path=os.path.join(env._render_dir, "WorstCase", f"{env._render_name}_ep_{eval_ep}.gif")
+                tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/{case_name}/Episode_{eval_ep}",
+                path=os.path.join(env._render_dir, case_name, f"{env._render_name}_ep_{eval_ep}.gif")
             )
-            logger.log_video(
-                tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/Episode_{eval_ep}",
-                path=os.path.join(optimal_env._render_dir, "Optimal", f"{optimal_env._render_name}_ep_{eval_ep}.gif")
-            )
+
+            if config["algorithm"]["WORST_CASE"]:
+                logger.log_video(
+                    tag=f"Videos/Joint/Agent_{agent_idx + 1}_Optimize/Optimal/Episode_{eval_ep}",
+                    path=os.path.join(optimal_env._render_dir, "Optimal", f"{optimal_env._render_name}_ep_{eval_ep}.gif")
+                )
 
     out_savepaths = []
     for i in range(num_agents_log):
@@ -1025,10 +1052,10 @@ def log_metrics(env, optimal_env, config, train_out, logger, metric_names: tuple
             "metrics": train_out["metrics"],
             "checkpoints": train_out[f"checkpoints_agent_{i}"],
         }
-        savepath = save_train_run(train_out_i, savedir, savename=f"CREPPO_Agent_{agent_idx + 1}_Optimize_Train_Run-Agent_{i + 1}")
+        savepath = save_train_run(train_out_i, savedir, savename=f"CREPPO_Agent_{agent_idx + 1}_Optimize_Train_Run-{case_name}-Agent_{i + 1}")
         out_savepaths.append(savepath)
         if config["logger"]["log_train_out"]:
-            logger.log_artifact(name=f"CREPPO_Agent_{agent_idx + 1}_Optimize_Train_Run-Agent_{i + 1}", path=savepath, type_name="joint_train_run")
+            logger.log_artifact(name=f"CREPPO_Agent_{agent_idx + 1}_Optimize_Train_Run-{case_name}-Agent_{i + 1}", path=savepath, type_name="joint_train_run")
 
     if not config["local_logger"]["save_train_out"]:
         for savepath in out_savepaths:

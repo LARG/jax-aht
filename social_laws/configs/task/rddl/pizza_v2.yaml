@@ -1,16 +1,16 @@
 ENV_NAME: rddl/pizza_v2
 ROLLOUT_LENGTH: 88
-NUM_EVAL_EPISODES: 5
+NUM_EVAL_EPISODES: 10
 ENV_KWARGS: {domain: "pizza_v2_domain.rddl",
-             instance: "pizza_v2_instance_all.rddl",
+             instance: "pizza_v2_instance_asym2_all.rddl",
              seed: ,
-             render: false,
+             render: true,
              render_name: "pizza_v2",
              render_dir: "render",
              enforce_action_constraints: true,
              vectorized: true,
              ego_centric_obs: true}
 TASK_NAME: rddl/pizza_v2
-SINGLE_AGENT_1_PROJECTION: "pizza_v2_instance0.rddl"
-SINGLE_AGENT_2_PROJECTION: "pizza_v2_instance1.rddl"
-ALPHA_COST: false
+SINGLE_AGENT_1_PROJECTION: "pizza_v2_instance_asym2_0.rddl"
+SINGLE_AGENT_2_PROJECTION: "pizza_v2_instance_asym2_1.rddl"
+ALPHA_COST: true

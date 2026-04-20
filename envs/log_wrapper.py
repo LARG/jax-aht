@@ -29,27 +29,15 @@ class LogWrapper(JaxMARLWrapper):
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey) -> Tuple[chex.Array, State]:
-
-        if self._world_state:
-            (obs, obs_full), world_state, env_state = self._env.reset(key)
-            state = LogEnvState(
-                env_state,
-                jnp.zeros((self._env.num_agents,)),
-                jnp.zeros((self._env.num_agents,)),
-                jnp.zeros((self._env.num_agents,)),
-                jnp.zeros((self._env.num_agents,)),
-            )
-            return (obs, obs_full), world_state, state
-        else:
-            (obs, obs_full), env_state = self._env.reset(key)
-            state = LogEnvState(
-                env_state,
-                jnp.zeros((self._env.num_agents,)),
-                jnp.zeros((self._env.num_agents,)),
-                jnp.zeros((self._env.num_agents,)),
-                jnp.zeros((self._env.num_agents,)),
-            )
-            return (obs, obs_full), state
+        obs, env_state = self._env.reset(key)
+        state = LogEnvState(
+            env_state,
+            jnp.zeros((self._env.num_agents,)),
+            jnp.zeros((self._env.num_agents,)),
+            jnp.zeros((self._env.num_agents,)),
+            jnp.zeros((self._env.num_agents,)),
+        )
+        return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
@@ -58,14 +46,9 @@ class LogWrapper(JaxMARLWrapper):
         state: LogEnvState,
         action: Union[int, float],
     ) -> Tuple[chex.Array, LogEnvState, float, bool, dict]:
-        if self._world_state:
-            (obs, obs_full), world_state, env_state, reward, done, info = self._env.step(
-                key, state.env_state, action
-            )
-        else:
-            (obs, obs_full), env_state, reward, done, info = self._env.step(
-                key, state.env_state, action
-            )
+        obs, env_state, reward, done, info = self._env.step(
+            key, state.env_state, action
+        )
         ep_done = done["__all__"]
         new_episode_return = state.episode_returns + self._batchify_floats(reward)
         new_episode_length = state.episode_lengths + 1
@@ -97,7 +80,4 @@ class LogWrapper(JaxMARLWrapper):
             ),
             state)
 
-        if self._world_state:
-            return (obs, obs_full), world_state, state, reward, done, info
-        else:
-            return (obs, obs_full), state, reward, done, info
+        return obs, state, reward, done, info

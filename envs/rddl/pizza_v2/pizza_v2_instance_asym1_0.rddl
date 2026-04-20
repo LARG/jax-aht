@@ -16,7 +16,6 @@ non-fluents pizza_v2_asym1_0 {
 		CONNECTED(s1, c1) = true;
 		CONNECTED(c1, s1) = true;
 		CONNECTED(s1, c2) = true;
-		CONNECTED(c2, s1) = true;
 		CONNECTED(c2, c3) = true;
 		CONNECTED(c3, s1) = true;
 		
@@ -41,7 +40,7 @@ instance inst_pizza_v2_asym1_0 {
   
 	init-state { 
 		truckAt(t1, c1); 
-		truckAt(t2, c3);
+		truckAt(t2, c2);
 
 		numOrdersRemaining(c1) = 2;
 		numOrdersRemaining(c3) = 2;
@@ -49,6 +48,6 @@ instance inst_pizza_v2_asym1_0 {
 	};
   
   
-	horizon  = 20;
+	horizon  = 30;
 	discount = 1.0;
 }

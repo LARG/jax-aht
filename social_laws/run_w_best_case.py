@@ -79,6 +79,9 @@ def run_training(cfg):
     joint_policies = []
     joint_init_params = []
     joint_params = []
+    best_joint_policies = []
+    best_joint_init_params = []
+    best_joint_params = []
     # Single agent projection training
     # Creates what is effectively the optimal policy for a single agent in the environment
     if cfg["algorithm"]["ALG"] == "ppo":
@@ -110,11 +113,10 @@ def run_training(cfg):
         env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
         env = LogWrapper(env)
 
-        if cfg.algorithm.get("ALPHA_VERIFICATION", True):
-            run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
-                                        agent_eval_checkpoints, agent_policies, env.horizon,
-                                        cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
-                                        render=True, agent_test_mode=False)
+        run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
+                                    agent_eval_checkpoints, agent_policies, env.horizon,
+                                    cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
+                                    render=True, agent_test_mode=False)
 
         # Value function estimation for joint policies
         # Creates value functions for joint policies for all agents in the environment
@@ -168,11 +170,10 @@ def run_training(cfg):
         env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
         env = LogWrapper(env)
 
-        if cfg.algorithm.get("ALPHA_VERIFICATION", True):
-            run_single_agent_reppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
-                                              agent_eval_checkpoints, agent_policies, env.horizon,
-                                              cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
-                                              render=True, agent_test_mode=True)
+        run_single_agent_reppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
+                                          agent_eval_checkpoints, agent_policies, env.horizon,
+                                          cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
+                                          render=True, agent_test_mode=True)
 
     elif cfg["algorithm"]["ALG"] == "creppo":
         if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
@@ -207,11 +208,10 @@ def run_training(cfg):
         env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
         env = LogWrapper(env)
 
-        if cfg.algorithm.get("ALPHA_VERIFICATION", True):
-            run_single_agent_creppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
-                                               agent_eval_checkpoints, agent_policies, env.horizon,
-                                               cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
-                                               render=True, agent_test_mode=True)
+        run_single_agent_creppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
+                                           agent_eval_checkpoints, agent_policies, env.horizon,
+                                           cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
+                                           render=True, agent_test_mode=True)
 
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment
@@ -271,6 +271,68 @@ def run_training(cfg):
                 joint_policies.append(joint_policy)
                 joint_init_params.append(joint_init_param)
                 joint_params.append(joint_param)
+
+    # Best Joint multi-agent training
+    # Creates polices for joint policies for all agents in the environment
+    # conditioned on their single agent projections
+    cfg["algorithm"]["WORST_CASE"] = False  # Set to False to train best case policies
+    if cfg["algorithm"]["ALG"] == "ppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
+        pass
+        # if cfg["algorithm"]["JOINT_CENTRALIZED"]:
+        #     for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+        #         joint_param, joint_policy, joint_init_param = run_ppo_joint_centralized_training(cfg, wandb_logger,
+        #                                                                                     agent_params,
+        #                                                                                     agent_policies,
+        #                                                                                     agent_vf_params,
+        #                                                                                     agent_vf_policies,
+        #                                                                                     agent_idx=agent_idx)
+        #         best_joint_policies.append(joint_policy)
+        #         best_joint_init_params.append(joint_init_param)
+        #         best_joint_params.append(joint_param)
+        # else:
+        #     for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+        #         joint_param, joint_policy, joint_init_param = run_ppo_joint_training(cfg, wandb_logger,
+        #                                                                             agent_params,
+        #                                                                             agent_policies,
+        #                                                                             agent_vf_params,
+        #                                                                             agent_vf_policies,
+        #                                                                             agent_idx=agent_idx)
+        #         best_joint_policies.append(joint_policy)
+        #         best_joint_init_params.append(joint_init_param)
+        #         best_joint_params.append(joint_param)
+
+    elif cfg["algorithm"]["ALG"] == "reppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
+        pass
+        # if cfg["algorithm"]["JOINT_CENTRALIZED"]:
+        #     pass
+        # else:
+        #     for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+        #         joint_param, joint_policy, joint_init_param = run_reppo_joint_training(cfg, wandb_logger,
+        #                                                                               agent_params,
+        #                                                                               agent_policies,
+        #                                                                               agent_idx=agent_idx)
+        #         best_joint_policies.append(joint_policy)
+        #         best_joint_init_params.append(joint_init_param)
+        #         best_joint_params.append(joint_param)
+
+    elif cfg["algorithm"]["ALG"] == "creppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
+        if cfg["algorithm"]["JOINT_CENTRALIZED"]:
+                joint_param, joint_policy, joint_init_param = run_creppo_joint_centralized_training(cfg, wandb_logger,
+                                                                                      agent_params,
+                                                                                      agent_policies,
+                                                                                      agent_idx=agent_idx)
+                best_joint_policies.append(joint_policy)
+                best_joint_init_params.append(joint_init_param)
+                joint_params.append(joint_param)
+        else:
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_creppo_joint_training(cfg, wandb_logger,
+                                                                                      agent_params,
+                                                                                      agent_policies,
+                                                                                      agent_idx=agent_idx)
+                best_joint_policies.append(joint_policy)
+                best_joint_init_params.append(joint_init_param)
+                best_joint_params.append(joint_param)
 
     # Cleanup
     wandb_logger.close()
