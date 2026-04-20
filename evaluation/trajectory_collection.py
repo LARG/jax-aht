@@ -55,8 +55,8 @@ def collect_random_trajectories(rng, env, num_rollouts, rollout_steps, num_envs=
                 ep_end = done_idx + 1
                 episode = env_obs[ep_start:ep_end]
                 if len(episode) > 1:
-                    # Store as tuple: (episode_obs, agent_idx, br_idx) - use (None, None) for random trajectories
-                    all_episodes.append((episode, None, None))
+                    # Store raw trajectory data only
+                    all_episodes.append(episode)
                 ep_start = ep_end
 
     return rng, all_episodes
@@ -106,8 +106,8 @@ def collect_ippo_selfplay_trajectories(rng, env, num_rollouts, rollout_steps, nu
                 ep_end = done_idx + 1
                 episode = env_obs[ep_start:ep_end]
                 if len(episode) > 1:
-                    # Store as tuple: (episode_obs, agent_idx, br_idx) - use (0, 0) for IPPO self-play
-                    all_episodes.append((episode, 0, 0))
+                    # Store raw trajectory data only
+                    all_episodes.append(episode)
                 ep_start = ep_end
 
     return rng, all_episodes
@@ -179,7 +179,7 @@ def collect_pair_trajectories(
         br_idx: Index of the best response agent (optional, for tracking)
     
     Returns:
-        rng, all_episodes where each episode is a tuple (trajectory, agent_idx, br_idx)
+        rng, all_episodes where each episode is raw trajectory data
     """
     all_episodes = []
     agent0 = env.agents[0]
@@ -246,8 +246,8 @@ def collect_pair_trajectories(
                 ep_end = done_idx + 1
                 episode = env_obs[ep_start:ep_end]
                 if len(episode) > 1:
-                    # Store as tuple: (episode_obs, agent_idx, br_idx)
-                    all_episodes.append((episode, agent_idx, br_idx))
+                    # Store raw trajectory data only
+                    all_episodes.append(episode)
                 ep_start = ep_end
 
     return rng, all_episodes
@@ -297,7 +297,7 @@ def collect_heldout_pairwise_trajectories(
     br_path=None,
 ):
     pairs = get_agent_pair_configs(env_name, settings_path=settings_path, br_path=br_path)
-    all_episodes = []
+    all_episodes = []  # Will store (trajectory, agent_pair_label) tuples
 
     def _load_agent(agent_cfg, agent_name, env, rng):
         policy, params, init_params, _ = initialize_rl_agent_from_config(agent_cfg, agent_name, env, rng)
@@ -339,12 +339,21 @@ def collect_heldout_pairwise_trajectories(
             br_name_to_idx[br_name] = br_idx_counter
             br_idx_counter += 1
     
+    # Create a mapping from (agent_idx, br_idx) to pair label
+    pair_labels = {}
+    for agent_name, agent_cfg, br_name, br_cfg in pairs:
+        agent_idx = agent_name_to_idx[agent_name]
+        br_idx = br_name_to_idx[br_name]
+        pair_labels[(agent_idx, br_idx)] = f"{agent_name}_{br_name}"
+    
     for agent_name, agent_cfg, br_name, br_cfg in pairs:
         print(f"Collecting {agent_name} (idx={agent_name_to_idx[agent_name]}), {br_name} (idx={br_name_to_idx[br_name]})...")
         teammate_policy, teammate_params, teammate_init_params = unique_agents[agent_name]
         br_policy, br_params, br_init_params = unique_agents[br_name]
         agent_idx = agent_name_to_idx[agent_name]
         br_idx = br_name_to_idx[br_name]
+        pair_label = pair_labels[(agent_idx, br_idx)]
+        
         for i in range(k):
             rng, episodes = collect_pair_trajectories(
                 rng,
@@ -359,7 +368,9 @@ def collect_heldout_pairwise_trajectories(
                 agent_idx=agent_idx,
                 br_idx=br_idx,
             )
-            all_episodes.extend(episodes)
+            # Store trajectories with their pair labels
+            for episode in episodes:
+                all_episodes.append((episode, pair_label))
         print(f"Collected {agent_name}, {br_name}")
 
-    return rng, all_episodes
+    return rng, all_episodes, pair_labels

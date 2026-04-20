@@ -16,9 +16,9 @@ from evaluation.trajectory_collection import (
 # Config
 DEFAULT_ENV_NAME = "lbf"
 DEFAULT_ENV_KWARGS = {}
-DEFAULT_NUM_ENVS = 256
+DEFAULT_NUM_ENVS = 4096
 DEFAULT_ROLLOUT_STEPS = 128
-DEFAULT_K = 5
+DEFAULT_K = 1
 DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
 
 
@@ -37,7 +37,7 @@ def main(
     env = make_env(env_name, DEFAULT_ENV_KWARGS)
 
     print("Collecting pairwise heldout trajectories...")
-    rng, heldout_episodes = collect_heldout_pairwise_trajectories(
+    rng, heldout_episodes, pair_labels = collect_heldout_pairwise_trajectories(
         rng,
         env,
         k=k,
@@ -47,27 +47,10 @@ def main(
     )
     print(f"Collected {len(heldout_episodes)} heldout pairwise episodes.")
     
-    # Verify that episodes contain agent indices
-    if len(heldout_episodes) > 0:
-        first_ep = heldout_episodes[0]
-        if isinstance(first_ep, tuple) and len(first_ep) == 3:
-            obs_array, agent_idx, br_idx = first_ep
-            print(f"✓ Episodes contain agent pair indices: (agent_idx, br_idx)")
-            
-            # Extract and log unique agent pairs
-            agent_indices = np.array([(ep[1], ep[2]) for ep in heldout_episodes])
-            unique_pairs = np.unique(agent_indices, axis=0)
-            print(f"  Found {len(unique_pairs)} unique agent-BR pairs:")
-            for agent_idx, br_idx in unique_pairs:
-                count = np.sum((agent_indices == [agent_idx, br_idx]).all(axis=1))
-                print(f"    Agent {agent_idx} vs BR {br_idx}: {count} trajectories")
-        else:
-            print("  WARNING: Episodes do not contain agent indices (legacy format detected)")
-
-    # Save heldout trajectories
+    # Save heldout trajectories with labels
     heldout_path = data_path / "heldout_episodes.pkl"
     with open(heldout_path, "wb") as f:
-        pickle.dump(heldout_episodes, f)
+        pickle.dump({"episodes": heldout_episodes, "pair_labels": pair_labels}, f)
     print(f"Saved heldout episodes to {heldout_path}")
 
     print("\nCollecting IPPO self-play trajectories...")
@@ -80,15 +63,6 @@ def main(
     )
     print(f"Collected {len(ippo_episodes)} IPPO self-play episodes.")
     
-    # Verify that IPPO episodes contain agent indices
-    if len(ippo_episodes) > 0:
-        first_ep = ippo_episodes[0]
-        if isinstance(first_ep, tuple) and len(first_ep) == 3:
-            obs_array, agent_idx, br_idx = first_ep
-            print(f"✓ IPPO episodes contain agent pair indices: (0, 0) for self-play")
-        else:
-            print("  WARNING: IPPO episodes do not contain agent indices (legacy format detected)")
-
     # Save IPPO trajectories
     ippo_path = data_path / "ippo_episodes.pkl"
     with open(ippo_path, "wb") as f:

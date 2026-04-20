@@ -1,4 +1,4 @@
-"""Train the trajectory autoencoder on saved trajectory data."""
+"""Train the trajectory classifier on saved trajectory data."""
 
 import argparse
 import pickle
@@ -9,17 +9,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from evaluation.trajectory_autoencoder import (
-    init_autoencoder,
-    make_train_step,
-    train_autoencoder,
-    pad_episodes,
+    init_classifier,
+    make_classifier_train_step,
+    train_classifier,
+    pad_labeled_episodes,
 )
 # Config
 DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
 DEFAULT_MODEL_DIR = "results/lbf/autoencoder_models"
 DEFAULT_ENV_NAME = "lbf"
 DEFAULT_HIDDEN_DIM = 64
-DEFAULT_LATENT_DIM = 128
+DEFAULT_LATENT_DIM = 16
 DEFAULT_LEARNING_RATE = 3e-4
 DEFAULT_NUM_EPOCHS = 200
 DEFAULT_BATCH_SIZE = 64
@@ -54,39 +54,40 @@ def main(
 
     print(f"Loading trajectories from {heldout_path}...")
     with open(heldout_path, "rb") as f:
-        all_episodes = pickle.load(f)
-    print(f"Loaded {len(all_episodes)} episodes.")
+        data = pickle.load(f)
+    episodes_with_labels = data["episodes"]
+    pair_labels = data["pair_labels"]
+    print(f"Loaded {len(episodes_with_labels)} heldout pairwise episodes.")
+    print(f"Available pair labels: {list(pair_labels.values())}")
 
     obs_dim = get_obs_dim(env_name)
-    padded_episodes, masks, max_seq_len, agent_indices = pad_episodes(all_episodes)
+    padded_episodes, masks, labels, max_seq_len, label_to_idx = pad_labeled_episodes(episodes_with_labels)
     
-    # Log agent pair information if available
-    if agent_indices is not None:
-        unique_pairs = np.unique(agent_indices, axis=0)
-        print(f"Found {len(unique_pairs)} unique agent pairs:")
-        for agent_idx, br_idx in unique_pairs:
-            count = np.sum((agent_indices == [agent_idx, br_idx]).all(axis=1))
-            print(f"  Agent {agent_idx} vs BR {br_idx}: {count} trajectories")
+    num_classes = len(label_to_idx)
+    print(f"Number of classes: {num_classes}")
+    print(f"Class mapping: {label_to_idx}")
 
     rng = jax.random.PRNGKey(42)
-    rng, train_state, model = init_autoencoder(
+    rng, train_state, model = init_classifier(
         rng,
         obs_dim,
         max_seq_len,
         hidden_dim=hidden_dim,
+        num_classes=num_classes,
         learning_rate=learning_rate,
         latent_dim=latent_dim,
     )
-    train_step = make_train_step(model, obs_dim)
+    train_step = make_classifier_train_step(model)
 
-    print(f"Training on {len(all_episodes)} episodes (padded length {max_seq_len})")
-    print(f"Model config: hidden_dim={hidden_dim}, latent_dim={latent_dim}")
-    rng, train_state, losses = train_autoencoder(
+    print(f"Training classifier on {len(episodes_with_labels)} episodes (padded length {max_seq_len})")
+    print(f"Model config: hidden_dim={hidden_dim}, latent_dim={latent_dim}, num_classes={num_classes}")
+    rng, train_state, losses = train_classifier(
         rng,
         train_state,
         train_step,
         padded_episodes,
         masks,
+        labels,
         num_epochs=num_epochs,
         batch_size=batch_size,
     )
@@ -101,6 +102,8 @@ def main(
             "latent_dim": latent_dim,
             "obs_dim": obs_dim,
             "max_seq_len": max_seq_len,
+            "num_classes": num_classes,
+            "label_to_idx": label_to_idx,
         }
     }
     

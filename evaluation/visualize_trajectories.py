@@ -1,4 +1,4 @@
-"""Visualize trajectory encodings using a trained autoencoder."""
+"""Visualize trajectory classifier performance."""
 
 import argparse
 import pickle
@@ -9,17 +9,38 @@ import jax.numpy as jnp
 import numpy as np
 from flax.training.train_state import TrainState
 import optax
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
 
 from evaluation.trajectory_autoencoder import (
-    create_autoencoder,
-    encode_episodes,
-    pad_episodes,
+    create_classifier,
+    make_classifier_eval_step,
+    pad_labeled_episodes,
 )
 from evaluation.trajectory_collection import (
     collect_pair_trajectories,
     get_agent_pair_configs,
 )
 from evaluation.trajectory_plot import plot_tsne
+from common.agent_loader_from_config import initialize_rl_agent_from_config
+from envs import make_env
+
+
+def _is_specific_best_response(agent_name, br_name):
+    """Return true if br_name is the specific BR for agent_name."""
+    if not br_name.startswith("br_for_"):
+        return False
+    suffix = br_name[len("br_for_") :]
+    return suffix == agent_name or suffix.startswith(agent_name + "_")
+
+
+def _filter_agent_br_pairs(pairs):
+    return [
+        (agent_name, agent_cfg, br_name, br_cfg)
+        for agent_name, agent_cfg, br_name, br_cfg in pairs
+        if _is_specific_best_response(agent_name, br_name)
+    ]
 
 # Config
 DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
@@ -42,21 +63,7 @@ def main(
     data_path = Path(data_dir)
     model_path = Path(model_dir) / model_file
 
-    # Load trajectories
-    heldout_path = data_path / "heldout_episodes.pkl"
-
-    if not heldout_path.exists():
-        raise FileNotFoundError(
-            f"Heldout episodes not found. Ensure {heldout_path} exists. "
-            "Run collect_trajectories.py first."
-        )
-
-    print(f"Loading trajectories from {data_path}...")
-    with open(heldout_path, "rb") as f:
-        heldout_episodes = pickle.load(f)
-    print(f"Loaded {len(heldout_episodes)} heldout pairwise episodes.")
-
-    # Load trained model
+    # Load trained model first
     if not model_path.exists():
         raise FileNotFoundError(
             f"Trained model not found at {model_path}. Run train_autoencoder.py first."
@@ -72,126 +79,110 @@ def main(
     latent_dim = config["latent_dim"]
     obs_dim = config["obs_dim"]
     max_seq_len = config["max_seq_len"]
+    num_classes = config["num_classes"]
+    label_to_idx = config["label_to_idx"]
 
     print(f"Model config: {config}")
 
     # Recreate the model and train_state from saved parameters
-    model = create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim)
+    model = create_classifier(obs_dim, max_seq_len, hidden_dim, num_classes, latent_dim)
     # Create a dummy train_state with loaded parameters
     tx = optax.adam(1e-3)  # dummy learning rate, not used for inference
     train_state = TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
-    # Encode heldout episodes
-    print("Encoding heldout trajectories...")
-    # encode_episodes now handles both formats (tuples with indices or arrays)
-    heldout_latents = encode_episodes(model, train_state, heldout_episodes, max_seq_len)
+    eval_step = make_classifier_eval_step(model)
 
-    # Collect and encode trajectories for each agent-BR pair
-    print("Collecting trajectories for each agent-BR pair...")
-    from envs import make_env
-    env = make_env(env_name, {})
+    def make_encoder_eval_step(model):
+        @jax.jit
+        def encode_step(params, x, mask):
+            return jax.vmap(
+                lambda x_i, m_i: model.apply(params, x_i, m_i, method=model.encode)
+            )(x, mask)
+        return encode_step
 
-    rng = jax.random.PRNGKey(42)
-    all_pairs = get_agent_pair_configs(env_name)
+    encode_step = make_encoder_eval_step(model)
 
-    # Filter pairs to only include matching agent-BR combinations
-    # BR names like 'br_for_ippo_mlp_0' should match agent 'ippo_mlp'
-    def get_base_agent_name(br_name):
-        # Remove 'br_for_' prefix and any trailing numbers/underscores
-        if br_name.startswith('br_for_'):
-            base = br_name[7:]  # Remove 'br_for_'
-            # Remove trailing patterns like '_0', '_1', '_2_0', etc.
-            import re
-            base = re.sub(r'_\d+(_\d+)*$', '', base)
-            return base
-        return br_name
+    # Load test data
+    heldout_path = data_path / "heldout_episodes.pkl"
+    if not heldout_path.exists():
+        raise FileNotFoundError(
+            f"Heldout episodes not found. Collect test data first."
+        )
 
-    # Group pairs by agent
-    agent_to_brs = {}
-    for agent_name, agent_cfg, br_name, br_cfg in all_pairs:
-        base_agent = get_base_agent_name(br_name)
-        if base_agent == agent_name or base_agent.replace('_s2c0', '') == agent_name:
-            if agent_name not in agent_to_brs:
-                agent_to_brs[agent_name] = []
-            agent_to_brs[agent_name].append((br_name, br_cfg))
+    print(f"Loading test trajectories from {heldout_path}...")
+    with open(heldout_path, "rb") as f:
+        data = pickle.load(f)
+    test_episodes = data["episodes"]
 
-    print(f"Found {len(agent_to_brs)} agent groups with BRs")
+    # Pad test episodes
+    padded_episodes, masks, labels, _, _ = pad_labeled_episodes(test_episodes)
 
-    # Create mappings from agent/BR names to indices for tracking
-    agent_name_to_idx = {agent_name: idx for idx, agent_name in enumerate(sorted(agent_to_brs.keys()))}
-    
-    pair_latents = {}
-    agent_idx_counter = 0
-    br_idx_map = {}  # map from br_name to idx
-    
-    for agent_name, br_list in agent_to_brs.items():
-        agent_idx = agent_name_to_idx[agent_name]
-        for br_idx_in_list, (br_name, br_cfg) in enumerate(br_list):
-            if br_name not in br_idx_map:
-                br_idx_map[br_name] = agent_idx_counter
-                agent_idx_counter += 1
-            br_idx = br_idx_map[br_name]
-            
-            pair_key = f"{agent_name}_vs_{br_name}"
-            print(f"Collecting trajectories for {pair_key} (agent_idx={agent_idx}, br_idx={br_idx})...")
+    # Evaluate on test data in batches to avoid OOM
+    print("Evaluating classifier on test data...")
+    all_logits = []
+    all_latents = []
+    all_true_labels = []
+    batch_size = 64
+    N = padded_episodes.shape[0]
+    num_batches = (N + batch_size - 1) // batch_size
+    print(f"Evaluating in {num_batches} batches of up to {batch_size} examples")
 
-            # Load agents
-            from common.agent_loader_from_config import initialize_rl_agent_from_config
+    for i in range(0, N, batch_size):
+        end_idx = min(i + batch_size, N)
+        batch_x = padded_episodes[i:end_idx]
+        batch_mask = masks[i:end_idx]
+        batch_y = labels[i:end_idx]
 
-            def _load_agent(agent_cfg, agent_name, env, rng):
-                policy, params, init_params, _ = initialize_rl_agent_from_config(agent_cfg, agent_name, env, rng)
-                if "path" in agent_cfg:
-                    params = jax.tree_map(jnp.squeeze, params)
-                    idx_list = agent_cfg.get("idx_list", None)
-                    if idx_list is not None and len(idx_list) > 1:
-                        params = jax.tree_map(lambda x: x[0], params)
-                    params = jax.tree_map(lambda p, i: p.reshape(i.shape) if p.size == i.size else p, params, init_params)
-                else:
-                    # Non-RL heuristic has no checkpoint params; keep empty dict for consistency.
-                    params = {}
-                    init_params = {}
-                return policy, params, init_params
+        logits = eval_step(params, batch_x, batch_mask)
+        latents = encode_step(params, batch_x, batch_mask)
+        all_logits.append(np.array(logits))
+        all_latents.append(np.array(latents))
+        all_true_labels.append(np.array(batch_y))
 
-            rng, rng_agent = jax.random.split(rng)
-            teammate_policy, teammate_params, _ = _load_agent(agent_cfg, agent_name, env, rng_agent)
-            rng, rng_br = jax.random.split(rng)
-            br_policy, br_params, _ = _load_agent(br_cfg, br_name, env, rng_br)
+    all_logits = np.concatenate(all_logits, axis=0)
+    all_latents = np.concatenate(all_latents, axis=0)
+    all_true_labels = np.concatenate(all_true_labels, axis=0)
+    predictions = np.argmax(all_logits, axis=1)
 
-            # Collect trajectories for this pair with indices
-            rng, pair_episodes = collect_pair_trajectories(
-                rng,
-                env,
-                teammate_policy,
-                teammate_params,
-                br_policy,
-                br_params,
-                num_rollouts=k,
-                rollout_steps=rollout_steps,
-                num_envs=num_envs,
-                agent_idx=agent_idx,
-                br_idx=br_idx,
-            )
+    # Calculate accuracy
+    accuracy = np.mean(predictions == all_true_labels)
+    print(f"Accuracy: {accuracy:.4f}")
 
-            print(f"Collected {len(pair_episodes)} episodes for {pair_key}")
+    # Create confusion matrix and TSNE visualization
+    idx_to_label = {v: k for k, v in label_to_idx.items()}
+    label_names = [idx_to_label[i] for i in range(num_classes)]
 
-            # Encode episodes (encode_episodes handles both tuple and array formats)
-            pair_latents[pair_key] = encode_episodes(model, train_state, pair_episodes, max_seq_len)
+    latents_dict = {}
+    for label_idx in np.unique(all_true_labels):
+        label_name = idx_to_label[int(label_idx)]
+        latents_dict[label_name] = all_latents[all_true_labels == label_idx]
 
-    # Combine all latents for plotting
-    all_latents = {"heldout": heldout_latents}
-    all_latents.update(pair_latents)
+    cm = confusion_matrix(all_true_labels, predictions)
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=label_names, yticklabels=label_names)
+    plt.title('Confusion Matrix')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=45, ha='right')
+    plt.tight_layout()
+    cm_path = output_file.replace('.png', '_confusion_matrix.png')
+    plt.savefig(cm_path, dpi=150)
+    plt.close()
 
-    # Plot
-    print(f"Creating t-SNE visualization with {len(all_latents)} categories...")
-    plot_tsne(
-        all_latents,
-        save_path=output_file,
-    )
-    print(f"Visualization saved to {output_file}")
+    print(f"Creating t-SNE visualization from latent encodings...")
+    plot_tsne(latents_dict, save_path=output_file)
+
+    # Print classification report
+    print("\nClassification Report:")
+    print(classification_report(all_true_labels, predictions, target_names=label_names))
+
+    print(f"Evaluation complete. Confusion matrix saved to {cm_path}, t-SNE saved to {output_file}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Visualize trajectories using trained autoencoder.")
+    parser = argparse.ArgumentParser(description="Evaluate trajectory classifier performance.")
     parser.add_argument("--data_dir", type=str, default=DEFAULT_DATA_DIR, help="Directory containing trajectory data")
     parser.add_argument("--model_dir", type=str, default=DEFAULT_MODEL_DIR, help="Directory containing trained model")
     parser.add_argument("--model_file", type=str, default=DEFAULT_MODEL_FILE, help="Trained model filename")

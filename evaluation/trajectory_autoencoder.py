@@ -131,28 +131,153 @@ class LSTMTrajectoryAutoencoder(nn.Module):
         return self.encoder(x, mask)
 
 
-def pad_episodes(episodes):
+class LSTMTrajectoryClassifier(nn.Module):
+    obs_dim: int
+    max_seq_len: int
+    hidden_dim: int
+    num_classes: int
+    latent_dim: int = LATENT_DIM
+
+    def setup(self):
+        self.encoder = LSTMTrajectoryEncoder(
+            hidden_dim=self.hidden_dim,
+            latent_dim=self.latent_dim,
+        )
+        self.classifier = nn.Dense(self.num_classes, kernel_init=orthogonal(1.0), bias_init=constant(0.0))
+
+    def __call__(self, x, mask):
+        latent = self.encoder(x, mask)
+        logits = self.classifier(latent)
+        return logits
+
+    def encode(self, x, mask):
+        return self.encoder(x, mask)
+
+
+def create_classifier(obs_dim, max_seq_len, hidden_dim, num_classes, latent_dim=LATENT_DIM):
+    return LSTMTrajectoryClassifier(
+        obs_dim=obs_dim,
+        max_seq_len=max_seq_len,
+        hidden_dim=hidden_dim,
+        latent_dim=latent_dim,
+        num_classes=num_classes,
+    )
+
+
+def init_classifier(rng, obs_dim, max_seq_len, hidden_dim, num_classes, learning_rate, latent_dim=LATENT_DIM):
+    model = create_classifier(obs_dim, max_seq_len, hidden_dim, num_classes, latent_dim)
+    rng, rng_init = jax.random.split(rng)
+    dummy_x = jnp.zeros((max_seq_len, obs_dim))
+    dummy_mask = jnp.ones((max_seq_len,))
+    params = model.init(rng_init, dummy_x, dummy_mask)
+    tx = optax.adam(learning_rate)
+    train_state = TrainState.create(apply_fn=model.apply, params=params, tx=tx)
+    return rng, train_state, model
+
+
+def make_classifier_train_step(model):
+    def loss_fn(params, x, mask, y):
+        logits = model.apply(params, x, mask)
+        loss = optax.softmax_cross_entropy_with_integer_labels(logits, y)
+        return loss
+
+    @jax.jit
+    def train_step(train_state, batch_x, batch_mask, batch_y):
+        grad_fn = jax.grad(lambda p: jax.vmap(partial(loss_fn, p))(batch_x, batch_mask, batch_y).mean())
+        grads = grad_fn(train_state.params)
+        train_state = train_state.apply_gradients(grads=grads)
+        loss = jax.vmap(partial(loss_fn, train_state.params))(batch_x, batch_mask, batch_y).mean()
+        return train_state, loss
+
+    return train_step
+
+
+def make_classifier_eval_step(model):
+    @jax.jit
+    def eval_step(params, x, mask):
+        logits = jax.vmap(lambda x_i, m_i: model.apply(params, x_i, m_i))(x, mask)
+        return logits
+
+    return eval_step
+
+
+def train_classifier(rng, train_state, train_step_fn, padded_episodes, masks, labels, num_epochs, batch_size):
+    N = padded_episodes.shape[0]
+    num_batches = max(1, N // batch_size)
+
+    losses = []
+    for epoch in range(num_epochs):
+        rng, rng_perm = jax.random.split(rng)
+        perm = jax.random.permutation(rng_perm, N)
+        padded_shuffled = padded_episodes[perm]
+        masks_shuffled = masks[perm]
+        labels_shuffled = labels[perm]
+        epoch_losses = []
+        for batch_idx in range(num_batches):
+            start = batch_idx * batch_size
+            end = min(start + batch_size, N)
+            batch_x = padded_shuffled[start:end]
+            batch_mask = masks_shuffled[start:end]
+            batch_y = labels_shuffled[start:end]
+            train_state, loss = train_step_fn(train_state, batch_x, batch_mask, batch_y)
+            epoch_losses.append(loss)
+        avg_loss = np.mean(epoch_losses)
+        losses.append(avg_loss)
+        if epoch % 10 == 0 or epoch == num_epochs - 1:
+            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.6f}")
+    return rng, train_state, losses
+
+
+def pad_labeled_episodes(episodes_with_labels):
+    """Pad episodes with labels to the same length.
+    
+    Args:
+        episodes_with_labels: List of (trajectory_array, label) tuples
+        
+    Returns:
+        padded: (N, max_len, obs_dim) array of padded observations
+        masks: (N, max_len) array indicating valid timesteps
+        labels: (N,) array of integer labels
+        max_len: maximum sequence length
+        label_to_idx: dict mapping string labels to integer indices
+    """
+    episodes, string_labels = zip(*episodes_with_labels)
+    print(f"[pad_labeled_episodes] Processing {len(episodes)} labeled trajectory episodes")
+    
+    # Create label mapping
+    unique_labels = sorted(set(string_labels))
+    label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
+    print(f"[pad_labeled_episodes] Found {len(unique_labels)} unique labels: {unique_labels}")
+    
+    max_len = max(len(ep) for ep in episodes)
+    obs_dim = episodes[0].shape[-1]
+    N = len(episodes)
+
+    padded = np.zeros((N, max_len, obs_dim), dtype=np.float32)
+    masks = np.zeros((N, max_len), dtype=np.float32)
+    labels = np.zeros((N,), dtype=np.int32)
+
+    for i, (ep, label) in enumerate(episodes_with_labels):
+        L = len(ep)
+        padded[i, :L] = ep
+        masks[i, :L] = 1.0
+        labels[i] = label_to_idx[label]
+
+    print(f"[pad_labeled_episodes] Padded shape: {padded.shape}, masks shape: {masks.shape}, labels shape: {labels.shape}, max_len: {max_len}")
+    return jnp.array(padded), jnp.array(masks), jnp.array(labels), max_len, label_to_idx
     """Pad episodes to the same length.
     
-    Handles both legacy format (just arrays) and new format (tuples with agent indices).
+    Handles raw trajectory data (arrays only).
     
     Returns:
         padded: (N, max_len, obs_dim) array of padded observations
         masks: (N, max_len) array indicating valid timesteps
         max_len: maximum sequence length
-        agent_indices: (N, 2) array of (agent_idx, br_idx) pairs or None
+        agent_indices: None (no artificial indices)
     """
-    # Detect format: check if first element is tuple or array
-    is_new_format = isinstance(episodes[0], tuple)
-    
-    if is_new_format:
-        # Extract observations and indices
-        obs_list = [ep[0] for ep in episodes]
-        agent_indices = np.array([(ep[1], ep[2]) for ep in episodes])
-    else:
-        # Legacy format - backward compatibility
-        obs_list = episodes
-        agent_indices = None
+    # All episodes are raw trajectory arrays
+    obs_list = episodes
+    print(f"[pad_episodes] Processing {len(obs_list)} raw trajectory episodes")
     
     max_len = max(len(ep) for ep in obs_list)
     obs_dim = obs_list[0].shape[-1]
@@ -166,7 +291,8 @@ def pad_episodes(episodes):
         padded[i, :L] = ep
         masks[i, :L] = 1.0
 
-    return jnp.array(padded), jnp.array(masks), max_len, agent_indices
+    print(f"[pad_episodes] Padded shape: {padded.shape}, masks shape: {masks.shape}, max_len: {max_len}")
+    return jnp.array(padded), jnp.array(masks), max_len, None
 
 
 def create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim=LATENT_DIM):
@@ -236,35 +362,31 @@ def train_autoencoder(rng, train_state, train_step_fn, padded_episodes, masks, n
 def encode_episodes(model, train_state, episodes, max_seq_len):
     """Encode episodes using the trained autoencoder model.
     
-    Handles both legacy format (arrays) and new format (tuples with agent indices).
+    Handles raw trajectory data (arrays only).
     
     Args:
         model: The autoencoder model
         train_state: Training state with parameters
-        episodes: List of episodes (either arrays or tuples with indices)
+        episodes: List of raw trajectory arrays
         max_seq_len: Maximum sequence length for padding
         
     Returns:
         Array of shape (N, latent_dim) containing latent encodings
     """
-    # Detect format: check if first element is tuple or array
-    is_new_format = isinstance(episodes[0], tuple)
-    
-    if is_new_format:
-        # Extract observation arrays from tuples
-        obs_list = [ep[0] for ep in episodes]
-    else:
-        # Legacy format - use directly
-        obs_list = episodes
+    # All episodes are raw trajectory arrays
+    obs_list = episodes
+    print(f"[encode_episodes] Processing {len(obs_list)} raw trajectory episodes")
     
     obs_dim = obs_list[0].shape[-1]
+    print(f"[encode_episodes] obs_dim={obs_dim}, max_seq_len={max_seq_len}")
+    print(f"[encode_episodes] Episode lengths: min={min(len(ep) for ep in obs_list)}, max={max(len(ep) for ep in obs_list)}")
 
     @jax.jit
     def encode_one(params, x, mask):
         return model.apply(params, x, mask, method=model.encode)
 
     latents = []
-    for ep in obs_list:
+    for i, ep in enumerate(obs_list):
         L = len(ep)
         padded = np.zeros((max_seq_len, obs_dim), dtype=np.float32)
         mask = np.zeros((max_seq_len,), dtype=np.float32)
@@ -273,4 +395,6 @@ def encode_episodes(model, train_state, episodes, max_seq_len):
         latent = encode_one(train_state.params, jnp.array(padded), jnp.array(mask))
         latents.append(np.array(latent))
 
-    return np.stack(latents)
+    result = np.stack(latents)
+    print(f"[encode_episodes] Successfully encoded {len(result)} episodes. Result shape: {result.shape}")
+    return result
