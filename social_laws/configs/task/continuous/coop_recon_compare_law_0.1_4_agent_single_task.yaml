@@ -1,0 +1,19 @@
+ENV_NAME: continuous/coop_recon_sap
+TASK_NAME: CoopRecon_Compare_Law_0.1_4AgentProjection
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 50
+
+ENV_KWARGS:
+  num_agents: 4
+  grid_size: 1.5
+  ego_centric_obs: true
+  movement_noise_std: 0.1
+  done_condition: "all"
+  horizon: 150
+  render: false
+  render_name: "cooprecon_compare_law_0.1_4agentprojection"
+  social_min_dist: 0.1
+  min_sep_goal: 0.3
+  collision_radius: 0.05
+
+ALPHA_COST: false
