@@ -1,5 +1,16 @@
 """Load processed human episode data as JAX arrays for behavior cloning.
 
+Data quality filtering (applied during process_episodes.py, before pkl creation):
+    1. Players who did not complete all 8 games are disqualified.
+    2. Among players who completed all 8 games, a player is flagged as disengaged
+       and ALL their games are removed if ANY of the following hold (computed
+       across all 8 games):
+         - >35% of actions were wait (action 0) or unsuccessful load
+           (action 5 with 0 reward that step)
+         - >15% of actions were pure wait (action 0)
+         - Average score (agent_0 total_rewards) across all 8 games is zero
+         - Scored zero in 5 or more of their 8 games
+
 Usage:
     from human_data.load_bc_data import load_bc_data, load_bc_data_by_agent
 

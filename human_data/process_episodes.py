@@ -301,6 +301,117 @@ def process_episode(filepath: str) -> dict | None:
     }
 
 
+# ---------- Player filtering ----------
+
+NOOP_ACTION = 0
+LOAD_ACTION = 5
+REQUIRED_GAMES = 8
+
+
+def load_all_raw_episodes(input_dir: Path) -> list[dict]:
+    """Load all raw JSON episode files."""
+    episodes = []
+    for fpath in sorted(input_dir.glob("*.json")):
+        with open(fpath, "r") as f:
+            ep = json.load(f)
+        ep["_filepath"] = str(fpath)
+        episodes.append(ep)
+    return episodes
+
+
+def compute_player_stats(player_episodes: list[dict]) -> dict:
+    """Compute engagement stats for a player across all their games.
+
+    Returns dict with:
+        num_games, total_actions, wait_count, wasted_load_count,
+        wait_or_wasted_pct, wait_pct, avg_score, zero_score_games
+    """
+    total_actions = 0
+    wait_count = 0
+    wasted_load_count = 0
+    scores = []
+
+    for ep in player_episodes:
+        score = ep["total_rewards"].get("agent_0", 0.0)
+        scores.append(score)
+
+        for step in ep["trajectory"]:
+            action = step.get("human_action")
+            if action is None:
+                continue  # step 0 has no action
+            total_actions += 1
+            if action == NOOP_ACTION:
+                wait_count += 1
+            elif action == LOAD_ACTION:
+                reward = step["rewards"]["agent_0"]
+                if reward == 0.0:
+                    wasted_load_count += 1
+
+    wait_or_wasted = wait_count + wasted_load_count
+    return {
+        "num_games": len(player_episodes),
+        "total_actions": total_actions,
+        "wait_count": wait_count,
+        "wasted_load_count": wasted_load_count,
+        "wait_or_wasted_pct": wait_or_wasted / total_actions if total_actions > 0 else 0,
+        "wait_pct": wait_count / total_actions if total_actions > 0 else 0,
+        "avg_score": sum(scores) / len(scores) if scores else 0,
+        "zero_score_games": sum(1 for s in scores if s == 0.0),
+    }
+
+
+def filter_players(all_episodes: list[dict]) -> tuple[set[str], dict]:
+    """Determine which prolific_pids pass quality filters.
+
+    Returns:
+        (clean_pids, filter_report) where filter_report has counts per reason.
+    """
+    # Group by player
+    by_player: dict[str, list] = defaultdict(list)
+    for ep in all_episodes:
+        pid = ep.get("prolific_pid", "")
+        by_player[pid].append(ep)
+
+    total_players = len(by_player)
+    disqualified = set()   # didn't complete 8 games
+    disengaged = set()     # flagged for low engagement
+    disengage_reasons: dict[str, list[str]] = {}
+
+    for pid, eps in by_player.items():
+        if len(eps) < REQUIRED_GAMES:
+            disqualified.add(pid)
+            continue
+
+        stats = compute_player_stats(eps)
+
+        reasons = []
+        if stats["wait_or_wasted_pct"] > 0.35:
+            reasons.append(f"wait+wasted_load={stats['wait_or_wasted_pct']:.1%}")
+        if stats["wait_pct"] > 0.15:
+            reasons.append(f"wait={stats['wait_pct']:.1%}")
+        if stats["avg_score"] == 0.0:
+            reasons.append("avg_score=0")
+        if stats["zero_score_games"] >= 5:
+            reasons.append(f"zero_score_games={stats['zero_score_games']}")
+
+        if reasons:
+            disengaged.add(pid)
+            disengage_reasons[pid] = reasons
+
+    clean_pids = set(by_player.keys()) - disqualified - disengaged
+
+    report = {
+        "total_players": total_players,
+        "disqualified": len(disqualified),
+        "disengaged": len(disengaged),
+        "clean": len(clean_pids),
+        "total_episodes": len(all_episodes),
+        "clean_episodes": sum(len(by_player[pid]) for pid in clean_pids),
+        "disengage_reasons": disengage_reasons,
+    }
+    return clean_pids, report
+
+
 # ---------- Main ----------
 
 def main():
@@ -308,14 +419,40 @@ def main():
     output_dir = Path(__file__).parent / "processed"
     output_dir.mkdir(exist_ok=True)
 
-    json_files = sorted(input_dir.glob("*.json"))
-    print(f"Found {len(json_files)} episode files")
+    # --- Pass 1: load all raw episodes and filter players ---
+    print("Loading raw episodes...")
+    all_raw = load_all_raw_episodes(input_dir)
+    print(f"Found {len(all_raw)} episode files")
+
+    clean_pids, report = filter_players(all_raw)
+    print(f"\nPlayer filtering:")
+    print(f"  Total players:  {report['total_players']}")
+    print(f"  Disqualified (< {REQUIRED_GAMES} games): {report['disqualified']}")
+    print(f"  Disengaged:     {report['disengaged']}")
+    print(f"  Clean:          {report['clean']}")
+    print(f"  Episodes kept:  {report['clean_episodes']} / {report['total_episodes']}")
+    if report["disengage_reasons"]:
+        print(f"  Disengage details:")
+        for pid, reasons in sorted(report["disengage_reasons"].items()):
+            print(f"    {pid}: {', '.join(reasons)}")
+    print()
+
+    # --- Pass 2: process clean episodes ---
+    # Build set of filepaths for clean players
+    clean_files = set()
+    for ep in all_raw:
+        if ep.get("prolific_pid", "") in clean_pids:
+            clean_files.add(ep["_filepath"])
 
     grouped: dict[str, list] = defaultdict(list)
     skipped = 0
     errors = 0
 
-    for fpath in json_files:
+    for fpath in sorted(input_dir.glob("*.json")):
+        if str(fpath) not in clean_files:
+            skipped += 1
+            continue
+
         try:
             result = process_episode(str(fpath))
         except Exception as e:
@@ -338,7 +475,6 @@ def main():
     total_processed = sum(len(v) for v in grouped.values())
     total_reconstructed = sum(1 for v in grouped.values() for ep in v if ep["step0_reconstructed"])
     total_uncertain = sum(1 for v in grouped.values() for ep in v if ep["step0_uncertain"])
-    print(f"\nSkipped (empty): {skipped}")
     print(f"Errors: {errors}")
     print(f"Processed: {total_processed}")
     print(f"  step0 from recording: {total_processed - total_reconstructed}")
