@@ -115,7 +115,7 @@ def _episodes_to_padded(episodes: list[dict]) -> BCDatasetPadded:
     actions = np.zeros((E, max_len), dtype=np.int32)
     ai_actions = np.zeros((E, max_len), dtype=np.int32)
     rewards = np.zeros((E, max_len), dtype=np.float32)
-    dones = np.zeros((E, max_len), dtype=bool)
+    dones = np.ones((E, max_len), dtype=bool)
     avail_actions = np.zeros((E, max_len, 6), dtype=bool)
     mask = np.zeros((E, max_len), dtype=bool)
     agent_types = []
