@@ -15,6 +15,10 @@ wandb/*
 .vscode/
 .vscode/*
 
+# Human data raw
+human_data_collecting/collected_data_prolific/
+human_data_collecting/*.tar.gz
+
 # pycache
 **/__pycache__/
 **/*.pyc

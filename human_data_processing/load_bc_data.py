@@ -1,55 +1,7 @@
 """Load processed human episode data as JAX arrays for behavior cloning.
 
-Data quality filtering (applied during process_episodes.py, before pkl creation):
-    1. Players who did not complete all 8 games are disqualified.
-    2. Among players who completed all 8 games, a player is flagged as disengaged
-       and ALL their games are removed if ANY of the following hold (computed
-       across all 8 games):
-         - >35% of actions were wait (action 0) or unsuccessful load
-           (action 5 with 0 reward that step)
-         - >15% of actions were pure wait (action 0)
-         - Average score (agent_0 total_rewards) across all 8 games is zero
-         - Scored zero in 5 or more of their 8 games
-
-Usage:
-    from human_data.load_bc_data import load_bc_data, load_bc_data_by_agent
-
-    # --- Flat dataset (all episodes concatenated) ---
-    data = load_bc_data("grid7_food3_nolevels")
-    # data is a BCDataset (NamedTuple):
-    #   obs:            jnp.ndarray (N, obs_dim)    float32  — observations before each action
-    #   actions:        jnp.ndarray (N,)            int32    — human actions (0-5)
-    #   ai_actions:     jnp.ndarray (N,)            int32    — AI teammate actions
-    #   rewards:        jnp.ndarray (N,)            float32  — per-step human reward
-    #   dones:          jnp.ndarray (N,)            bool     — True on last step of each episode
-    #   avail_actions:  jnp.ndarray (N, 6)          bool     — valid action mask
-    #   episode_ids:    jnp.ndarray (N,)            int32    — which episode each timestep belongs to
-    #
-    # where N = total timesteps across all episodes, obs_dim = 15 (7x7) or 24 (12x12)
-
-    # --- Grouped by agent type ---
-    by_agent = load_bc_data_by_agent("grid7_food3_nolevels")
-    # dict mapping agent_type (str) -> BCDataset
-
-    # --- Padded episodes (for recurrent / sequence models) ---
-    padded = load_bc_data_padded("grid7_food3_nolevels")
-    # padded is a BCDatasetPadded (NamedTuple):
-    #   obs:            jnp.ndarray (E, T, obs_dim)  float32
-    #   actions:        jnp.ndarray (E, T)            int32
-    #   ai_actions:     jnp.ndarray (E, T)            int32
-    #   rewards:        jnp.ndarray (E, T)            float32
-    #   dones:          jnp.ndarray (E, T)            bool
-    #   avail_actions:  jnp.ndarray (E, T, 6)         bool
-    #   mask:           jnp.ndarray (E, T)             bool  — True for real timesteps, False for padding
-    #   agent_types:    list[str]                             — agent type label per episode
-    #
-    # where E = number of episodes, T = max episode length (padded)
-
-Available config names:
-    "grid7_food3_nolevels"   — 7x7 grid, 3 food, same levels     (obs_dim=15)
-    "grid7_food3_levels"     — 7x7 grid, 3 food, different levels (obs_dim=15)
-    "grid12_food6_nolevels"  — 12x12 grid, 6 food, same levels   (obs_dim=24)
-    "grid12_food6_levels"    — 12x12 grid, 6 food, different levels (obs_dim=24)
+See human_data_processing/README.md for full documentation on data format,
+filtering criteria, available configs, and usage examples.
 """
 
 import pickle

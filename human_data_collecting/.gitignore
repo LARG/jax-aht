@@ -1,6 +1,8 @@
 # Data files
 collected_data/
+collected_data_prolific/
 *.json
+*.tar.gz
 
 # Python
 __pycache__/

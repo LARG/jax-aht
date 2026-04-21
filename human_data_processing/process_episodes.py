@@ -10,7 +10,7 @@ and, when the reversal may be incorrect (blocked move indistinguishable from
 real move), ``step0_uncertain``.
 
 Usage:
-    python human_data/process_episodes.py
+    python human_data_processing/process_episodes.py
 """
 
 import json
@@ -415,7 +415,7 @@ def filter_players(all_episodes: list[dict]) -> tuple[set[str], dict]:
 # ---------- Main ----------
 
 def main():
-    input_dir = Path(__file__).parent / "collected_data_prolific"
+    input_dir = Path(__file__).parent.parent / "human_data_collecting" / "collected_data_prolific"
     output_dir = Path(__file__).parent / "processed"
     output_dir.mkdir(exist_ok=True)
 
