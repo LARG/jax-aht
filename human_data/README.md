@@ -53,6 +53,11 @@ python app.py
 
 3. Open your web browser and navigate to the port the flask app is serving to
 
+## Using Prolific
+
+Use the base URL + /prolific to have an entrypoint that takes optional URL query parameters to collect prolific_id, experiment_id, etc.  
+
+Prolific has completion codes which is provided at the end of the survey for the participant to submit back to Prolific to verify that they have completed the study. You can change the completion code provided by this website by changing the hardcoded field. 
 
 ## Collected Data
 
