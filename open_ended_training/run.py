@@ -28,7 +28,7 @@ def run_training(cfg):
 
     if cfg["run_heldout_eval"]:
         metric_names = get_metric_names(cfg["task"]["ENV_NAME"])
-        ego_as_2d = False if cfg.algorithm["ALG"] in ["paired"] else True
+        ego_as_2d = False if cfg.algorithm["ALG"] in ["paired", "trajedi"] else True
         eval_metrics, ego_names, heldout_names = run_heldout_evaluation(
             cfg, ego_policy, final_ego_params, init_ego_params, ego_as_2d=ego_as_2d
         )

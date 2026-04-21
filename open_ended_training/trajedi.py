@@ -538,6 +538,7 @@ def train_trajedi_partners(config, env, partner_rng):
                         transition.value,
                         transition.reward,
                     )
+                    
                     delta = reward + config["GAMMA"] * next_value * (1 - done) - value
                     gae = (
                         delta
@@ -682,7 +683,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1, 1))
                             copied_selected_sp_log_probs_sp1 = jnp.tile(selected_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1))
                             copied_selected_sp_log_probs_sp2 = jnp.tile(selected_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1))
-
+                            
                             def per_step_aggregate(
                                     all_eps_id_sp1, all_eps_id_sp2, 
                                     eps_id_sp1, eps_id_sp2,
@@ -883,15 +884,14 @@ def train_trajedi_partners(config, env, partner_rng):
                             jnp.mean(pi_conf_sp2.entropy()),
                             loss_weights_sp2
                         )
-
-                        #TODO
+                        
                         # We negate the pg_loss_conf_ego to minimize the ego agent's objective
                         conf_xp_loss = pg_loss_conf_xp + config["VF_COEF"] * value_loss_conf_xp - config["ENT_COEF"] * entropy_conf_xp
                         conf_sp_loss = pg_loss_conf_sp1 + pg_loss_conf_sp2 + config["VF_COEF"] * (value_loss_conf_sp1 + value_loss_conf_sp2) - config["ENT_COEF"] * (entropy_conf_sp1 + entropy_conf_sp2) + config["TRAJEDI_COEF"] * (trajedi_loss_sp1 + trajedi_loss_sp2)
+                        
                         total_loss = conf_xp_loss + conf_sp_loss
 
                         return total_loss, (value_loss_conf_xp, value_loss_conf_sp1+value_loss_conf_sp2, pg_loss_conf_xp, pg_loss_conf_sp1+pg_loss_conf_sp2, entropy_conf_xp, entropy_conf_sp1+entropy_conf_sp2, trajedi_loss_sp1+trajedi_loss_sp2)
-
 
                     grad_fn = jax.value_and_grad(_loss_fn_policy, has_aux=True)
 
