@@ -20,6 +20,7 @@ orbax-export==0.0.6
 # others
 pandas==2.3.0
 numpy
+pandas<=2.3.3
 gymnax
 distrax
 safetensors

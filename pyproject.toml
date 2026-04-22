@@ -33,6 +33,7 @@ dependencies = [
     # Core dependencies
     "pandas==2.3.0",
     "numpy",
+    "pandas<=2.3.3",
     "gymnax",
     "distrax",
     "safetensors",
