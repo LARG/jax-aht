@@ -28,8 +28,12 @@ class LogWrapper(JaxMARLWrapper):
         self._world_state = self._env._world_state if hasattr(self._env, '_world_state') else False
 
     @partial(jax.jit, static_argnums=(0,))
-    def reset(self, key: chex.PRNGKey) -> Tuple[chex.Array, State]:
-        obs, env_state = self._env.reset(key)
+    def reset(self, key: chex.PRNGKey):
+        if self._world_state:
+            obs, world_state, env_state = self._env.reset(key)
+        else:
+            obs, env_state = self._env.reset(key)
+
         state = LogEnvState(
             env_state,
             jnp.zeros((self._env.num_agents,)),
@@ -37,7 +41,11 @@ class LogWrapper(JaxMARLWrapper):
             jnp.zeros((self._env.num_agents,)),
             jnp.zeros((self._env.num_agents,)),
         )
-        return obs, state
+
+        if self._world_state:
+            return obs, world_state, state
+        else:
+            return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
@@ -45,10 +53,15 @@ class LogWrapper(JaxMARLWrapper):
         key: chex.PRNGKey,
         state: LogEnvState,
         action: Union[int, float],
-    ) -> Tuple[chex.Array, LogEnvState, float, bool, dict]:
-        obs, env_state, reward, done, info = self._env.step(
-            key, state.env_state, action
-        )
+    ):
+        if self._world_state:
+            obs, world_state, env_state, reward, done, info = self._env.step(
+                key, state.env_state, action
+            )
+        else:
+            obs, env_state, reward, done, info = self._env.step(
+                key, state.env_state, action
+            )
         ep_done = done["__all__"]
         new_episode_return = state.episode_returns + self._batchify_floats(reward)
         new_episode_length = state.episode_lengths + 1
@@ -80,4 +93,7 @@ class LogWrapper(JaxMARLWrapper):
             ),
             state)
 
-        return obs, state, reward, done, info
+        if self._world_state:
+            return obs, world_state, state, reward, done, info
+        else:
+            return obs, state, reward, done, info
