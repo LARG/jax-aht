@@ -19,7 +19,7 @@ NO_LAW_ENV_KWARGS: {domain: "toroidal/no_restrictions/grid_10x10_alternating_dom
                     enforce_action_constraints: true,
                     vectorized: true,
                     ego_centric_obs: true}
-TASK_NAME: rddl/grid_10x10_alternating/4_agents/toroidal_full_restrictions
+TASK_NAME: rddl/grid_10x10_alternating/4_agents/toroidal_curriculum
 SINGLE_AGENT_1_PROJECTION: "toroidal/4_agents/grid_10x10_alternating_instance0.rddl"
 SINGLE_AGENT_2_PROJECTION: "toroidal/4_agents/grid_10x10_alternating_instance1.rddl"
 SINGLE_AGENT_3_PROJECTION: "toroidal/4_agents/grid_10x10_alternating_instance2.rddl"

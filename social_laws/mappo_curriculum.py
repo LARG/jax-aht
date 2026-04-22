@@ -129,7 +129,8 @@ def train_mappo_agent(config, env, no_law_env, train_rng,
         target_eval_return = float(config.get("CURRICULUM_TARGET_EVAL_RETURN", -jnp.inf))
         ema_alpha = float(config.get("CURRICULUM_EMA_ALPHA", 0.1))
         law_ent_coef = float(config["ENT_COEF"])
-        no_law_ent_coef = float(config.get("NO_LAW_ENT_COEF", law_ent_coef))
+        no_law_ent_coef_cfg = config.get("NO_LAW_ENT_COEF", None)
+        no_law_ent_coef = law_ent_coef if no_law_ent_coef_cfg is None else float(no_law_ent_coef_cfg)
 
         def linear_schedule(count):
             frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
