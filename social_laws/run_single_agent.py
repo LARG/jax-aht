@@ -65,6 +65,12 @@ def run_training(cfg):
         cfg.algorithm.KL_BOUND = None
 
     print(OmegaConf.to_yaml(cfg, resolve=True))
+    if cfg['social_law_label'] is None:
+        cfg['logger']['tags'].pop()
+    if cfg["algorithm"]["CENTRALIZED"]:
+        cfg['logger']['tags'].append("centralized")
+    # if cfg["algorithm"]["CURRICULUM"]:
+    #     cfg['logger']['tags'].append("curriculum")
     wandb_logger = Logger(cfg)
 
     agent_policies = []
