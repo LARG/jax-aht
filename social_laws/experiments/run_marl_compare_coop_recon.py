@@ -35,6 +35,10 @@ def ippo(config):
             config.task.ENV_KWARGS.single_task_seed = config.algorithm.TRAIN_SEED
 
     print(OmegaConf.to_yaml(config, resolve=True))
+    if config.get('social_law_label') is None:
+        config['logger']['tags'].pop()
+    if config["algorithm"].get("CENTRALIZED", False):
+        config['logger']['tags'].append("centralized")
     wandb_logger = Logger(config)
 
     if config.algorithm["ALG"] == "ippo":
