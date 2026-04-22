@@ -220,6 +220,7 @@ run_cond() {
         algorithm.TRAIN_SEED=$SEED \\
         algorithm.USE_SAME_SEED=true \\
         algorithm.FIXED_EVAL=true \\
+        NUM_EXPT_AGENTS=$N \\
         label=$LABEL \\
         logger.project=aht-benchmark \\
         logger.entity=jeffreychen287-the-university-of-texas-at-austin \\
