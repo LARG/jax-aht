@@ -632,171 +632,158 @@ def train_trajedi_partners(config, env, partner_rng):
                                 ).sum()/(weights.sum() + 1e-8)
                             )
 
-                        def _loss_trajedi_conf(init_hstate_conf_sp1, traj_batch_conf_sp1,init_hstate_conf_sp2, traj_batch_conf_sp2):
-                            def _compute_indiv_pol_sp_log_probs(agent_id):                    
-                                param = gather_params(train_state_conf.params, agent_id)
-                                _, (_, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
-                                    params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
-                                    obs=traj_batch_conf_sp1.obs,
-                                    done=traj_batch_conf_sp1.done,
-                                    avail_actions=traj_batch_conf_sp1.avail_actions,
-                                    hstate=init_hstate_conf_sp1,
-                                    rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
-                                )
-                                _, (_, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
-                                    params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
-                                    obs=traj_batch_conf_sp2.obs,
-                                    done=traj_batch_conf_sp2.done,
-                                    avail_actions=traj_batch_conf_sp2.avail_actions,
-                                    hstate=init_hstate_conf_sp2,
-                                    rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
-                                )
+                        def _compute_indiv_pol_sp_log_probs(agent_id):                    
+                            param = gather_params(train_state_conf.params, agent_id)
+                            _, (_, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
+                                params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
+                                obs=traj_batch_conf_sp1.obs,
+                                done=traj_batch_conf_sp1.done,
+                                avail_actions=traj_batch_conf_sp1.avail_actions,
+                                hstate=init_hstate_conf_sp1,
+                                rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
+                            )
+                            _, (_, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
+                                params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
+                                obs=traj_batch_conf_sp2.obs,
+                                done=traj_batch_conf_sp2.done,
+                                avail_actions=traj_batch_conf_sp2.avail_actions,
+                                hstate=init_hstate_conf_sp2,
+                                rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
+                            )
 
-                                log_prob_conf_sp1 = pi_conf_sp1.log_prob(traj_batch_conf_sp1.action)
-                                log_prob_conf_sp2 = pi_conf_sp2.log_prob(traj_batch_conf_sp2.action)
+                            log_prob_conf_sp1 = pi_conf_sp1.log_prob(traj_batch_conf_sp1.action)
+                            log_prob_conf_sp2 = pi_conf_sp2.log_prob(traj_batch_conf_sp2.action)
 
-                                return log_prob_conf_sp1, log_prob_conf_sp2
+                            return log_prob_conf_sp1, log_prob_conf_sp2
+                        
+                        possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
+                        all_sp_log_probs_sp1, all_sp_log_probs_sp2 = jax.vmap(_compute_indiv_pol_sp_log_probs)(possible_agent_ids)
+
+                        # pop x time x batch
+                        # selected_indices_sp1 = jnp.expand_dims(
+                        #     jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1), axis=0
+                        # )
+                        # selected_indices_sp2 = jnp.expand_dims(
+                        #     jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1), axis=0
+
+                        copied_episode_counters_sp1 = jnp.tile(traj_batch_conf_sp1.episode_id[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1)) 
+                        copied_episode_counters_sp2 = jnp.tile(traj_batch_conf_sp2.episode_id[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1)) 
+                        copied_timestep_counters_sp1 = jnp.tile(traj_batch_conf_sp1.time_id[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1)) 
+                        copied_timestep_counters_sp2 = jnp.tile(traj_batch_conf_sp2.time_id[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1)) 
+                        copied_all_sp_log_probs_sp1 = jnp.tile(all_sp_log_probs_sp1[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1, 1))
+                        copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1, 1))
+                        copied_selected_sp_log_probs_sp1 = jnp.tile(log_prob_conf_sp1[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1))
+                        copied_selected_sp_log_probs_sp2 = jnp.tile(log_prob_conf_sp2[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1))
+                        
+                        def per_step_aggregate(
+                                all_eps_id_sp1, all_eps_id_sp2, 
+                                eps_id_sp1, eps_id_sp2,
+                                all_time_id_sp1, all_time_id_sp2, 
+                                time_id_sp1, time_id_sp2,
+                                all_sp_log_probs_sp1, all_sp_log_probs_sp2,
+                                selected_log_probs_sp1, selected_log_probs_sp2,
+                        ):
+                            is_relevant_weight_sp1 = (
+                                all_eps_id_sp1 == jnp.tile(eps_id_sp1[None, ...], (jnp.shape(all_eps_id_sp1)[0], 1))
+                            ).astype(int)
+
+                            is_relevant_weight_sp2 = (
+                                all_eps_id_sp2 == jnp.tile(eps_id_sp2[None, ...], (jnp.shape(all_eps_id_sp2)[0], 1))
+                            ).astype(int)
                             
-                            possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
-                            all_sp_log_probs_sp1, all_sp_log_probs_sp2 = jax.vmap(_compute_indiv_pol_sp_log_probs)(possible_agent_ids)
+                            time_diff_sp1 = jnp.tile(time_id_sp1[None, ...], (jnp.shape(all_time_id_sp1)[0], 1)) - all_time_id_sp1
+                            time_diff_sp2 = jnp.tile(time_id_sp2[None, ...], (jnp.shape(all_time_id_sp2)[0], 1)) - all_time_id_sp2
 
-                            # pop x time x batch
-                            selected_indices_sp1 = jnp.expand_dims(
-                                jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1), axis=0
-                            )
-                            selected_indices_sp2 = jnp.expand_dims(
-                                jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1), axis=0
-                            )
-
-                            selected_log_probs_sp1 = jnp.squeeze(
-                                jnp.take_along_axis(all_sp_log_probs_sp1, selected_indices_sp1, axis=0), axis=0
-                            )
-                            selected_log_probs_sp2 = jnp.squeeze(
-                                jnp.take_along_axis(all_sp_log_probs_sp2, selected_indices_sp2, axis=0), axis=0
-                            )
-
-                            copied_episode_counters_sp1 = jnp.tile(traj_batch_conf_sp1.episode_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1)) 
-                            copied_episode_counters_sp2 = jnp.tile(traj_batch_conf_sp2.episode_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1)) 
-                            copied_timestep_counters_sp1 = jnp.tile(traj_batch_conf_sp1.time_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1)) 
-                            copied_timestep_counters_sp2 = jnp.tile(traj_batch_conf_sp2.time_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1)) 
-                            copied_all_sp_log_probs_sp1 = jnp.tile(all_sp_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1, 1))
-                            copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1, 1))
-                            copied_selected_sp_log_probs_sp1 = jnp.tile(selected_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1))
-                            copied_selected_sp_log_probs_sp2 = jnp.tile(selected_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1))
+                            abs_diff_time_id_sp1 = jnp.abs(time_diff_sp1)
+                            abs_diff_time_id_sp2 = jnp.abs(time_diff_sp2)
+                            log_mult1_weight = is_relevant_weight_sp1*(config["GAMMA"]**abs_diff_time_id_sp1)
+                            log_mult2_weight = is_relevant_weight_sp2*(config["GAMMA"]**abs_diff_time_id_sp2)
                             
-                            def per_step_aggregate(
-                                    all_eps_id_sp1, all_eps_id_sp2, 
-                                    eps_id_sp1, eps_id_sp2,
-                                    all_time_id_sp1, all_time_id_sp2, 
-                                    time_id_sp1, time_id_sp2,
-                                    all_sp_log_probs_sp1, all_sp_log_probs_sp2,
-                                    selected_log_probs_sp1, selected_log_probs_sp2,
-                            ):
-                                is_relevant_weight_sp1 = (
-                                    all_eps_id_sp1 == jnp.tile(eps_id_sp1[None, ...], (jnp.shape(all_eps_id_sp1)[0], 1))
-                                ).astype(int)
-
-                                is_relevant_weight_sp2 = (
-                                    all_eps_id_sp2 == jnp.tile(eps_id_sp2[None, ...], (jnp.shape(all_eps_id_sp2)[0], 1))
-                                ).astype(int)
-                                
-                                time_diff_sp1 = jnp.tile(time_id_sp1[None, ...], (jnp.shape(all_time_id_sp1)[0], 1)) - all_time_id_sp1
-                                time_diff_sp2 = jnp.tile(time_id_sp2[None, ...], (jnp.shape(all_time_id_sp2)[0], 1)) - all_time_id_sp2
-
-                                abs_diff_time_id_sp1 = jnp.abs(time_diff_sp1)
-                                abs_diff_time_id_sp2 = jnp.abs(time_diff_sp2)
-                                log_mult1_weight = is_relevant_weight_sp1*(config["GAMMA"]**abs_diff_time_id_sp1)
-                                log_mult2_weight = is_relevant_weight_sp2*(config["GAMMA"]**abs_diff_time_id_sp2)
-                                
-                                # Sum selected log prob on the timestep axis (i.e., 0)
-                                summed_selected_log_probs_sp1 = jnp.sum(
-                                    selected_log_probs_sp1*is_relevant_weight_sp1,
-                                    axis=0
-                                )
-
-                                # Sum selected log prob on the timestep axis (i.e., 0)
-                                summed_selected_log_probs_sp2 = jnp.sum(
-                                    selected_log_probs_sp2*is_relevant_weight_sp2,
-                                    axis=0
-                                )
-
-                                log_delta_i_t_sp1 = jnp.sum(
-                                    selected_log_probs_sp1*log_mult1_weight,
-                                    axis=0
-                                )
-
-                                log_delta_i_t_sp2 = jnp.sum(
-                                    selected_log_probs_sp2*log_mult2_weight,
-                                    axis=0
-                                )
-
-                                # Compute mean policy trajectory log probs
-                                copied_weight_sp1 = jnp.tile(is_relevant_weight_sp1[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
-                                copied_weight_sp2 = jnp.tile(is_relevant_weight_sp2[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
-                                copied_mult1_weight = jnp.tile(log_mult1_weight[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
-                                copied_mult2_weight = jnp.tile(log_mult2_weight[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
-
-                                def logmeanexp(inp_array, axis=0):
-                                    return jnp.log(jnp.mean(jnp.exp(inp_array), axis=axis))
-                                
-                                traj_log_prob_sp1 = jnp.sum(all_sp_log_probs_sp1*copied_weight_sp1, axis=1)
-                                traj_log_prob_sp2 = jnp.sum(all_sp_log_probs_sp2*copied_weight_sp2, axis=1)
-                                avg_pol_traj_log_prob_sp1 = logmeanexp(traj_log_prob_sp1, axis=0)
-                                avg_pol_traj_log_prob_sp2 = logmeanexp(traj_log_prob_sp2, axis=0)
-
-                                log_delta_hat_t_sp1 = logmeanexp(
-                                    jnp.sum(
-                                        all_sp_log_probs_sp1*copied_mult1_weight,
-                                        axis=1
-                                    ), axis=0
-                                )
-
-                                log_delta_hat_t_sp2 = logmeanexp(
-                                    jnp.sum(
-                                        all_sp_log_probs_sp2*copied_mult2_weight,
-                                        axis=1
-                                    ), axis=0
-                                )
-
-                                return summed_selected_log_probs_sp1, summed_selected_log_probs_sp2, avg_pol_traj_log_prob_sp1, avg_pol_traj_log_prob_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2
-
-                            log_traj_pi_sp1, log_traj_pi_sp2, log_traj_pi_hat_sp1, log_traj_pi_hat_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2 = jax.vmap(per_step_aggregate)(
-                                copied_episode_counters_sp1, copied_episode_counters_sp2,
-                                traj_batch_conf_sp1.episode_id, traj_batch_conf_sp2.episode_id,
-                                copied_timestep_counters_sp1, copied_timestep_counters_sp2,
-                                traj_batch_conf_sp1.time_id, traj_batch_conf_sp2.time_id,
-                                copied_all_sp_log_probs_sp1, copied_all_sp_log_probs_sp2,
-                                copied_selected_sp_log_probs_sp1, copied_selected_sp_log_probs_sp2
+                            # Sum selected log prob on the timestep axis (i.e., 0)
+                            summed_selected_log_probs_sp1 = jnp.sum(
+                                selected_log_probs_sp1*is_relevant_weight_sp1,
+                                axis=0
                             )
 
-                            delta_hat_traj_sp1 = jnp.exp(log_delta_hat_t_sp1)
-                            delta_hat_traj_sp2 = jnp.exp(log_delta_hat_t_sp2)
-                            delta_i_traj_sp1 = jnp.exp(log_delta_i_t_sp1)
-                            delta_i_traj_sp2 = jnp.exp(log_delta_i_t_sp2)
+                            # Sum selected log prob on the timestep axis (i.e., 0)
+                            summed_selected_log_probs_sp2 = jnp.sum(
+                                selected_log_probs_sp2*is_relevant_weight_sp2,
+                                axis=0
+                            )
+
+                            log_delta_i_t_sp1 = jnp.sum(
+                                selected_log_probs_sp1*log_mult1_weight,
+                                axis=0
+                            )
+
+                            log_delta_i_t_sp2 = jnp.sum(
+                                selected_log_probs_sp2*log_mult2_weight,
+                                axis=0
+                            )
+
+                            # Compute mean policy trajectory log probs
+                            copied_weight_sp1 = jnp.tile(is_relevant_weight_sp1[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
+                            copied_weight_sp2 = jnp.tile(is_relevant_weight_sp2[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
+                            copied_mult1_weight = jnp.tile(log_mult1_weight[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
+                            copied_mult2_weight = jnp.tile(log_mult2_weight[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
+
+                            def logmeanexp(inp_array, axis=0):
+                                return jnp.log(jnp.mean(jnp.exp(inp_array), axis=axis))
                             
-                            pol_ratios_sp1 = jnp.exp(log_traj_pi_hat_sp1-log_traj_pi_sp1)
-                            pol_ratios_sp2 = jnp.exp(log_traj_pi_hat_sp2-log_traj_pi_sp2)
+                            traj_log_prob_sp1 = jnp.sum(all_sp_log_probs_sp1*copied_weight_sp1, axis=1)
+                            traj_log_prob_sp2 = jnp.sum(all_sp_log_probs_sp2*copied_weight_sp2, axis=1)
+                            avg_pol_traj_log_prob_sp1 = logmeanexp(traj_log_prob_sp1, axis=0)
+                            avg_pol_traj_log_prob_sp2 = logmeanexp(traj_log_prob_sp2, axis=0)
 
-                            pi_multiplier_sp1 = jax.lax.stop_gradient(delta_hat_traj_sp1 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp1))
-                            pi_multiplier_sp2 = jax.lax.stop_gradient(delta_hat_traj_sp2 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp2))
+                            log_delta_hat_t_sp1 = logmeanexp(
+                                jnp.sum(
+                                    all_sp_log_probs_sp1*copied_mult1_weight,
+                                    axis=1
+                                ), axis=0
+                            )
 
-                            delta_multiplier_sp1 = jax.lax.stop_gradient(pol_ratios_sp1 * delta_i_traj_sp1)
-                            delta_multiplier_sp2 = jax.lax.stop_gradient(pol_ratios_sp2 * delta_i_traj_sp2)
+                            log_delta_hat_t_sp2 = logmeanexp(
+                                jnp.sum(
+                                    all_sp_log_probs_sp2*copied_mult2_weight,
+                                    axis=1
+                                ), axis=0
+                            )
 
-                            trajedi_loss_sp1 = pi_multiplier_sp1 * log_traj_pi_sp1 + delta_multiplier_sp1 * log_delta_i_t_sp1
-                            trajedi_loss_sp2 = pi_multiplier_sp2 * log_traj_pi_sp2 + delta_multiplier_sp2 * log_delta_i_t_sp2
+                            return summed_selected_log_probs_sp1, summed_selected_log_probs_sp2, avg_pol_traj_log_prob_sp1, avg_pol_traj_log_prob_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2
 
-                            trajedi_loss_sp1 = trajedi_loss_sp1.mean()
-                            trajedi_loss_sp2 = trajedi_loss_sp2.mean()
-                            return trajedi_loss_sp1, trajedi_loss_sp2
-
-                        trajedi_loss_sp1, trajedi_loss_sp2 = _loss_trajedi_conf(
-                            init_hstate_conf_sp1, traj_batch_conf_sp1,
-                            init_hstate_conf_sp2, traj_batch_conf_sp2
+                        log_traj_pi_sp1, log_traj_pi_sp2, log_traj_pi_hat_sp1, log_traj_pi_hat_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2 = jax.vmap(per_step_aggregate)(
+                            copied_episode_counters_sp1, copied_episode_counters_sp2,
+                            traj_batch_conf_sp1.episode_id, traj_batch_conf_sp2.episode_id,
+                            copied_timestep_counters_sp1, copied_timestep_counters_sp2,
+                            traj_batch_conf_sp1.time_id, traj_batch_conf_sp2.time_id,
+                            copied_all_sp_log_probs_sp1, copied_all_sp_log_probs_sp2,
+                            copied_selected_sp_log_probs_sp1, copied_selected_sp_log_probs_sp2
                         )
+
+                        delta_hat_traj_sp1 = jnp.exp(log_delta_hat_t_sp1)
+                        delta_hat_traj_sp2 = jnp.exp(log_delta_hat_t_sp2)
+                        delta_i_traj_sp1 = jnp.exp(log_delta_i_t_sp1)
+                        delta_i_traj_sp2 = jnp.exp(log_delta_i_t_sp2)
+                        
+                        pol_ratios_sp1 = jnp.exp(log_traj_pi_hat_sp1-log_traj_pi_sp1)
+                        pol_ratios_sp2 = jnp.exp(log_traj_pi_hat_sp2-log_traj_pi_sp2)
+
+                        pi_multiplier_sp1 = jax.lax.stop_gradient(delta_hat_traj_sp1 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp1))
+                        pi_multiplier_sp2 = jax.lax.stop_gradient(delta_hat_traj_sp2 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp2))
+
+                        delta_multiplier_sp1 = jax.lax.stop_gradient(pol_ratios_sp1 * delta_i_traj_sp1)
+                        delta_multiplier_sp2 = jax.lax.stop_gradient(pol_ratios_sp2 * delta_i_traj_sp2)
+
+                        trajedi_loss_sp1 = pi_multiplier_sp1 * log_traj_pi_sp1 + delta_multiplier_sp1 * log_delta_i_t_sp1
+                        trajedi_loss_sp2 = pi_multiplier_sp2 * log_traj_pi_sp2 + delta_multiplier_sp2 * log_delta_i_t_sp2
+
+                        trajedi_loss_sp1 = trajedi_loss_sp1.mean()
+                        trajedi_loss_sp2 = trajedi_loss_sp2.mean()
+
 
                         trajedi_loss_sp1 = compute_mean_weighted_losses(trajedi_loss_sp1, loss_weights_sp1)
                         trajedi_loss_sp2 = compute_mean_weighted_losses(trajedi_loss_sp2, loss_weights_sp2)
+
 
                         # Value loss for interaction with ego agent
                         value_pred_conf_xp_clipped = traj_batch_conf_xp.value + (
@@ -1518,28 +1505,28 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     
     # Value losses
     # shape (num_seeds, num_updates, update_epochs, num_minibatches)
-    avg_value_losses_conf_self_play = np.asarray(metrics["value_loss_conf_self_play"]).mean(axis=(0, 2, 3))
-    avg_value_losses_conf_vs_br = np.asarray(metrics["value_loss_conf_against_br"]).mean(axis=(0, 2, 3))
+    avg_value_losses_conf_self_play = np.asarray(metrics["value_loss_conf_self_play"]).mean(axis=(0, 2, 3, 4))
+    avg_value_losses_conf_vs_br = np.asarray(metrics["value_loss_conf_against_br"]).mean(axis=(0, 2, 3, 4))
     avg_value_losses_br_sp = np.asarray(metrics["value_loss_ego_self_play"]).mean(axis=(0, 2, 3))
     avg_value_losses_br_xp = np.asarray(metrics["value_loss_ego_against_conf"]).mean(axis=(0, 2, 3))
 
     # Actor losses
     # shape (num_seeds, num_updates, update_epochs, num_minibatches)
-    avg_actor_losses_conf_self_play = np.asarray(metrics["pg_loss_conf_self_play"]).mean(axis=(0, 2, 3))
-    avg_actor_losses_conf_vs_br = np.asarray(metrics["pg_loss_conf_against_br"]).mean(axis=(0, 2, 3))
+    avg_actor_losses_conf_self_play = np.asarray(metrics["pg_loss_conf_self_play"]).mean(axis=(0, 2, 3, 4))
+    avg_actor_losses_conf_vs_br = np.asarray(metrics["pg_loss_conf_against_br"]).mean(axis=(0, 2, 3, 4))
     avg_actor_losses_ego_sp = np.asarray(metrics["pg_loss_ego_self_play"]).mean(axis=(0, 2, 3))
     avg_actor_losses_ego_xp = np.asarray(metrics["pg_loss_ego_against_conf"]).mean(axis=(0, 2, 3))
 
     # Entropy losses
     #  shape (num_seeds, num_updates, update_epochs, num_minibatches)
-    avg_entropy_losses_conf_self_play = np.asarray(metrics["entropy_conf_self_play"]).mean(axis=(0, 2, 3))
-    avg_entropy_losses_conf_vs_br = np.asarray(metrics["entropy_conf_against_br"]).mean(axis=(0, 2, 3))
+    avg_entropy_losses_conf_self_play = np.asarray(metrics["entropy_conf_self_play"]).mean(axis=(0, 2, 3, 4))
+    avg_entropy_losses_conf_vs_br = np.asarray(metrics["entropy_conf_against_br"]).mean(axis=(0, 2, 3, 4))
     avg_entropy_losses_ego_sp = np.asarray(metrics["entropy_loss_ego_self_play"]).mean(axis=(0, 2, 3))
     avg_entropy_losses_ego_xp = np.asarray(metrics["entropy_loss_ego_against_conf"]).mean(axis=(0, 2, 3))
 
     # Entropy losses
     #  shape (num_seeds, num_updates, update_epochs, num_minibatches)
-    avg_sp_trajedi_loss = np.asarray(metrics["trajedi_loss"]).mean(axis=(0, 2, 3))
+    avg_sp_trajedi_loss = np.asarray(metrics["trajedi_loss"]).mean(axis=(0, 2, 3, 4))
 
     # Rewards
     # shape (num_seeds, num_updates)
