@@ -5,11 +5,11 @@ defaults:
 TIMESTEPS_PER_ITER_PARTNER: 6e6
 TIMESTEPS_PER_ITER_EGO: 2e6
 NUM_OPEN_ENDED_ITERS: 30
-REGRET_SP_WEIGHT: 3.0 # weight on the SP term in the perstep regret loss
-LR: 1e-4
+REGRET_SP_WEIGHT: 2 # weight on the SP term in the perstep regret loss
+LR: 5e-5
 NUM_MINIBATCHES: 8
 CLIP_EPS: 0.2
-ENT_COEF: 0.01
+ENT_COEF: 0.1
 ANNEAL_LR: true
 EGO_ARGS:
   LR: 5e-5

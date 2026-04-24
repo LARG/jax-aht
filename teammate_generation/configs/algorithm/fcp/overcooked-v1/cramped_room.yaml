@@ -3,11 +3,12 @@ defaults:
   - _self_ # values from this file override the values from the base file
 
 TOTAL_TIMESTEPS: 2e6
-LR: .0001
+LR: 0.01
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 16
 CLIP_EPS: 0.2
-ENT_COEF: 0.01
+ENT_COEF: 5e-3
+PARTNER_POP_SIZE: 30
 ego_train_algorithm: 
   TOTAL_TIMESTEPS: 3e7
   LR: 1e-4
