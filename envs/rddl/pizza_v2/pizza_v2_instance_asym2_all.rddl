@@ -19,21 +19,23 @@ non-fluents pizza_v2_asym2_all {
 		CAPACITY(t2) = 2;
 		SHOP(s1);
 		// Right Half
-		CONNECTED(s1, r1);
-		CONNECTED(r1, s1);
-		CONNECTED(r1, r2);
-		CONNECTED(r2, r3);
-		CONNECTED(r3, r1);
-		CONNECTED(r3, r4);
-		CONNECTED(r4, r2);
+		CONNECTION-NUM(s1, r1) = 1;
+		CONNECTION-NUM(r1, s1) = 1;
+		CONNECTION-NUM(r1, r2) = 2;
+		CONNECTION-NUM(r2, r3) = 1;
+		CONNECTION-NUM(r3, r1) = 1;
+		CONNECTION-NUM(r3, r4) = 2;
+		CONNECTION-NUM(r4, r2) = 1;
 		// Left Half
-		CONNECTED(s1, l1);
-		CONNECTED(l1, s1);
-		CONNECTED(l1, l2);
-		CONNECTED(l2, l3);
-		CONNECTED(l3, l1);
-		CONNECTED(l3, l4);
-		CONNECTED(l4, l2);
+		CONNECTION-NUM(s1, l1) = 2;
+		CONNECTION-NUM(l1, s1) = 1;
+		CONNECTION-NUM(l1, l2) = 2;
+		CONNECTION-NUM(l2, l3) = 1;
+		CONNECTION-NUM(l3, l1) = 1;
+		CONNECTION-NUM(l3, l4) = 2;
+		CONNECTION-NUM(l4, l2) = 1;
+
+		MAX-CONNECTIONS = 2; // max connections for any location
 
 		CONTROLLABLE(t1);
 		CONTROLLABLE(t2); // both trucks are controllable by the agent
