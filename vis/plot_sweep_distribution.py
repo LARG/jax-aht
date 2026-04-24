@@ -15,6 +15,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import gaussian_kde
 
@@ -30,9 +31,51 @@ from vis.plot_globals import (
 from vis.wandb_cache import fetch_sweep_cached, extract_metric
 
 
+def _get_hparam_cols(df: pd.DataFrame) -> list[str]:
+    """Return config columns that vary across runs and have hashable values.
+
+    Mirrors the logic in print_sweep_summary.py: skip columns where nunique()
+    raises TypeError (entirely unhashable, e.g. always-dict columns).
+    """
+    cols = []
+    for c in df.columns:
+        if c.startswith("_"):
+            continue
+        try:
+            if df[c].nunique() > 1:
+                cols.append(c)
+        except TypeError:
+            pass
+    return cols
+
+
+def deduplicate_and_sample(
+    df: pd.DataFrame,
+    max_num: int | None,
+    seed: int = 0,
+) -> pd.DataFrame:
+    """Aggregate duplicate hyperparam combinations and optionally subsample.
+
+    Rows with identical hyperparameter settings are collapsed by taking the
+    mean _score.  If more than *max_num* unique combinations remain, randomly
+    sample down to that limit.
+    """
+    hparam_cols = _get_hparam_cols(df)
+    if hparam_cols:
+        # Drop individual rows where a hyperparam value is unhashable (e.g. a
+        # dict nested inside an otherwise scalar column).
+        hashable_mask = df[hparam_cols].apply(
+            lambda col: col.map(lambda v: not isinstance(v, (dict, list)))
+        ).all(axis=1)
+        df = df[hashable_mask].copy()
+        df = df.groupby(hparam_cols, as_index=False, dropna=False).agg({"_score": "mean"})
+    if max_num is not None and len(df) > max_num:
+        df = df.sample(n=max_num, random_state=seed)
+    return df
+
+
 def plot_distribution(
     scores_by_algo: dict[str, np.ndarray],
-    metric: str,
     title: str,
     out_path: Path,
 ) -> None:
@@ -99,7 +142,6 @@ def plot_distribution(
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
         description="Plot performance distribution across all hyperparameter settings."
     )
@@ -109,11 +151,15 @@ if __name__ == "__main__":
                         help="Task name (e.g. lbf).")
     parser.add_argument("--force-recompute", action="store_true",
                         help="Re-fetch from wandb, ignoring the local cache.")
+    parser.add_argument("--max-hparams", type=int, default=400,
+                        help="Max unique hyperparam combinations to visualize per algorithm. "
+                             "If exceeded, randomly sample down to this limit.")
     args = parser.parse_args()
 
     ALGO_TYPE = args.algo_type
     TASK = args.task
     FORCE_RECOMPUTE = args.force_recompute
+    MAX_NUM_TO_VISUALIZE = args.max_hparams
 
     sweep_map = EGO_HYPERPARAM_SWEEPS if ALGO_TYPE == "ego" else UNIFIED_HYPERPARAM_SWEEPS
     task_sweeps = sweep_map[TASK]
@@ -124,9 +170,10 @@ if __name__ == "__main__":
                                 force_recompute=FORCE_RECOMPUTE,
                                 expected_name_parts=[algo, TASK])
         df = extract_metric(df, HYPERPARAM_DEFAULT_METRIC)
+        df = deduplicate_and_sample(df, MAX_NUM_TO_VISUALIZE)
         scores_by_algo[algo] = df["_score"].values
-        print(f"  {algo}: {len(df)} runs")
+        print(f"  {algo}: {len(df)} unique hparam combos")
 
     out_path = Path(SAVE_DIR) / f"sweep_distribution_{ALGO_TYPE}_{TASK.replace('/', '_')}.pdf"
     title = f"{TASK_TO_DISPLAY_NAME[TASK]}: Hyperparameter Performance Distribution ({ALGO_TYPE.capitalize()} Algorithms)"
-    plot_distribution(scores_by_algo, HYPERPARAM_DEFAULT_METRIC, title, out_path)
+    plot_distribution(scores_by_algo, title, out_path)
