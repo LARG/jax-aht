@@ -14,7 +14,7 @@ METHOD_TO_DISPLAY_NAME = {
     "meliba": "MeLIBA",
     "fcp": "FCP",
     "brdiv": "BRDiv",
-    "lbrdiv": "LB-RDiv",
+    "lbrdiv": "LBRDiv",
     "comedi": "CoMeDi",
     "rotate": "ROTATE",
     "cole": "COLE",
