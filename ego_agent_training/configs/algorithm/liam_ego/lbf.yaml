@@ -2,11 +2,12 @@ defaults:
   - liam_ego/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 3e6
-LR: 3e-4
-ENCODER_DECODER_LR: 7e-4
-ENT_COEF: 0.001
-CLIP_EPS: 0.1
+TOTAL_TIMESTEPS: 7e6
+NUM_ENVS: 256
+LR: 0.003
+ENCODER_DECODER_LR: 7e-3
+ENT_COEF: 0.01
+CLIP_EPS: 0.05
 ANNEAL_LR: false
 UPDATE_EPOCHS: 5
 ENCODER_HIDDEN_DIM: 128

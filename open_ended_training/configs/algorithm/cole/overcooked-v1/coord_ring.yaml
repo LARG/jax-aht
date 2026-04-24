@@ -2,9 +2,11 @@ defaults:
   - cole/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 1e7
-PARTNER_POP_SIZE: 10
-LR: 5e-4
+TOTAL_TIMESTEPS: 1.5e7
+PARTNER_POP_SIZE: 13
+LR: 0.001
 UPDATE_EPOCHS: 15
 CLIP_EPS: 0.1
-ENT_COEF: 0.05
+ENT_COEF: 0.01
+COLE_ALPHA: 0.1
+C_UCT: 0.3
