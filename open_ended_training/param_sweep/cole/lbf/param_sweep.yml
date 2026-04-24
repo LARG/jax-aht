@@ -31,4 +31,5 @@ command:
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - label="param_sweep"
+  - algorithm.TOTAL_TIMESTEPS_PER_ITERATION=7e6
   - ${args_no_hyphens}

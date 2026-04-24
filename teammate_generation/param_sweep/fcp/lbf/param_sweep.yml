@@ -28,4 +28,6 @@ command:
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - label="param_sweep"
+  - algorithm.TOTAL_TIMESTEPS=2e6
+  - algorithm.ego_train_algorithm.TOTAL_TIMESTEPS=3e7
   - ${args_no_hyphens}

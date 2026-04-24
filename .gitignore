@@ -6,6 +6,7 @@ notebooks/*
 
 results*/
 results*/*
+temp/
 eval_teammates/
 eval_teammates/*
 val_teammates/
@@ -14,7 +15,7 @@ wandb/
 wandb/*
 .vscode/
 .vscode/*
-
+.claude/
 # pycache
 **/__pycache__/
 **/*.pyc
