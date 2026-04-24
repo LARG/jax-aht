@@ -1,7 +1,7 @@
 ENV_NAME: rddl/grid_10x10_alternating
 ROLLOUT_LENGTH: 128
 NUM_EVAL_EPISODES: 10
-ENV_KWARGS: {domain: "toroidal/yielding/grid_10x10_alternating_domain.rddl",
+ENV_KWARGS: {domain: "toroidal/grid_10x10_alternating_domain.rddl",
              instance: "toroidal/5_agents/grid_10x10_alternating_instance5.rddl",
              render: true,
              render_name: "grid_10x10_alternating_toroidal_full_restrictions",

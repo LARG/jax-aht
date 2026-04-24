@@ -1,8 +1,8 @@
 ENV_NAME: rddl/grid_10x10_alternating
 ROLLOUT_LENGTH: 128
 NUM_EVAL_EPISODES: 10
-ENV_KWARGS: {domain: "toroidal/yielding/grid_10x10_alternating_domain.rddl",
-             instance: "toroidal/5_agents/grid_10x10_alternating_instance5.rddl",
+ENV_KWARGS: {domain: "toroidal/grid_10x10_alternating_domain.rddl",
+             instance: "toroidal/6_agents/grid_10x10_alternating_instance6.rddl",
              render: true,
              render_name: "grid_10x10_alternating_toroidal_full_restrictions",
              render_dir: "render",
@@ -11,7 +11,7 @@ ENV_KWARGS: {domain: "toroidal/yielding/grid_10x10_alternating_domain.rddl",
              vectorized: true,
              ego_centric_obs: true}
 NO_LAW_ENV_KWARGS: {domain: "toroidal/no_restrictions/grid_10x10_alternating_domain.rddl",
-                    instance: "toroidal/5_agents/grid_10x10_alternating_instance5.rddl",
+                    instance: "toroidal/6_agents/grid_10x10_alternating_instance6.rddl",
                     render: true,
                     render_name: "grid_10x10_alternating_toroidal_no_restrictions",
                     render_dir: "render",
@@ -19,10 +19,11 @@ NO_LAW_ENV_KWARGS: {domain: "toroidal/no_restrictions/grid_10x10_alternating_dom
                     enforce_action_constraints: true,
                     vectorized: true,
                     ego_centric_obs: true}
-TASK_NAME: rddl/grid_10x10_alternating/5_agents/toroidal_curriculum
-SINGLE_AGENT_1_PROJECTION: "toroidal/5_agents/grid_10x10_alternating_instance0.rddl"
-SINGLE_AGENT_2_PROJECTION: "toroidal/5_agents/grid_10x10_alternating_instance1.rddl"
-SINGLE_AGENT_3_PROJECTION: "toroidal/5_agents/grid_10x10_alternating_instance2.rddl"
-SINGLE_AGENT_4_PROJECTION: "toroidal/5_agents/grid_10x10_alternating_instance3.rddl"
-SINGLE_AGENT_5_PROJECTION: "toroidal/5_agents/grid_10x10_alternating_instance4.rddl"
+TASK_NAME: rddl/grid_10x10_alternating/6_agents/toroidal_curriculum
+SINGLE_AGENT_1_PROJECTION: "toroidal/6_agents/grid_10x10_alternating_instance0.rddl"
+SINGLE_AGENT_2_PROJECTION: "toroidal/6_agents/grid_10x10_alternating_instance1.rddl"
+SINGLE_AGENT_3_PROJECTION: "toroidal/6_agents/grid_10x10_alternating_instance2.rddl"
+SINGLE_AGENT_4_PROJECTION: "toroidal/6_agents/grid_10x10_alternating_instance3.rddl"
+SINGLE_AGENT_5_PROJECTION: "toroidal/6_agents/grid_10x10_alternating_instance4.rddl"
+SINGLE_AGENT_6_PROJECTION: "toroidal/6_agents/grid_10x10_alternating_instance5.rddl"
 ALPHA_COST: true
