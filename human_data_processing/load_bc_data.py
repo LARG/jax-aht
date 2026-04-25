@@ -4,13 +4,15 @@ See human_data_processing/README.md for full documentation on data format,
 filtering criteria, available configs, and usage examples.
 """
 
-import pickle
+import json
 from collections import defaultdict
 from pathlib import Path
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import jax.numpy as jnp
 import numpy as np
+from safetensors.numpy import load_file as st_load
+from safetensors import safe_open
 
 
 # ---------- Data structures ----------
@@ -44,10 +46,10 @@ class BCDatasetPadded(NamedTuple):
         actions:       (E, T)           int32
         ai_actions:    (E, T)           int32
         rewards:       (E, T)           float32
-        dones:         (E, T)           bool
+        dones:         (E, T)           bool    — True on last real step AND all padding
         avail_actions: (E, T, 6)        bool
-        mask:          (E, T)           bool  — True where data is real, False where padded
-        agent_types:   list[str]              — agent type label per episode (length E)
+        mask:          (E, T)           bool    — True where data is real, False where padded
+        agent_types:   list[str]               — agent type label per episode (length E)
     """
     obs: jnp.ndarray
     actions: jnp.ndarray
@@ -64,83 +66,57 @@ class BCDatasetPadded(NamedTuple):
 PROCESSED_DIR = Path(__file__).parent / "processed"
 
 
-def _load_raw(config_name: str, exclude_uncertain: bool = False) -> list[dict]:
-    """Load the raw list of episode dicts from a config's trajectories.pkl."""
-    pkl_path = PROCESSED_DIR / config_name / "trajectories.pkl"
-    with open(pkl_path, "rb") as f:
-        episodes = pickle.load(f)
-    if exclude_uncertain:
-        episodes = [ep for ep in episodes if not ep["step0_uncertain"]]
-    return episodes
+def _load_safetensors(path: str) -> tuple[dict[str, np.ndarray], dict[str, str]]:
+    """Load tensors and metadata from a safetensors file."""
+    tensors = st_load(path)
+    with safe_open(path, framework="numpy") as f:
+        metadata = f.metadata()
+    return tensors, metadata or {}
 
 
-def _episodes_to_flat(episodes: list[dict]) -> BCDataset:
-    """Concatenate a list of episode dicts into a flat BCDataset."""
-    obs_parts = []
-    act_parts = []
-    ai_act_parts = []
-    rew_parts = []
-    done_parts = []
-    avail_parts = []
-    eid_parts = []
+def _filter_by_uncertainty(tensors: dict, metadata: dict, format: str) -> tuple[dict, dict]:
+    """Remove episodes flagged as step0_uncertain."""
+    uncertain = json.loads(metadata.get("step0_uncertain", "[]"))
+    keep = [i for i, u in enumerate(uncertain) if not u]
 
-    for i, ep in enumerate(episodes):
-        T = len(ep["actions"])
-        obs_parts.append(ep["obs"])
-        act_parts.append(ep["actions"])
-        ai_act_parts.append(ep["ai_actions"])
-        rew_parts.append(ep["rewards"])
-        done_parts.append(ep["dones"])
-        avail_parts.append(ep["avail_actions"])
-        eid_parts.append(np.full(T, i, dtype=np.int32))
+    if len(keep) == len(uncertain):
+        return tensors, metadata
 
-    return BCDataset(
-        obs=jnp.array(np.concatenate(obs_parts)),
-        actions=jnp.array(np.concatenate(act_parts)),
-        ai_actions=jnp.array(np.concatenate(ai_act_parts)),
-        rewards=jnp.array(np.concatenate(rew_parts)),
-        dones=jnp.array(np.concatenate(done_parts)),
-        avail_actions=jnp.array(np.concatenate(avail_parts)),
-        episode_ids=jnp.array(np.concatenate(eid_parts)),
-    )
+    if format == "flat":
+        episode_ids = tensors["episode_ids"]
+        keep_set = set(keep)
+        mask = np.array([eid in keep_set for eid in episode_ids])
 
+        # Remap episode ids to be contiguous
+        id_map = {old: new for new, old in enumerate(keep)}
+        new_tensors = {}
+        for k, v in tensors.items():
+            if k == "episode_ids":
+                new_tensors[k] = np.array([id_map[eid] for eid in v[mask]], dtype=np.int32)
+            else:
+                new_tensors[k] = v[mask]
 
-def _episodes_to_padded(episodes: list[dict]) -> BCDatasetPadded:
-    """Pad episodes to uniform length and stack into a BCDatasetPadded."""
-    max_len = max(len(ep["actions"]) for ep in episodes)
-    E = len(episodes)
-    obs_dim = episodes[0]["obs"].shape[1]
+        # Update metadata lists
+        new_meta = dict(metadata)
+        for list_key in ["agent_types", "session_ids", "step0_reconstructed", "step0_uncertain"]:
+            if list_key in metadata:
+                vals = json.loads(metadata[list_key])
+                new_meta[list_key] = json.dumps([vals[i] for i in keep])
+        new_meta["num_episodes"] = str(len(keep))
+        new_meta["num_timesteps"] = str(int(np.sum(mask)))
+        return new_tensors, new_meta
 
-    obs = np.zeros((E, max_len, obs_dim), dtype=np.float32)
-    actions = np.zeros((E, max_len), dtype=np.int32)
-    ai_actions = np.zeros((E, max_len), dtype=np.int32)
-    rewards = np.zeros((E, max_len), dtype=np.float32)
-    dones = np.ones((E, max_len), dtype=bool)
-    avail_actions = np.zeros((E, max_len, 6), dtype=bool)
-    mask = np.zeros((E, max_len), dtype=bool)
-    agent_types = []
+    else:  # padded
+        keep_idx = np.array(keep)
+        new_tensors = {k: v[keep_idx] for k, v in tensors.items()}
 
-    for i, ep in enumerate(episodes):
-        T = len(ep["actions"])
-        obs[i, :T] = ep["obs"]
-        actions[i, :T] = ep["actions"]
-        ai_actions[i, :T] = ep["ai_actions"]
-        rewards[i, :T] = ep["rewards"]
-        dones[i, :T] = ep["dones"]
-        avail_actions[i, :T] = ep["avail_actions"]
-        mask[i, :T] = True
-        agent_types.append(ep["agent_type"])
-
-    return BCDatasetPadded(
-        obs=jnp.array(obs),
-        actions=jnp.array(actions),
-        ai_actions=jnp.array(ai_actions),
-        rewards=jnp.array(rewards),
-        dones=jnp.array(dones),
-        avail_actions=jnp.array(avail_actions),
-        mask=jnp.array(mask),
-        agent_types=agent_types,
-    )
+        new_meta = dict(metadata)
+        for list_key in ["agent_types", "session_ids", "step0_reconstructed", "step0_uncertain"]:
+            if list_key in metadata:
+                vals = json.loads(metadata[list_key])
+                new_meta[list_key] = json.dumps([vals[i] for i in keep])
+        new_meta["num_episodes"] = str(len(keep))
+        return new_tensors, new_meta
 
 
 # ---------- Public API ----------
@@ -157,8 +133,20 @@ def load_bc_data(config_name: str, exclude_uncertain: bool = False) -> BCDataset
     Returns:
         BCDataset with all episodes concatenated.
     """
-    episodes = _load_raw(config_name, exclude_uncertain=exclude_uncertain)
-    return _episodes_to_flat(episodes)
+    path = str(PROCESSED_DIR / config_name / "flat.safetensors")
+    tensors, metadata = _load_safetensors(path)
+    if exclude_uncertain:
+        tensors, metadata = _filter_by_uncertainty(tensors, metadata, "flat")
+
+    return BCDataset(
+        obs=jnp.array(tensors["obs"]),
+        actions=jnp.array(tensors["actions"]),
+        ai_actions=jnp.array(tensors["ai_actions"]),
+        rewards=jnp.array(tensors["rewards"]),
+        dones=jnp.array(tensors["dones"]),
+        avail_actions=jnp.array(tensors["avail_actions"]),
+        episode_ids=jnp.array(tensors["episode_ids"]),
+    )
 
 
 def load_bc_data_by_agent(config_name: str,
@@ -168,11 +156,33 @@ def load_bc_data_by_agent(config_name: str,
     Returns:
         Dict mapping agent_type string -> BCDataset.
     """
-    episodes = _load_raw(config_name, exclude_uncertain=exclude_uncertain)
-    grouped = defaultdict(list)
-    for ep in episodes:
-        grouped[ep["agent_type"]].append(ep)
-    return {agent: _episodes_to_flat(eps) for agent, eps in sorted(grouped.items())}
+    path = str(PROCESSED_DIR / config_name / "flat.safetensors")
+    tensors, metadata = _load_safetensors(path)
+    if exclude_uncertain:
+        tensors, metadata = _filter_by_uncertainty(tensors, metadata, "flat")
+
+    agent_types = json.loads(metadata["agent_types"])
+    episode_ids = tensors["episode_ids"]
+
+    # Group episode indices by agent type
+    agent_to_ep_ids: dict[str, set[int]] = defaultdict(set)
+    for ep_idx, at in enumerate(agent_types):
+        agent_to_ep_ids[at].add(ep_idx)
+
+    result = {}
+    for agent, ep_ids in sorted(agent_to_ep_ids.items()):
+        mask = np.array([eid in ep_ids for eid in episode_ids])
+        id_map = {old: new for new, old in enumerate(sorted(ep_ids))}
+        result[agent] = BCDataset(
+            obs=jnp.array(tensors["obs"][mask]),
+            actions=jnp.array(tensors["actions"][mask]),
+            ai_actions=jnp.array(tensors["ai_actions"][mask]),
+            rewards=jnp.array(tensors["rewards"][mask]),
+            dones=jnp.array(tensors["dones"][mask]),
+            avail_actions=jnp.array(tensors["avail_actions"][mask]),
+            episode_ids=jnp.array([id_map[eid] for eid in episode_ids[mask]], dtype=np.int32),
+        )
+    return result
 
 
 def load_bc_data_padded(config_name: str,
@@ -186,8 +196,23 @@ def load_bc_data_padded(config_name: str,
     Returns:
         BCDatasetPadded with shape (num_episodes, max_ep_length, ...).
     """
-    episodes = _load_raw(config_name, exclude_uncertain=exclude_uncertain)
-    return _episodes_to_padded(episodes)
+    path = str(PROCESSED_DIR / config_name / "padded.safetensors")
+    tensors, metadata = _load_safetensors(path)
+    if exclude_uncertain:
+        tensors, metadata = _filter_by_uncertainty(tensors, metadata, "padded")
+
+    agent_types = json.loads(metadata["agent_types"])
+
+    return BCDatasetPadded(
+        obs=jnp.array(tensors["obs"]),
+        actions=jnp.array(tensors["actions"]),
+        ai_actions=jnp.array(tensors["ai_actions"]),
+        rewards=jnp.array(tensors["rewards"]),
+        dones=jnp.array(tensors["dones"]),
+        avail_actions=jnp.array(tensors["avail_actions"]),
+        mask=jnp.array(tensors["mask"]),
+        agent_types=agent_types,
+    )
 
 
 # ---------- Quick test ----------

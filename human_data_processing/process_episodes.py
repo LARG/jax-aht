@@ -20,6 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+from safetensors.numpy import save_file as st_save
 
 
 # ---------- Env config helpers ----------
@@ -412,6 +413,91 @@ def filter_players(all_episodes: list[dict]) -> tuple[set[str], dict]:
     return clean_pids, report
 
 
+# ---------- Safetensors export ----------
+
+def episodes_to_flat_tensors(episodes: list[dict]) -> tuple[dict[str, np.ndarray], dict[str, str]]:
+    """Convert episode list to flat (concatenated) tensors + metadata."""
+    obs_parts, act_parts, ai_act_parts = [], [], []
+    rew_parts, done_parts, avail_parts, eid_parts = [], [], [], []
+
+    for i, ep in enumerate(episodes):
+        T = len(ep["actions"])
+        obs_parts.append(ep["obs"])
+        act_parts.append(ep["actions"])
+        ai_act_parts.append(ep["ai_actions"])
+        rew_parts.append(ep["rewards"])
+        done_parts.append(ep["dones"])
+        avail_parts.append(ep["avail_actions"])
+        eid_parts.append(np.full(T, i, dtype=np.int32))
+
+    tensors = {
+        "obs": np.concatenate(obs_parts),
+        "actions": np.concatenate(act_parts),
+        "ai_actions": np.concatenate(ai_act_parts),
+        "rewards": np.concatenate(rew_parts),
+        "dones": np.concatenate(done_parts),
+        "avail_actions": np.concatenate(avail_parts),
+        "episode_ids": np.concatenate(eid_parts),
+    }
+
+    metadata = {
+        "format": "flat",
+        "num_episodes": str(len(episodes)),
+        "num_timesteps": str(len(tensors["actions"])),
+        "agent_types": json.dumps([ep["agent_type"] for ep in episodes]),
+        "session_ids": json.dumps([ep["session_id"] for ep in episodes]),
+        "step0_reconstructed": json.dumps([ep["step0_reconstructed"] for ep in episodes]),
+        "step0_uncertain": json.dumps([ep["step0_uncertain"] for ep in episodes]),
+    }
+    return tensors, metadata
+
+
+def episodes_to_padded_tensors(episodes: list[dict]) -> tuple[dict[str, np.ndarray], dict[str, str]]:
+    """Convert episode list to padded tensors + metadata."""
+    max_len = max(len(ep["actions"]) for ep in episodes)
+    E = len(episodes)
+    obs_dim = episodes[0]["obs"].shape[1]
+
+    obs = np.zeros((E, max_len, obs_dim), dtype=np.float32)
+    actions = np.zeros((E, max_len), dtype=np.int32)
+    ai_actions = np.zeros((E, max_len), dtype=np.int32)
+    rewards = np.zeros((E, max_len), dtype=np.float32)
+    dones = np.ones((E, max_len), dtype=bool)  # padding = True
+    avail_actions = np.zeros((E, max_len, 6), dtype=bool)
+    mask = np.zeros((E, max_len), dtype=bool)
+
+    for i, ep in enumerate(episodes):
+        T = len(ep["actions"])
+        obs[i, :T] = ep["obs"]
+        actions[i, :T] = ep["actions"]
+        ai_actions[i, :T] = ep["ai_actions"]
+        rewards[i, :T] = ep["rewards"]
+        dones[i, :T] = ep["dones"]
+        avail_actions[i, :T] = ep["avail_actions"]
+        mask[i, :T] = True
+
+    tensors = {
+        "obs": obs,
+        "actions": actions,
+        "ai_actions": ai_actions,
+        "rewards": rewards,
+        "dones": dones,
+        "avail_actions": avail_actions,
+        "mask": mask,
+    }
+
+    metadata = {
+        "format": "padded",
+        "num_episodes": str(E),
+        "max_episode_length": str(max_len),
+        "agent_types": json.dumps([ep["agent_type"] for ep in episodes]),
+        "session_ids": json.dumps([ep["session_id"] for ep in episodes]),
+        "step0_reconstructed": json.dumps([ep["step0_reconstructed"] for ep in episodes]),
+        "step0_uncertain": json.dumps([ep["step0_uncertain"] for ep in episodes]),
+    }
+    return tensors, metadata
+
+
 # ---------- Main ----------
 
 def main():
@@ -484,10 +570,14 @@ def main():
     for key, episodes in sorted(grouped.items()):
         cfg_dir = output_dir / key
         cfg_dir.mkdir(exist_ok=True)
-        out_path = cfg_dir / "trajectories.pkl"
 
-        with open(out_path, "wb") as f:
-            pickle.dump(episodes, f)
+        # Save flat safetensors
+        flat_tensors, flat_meta = episodes_to_flat_tensors(episodes)
+        st_save(flat_tensors, str(cfg_dir / "flat.safetensors"), metadata=flat_meta)
+
+        # Save padded safetensors
+        padded_tensors, padded_meta = episodes_to_padded_tensors(episodes)
+        st_save(padded_tensors, str(cfg_dir / "padded.safetensors"), metadata=padded_meta)
 
         # Stats
         agent_types = defaultdict(int)
