@@ -1,8 +1,8 @@
-"""Process raw Prolific episode JSON files into pickle files for behavior cloning.
+"""Process raw Prolific LBF episode JSON files into safetensors for behavior cloning.
 
-For each of the 4 LBF env configs, produces a .pkl file containing a list of
-episode dicts with JAX-compatible arrays matching the VectorObserver format
-used during IPPO training.
+For each of the 4 LBF env configs, produces flat.safetensors and padded.safetensors
+containing JAX-compatible arrays matching the VectorObserver format used during
+IPPO training.
 
 Episodes without a recorded step 0 have their initial state reconstructed by
 reversing the actions at step 1. These are flagged with ``step0_reconstructed``
@@ -10,7 +10,7 @@ and, when the reversal may be incorrect (blocked move indistinguishable from
 real move), ``step0_uncertain``.
 
 Usage:
-    python human_data_processing/process_episodes.py
+    python human_data_processing/process_lbf_episodes.py
 """
 
 import json

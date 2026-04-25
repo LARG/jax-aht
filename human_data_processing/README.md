@@ -4,7 +4,7 @@ Converts raw Prolific episode JSON files into JAX-compatible arrays for behavior
 
 ## Data Quality Filtering
 
-Applied during `process_episodes.py`, before pkl creation:
+Applied during `process_lbf_episodes.py`, before pkl creation:
 
 1. **Disqualified**: Players who did not complete all 8 games are removed.
 2. **Disengaged**: Among players who completed all 8 games, a player is flagged and ALL their games are removed if ANY of the following hold (computed across all 8 games):
@@ -20,13 +20,13 @@ Episodes without a recorded step 0 have their initial state reconstructed by rev
 ## Usage
 
 ```python
-from human_data_processing.load_bc_data import load_bc_data, load_bc_data_by_agent, load_bc_data_padded
+from human_data_processing.load_lbf_data import load_lbf_data, load_lbf_data_by_agent, load_lbf_data_padded
 ```
 
 ### Flat dataset (all episodes concatenated)
 
 ```python
-data = load_bc_data("grid7_food3_nolevels")
+data = load_lbf_data("grid7_food3_nolevels")
 ```
 
 Returns a `BCDataset` (NamedTuple):
@@ -46,14 +46,14 @@ Where `N` = total timesteps across all episodes, `obs_dim` = 15 (7x7) or 24 (12x
 ### Grouped by agent type
 
 ```python
-by_agent = load_bc_data_by_agent("grid7_food3_nolevels")
+by_agent = load_lbf_data_by_agent("grid7_food3_nolevels")
 # dict mapping agent_type (str) -> BCDataset
 ```
 
 ### Padded episodes (for recurrent / sequence models)
 
 ```python
-padded = load_bc_data_padded("grid7_food3_nolevels")
+padded = load_lbf_data_padded("grid7_food3_nolevels")
 ```
 
 Returns a `BCDatasetPadded` (NamedTuple):
@@ -64,7 +64,7 @@ Returns a `BCDatasetPadded` (NamedTuple):
 | `actions` | `(E, T)` | int32 | |
 | `ai_actions` | `(E, T)` | int32 | |
 | `rewards` | `(E, T)` | float32 | |
-| `dones` | `(E, T)` | bool | |
+| `dones` | `(E, T)` | bool | True on last real step AND all padding positions |
 | `avail_actions` | `(E, T, 6)` | bool | |
 | `mask` | `(E, T)` | bool | True for real timesteps, False for padding |
 | `agent_types` | list[str] | — | Agent type label per episode (length E) |
@@ -126,7 +126,7 @@ Downloads the safetensors from Hugging Face Hub (`jaxaht/lbf-human-data`) into `
 If you have access to the raw JSON episodes in `human_data_collecting/collected_data_prolific/`:
 
 ```bash
-python human_data_processing/process_episodes.py
+python human_data_processing/process_lbf_episodes.py
 ```
 
 ### Pushing updates to Hugging Face
@@ -138,6 +138,6 @@ python human_data_processing/push_to_hf.py
 ## Scripts
 
 - **`download_lbf_data.py`** — Downloads processed safetensors from Hugging Face Hub into `processed/`.
-- **`process_episodes.py`** — Reads raw JSON from `human_data_collecting/collected_data_prolific/`, applies player filtering, converts to arrays, writes `.safetensors` files to `processed/`.
-- **`load_bc_data.py`** — Loads `.safetensors` files and returns JAX arrays ready for training.
+- **`process_lbf_episodes.py`** — Reads raw JSON from `human_data_collecting/collected_data_prolific/`, applies player filtering, converts to arrays, writes `.safetensors` files to `processed/`.
+- **`load_lbf_data.py`** — Loads `.safetensors` files and returns JAX arrays ready for training.
 - **`push_to_hf.py`** — Uploads `processed/` to Hugging Face Hub.
