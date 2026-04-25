@@ -97,21 +97,47 @@ The observation uses Jumanji's `VectorObserver` with `fov = grid_size` (full obs
 
 Eaten food is encoded as `(-1, -1, 0)`.
 
-## Per-Episode Metadata (in pkl)
+## Per-Episode Metadata (in safetensors header)
 
-Each episode dict in the pkl also contains:
+Stored as JSON-encoded strings in the safetensors metadata header:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `agent_type` | str | AI teammate, e.g. `"GreedyHeuristicAgent(closest_avg)"` |
-| `config` | dict | `{grid_size, num_fruits, different_levels}` |
-| `session_id` | str | UUID for the game session |
-| `total_rewards` | dict | `{agent_0: float, agent_1: float}` |
-| `duration` | float | Wall-clock seconds |
-| `step0_reconstructed` | bool | True if step 0 was reverse-engineered |
-| `step0_uncertain` | bool | True if reconstructed step 0 may be wrong |
+| Key | Type | Description |
+|-----|------|-------------|
+| `agent_types` | list[str] | AI teammate label per episode |
+| `session_ids` | list[str] | UUID per episode |
+| `step0_reconstructed` | list[bool] | True if step 0 was reverse-engineered |
+| `step0_uncertain` | list[bool] | True if reconstructed step 0 may be wrong |
+| `num_episodes` | str | Number of episodes |
+| `num_timesteps` | str | Total timesteps (flat only) |
+| `max_episode_length` | str | Padded length (padded only) |
+
+## Workflow
+
+### Getting the data (most users)
+
+```bash
+python human_data_processing/download_lbf_data.py
+```
+
+Downloads the safetensors from Hugging Face Hub (`jaxaht/lbf-human-data`) into `processed/`.
+
+### Regenerating from raw data
+
+If you have access to the raw JSON episodes in `human_data_collecting/collected_data_prolific/`:
+
+```bash
+python human_data_processing/process_episodes.py
+```
+
+### Pushing updates to Hugging Face
+
+```bash
+python human_data_processing/push_to_hf.py
+```
 
 ## Scripts
 
-- **`process_episodes.py`** — Reads raw JSON from `human_data_collecting/collected_data_prolific/`, applies player filtering, converts to arrays, writes `.pkl` files to `processed/`.
-- **`load_bc_data.py`** — Loads `.pkl` files and returns JAX arrays ready for training.
+- **`download_lbf_data.py`** — Downloads processed safetensors from Hugging Face Hub into `processed/`.
+- **`process_episodes.py`** — Reads raw JSON from `human_data_collecting/collected_data_prolific/`, applies player filtering, converts to arrays, writes `.safetensors` files to `processed/`.
+- **`load_bc_data.py`** — Loads `.safetensors` files and returns JAX arrays ready for training.
+- **`push_to_hf.py`** — Uploads `processed/` to Hugging Face Hub.
