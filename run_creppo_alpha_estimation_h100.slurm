@@ -91,7 +91,14 @@ echo "================================================="
 EVAL_SEEDS=(72128 721280 721281 721282 721283)
 DIFF_TRAIN_SEEDS=(174464134 1744641340 1744641341 1744641342 1744641343)
 
-for i in ${!EVAL_SEEDS[@]}; do
+if [ -n "$SLURM_ARRAY_TASK_ID" ]; then
+    INDICES=($SLURM_ARRAY_TASK_ID)
+else
+    # Default to all seeds if not run as an array job
+    INDICES=(${!EVAL_SEEDS[@]})
+fi
+
+for i in "${INDICES[@]}"; do
     EVAL_SEED=${EVAL_SEEDS[$i]}
     DIFF_TRAIN_SEED=${DIFF_TRAIN_SEEDS[$i]}
 
