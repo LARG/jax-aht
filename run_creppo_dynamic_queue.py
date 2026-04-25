@@ -99,14 +99,19 @@ def get_free_gpus():
 def main():
     print(f"Total jobs generated: {len(job_queue)}")
     
-    # Filter out jobs that already have a log file
-    # This prevents rerunning things the bash script already started
+    # Filter out jobs that already have a log file > 500 bytes
+    # This prevents rerunning things the bash script already started,
+    # while ignoring the 192-byte 'hydra' crash logs from earlier today.
     pending_jobs = []
     for job in job_queue:
-        if not os.path.exists(job["logfile"]):
+        logfile = job["logfile"]
+        if not os.path.exists(logfile) or os.path.getsize(logfile) < 500:
             pending_jobs.append(job)
+            # Remove the old crash log so we start fresh
+            if os.path.exists(logfile):
+                os.remove(logfile)
         else:
-            print(f"Skipping {job['desc']} - logfile exists")
+            print(f"Skipping {job['desc']} - logfile exists and has data")
             
     print(f"Jobs left to run: {len(pending_jobs)}")
     
