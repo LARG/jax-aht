@@ -17,7 +17,10 @@ export WANDB_DIR=/scratch/cluster/jeffrey9/wandb_cache
 export WANDB_CACHE_DIR=/scratch/cluster/jeffrey9/wandb_cache
 
 # Resolve venv python binary
-if [ -f "venv_aaronson/bin/python" ]; then
+# Prefer the currently activated venv (if user sourced one before running this script)
+if [ -n "$VIRTUAL_ENV" ]; then
+    VENV_PYTHON="$VIRTUAL_ENV/bin/python"
+elif [ -f "venv_aaronson/bin/python" ]; then
     VENV_PYTHON="$PWD/venv_aaronson/bin/python"
 elif [ -f "venv/bin/python" ]; then
     VENV_PYTHON="$PWD/venv/bin/python"
