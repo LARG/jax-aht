@@ -26,8 +26,7 @@
 #SBATCH --ntasks-per-node=1     # Number of MPI tasks per node (1 for single-process JAX)
 #SBATCH --cpus-per-task=12      # CPU cores allocated to the task
 #SBATCH --mem=64G               # Total memory per node
-#SBATCH --gres=gpu:1            # Number of GPUs to request
-#SBATCH -t 12:00:00             # Walltime limit (HH:MM:SS)
+#SBATCH -t 2:00:00             # Walltime limit (HH:MM:SS)
 #SBATCH -o results/slurm_logs/%j_%x.out  # Stdout log (%j=job ID, %x=job name)
 #SBATCH -e results/slurm_logs/%j_%x.err  # Stderr log
 #SBATCH -A ASC25021             # Allocation account to charge
@@ -49,10 +48,10 @@ mkdir -p results/slurm_logs  # Ensure log directory exists before SLURM tries to
 
 # ── Environment ────────────────────────────────────────────────────────────────
 export LD_LIBRARY_PATH=""  # Clear LD_LIBRARY_PATH to avoid system CUDA/cuDNN libraries conflicting with conda-installed ones
-export LD_LIBRARY_PATH=/scratch/08090/clw4542/conda_envs/bench311/lib/python3.11/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH  # Add conda cuDNN to library path
+# export LD_LIBRARY_PATH=/scratch/08090/clw4542/conda_envs/bench311/lib/python3.11/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH  # Add conda cuDNN to library path
 
 source $(conda info --base)/etc/profile.d/conda.sh  # Initialize conda for non-interactive shell
-conda activate bench311                              # Activate the project environment
+conda activate bench311                             # Activate the project environment
 
 # ── Info ───────────────────────────────────────────────────────────────────────
 echo "=== Job info ==="
