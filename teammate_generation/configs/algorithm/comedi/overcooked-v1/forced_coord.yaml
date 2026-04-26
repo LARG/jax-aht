@@ -2,8 +2,8 @@ defaults:
   - comedi/_base_
   - _self_ # values from this file override the values from the base file
 
-
-PARTNER_POP_SIZE: 10
+TOTAL_TIMESTEPS_PER_ITERATION: 1.82e7
+PARTNER_POP_SIZE: 18
 LR: 5e-4
 UPDATE_EPOCHS: 15
 CLIP_EPS: 0.05

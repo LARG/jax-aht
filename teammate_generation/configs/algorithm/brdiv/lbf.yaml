@@ -2,7 +2,7 @@ defaults:
   - brdiv/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 1e8
+TOTAL_TIMESTEPS: 1.65e8
 PARTNER_POP_SIZE: 3
 NUM_ENVS: 1024
 XP_LOSS_WEIGHTS: 0.1

@@ -2,7 +2,7 @@ defaults:
   - ppo_ego/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 1.2e8
+TOTAL_TIMESTEPS: 2.3e7
 NUM_MINIBATCHES: 8
 LR: 1e-3
 ENT_COEF: 1e-3

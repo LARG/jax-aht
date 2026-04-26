@@ -29,13 +29,13 @@ Usage:
 
 Examples:
     python scripts/manage_configs/update_timesteps.py teammate_generation/ \\
-        --easy-target 130M --hard-target 260M --dry-run
+        --easy-target 195M --hard-target 390M --dry-run
 
     python scripts/manage_configs/update_timesteps.py open_ended_training/ \\
         --easy-target 195M --hard-target 390M --skip-algos open_ended_minimax paired --dry-run
 
     python scripts/manage_configs/update_timesteps.py ego_agent_training/ \\
-        --easy-target 11M --hard-target 23M --dry-run
+        --easy-target 11M --hard-target 23M --skip-algos ppo_br --dry-run
 """
 
 import re
