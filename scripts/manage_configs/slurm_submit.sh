@@ -45,9 +45,9 @@ cd "$ROOT_DIR"
 mkdir -p results/slurm_logs
 
 # ── Environment setup ──────────────────────────────────────────────────────────
-module load cuda
+# module load cuda
 
-source /scratch/cluster/clw4542/miniconda3/etc/profile.d/conda.sh
+# source /scratch/cluster/clw4542/miniconda3/etc/profile.d/conda.sh
 conda activate bench311
 
 echo "=== Job info ==="
