@@ -700,6 +700,8 @@ def train_trajedi_partners(config, env, partner_rng):
                         copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1, 1))
                         copied_selected_sp_log_probs_sp1 = jnp.tile(selected_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1))
                         copied_selected_sp_log_probs_sp2 = jnp.tile(selected_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1))
+                        copied_original_sp_log_probs_sp1 = jnp.tile(traj_batch_conf_sp1.log_prob[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1))
+                        copied_original_sp_log_probs_sp2 = jnp.tile(traj_batch_conf_sp2.log_prob[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1))
                         
                         def per_step_aggregate(
                                 all_eps_id_sp1, all_eps_id_sp2, 
@@ -796,7 +798,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             traj_batch_conf_sp1.time_id, traj_batch_conf_sp2.time_id,
                             copied_all_sp_log_probs_sp1, copied_all_sp_log_probs_sp2,
                             copied_selected_sp_log_probs_sp1, copied_selected_sp_log_probs_sp2,
-                            traj_batch_conf_sp1.log_prob, traj_batch_conf_sp2.log_prob
+                            copied_original_sp_log_probs_sp1, copied_original_sp_log_probs_sp2
                         )
 
                         delta_hat_traj_sp1 = jnp.exp(log_delta_hat_t_sp1)
