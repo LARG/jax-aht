@@ -563,7 +563,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     init_hstate_conf_sp2, traj_batch_conf_sp2, gae_conf_sp2, target_v_conf_sp2 = minbatch_conf_sp2
 
                     def _loss_fn_policy(
-                        param, init_hstate_conf_sp1, traj_batch_conf_sp1, 
+                        params, init_hstate_conf_sp1, traj_batch_conf_sp1, 
                         gae_conf_sp1, target_v_conf_sp1, 
                         init_hstate_conf_sp2, traj_batch_conf_sp2, 
                         gae_conf_sp2, target_v_conf_sp2,
@@ -572,37 +572,6 @@ def train_trajedi_partners(config, env, partner_rng):
                         agent_id
                     ):
                         # get policy and value of confederate versus ego and best response agents respectively
-
-                        _, (value_conf_sp1, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
-                            params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
-                            obs=traj_batch_conf_sp1.obs,
-                            done=traj_batch_conf_sp1.done,
-                            avail_actions=traj_batch_conf_sp1.avail_actions,
-                            hstate=init_hstate_conf_sp1,
-                            rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
-                        )
-
-                        _, (value_conf_sp2, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
-                            params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
-                            obs=traj_batch_conf_sp2.obs,
-                            done=traj_batch_conf_sp2.done,
-                            avail_actions=traj_batch_conf_sp2.avail_actions,
-                            hstate=init_hstate_conf_sp2,
-                            rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
-                        )
-
-                        _, (_, value_conf_xp), pi_conf_xp, _ = confederate_policy.get_action_value_policy(
-                            params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
-                            obs=traj_batch_conf_xp.obs,
-                            done=traj_batch_conf_xp.done,
-                            avail_actions=traj_batch_conf_xp.avail_actions,
-                            hstate=init_hstate_conf_xp,
-                            rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
-                        )
-
-                        log_prob_conf_sp1 = pi_conf_sp1.log_prob(traj_batch_conf_sp1.action)
-                        log_prob_conf_sp2 = pi_conf_sp2.log_prob(traj_batch_conf_sp2.action)
-                        log_prob_conf_xp = pi_conf_xp.log_prob(traj_batch_conf_xp.action)
 
                         is_relevant_sp1 = jnp.equal(
                             jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1),
@@ -632,9 +601,9 @@ def train_trajedi_partners(config, env, partner_rng):
                                 ).sum()/(weights.sum() + 1e-8)
                             )
 
-                        def _compute_indiv_pol_sp_log_probs(agent_id):                    
-                            param = gather_params(train_state_conf.params, agent_id)
-                            _, (_, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
+                        def _compute_indiv_pol_sp_log_probs_and_vals_and_entropy(agent_id):                    
+                            param = gather_params(params, agent_id)
+                            _, (vals_sp1, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
                                 params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                                 obs=traj_batch_conf_sp1.obs,
                                 done=traj_batch_conf_sp1.done,
@@ -642,7 +611,7 @@ def train_trajedi_partners(config, env, partner_rng):
                                 hstate=init_hstate_conf_sp1,
                                 rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
                             )
-                            _, (_, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
+                            _, (vals_sp2, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
                                 params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                                 obs=traj_batch_conf_sp2.obs,
                                 done=traj_batch_conf_sp2.done,
@@ -654,26 +623,83 @@ def train_trajedi_partners(config, env, partner_rng):
                             log_prob_conf_sp1 = pi_conf_sp1.log_prob(traj_batch_conf_sp1.action)
                             log_prob_conf_sp2 = pi_conf_sp2.log_prob(traj_batch_conf_sp2.action)
 
-                            return log_prob_conf_sp1, log_prob_conf_sp2
+                            sp1_entropy = pi_conf_sp1.entropy()
+                            sp2_entropy = pi_conf_sp2.entropy()
+
+                            return log_prob_conf_sp1, log_prob_conf_sp2, vals_sp1, vals_sp2, sp1_entropy, sp2_entropy
+                        
+                        def _compute_indiv_pol_xp_log_probs_and_vals_and_entropy(agent_id):                    
+                            param = gather_params(params, agent_id)
+                            _, (_, value_conf_xp), pi_conf_xp, _ = confederate_policy.get_action_value_policy(
+                                params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
+                                obs=traj_batch_conf_xp.obs,
+                                done=traj_batch_conf_xp.done,
+                                avail_actions=traj_batch_conf_xp.avail_actions,
+                                hstate=init_hstate_conf_xp,
+                                rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
+                            )
+                            log_prob_conf_xp = pi_conf_xp.log_prob(traj_batch_conf_xp.action)
+                            all_xp_entropy = pi_conf_xp.entropy()
+
+                            return log_prob_conf_xp, value_conf_xp, all_xp_entropy
                         
                         possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
-                        all_sp_log_probs_sp1, all_sp_log_probs_sp2 = jax.vmap(_compute_indiv_pol_sp_log_probs)(possible_agent_ids)
+                        all_sp_log_probs_sp1, all_sp_log_probs_sp2, all_vals_sp1, all_vals_sp2, all_sp1_entropy, all_sp2_entropy = jax.vmap(_compute_indiv_pol_sp_log_probs_and_vals_and_entropy)(possible_agent_ids)
+                        all_xp_log_probs, all_vals_xp, all_xp_entropy = jax.vmap(_compute_indiv_pol_xp_log_probs_and_vals_and_entropy)(possible_agent_ids)
 
                         # pop x time x batch
-                        # selected_indices_sp1 = jnp.expand_dims(
-                        #     jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1), axis=0
-                        # )
-                        # selected_indices_sp2 = jnp.expand_dims(
-                        #     jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1), axis=0
+                        selected_indices_sp1 = jnp.expand_dims(
+                            jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1), axis=0
+                        )
+                        selected_indices_sp2 = jnp.expand_dims(
+                            jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1), axis=0
+                        )
+                        selected_indices_xp = jnp.expand_dims(
+                            jnp.argmax(traj_batch_conf_xp.agent_onehot_id, axis=-1), axis=0
+                        )
 
-                        copied_episode_counters_sp1 = jnp.tile(traj_batch_conf_sp1.episode_id[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1)) 
-                        copied_episode_counters_sp2 = jnp.tile(traj_batch_conf_sp2.episode_id[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1)) 
-                        copied_timestep_counters_sp1 = jnp.tile(traj_batch_conf_sp1.time_id[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1)) 
-                        copied_timestep_counters_sp2 = jnp.tile(traj_batch_conf_sp2.time_id[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1)) 
-                        copied_all_sp_log_probs_sp1 = jnp.tile(all_sp_log_probs_sp1[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1, 1))
-                        copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1, 1))
-                        copied_selected_sp_log_probs_sp1 = jnp.tile(log_prob_conf_sp1[None, ...], (jnp.shape(log_prob_conf_sp1)[0], 1, 1))
-                        copied_selected_sp_log_probs_sp2 = jnp.tile(log_prob_conf_sp2[None, ...], (jnp.shape(log_prob_conf_sp2)[0], 1, 1))
+                        selected_log_probs_sp1 = jnp.squeeze(
+                            jnp.take_along_axis(all_sp_log_probs_sp1, selected_indices_sp1, axis=0), axis=0
+                        )
+                        selected_log_probs_sp2 = jnp.squeeze(
+                            jnp.take_along_axis(all_sp_log_probs_sp2, selected_indices_sp2, axis=0), axis=0
+                        )
+                        selected_log_probs_xp = jnp.squeeze(
+                            jnp.take_along_axis(all_xp_log_probs, selected_indices_xp, axis=0), axis=0
+                        )
+
+                        log_prob_conf_sp1 = selected_log_probs_sp1
+                        log_prob_conf_sp2 = selected_log_probs_sp2
+                        log_prob_conf_xp = selected_log_probs_xp
+
+                        value_conf_sp1 = jnp.squeeze(
+                            jnp.take_along_axis(all_vals_sp1, selected_indices_sp1, axis=0), axis=0
+                        )
+                        value_conf_sp2 = jnp.squeeze(
+                            jnp.take_along_axis(all_vals_sp2, selected_indices_sp2, axis=0), axis=0
+                        )
+                        value_conf_xp = jnp.squeeze(
+                            jnp.take_along_axis(all_vals_xp, selected_indices_xp, axis=0), axis=0
+                        )
+
+                        entropy_conf_sp1 = jnp.squeeze(
+                            jnp.take_along_axis(all_sp1_entropy, selected_indices_sp1, axis=0), axis=0
+                        )
+                        entropy_conf_sp2 = jnp.squeeze(
+                            jnp.take_along_axis(all_sp2_entropy, selected_indices_sp2, axis=0), axis=0
+                        )
+                        entropy_conf_xp = jnp.squeeze(
+                            jnp.take_along_axis(all_xp_entropy, selected_indices_xp, axis=0), axis=0
+                        )
+
+                        copied_episode_counters_sp1 = jnp.tile(traj_batch_conf_sp1.episode_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1)) 
+                        copied_episode_counters_sp2 = jnp.tile(traj_batch_conf_sp2.episode_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1)) 
+                        copied_timestep_counters_sp1 = jnp.tile(traj_batch_conf_sp1.time_id[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1)) 
+                        copied_timestep_counters_sp2 = jnp.tile(traj_batch_conf_sp2.time_id[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1)) 
+                        copied_all_sp_log_probs_sp1 = jnp.tile(all_sp_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1, 1))
+                        copied_all_sp_log_probs_sp2 = jnp.tile(all_sp_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1, 1))
+                        copied_selected_sp_log_probs_sp1 = jnp.tile(selected_log_probs_sp1[None, ...], (jnp.shape(selected_log_probs_sp1)[0], 1, 1))
+                        copied_selected_sp_log_probs_sp2 = jnp.tile(selected_log_probs_sp2[None, ...], (jnp.shape(selected_log_probs_sp2)[0], 1, 1))
                         
                         def per_step_aggregate(
                                 all_eps_id_sp1, all_eps_id_sp2, 
@@ -682,6 +708,7 @@ def train_trajedi_partners(config, env, partner_rng):
                                 time_id_sp1, time_id_sp2,
                                 all_sp_log_probs_sp1, all_sp_log_probs_sp2,
                                 selected_log_probs_sp1, selected_log_probs_sp2,
+                                original_log_probs_sp1, original_log_probs_sp2
                         ):
                             is_relevant_weight_sp1 = (
                                 all_eps_id_sp1 == jnp.tile(eps_id_sp1[None, ...], (jnp.shape(all_eps_id_sp1)[0], 1))
@@ -708,6 +735,17 @@ def train_trajedi_partners(config, env, partner_rng):
                             # Sum selected log prob on the timestep axis (i.e., 0)
                             summed_selected_log_probs_sp2 = jnp.sum(
                                 selected_log_probs_sp2*is_relevant_weight_sp2,
+                                axis=0
+                            )
+
+                            summed_original_log_probs_sp1 = jnp.sum(
+                                original_log_probs_sp1*is_relevant_weight_sp1,
+                                axis=0
+                            )
+
+                            # Sum selected log prob on the timestep axis (i.e., 0)
+                            summed_original_log_probs_sp2 = jnp.sum(
+                                original_log_probs_sp2*is_relevant_weight_sp2,
                                 axis=0
                             )
 
@@ -749,15 +787,16 @@ def train_trajedi_partners(config, env, partner_rng):
                                 ), axis=0
                             )
 
-                            return summed_selected_log_probs_sp1, summed_selected_log_probs_sp2, avg_pol_traj_log_prob_sp1, avg_pol_traj_log_prob_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2
+                            return summed_selected_log_probs_sp1, summed_selected_log_probs_sp2, summed_original_log_probs_sp1, summed_original_log_probs_sp2, avg_pol_traj_log_prob_sp1, avg_pol_traj_log_prob_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2
 
-                        log_traj_pi_sp1, log_traj_pi_sp2, log_traj_pi_hat_sp1, log_traj_pi_hat_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2 = jax.vmap(per_step_aggregate)(
+                        log_traj_pi_sp1, log_traj_pi_sp2, log_traj_ori_pi_sp1, log_traj_ori_pi_sp2, log_traj_pi_hat_sp1, log_traj_pi_hat_sp2, log_delta_i_t_sp1, log_delta_i_t_sp2, log_delta_hat_t_sp1, log_delta_hat_t_sp2 = jax.vmap(per_step_aggregate)(
                             copied_episode_counters_sp1, copied_episode_counters_sp2,
                             traj_batch_conf_sp1.episode_id, traj_batch_conf_sp2.episode_id,
                             copied_timestep_counters_sp1, copied_timestep_counters_sp2,
                             traj_batch_conf_sp1.time_id, traj_batch_conf_sp2.time_id,
                             copied_all_sp_log_probs_sp1, copied_all_sp_log_probs_sp2,
-                            copied_selected_sp_log_probs_sp1, copied_selected_sp_log_probs_sp2
+                            copied_selected_sp_log_probs_sp1, copied_selected_sp_log_probs_sp2,
+                            traj_batch_conf_sp1.log_prob, traj_batch_conf_sp2.log_prob
                         )
 
                         delta_hat_traj_sp1 = jnp.exp(log_delta_hat_t_sp1)
@@ -765,21 +804,20 @@ def train_trajedi_partners(config, env, partner_rng):
                         delta_i_traj_sp1 = jnp.exp(log_delta_i_t_sp1)
                         delta_i_traj_sp2 = jnp.exp(log_delta_i_t_sp2)
                         
-                        pol_ratios_sp1 = jnp.exp(log_traj_pi_hat_sp1-log_traj_pi_sp1)
-                        pol_ratios_sp2 = jnp.exp(log_traj_pi_hat_sp2-log_traj_pi_sp2)
+                        pol_ratios_sp1 = jnp.exp(log_traj_pi_hat_sp1-log_traj_ori_pi_sp1)
+                        pol_ratios_sp2 = jnp.exp(log_traj_pi_hat_sp2-log_traj_ori_pi_sp2)
 
-                        pi_multiplier_sp1 = jax.lax.stop_gradient(delta_hat_traj_sp1 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp1))
-                        pi_multiplier_sp2 = jax.lax.stop_gradient(delta_hat_traj_sp2 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp2))
+                        pol_ratios2_sp1 = jnp.exp(log_traj_pi_sp1-log_traj_ori_pi_sp1)
+                        pol_ratios2_sp2 = jnp.exp(log_traj_pi_sp2-log_traj_ori_pi_sp2)
+
+                        pi_multiplier_sp1 = jax.lax.stop_gradient(pol_ratios2_sp1*(delta_hat_traj_sp1 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp1)))
+                        pi_multiplier_sp2 = jax.lax.stop_gradient(pol_ratios2_sp2*(delta_hat_traj_sp2 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp2)))
 
                         delta_multiplier_sp1 = jax.lax.stop_gradient(pol_ratios_sp1 * delta_i_traj_sp1)
                         delta_multiplier_sp2 = jax.lax.stop_gradient(pol_ratios_sp2 * delta_i_traj_sp2)
 
                         trajedi_loss_sp1 = pi_multiplier_sp1 * log_traj_pi_sp1 + delta_multiplier_sp1 * log_delta_i_t_sp1
                         trajedi_loss_sp2 = pi_multiplier_sp2 * log_traj_pi_sp2 + delta_multiplier_sp2 * log_delta_i_t_sp2
-
-                        trajedi_loss_sp1 = trajedi_loss_sp1.mean()
-                        trajedi_loss_sp2 = trajedi_loss_sp2.mean()
-
 
                         trajedi_loss_sp1 = compute_mean_weighted_losses(trajedi_loss_sp1, loss_weights_sp1)
                         trajedi_loss_sp2 = compute_mean_weighted_losses(trajedi_loss_sp2, loss_weights_sp2)
@@ -859,16 +897,16 @@ def train_trajedi_partners(config, env, partner_rng):
 
                         # Entropy for interaction with ego agent
                         entropy_conf_xp = compute_mean_weighted_losses(
-                            pi_conf_xp.entropy(),
+                            entropy_conf_xp,
                             loss_weights_xp
                         )
                         # Entropy for interaction with best response agent
                         entropy_conf_sp1 = compute_mean_weighted_losses(
-                            jnp.mean(pi_conf_sp1.entropy()),
+                            entropy_conf_sp1,
                             loss_weights_sp1
                         )
                         entropy_conf_sp2 = compute_mean_weighted_losses(
-                            jnp.mean(pi_conf_sp2.entropy()),
+                            entropy_conf_sp1,
                             loss_weights_sp2
                         )
                         
@@ -883,9 +921,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     grad_fn = jax.value_and_grad(_loss_fn_policy, has_aux=True)
 
                     def gather_conf_params_and_return_grads(agent_id):
-                        param_vector = gather_params(train_state_conf.params, agent_id)
                         (loss_val_conf, aux_vals_conf), grads_conf = grad_fn(
-                            param_vector, 
+                            train_state_conf.params, 
                             init_hstate_conf_sp1, traj_batch_conf_sp1, gae_conf_sp1, target_v_conf_sp1, 
                             init_hstate_conf_sp2, traj_batch_conf_sp2, gae_conf_sp2, target_v_conf_sp2,
                             init_hstate_conf_xp, traj_batch_conf_xp, gae_conf_xp, target_v_conf_xp,
@@ -895,8 +932,9 @@ def train_trajedi_partners(config, env, partner_rng):
 
                     possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
                     (loss_val_conf, aux_vals_conf), grads_conf = jax.vmap(gather_conf_params_and_return_grads)(possible_agent_ids)
-                    grads_conf_new = jax.tree.map(lambda x: jnp.squeeze(x, 1), grads_conf)
-                    train_state_conf = train_state_conf.apply_gradients(grads=grads_conf_new)
+                    #grads_conf_new = jax.tree.map(lambda x: jnp.squeeze(x, 1), grads_conf)
+                    
+                    train_state_conf = train_state_conf.apply_gradients(grads=jax.tree.map(lambda x: jnp.sum(x, axis=0), grads_conf))
                     return train_state_conf, (loss_val_conf, aux_vals_conf)
 
                 def _update_minbatch_ego(train_state_ego, batch_info):
