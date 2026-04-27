@@ -1,1 +1,6 @@
-from agents.bc.bc_lstm import BCLSTMConfig, BCLSTMNetwork, BCLSTMAgent
+from agents.bc.bc_lstm import (
+    BCLSTMAgent,
+    BCLSTMConfig,
+    BCLSTMNetwork,
+    BCLSTMPolicyWrapper,
+)
