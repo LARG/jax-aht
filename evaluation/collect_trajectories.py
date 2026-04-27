@@ -16,8 +16,8 @@ from evaluation.trajectory_collection import (
 # Config
 DEFAULT_ENV_NAME = "lbf"
 DEFAULT_ENV_KWARGS = {}
-DEFAULT_NUM_ENVS = 4096
-DEFAULT_ROLLOUT_STEPS = 128
+DEFAULT_NUM_ENVS = 2048
+DEFAULT_ROLLOUT_STEPS = 64
 DEFAULT_K = 1
 DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
 

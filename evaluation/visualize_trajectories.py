@@ -153,13 +153,14 @@ def main(
     label_names = [idx_to_label[i] for i in range(num_classes)]
 
     latents_dict = {}
-    unique_agent_pairs = np.unique(all_true_labels)
-    num_agents = int(np.sqrt(len(unique_agent_pairs)))
-    print(f"Num Agents: {num_agents}")
-    for label_idx in unique_agent_pairs:
-        # Only plot diagonal entries
-        if (int(label_idx) % num_agents) == (int(label_idx) // num_agents):
-            label_name = idx_to_label[int(label_idx)]
+    for label_name, label_idx in label_to_idx.items():
+        br_marker = "_br_for_"
+        if br_marker not in label_name:
+            continue
+        split_pos = label_name.index(br_marker)
+        agent_name = label_name[:split_pos]
+        br_name = label_name[split_pos + 1:]
+        if _is_specific_best_response(agent_name, br_name):
             latents_dict[label_name] = all_latents[all_true_labels == label_idx][:100]
 
     cm = confusion_matrix(all_true_labels, predictions)

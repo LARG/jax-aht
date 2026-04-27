@@ -1,5 +1,3 @@
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import optax
@@ -176,17 +174,13 @@ def init_classifier(rng, obs_dim, max_seq_len, hidden_dim, num_classes, learning
 
 
 def make_classifier_train_step(model):
-    def loss_fn(params, x, mask, y):
-        logits = model.apply(params, x, mask)
-        loss = optax.softmax_cross_entropy_with_integer_labels(logits, y)
-        return loss
-
     @jax.jit
     def train_step(train_state, batch_x, batch_mask, batch_y):
-        grad_fn = jax.grad(lambda p: jax.vmap(partial(loss_fn, p))(batch_x, batch_mask, batch_y).mean())
-        grads = grad_fn(train_state.params)
+        def loss_fn(params):
+            logits = jax.vmap(lambda x, m: model.apply(params, x, m))(batch_x, batch_mask)
+            return optax.softmax_cross_entropy_with_integer_labels(logits, batch_y).mean()
+        loss, grads = jax.value_and_grad(loss_fn)(train_state.params)
         train_state = train_state.apply_gradients(grads=grads)
-        loss = jax.vmap(partial(loss_fn, train_state.params))(batch_x, batch_mask, batch_y).mean()
         return train_state, loss
 
     return train_step
@@ -208,19 +202,15 @@ def train_classifier(rng, train_state, train_step_fn, padded_episodes, masks, la
     losses = []
     for epoch in range(num_epochs):
         rng, rng_perm = jax.random.split(rng)
-        perm = jax.random.permutation(rng_perm, N)
-        padded_shuffled = padded_episodes[perm]
-        masks_shuffled = masks[perm]
-        labels_shuffled = labels[perm]
+        perm = np.array(jax.random.permutation(rng_perm, N))
         epoch_losses = []
         for batch_idx in range(num_batches):
-            start = batch_idx * batch_size
-            end = min(start + batch_size, N)
-            batch_x = padded_shuffled[start:end]
-            batch_mask = masks_shuffled[start:end]
-            batch_y = labels_shuffled[start:end]
+            idx = perm[batch_idx * batch_size : (batch_idx + 1) * batch_size]
+            batch_x = padded_episodes[idx]
+            batch_mask = masks[idx]
+            batch_y = labels[idx]
             train_state, loss = train_step_fn(train_state, batch_x, batch_mask, batch_y)
-            epoch_losses.append(loss)
+            epoch_losses.append(float(loss))
         avg_loss = np.mean(epoch_losses)
         losses.append(avg_loss)
         if epoch % 10 == 0 or epoch == num_epochs - 1:
@@ -228,12 +218,13 @@ def train_classifier(rng, train_state, train_step_fn, padded_episodes, masks, la
     return rng, train_state, losses
 
 
-def pad_labeled_episodes(episodes_with_labels):
+def pad_labeled_episodes(episodes_with_labels, max_samples_per_class=None):
     """Pad episodes with labels to the same length.
-    
+
     Args:
         episodes_with_labels: List of (trajectory_array, label) tuples
-        
+        max_samples_per_class: If set, randomly subsample each class to this many episodes.
+
     Returns:
         padded: (N, max_len, obs_dim) array of padded observations
         masks: (N, max_len) array indicating valid timesteps
@@ -242,43 +233,62 @@ def pad_labeled_episodes(episodes_with_labels):
         label_to_idx: dict mapping string labels to integer indices
     """
     episodes, string_labels = zip(*episodes_with_labels)
+    episodes = list(episodes)
+    string_labels = list(string_labels)
     print(f"[pad_labeled_episodes] Processing {len(episodes)} labeled trajectory episodes")
-    
+
     # Create label mapping
     unique_labels = sorted(set(string_labels))
     label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
-    print(f"[pad_labeled_episodes] Found {len(unique_labels)} unique labels: {unique_labels}")
-    
+    print(f"[pad_labeled_episodes] Found {len(unique_labels)} unique labels")
+
+    if max_samples_per_class is not None:
+        rng_np = np.random.default_rng(42)
+        by_class = {label: [] for label in unique_labels}
+        for ep, label in zip(episodes, string_labels):
+            by_class[label].append(ep)
+        episodes, string_labels = [], []
+        for label in unique_labels:
+            class_eps = by_class[label]
+            if len(class_eps) > max_samples_per_class:
+                chosen = rng_np.choice(len(class_eps), size=max_samples_per_class, replace=False)
+                class_eps = [class_eps[i] for i in chosen]
+            episodes.extend(class_eps)
+            string_labels.extend([label] * len(class_eps))
+        print(f"[pad_labeled_episodes] Subsampled to {len(episodes)} episodes (max {max_samples_per_class}/class)")
+
     max_len = max(len(ep) for ep in episodes)
     obs_dim = episodes[0].shape[-1]
     N = len(episodes)
 
     padded = np.zeros((N, max_len, obs_dim), dtype=np.float32)
     masks = np.zeros((N, max_len), dtype=np.float32)
-    labels = np.zeros((N,), dtype=np.int32)
+    labels_arr = np.zeros((N,), dtype=np.int32)
 
-    for i, (ep, label) in enumerate(episodes_with_labels):
+    for i, (ep, label) in enumerate(zip(episodes, string_labels)):
         L = len(ep)
         padded[i, :L] = ep
         masks[i, :L] = 1.0
-        labels[i] = label_to_idx[label]
+        labels_arr[i] = label_to_idx[label]
 
-    print(f"[pad_labeled_episodes] Padded shape: {padded.shape}, masks shape: {masks.shape}, labels shape: {labels.shape}, max_len: {max_len}")
-    return jnp.array(padded), jnp.array(masks), jnp.array(labels), max_len, label_to_idx
+    print(f"[pad_labeled_episodes] Padded shape: {padded.shape}, masks shape: {masks.shape}, labels shape: {labels_arr.shape}, max_len: {max_len}")
+    return padded, masks, labels_arr, max_len, label_to_idx
+
+
+def pad_episodes(episodes):
     """Pad episodes to the same length.
-    
+
     Handles raw trajectory data (arrays only).
-    
+
     Returns:
-        padded: (N, max_len, obs_dim) array of padded observations
-        masks: (N, max_len) array indicating valid timesteps
+        padded: (N, max_len, obs_dim) numpy array of padded observations
+        masks: (N, max_len) numpy array indicating valid timesteps
         max_len: maximum sequence length
         agent_indices: None (no artificial indices)
     """
-    # All episodes are raw trajectory arrays
     obs_list = episodes
     print(f"[pad_episodes] Processing {len(obs_list)} raw trajectory episodes")
-    
+
     max_len = max(len(ep) for ep in obs_list)
     obs_dim = obs_list[0].shape[-1]
     N = len(obs_list)
@@ -292,7 +302,7 @@ def pad_labeled_episodes(episodes_with_labels):
         masks[i, :L] = 1.0
 
     print(f"[pad_episodes] Padded shape: {padded.shape}, masks shape: {masks.shape}, max_len: {max_len}")
-    return jnp.array(padded), jnp.array(masks), max_len, None
+    return padded, masks, max_len, None
 
 
 def create_autoencoder(obs_dim, max_seq_len, hidden_dim, latent_dim=LATENT_DIM):
@@ -316,19 +326,17 @@ def init_autoencoder(rng, obs_dim, max_seq_len, hidden_dim, learning_rate, laten
 
 
 def make_train_step(model, obs_dim):
-    def loss_fn(params, x, mask):
-        reconstructed, _ = model.apply(params, x, mask)
-        mask_expanded = mask[:, None]
-        sq_error = ((reconstructed - x) ** 2) * mask_expanded
-        mse = sq_error.sum() / (mask_expanded.sum() * obs_dim + 1e-8)
-        return mse
-
     @jax.jit
     def train_step(train_state, batch_x, batch_mask):
-        grad_fn = jax.grad(lambda p: jax.vmap(partial(loss_fn, p))(batch_x, batch_mask).mean())
-        grads = grad_fn(train_state.params)
+        def loss_fn(params):
+            def single_loss(x, mask):
+                reconstructed, _ = model.apply(params, x, mask)
+                mask_expanded = mask[:, None]
+                sq_error = ((reconstructed - x) ** 2) * mask_expanded
+                return sq_error.sum() / (mask_expanded.sum() * obs_dim + 1e-8)
+            return jax.vmap(single_loss)(batch_x, batch_mask).mean()
+        loss, grads = jax.value_and_grad(loss_fn)(train_state.params)
         train_state = train_state.apply_gradients(grads=grads)
-        loss = jax.vmap(partial(loss_fn, train_state.params))(batch_x, batch_mask).mean()
         return train_state, loss
 
     return train_step
@@ -341,17 +349,14 @@ def train_autoencoder(rng, train_state, train_step_fn, padded_episodes, masks, n
     losses = []
     for epoch in range(num_epochs):
         rng, rng_perm = jax.random.split(rng)
-        perm = jax.random.permutation(rng_perm, N)
-        padded_shuffled = padded_episodes[perm]
-        masks_shuffled = masks[perm]
+        perm = np.array(jax.random.permutation(rng_perm, N))
         epoch_losses = []
         for batch_idx in range(num_batches):
-            start = batch_idx * batch_size
-            end = min(start + batch_size, N)
-            batch_x = padded_shuffled[start:end]
-            batch_mask = masks_shuffled[start:end]
+            idx = perm[batch_idx * batch_size : (batch_idx + 1) * batch_size]
+            batch_x = padded_episodes[idx]
+            batch_mask = masks[idx]
             train_state, loss = train_step_fn(train_state, batch_x, batch_mask)
-            epoch_losses.append(loss)
+            epoch_losses.append(float(loss))
         avg_loss = np.mean(epoch_losses)
         losses.append(avg_loss)
         if epoch % 10 == 0 or epoch == num_epochs - 1:

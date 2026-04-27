@@ -22,7 +22,8 @@ DEFAULT_HIDDEN_DIM = 64
 DEFAULT_LATENT_DIM = 16
 DEFAULT_LEARNING_RATE = 3e-4
 DEFAULT_NUM_EPOCHS = 200
-DEFAULT_BATCH_SIZE = 64
+DEFAULT_BATCH_SIZE = 512
+DEFAULT_MAX_SAMPLES_PER_CLASS = 5000
 
 
 def get_obs_dim(env_name):
@@ -41,6 +42,7 @@ def main(
     learning_rate=DEFAULT_LEARNING_RATE,
     num_epochs=DEFAULT_NUM_EPOCHS,
     batch_size=DEFAULT_BATCH_SIZE,
+    max_samples_per_class=DEFAULT_MAX_SAMPLES_PER_CLASS,
 ):
     """Train autoencoder on saved trajectories."""
     data_path = Path(data_dir)
@@ -61,7 +63,9 @@ def main(
     print(f"Available pair labels: {list(pair_labels.values())}")
 
     obs_dim = get_obs_dim(env_name)
-    padded_episodes, masks, labels, max_seq_len, label_to_idx = pad_labeled_episodes(episodes_with_labels)
+    padded_episodes, masks, labels, max_seq_len, label_to_idx = pad_labeled_episodes(
+        episodes_with_labels, max_samples_per_class=max_samples_per_class
+    )
     
     num_classes = len(label_to_idx)
     print(f"Number of classes: {num_classes}")
@@ -140,6 +144,8 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=DEFAULT_LEARNING_RATE, help="Learning rate")
     parser.add_argument("--num_epochs", type=int, default=DEFAULT_NUM_EPOCHS, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=DEFAULT_BATCH_SIZE, help="Batch size")
+    parser.add_argument("--max_samples_per_class", type=int, default=DEFAULT_MAX_SAMPLES_PER_CLASS,
+                        help="Max training episodes per class (0 = use all data)")
 
     args = parser.parse_args()
     main(
@@ -151,4 +157,5 @@ if __name__ == "__main__":
         learning_rate=args.learning_rate,
         num_epochs=args.num_epochs,
         batch_size=args.batch_size,
+        max_samples_per_class=args.max_samples_per_class if args.max_samples_per_class > 0 else None,
     )
