@@ -1,21 +1,18 @@
 training_state
 figures/
-figures/*
 notebooks/
-notebooks/*
 
 results*/
-results*/*
 temp/
 eval_teammates/
-eval_teammates/*
 val_teammates/
-val_teammates/*
+val_teammates_v2/
 wandb/
-wandb/*
+
+# coding editors
 .vscode/
-.vscode/*
 .claude/
+
 # pycache
 **/__pycache__/
 **/*.pyc
@@ -26,6 +23,3 @@ __pycache__/
 *.pyc
 dist/
 build/
-
-val_teammates_v2/*
-val_teammates/*
