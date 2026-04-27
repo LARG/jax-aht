@@ -87,12 +87,7 @@ def load_train_run(path):
         path = os.path.join(REPO_PATH, path)
     # load the checkpoint
     checkpointer = orbax.checkpoint.PyTreeCheckpointer()
-    try:
-        restored = checkpointer.restore(path)
-    except ValueError as exc:
-        if "sharding passed to deserialization" not in str(exc):
-            raise
-
+    def _restore_with_numpy_args():
         metadata = checkpointer.metadata(path)
 
         def _mk_restore_args(leaf):
@@ -101,7 +96,24 @@ def load_train_run(path):
             return RestoreArgs()
 
         restore_args = jax.tree_util.tree_map(_mk_restore_args, metadata.tree)
-        restored = checkpointer.restore(path, restore_args=restore_args)
+        return checkpointer.restore(path, restore_args=restore_args)
+
+    force_cpu_restore = os.environ.get("JAX_PLATFORMS", "").lower() == "cpu"
+
+    if force_cpu_restore:
+        restored = _restore_with_numpy_args()
+    else:
+        try:
+            restored = checkpointer.restore(path)
+        except Exception as exc:
+            msg = str(exc)
+            recoverable = (
+                "sharding passed to deserialization" in msg
+                or "Device cuda:0 was not found in jax.local_devices()" in msg
+            )
+            if not recoverable:
+                raise
+            restored = _restore_with_numpy_args()
     # convert pytree leaves from np arrays to jax arrays
     restored = jax.tree_util.tree_map(
         lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,

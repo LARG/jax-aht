@@ -1,15 +1,27 @@
 import logging
 import jax
 import numpy as np
+import os
 from omegaconf import OmegaConf
 
 from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, \
     initialize_rnn_agent, initialize_actor_with_double_critic, \
     initialize_actor_with_conditional_critic
-from common.save_load_utils import load_checkpoints
+from common.save_load_utils import load_checkpoints, REPO_PATH
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+def _validate_teammate_path(path: str) -> str:
+    """Validate checkpoint path and fail fast if it does not exist."""
+    resolved_path = path if os.path.isabs(path) else os.path.join(REPO_PATH, path)
+    if not os.path.exists(resolved_path):
+        raise FileNotFoundError(
+            f"Checkpoint path does not exist: {path}. "
+            "Use the new eval_teammates/... layout."
+        )
+    return path
 
 
 def process_idx_list(idx_list):
@@ -82,7 +94,7 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     assert "actor_type" in agent_config, "Actor type must be provided."
     assert "idx_list" in agent_config, "Indices to load from checkpoint must be provided."
 
-    agent_path = agent_config["path"]
+    agent_path = _validate_teammate_path(agent_config["path"])
     ckpt_key = agent_config.get("ckpt_key", "checkpoints")
     custom_loader_cfg = agent_config.get("custom_loader", None)
 
