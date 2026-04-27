@@ -14,10 +14,12 @@ wandb/
 wandb/*
 .vscode/
 .vscode/*
+.venv/
 
 # Human data raw
 human_data_collecting/collected_data_prolific/
 human_data_collecting/*.tar.gz
+human_data_processing/processed/
 *.safetensors
 
 # pycache
@@ -30,3 +32,4 @@ __pycache__/
 *.pyc
 dist/
 build/
+uv.lock
