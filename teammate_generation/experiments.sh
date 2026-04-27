@@ -45,8 +45,8 @@ for task in "${tasks[@]}"; do
     label="${label}" \
     algorithm.NUM_SEEDS="${num_seeds}" \
     logger.mode="${wandb_mode}" \
-    logger.save_train_out="${save_online_outs}" \
-    logger.save_eval_out="${save_online_outs}" \
+    logger.log_train_out="${save_online_outs}" \
+    logger.log_eval_out="${save_online_outs}" \
     local_logger.save_train_out="${save_local_outs}" \
     local_logger.save_eval_out="${save_local_outs}" \
     2>> "${log_file}"; then
