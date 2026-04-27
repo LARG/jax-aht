@@ -98,10 +98,7 @@ def load_train_run(path):
         restore_args = jax.tree_util.tree_map(_mk_restore_args, metadata.tree)
         return checkpointer.restore(path, restore_args=restore_args)
 
-    force_cpu_restore = (
-        os.environ.get("JAX_AHT_FORCE_CPU_RESTORE", "0") == "1"
-        or os.environ.get("JAX_PLATFORMS", "").lower() == "cpu"
-    )
+    force_cpu_restore = os.environ.get("JAX_PLATFORMS", "").lower() == "cpu"
 
     if force_cpu_restore:
         restored = _restore_with_numpy_args()
