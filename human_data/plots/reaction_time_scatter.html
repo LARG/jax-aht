@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LBF Reaction Time vs Score</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: #f4f5f7; color: #222; font-size: 13px; }
+  .header { background: #1a1f2e; color: white; padding: 16px 28px; }
+  .header h1 { font-size: 18px; font-weight: 700; }
+  .header .sub { font-size: 12.5px; color: #9aa; margin-top: 4px; }
+  .container { padding: 20px 28px; }
+  .chart-wrap { background: white; border-radius: 8px; padding: 20px;
+                 box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: relative; }
+  canvas { display: block; width: 100%; cursor: crosshair; }
+  .tooltip {
+    position: fixed; background: #1a1f2e; color: white;
+    padding: 9px 13px; border-radius: 8px; font-size: 12px;
+    line-height: 1.7; pointer-events: none; z-index: 999;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3); display: none; min-width: 200px;
+  }
+  .legend { display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .threshold-note { font-size: 11.5px; color: #888; margin-top: 8px; }
+  .stats-row { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-card { background: white; border-radius: 8px; padding: 12px 18px;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase;
+                       letter-spacing: .5px; font-weight: 600; }
+  .stat-card .val { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .controls { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .ctrl-label { font-size: 12px; color: #555; font-weight: 600; }
+  select { padding: 4px 8px; border-radius: 6px; border: 1.5px solid #ccc;
+            font-size: 12px; background: white; cursor: pointer; }
+  input[type=range] { accent-color: #2d6cdf; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Reaction Time vs Performance — LBF Human Players</h1>
+  <div class="sub">
+    Each dot = one player session &nbsp;·&nbsp;
+    X axis = median time between actions &nbsp;·&nbsp;
+    Y axis = avg score per game &nbsp;·&nbsp;
+    Generated 2026-04-15 18:37
+  </div>
+</div>
+<div style="background:#fff8e1;border-left:4px solid #f9a825;padding:12px 28px;font-size:12.5px;color:#555;line-height:1.7">
+  <strong>How to read this chart:</strong>
+  Dots further <strong>left</strong> = players who acted quickly between steps.
+  Dots further <strong>right</strong> = players who paused longer between actions.
+  Dots higher up = better average score.
+  <strong>Red dots</strong> = flagged sessions &nbsp;·&nbsp;
+  <strong>Red ring</strong> = suspiciously fast (10th percentile reaction time &lt; 150ms — possible key-holding or bot).
+  The blue trend line shows whether thinking time correlates with performance — a flat line (r ≈ 0) means no strong relationship.
+  Use the X-axis dropdown to switch between median reaction time and the 10th percentile (fastest actions).
+</div>
+<div class="container">
+  <div class="stats-row" id="statsRow"></div>
+  <div class="controls">
+    <span class="ctrl-label">X axis:</span>
+    <select id="xAxis" onchange="redraw()">
+      <option value="med_rt">Median reaction time (ms)</option>
+      <option value="p10_rt">10th pct reaction time (ms) — fastest actions</option>
+    </select>
+    <span class="ctrl-label" style="margin-left:12px">X max:</span>
+    <input type="range" id="xMax" min="500" max="10000" step="500" value="5000" oninput="redraw()">
+    <span id="xMaxLabel" style="font-size:12px;color:#555;min-width:60px">5000ms</span>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="scatter" height="500"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="threshold-note">
+      <strong>Red dashed line</strong> = 150ms — on the p10 view, sessions left of this line had their fastest 10% of actions under 150ms, which is suspicious (possible key-holding or automation).
+      <strong>Dot size</strong> = number of games played (larger = more games).
+      <strong>Jitter</strong> applied to reduce overlap — hover dots for exact values.
+    </div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const POINTS = [{"sid": "ed601804-bdc5-46fe-9372-93f78e31ec0e", "short": "ed601804", "med_rt": 560.4, "p10_rt": 365.6, "score": 0.0312, "noop": 0.0, "idle": 0.0, "games": 8, "status": "flagged", "rt_warn": false, "reasons": "7/8 games scored zero"}, {"sid": "ba9bf37b-fe7b-44e8-aed3-3e509c218cec", "short": "ba9bf37b", "med_rt": 1193.0, "p10_rt": 935.6, "score": 0.0417, "noop": 0.0, "idle": 0.79, "games": 8, "status": "flagged", "rt_warn": false, "reasons": "high idle rate (79% of actions were Q or wasted SPACE)"}, {"sid": "92a7c510-bba6-4556-a965-0eaa2b80f7a6", "short": "92a7c510", "med_rt": 336.3, "p10_rt": 206.6, "score": 0.125, "noop": 0.0, "idle": 0.6432, "games": 8, "status": "flagged", "rt_warn": false, "reasons": "high idle rate (64% of actions were Q or wasted SPACE); 6/8 games scored zero"}, {"sid": "af1dc5a2-44e4-4ca0-9f7c-090395ced147", "short": "af1dc5a2", "med_rt": 372.8, "p10_rt": 322.7, "score": 0.1938, "noop": 0.0, "idle": 0.6188, "games": 8, "status": "flagged", "rt_warn": false, "reasons": "high idle rate (62% of actions were Q or wasted SPACE)"}, {"sid": "d6be0b1d-88ec-402b-be0b-fe80c498898a", "short": "d6be0b1d", "med_rt": 700.0, "p10_rt": 379.8, "score": 0.2229, "noop": 0.0, "idle": 0.5895, "games": 8, "status": "flagged", "rt_warn": false, "reasons": "high idle rate (59% of actions were Q or wasted SPACE)"}, {"sid": "6c2cdc94-ee78-4d57-857f-1c6ec33dcd0a", "short": "6c2cdc94", "med_rt": 344.7, "p10_rt": 241.4, "score": 0.2688, "noop": 0.0, "idle": 0.2105, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "4e501dea-8bf2-4369-9c8f-2e1c44dcd897", "short": "4e501dea", "med_rt": 486.7, "p10_rt": 199.0, "score": 0.2729, "noop": 0.0, "idle": 0.1797, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "8f793676-24b7-43f8-968e-dcb1c0b2a457", "short": "8f793676", "med_rt": 374.7, "p10_rt": 241.5, "score": 0.275, "noop": 0.0, "idle": 0.4755, "games": 8, "status": "flagged", "rt_warn": false, "reasons": "high idle rate (48% of actions were Q or wasted SPACE)"}, {"sid": "f2779b00-293f-4e6d-9b1a-b26582dd4fea", "short": "f2779b00", "med_rt": 846.8, "p10_rt": 419.9, "score": 0.275, "noop": 0.0, "idle": 0.1968, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "f6dac5d2-64f8-48ed-88ae-81adbd02570f", "short": "f6dac5d2", "med_rt": 287.0, "p10_rt": 195.5, "score": 0.2917, "noop": 0.0, "idle": 0.3451, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "dfc7a801-fca5-451b-ae0e-5047ca3f4f2b", "short": "dfc7a801", "med_rt": 500.4, "p10_rt": 355.0, "score": 0.2979, "noop": 0.0, "idle": 0.3054, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "4b17d2df-f28c-4f42-8062-b1f16235743c", "short": "4b17d2df", "med_rt": 794.0, "p10_rt": 343.4, "score": 0.2979, "noop": 0.0, "idle": 0.1371, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "78f5ff1a-afa5-48cb-a251-ba14e42b5333", "short": "78f5ff1a", "med_rt": 488.5, "p10_rt": 316.7, "score": 0.3, "noop": 0.0, "idle": 0.11, "games": 2, "status": "disqualified", "rt_warn": false, "reasons": "none"}, {"sid": "2f82d6c8-ce4d-40a3-8608-fc453f8d7dd2", "short": "2f82d6c8", "med_rt": 625.1, "p10_rt": 389.8, "score": 0.3063, "noop": 0.0, "idle": 0.2665, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "a31cb4ab-7517-4248-bd90-182a134c2f89", "short": "a31cb4ab", "med_rt": 624.6, "p10_rt": 226.5, "score": 0.3125, "noop": 0.0028, "idle": 0.1826, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "b6fb6cf6-e918-4f75-9118-e661e38d0d25", "short": "b6fb6cf6", "med_rt": 569.1, "p10_rt": 312.3, "score": 0.3167, "noop": 0.0, "idle": 0.0561, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "14727a3c-d4dc-412c-b8c9-f97024fbe096", "short": "14727a3c", "med_rt": 682.4, "p10_rt": 269.2, "score": 0.3229, "noop": 0.0, "idle": 0.1218, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "584b1056-0bd9-45db-b94e-d80db52b9303", "short": "584b1056", "med_rt": 642.9, "p10_rt": 205.6, "score": 0.3313, "noop": 0.0086, "idle": 0.2888, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "505878ac-1ee3-41df-9e20-ea59142a3b5e", "short": "505878ac", "med_rt": 702.8, "p10_rt": 281.0, "score": 0.3417, "noop": 0.0, "idle": 0.1444, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "4fced71f-1486-47e1-a884-aa994436e7fc", "short": "4fced71f", "med_rt": 434.0, "p10_rt": 257.7, "score": 0.3438, "noop": 0.0, "idle": 0.5216, "games": 8, "status": "flagged", "rt_warn": false, "reasons": "high idle rate (52% of actions were Q or wasted SPACE)"}, {"sid": "382e8f73-6d8f-428c-90e8-b26b3848bf79", "short": "382e8f73", "med_rt": 432.0, "p10_rt": 220.3, "score": 0.3625, "noop": 0.0, "idle": 0.1515, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "b1a7240c-4baf-4709-8214-09d80248b640", "short": "b1a7240c", "med_rt": 1545.4, "p10_rt": 795.4, "score": 0.3688, "noop": 0.0, "idle": 0.0558, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "19d5de68-33fd-4e5d-84fc-0d2c14f3d9eb", "short": "19d5de68", "med_rt": 540.8, "p10_rt": 241.9, "score": 0.3771, "noop": 0.0071, "idle": 0.1255, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "1dff35c4-c078-403f-b3e5-d4bbe41dae78", "short": "1dff35c4", "med_rt": 381.4, "p10_rt": 224.0, "score": 0.3813, "noop": 0.0, "idle": 0.1943, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "27fe71e5-45cd-489d-ab51-11a607f04784", "short": "27fe71e5", "med_rt": 483.3, "p10_rt": 295.1, "score": 0.3854, "noop": 0.0, "idle": 0.0291, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "f443b377-bd34-4c09-bd83-ea151011b9f8", "short": "f443b377", "med_rt": 375.1, "p10_rt": 239.3, "score": 0.3938, "noop": 0.0, "idle": 0.2691, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "e3de8b24-eb53-451e-8366-b9b864c948ac", "short": "e3de8b24", "med_rt": 568.0, "p10_rt": 303.2, "score": 0.4063, "noop": 0.0, "idle": 0.097, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "8286ea82-349a-4750-a702-902aa1817154", "short": "8286ea82", "med_rt": 506.9, "p10_rt": 226.9, "score": 0.4083, "noop": 0.0, "idle": 0.0447, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "0da6c062-7f03-4db0-bba2-fe5b05bc5521", "short": "0da6c062", "med_rt": 446.8, "p10_rt": 256.6, "score": 0.4083, "noop": 0.0, "idle": 0.0594, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "f8899629-6fa4-4b31-8138-0b6fd38cfaa8", "short": "f8899629", "med_rt": 235.4, "p10_rt": 148.3, "score": 0.4125, "noop": 0.0, "idle": 0.1839, "games": 8, "status": "ok", "rt_warn": true, "reasons": "none"}, {"sid": "b4149787-e5c0-4340-8771-90d1a47c6e05", "short": "b4149787", "med_rt": 365.3, "p10_rt": 259.7, "score": 0.4125, "noop": 0.0, "idle": 0.2399, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "6efb31db-e51a-4660-adf9-a7d52cf71b7b", "short": "6efb31db", "med_rt": 373.0, "p10_rt": 245.8, "score": 0.4146, "noop": 0.0, "idle": 0.1338, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "c2f71b04-0f6f-4202-b5f2-5647eceb7e62", "short": "c2f71b04", "med_rt": 661.4, "p10_rt": 255.1, "score": 0.4146, "noop": 0.0, "idle": 0.0714, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "8562a701-d74e-4312-b918-85342da58730", "short": "8562a701", "med_rt": 642.7, "p10_rt": 419.9, "score": 0.4167, "noop": 0.0496, "idle": 0.1229, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "82e9c1ac-b485-488e-b674-53609e3c2d5e", "short": "82e9c1ac", "med_rt": 497.6, "p10_rt": 321.0, "score": 0.4219, "noop": 0.0, "idle": 0.0656, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "198e581d-3300-4f0f-99c0-66f660476507", "short": "198e581d", "med_rt": 467.4, "p10_rt": 266.0, "score": 0.4229, "noop": 0.0433, "idle": 0.1825, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "668390ac-e705-45ed-b5c8-70a396cfba0a", "short": "668390ac", "med_rt": 482.8, "p10_rt": 230.2, "score": 0.4229, "noop": 0.101, "idle": 0.1883, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "b1adf6b1-2255-4de5-93a1-2dabaa9e96b4", "short": "b1adf6b1", "med_rt": 325.7, "p10_rt": 192.2, "score": 0.4292, "noop": 0.0, "idle": 0.0436, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "64075a3c-e795-4d37-93cf-f234c53cc9c2", "short": "64075a3c", "med_rt": 1174.6, "p10_rt": 536.0, "score": 0.4333, "noop": 0.0, "idle": 0.137, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "0d31580b-fcc3-42db-8e3f-a4153e5fc34c", "short": "0d31580b", "med_rt": 345.3, "p10_rt": 188.3, "score": 0.4354, "noop": 0.0, "idle": 0.1866, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "c57bcb0e-c2b0-4822-8666-c554ee9077ac", "short": "c57bcb0e", "med_rt": 477.3, "p10_rt": 316.9, "score": 0.4375, "noop": 0.0, "idle": 0.0904, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "5314ccf4-8c5f-435a-bb31-6ab052667451", "short": "5314ccf4", "med_rt": 780.0, "p10_rt": 384.1, "score": 0.4375, "noop": 0.0, "idle": 0.1428, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "c69f7a57-aa8e-4d04-a185-dbd9e350008f", "short": "c69f7a57", "med_rt": 399.9, "p10_rt": 266.7, "score": 0.4417, "noop": 0.0, "idle": 0.0871, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "6b3ca227-6479-459a-bce3-60b85344eec4", "short": "6b3ca227", "med_rt": 504.3, "p10_rt": 271.5, "score": 0.4417, "noop": 0.0, "idle": 0.0966, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "8a0e35e8-84db-4d63-a59c-6ae2375fc614", "short": "8a0e35e8", "med_rt": 1167.2, "p10_rt": 387.3, "score": 0.4438, "noop": 0.0, "idle": 0.0927, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "983f0803-bc9d-483e-bcd3-715494ab1580", "short": "983f0803", "med_rt": 260.7, "p10_rt": 183.8, "score": 0.4438, "noop": 0.0, "idle": 0.005, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "f6d58786-d1e4-48e2-b41e-a9fd10880ae7", "short": "f6d58786", "med_rt": 955.6, "p10_rt": 567.3, "score": 0.4458, "noop": 0.0, "idle": 0.1804, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "a8afde40-564e-49cb-bfba-793febbda264", "short": "a8afde40", "med_rt": 439.9, "p10_rt": 192.0, "score": 0.4479, "noop": 0.0289, "idle": 0.1491, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "6a0302aa-c167-4087-88a6-a89b33de4002", "short": "6a0302aa", "med_rt": 1680.3, "p10_rt": 432.0, "score": 0.4521, "noop": 0.0, "idle": 0.1159, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "42d8a64c-df6e-433d-b3f7-60c0705dca74", "short": "42d8a64c", "med_rt": 1088.4, "p10_rt": 250.1, "score": 0.4542, "noop": 0.1053, "idle": 0.1665, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "51c2cdff-9f2d-4137-a662-84eec42430e8", "short": "51c2cdff", "med_rt": 444.7, "p10_rt": 238.1, "score": 0.4542, "noop": 0.0, "idle": 0.051, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "10aa7a9b-db0b-4cc0-a9b6-f9b0cc62087a", "short": "10aa7a9b", "med_rt": 540.0, "p10_rt": 308.7, "score": 0.4563, "noop": 0.0719, "idle": 0.1387, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "a33503e8-82e2-4f2e-95d1-a84e6b34ad6e", "short": "a33503e8", "med_rt": 721.3, "p10_rt": 476.4, "score": 0.4563, "noop": 0.0, "idle": 0.0907, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "6113295e-ef43-4143-94dc-754c898a3fff", "short": "6113295e", "med_rt": 446.8, "p10_rt": 216.0, "score": 0.4563, "noop": 0.0, "idle": 0.0454, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "8e2fa634-b24c-4f94-9fd3-97ec0676d32b", "short": "8e2fa634", "med_rt": 546.2, "p10_rt": 375.6, "score": 0.4583, "noop": 0.052, "idle": 0.0777, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "d1a52da2-aab2-4282-a2a3-f2aca41915f7", "short": "d1a52da2", "med_rt": 524.6, "p10_rt": 314.2, "score": 0.4583, "noop": 0.0224, "idle": 0.0521, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "b3bd3bdc-1687-4fba-93d0-0aee526bb64f", "short": "b3bd3bdc", "med_rt": 598.9, "p10_rt": 313.1, "score": 0.4583, "noop": 0.1209, "idle": 0.1029, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "da758033-6679-4dca-935e-6436eda67c05", "short": "da758033", "med_rt": 562.9, "p10_rt": 369.8, "score": 0.4583, "noop": 0.0233, "idle": 0.0866, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "3cfa66c1-0710-4002-91df-61ad822f7037", "short": "3cfa66c1", "med_rt": 789.9, "p10_rt": 411.3, "score": 0.4583, "noop": 0.0, "idle": 0.06, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "c6cf1848-3137-43ce-9de8-c915422147ed", "short": "c6cf1848", "med_rt": 540.9, "p10_rt": 260.3, "score": 0.4583, "noop": 0.0, "idle": 0.043, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "4434a00a-0fb4-4aa1-b1b3-a2a402f40454", "short": "4434a00a", "med_rt": 430.9, "p10_rt": 206.3, "score": 0.4583, "noop": 0.0, "idle": 0.0711, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "dc106370-a1f4-41af-876f-e1df3b39058f", "short": "dc106370", "med_rt": 687.3, "p10_rt": 403.6, "score": 0.4583, "noop": 0.0471, "idle": 0.1347, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "ba1429c4-b4db-43a8-a94a-d40cf611503c", "short": "ba1429c4", "med_rt": 492.0, "p10_rt": 218.3, "score": 0.4646, "noop": 0.0, "idle": 0.0498, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "f995ca84-bdfb-46e3-a61c-663d2dc0b739", "short": "f995ca84", "med_rt": 663.4, "p10_rt": 234.3, "score": 0.4667, "noop": 0.0038, "idle": 0.0884, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "c18a17ea-3bc0-4460-8dd0-539a0790161a", "short": "c18a17ea", "med_rt": 610.2, "p10_rt": 255.4, "score": 0.4667, "noop": 0.0, "idle": 0.2131, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "7bc5d6c5-816d-4dbb-a8ea-96a50c773ae5", "short": "7bc5d6c5", "med_rt": 495.0, "p10_rt": 196.1, "score": 0.4688, "noop": 0.0, "idle": 0.0537, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "0c467a19-f6eb-4b01-8ce7-3f8ca2a395e0", "short": "0c467a19", "med_rt": 455.4, "p10_rt": 273.6, "score": 0.4688, "noop": 0.0, "idle": 0.0525, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "c334520c-e910-41d7-ab14-67923dddc181", "short": "c334520c", "med_rt": 444.5, "p10_rt": 281.6, "score": 0.4688, "noop": 0.0197, "idle": 0.1184, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "03becbb5-1fd2-4fd6-b288-bd7a9f523130", "short": "03becbb5", "med_rt": 749.8, "p10_rt": 399.9, "score": 0.4688, "noop": 0.0, "idle": 0.0819, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "a911f4bb-7bd5-4991-bc36-f845f28e9e44", "short": "a911f4bb", "med_rt": 312.1, "p10_rt": 132.4, "score": 0.4688, "noop": 0.0, "idle": 0.0558, "games": 8, "status": "ok", "rt_warn": true, "reasons": "none"}, {"sid": "c6a1679a-6dfb-46a0-b537-a7274410dcf8", "short": "c6a1679a", "med_rt": 534.0, "p10_rt": 253.5, "score": 0.4688, "noop": 0.0, "idle": 0.0902, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "9aef1152-5792-44e3-b569-afca0a2c8195", "short": "9aef1152", "med_rt": 547.8, "p10_rt": 286.2, "score": 0.475, "noop": 0.128, "idle": 0.2582, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "8b115ae7-8814-4c41-b4f4-a59d3371d39f", "short": "8b115ae7", "med_rt": 515.3, "p10_rt": 267.6, "score": 0.475, "noop": 0.0903, "idle": 0.1133, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "f49cdb56-9f79-4966-ac8e-f6f6ecd0f43a", "short": "f49cdb56", "med_rt": 880.4, "p10_rt": 299.1, "score": 0.4771, "noop": 0.0, "idle": 0.0634, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "ad22322f-a806-4f40-a257-a76d4e3e8a8e", "short": "ad22322f", "med_rt": 559.4, "p10_rt": 325.0, "score": 0.4792, "noop": 0.0342, "idle": 0.1287, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "e90f3714-4fc3-4d27-abc4-3bbf1bf5951e", "short": "e90f3714", "med_rt": 456.5, "p10_rt": 332.0, "score": 0.4792, "noop": 0.0, "idle": 0.127, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "28c0ba8a-438b-4a09-8b7a-8e231e25939e", "short": "28c0ba8a", "med_rt": 403.9, "p10_rt": 195.9, "score": 0.4875, "noop": 0.0, "idle": 0.0745, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "526c0fd4-4fc5-4938-99c2-991317b72bc2", "short": "526c0fd4", "med_rt": 902.0, "p10_rt": 301.5, "score": 0.4875, "noop": 0.0, "idle": 0.1187, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "5ef3eb9a-3d61-4bd8-a154-1bbd74c0c3ab", "short": "5ef3eb9a", "med_rt": 483.5, "p10_rt": 299.7, "score": 0.4875, "noop": 0.0, "idle": 0.0695, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "38edacc0-1cee-481d-aab6-07ea2585f894", "short": "38edacc0", "med_rt": 440.9, "p10_rt": 223.1, "score": 0.4896, "noop": 0.0723, "idle": 0.133, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "257a4fa8-ab3e-4471-ae10-e347d485afc2", "short": "257a4fa8", "med_rt": 476.6, "p10_rt": 204.8, "score": 0.4938, "noop": 0.0, "idle": 0.0838, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "a02c5c74-f7d5-40fc-ba83-7878728f86cb", "short": "a02c5c74", "med_rt": 537.1, "p10_rt": 292.1, "score": 0.5, "noop": 0.0, "idle": 0.0185, "games": 8, "status": "ok", "rt_warn": false, "reasons": "none"}, {"sid": "e5fdb0c7-4e45-42cc-9728-1f0e4fd82c59", "short": "e5fdb0c7", "med_rt": 265.0, "p10_rt": 143.0, "score": 0.5, "noop": 0.0, "idle": 0.0238, "games": 1, "status": "disqualified", "rt_warn": true, "reasons": "none"}];
+const STATUS_COLORS = {"flagged": "#e05050", "disqualified": "#ba68c8", "ok": "#52be80"};
+const SUSPICIOUS_RT = 150;
+
+const PAD = {top:40, right:40, bottom:60, left:70};
+
+function getCanvas() { return document.getElementById('scatter'); }
+function getCtx()    { return getCanvas().getContext('2d'); }
+
+function getXField() {
+  return document.getElementById('xAxis').value;
+}
+function getXMax() {
+  const v = parseInt(document.getElementById('xMax').value);
+  document.getElementById('xMaxLabel').textContent = v + 'ms';
+  return v;
+}
+
+function dataToCanvas(x, y, xMin, xMax, yMin, yMax, W, H) {
+  const cx = PAD.left + (x - xMin) / (xMax - xMin) * (W - PAD.left - PAD.right);
+  const cy = H - PAD.bottom - (y - yMin) / (yMax - yMin) * (H - PAD.top - PAD.bottom);
+  return [cx, cy];
+}
+
+function redraw() {
+  const canvas = getCanvas();
+  const W = canvas.offsetWidth;
+  canvas.width  = W * window.devicePixelRatio;
+  canvas.height = 500 * window.devicePixelRatio;
+  canvas.style.height = '500px';
+  const ctx = getCtx();
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const H = 500;
+
+  const xField = getXField();
+  const xMax   = getXMax();
+  const xMin   = 0;
+  const yMin   = 0;
+  const yMax   = 0.55;
+
+  // Background
+  ctx.fillStyle = '#fafafa';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#e8e8e8'; ctx.lineWidth = 1;
+  for (let y = 0; y <= 0.5; y += 0.1) {
+    const [,cy] = dataToCanvas(0, y, xMin, xMax, yMin, yMax, W, H);
+    ctx.beginPath(); ctx.moveTo(PAD.left, cy); ctx.lineTo(W-PAD.right, cy); ctx.stroke();
+    ctx.fillStyle='#999'; ctx.font='11px sans-serif'; ctx.textAlign='right';
+    ctx.fillText(y.toFixed(1), PAD.left-6, cy+4);
+  }
+  for (let x = 0; x <= xMax; x += xMax/10) {
+    const [cx,] = dataToCanvas(x, 0, xMin, xMax, yMin, yMax, W, H);
+    ctx.beginPath(); ctx.moveTo(cx, PAD.top); ctx.lineTo(cx, H-PAD.bottom); ctx.stroke();
+    ctx.fillStyle='#999'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(Math.round(x)+'ms', cx, H-PAD.bottom+16);
+  }
+
+  // Suspicious RT threshold line (only for p10 x-axis)
+  if (xField === 'p10_rt' && SUSPICIOUS_RT <= xMax) {
+    const [cx,] = dataToCanvas(SUSPICIOUS_RT, 0, xMin, xMax, yMin, yMax, W, H);
+    ctx.strokeStyle='#e05050'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(cx, PAD.top); ctx.lineTo(cx, H-PAD.bottom); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#e05050'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('150ms', cx, PAD.top-6);
+  }
+
+  // Max score reference line
+  {
+    const [,cy] = dataToCanvas(0, 0.5, xMin, xMax, yMin, yMax, W, H);
+    ctx.strokeStyle='#1a6e2e'; ctx.lineWidth=1.2; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(PAD.left, cy); ctx.lineTo(W-PAD.right, cy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#1a6e2e'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('max score 0.5', PAD.left+4, cy-5);
+  }
+
+  // Axes labels
+  ctx.fillStyle='#333'; ctx.font='bold 12px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(xField==='med_rt'?'Median reaction time (ms)':'10th percentile reaction time (ms)',
+               PAD.left + (W-PAD.left-PAD.right)/2, H-8);
+  ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Avg score per game', 0, 0); ctx.restore();
+
+  // Dots — with deterministic jitter to reduce overlap
+  const valid = POINTS.filter(p => p[xField] !== null && p[xField] <= xMax);
+  // Deterministic jitter based on session short id hash
+  function hashJitter(str, scale) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    return ((h & 0xffff) / 0xffff - 0.5) * scale;
+  }
+  valid.forEach(p => {
+    const jx = hashJitter(p.short + 'x', xMax * 0.012);
+    const jy = hashJitter(p.short + 'y', 0.018);
+    const [cx, cy] = dataToCanvas(p[xField] + jx, p.score + jy, xMin, xMax, yMin, yMax, W, H);
+    const r = 5 + p.games * 1.0;
+    const col = STATUS_COLORS[p.status] || '#888';
+    ctx.globalAlpha = 0.78;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+    if (p.rt_warn) {
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#e05050'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(cx, cy, r+4, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  });
+
+  // Trend line (simple linear regression on ok sessions)
+  const okPts = valid.filter(p => p.status==='ok' && p[xField] !== null);
+  if (okPts.length > 3) {
+    const xs = okPts.map(p => p[xField]);
+    const ys = okPts.map(p => p.score);
+    const n  = xs.length;
+    const mx = xs.reduce((a,b)=>a+b,0)/n;
+    const my = ys.reduce((a,b)=>a+b,0)/n;
+    const num = xs.reduce((s,x,i)=>s+(x-mx)*(ys[i]-my),0);
+    const den = xs.reduce((s,x)=>s+(x-mx)**2,0);
+    if (den > 0) {
+      const slope = num/den, intercept = my - slope*mx;
+      const x1=xMin, x2=xMax;
+      const y1=slope*x1+intercept, y2=slope*x2+intercept;
+      const [cx1,cy1] = dataToCanvas(x1,y1,xMin,xMax,yMin,yMax,W,H);
+      const [cx2,cy2] = dataToCanvas(x2,y2,xMin,xMax,yMin,yMax,W,H);
+      ctx.strokeStyle='rgba(45,108,223,0.5)'; ctx.lineWidth=2; ctx.setLineDash([8,5]);
+      ctx.beginPath(); ctx.moveTo(cx1,cy1); ctx.lineTo(cx2,cy2); ctx.stroke();
+      ctx.setLineDash([]);
+      // Correlation label
+      const r2 = num / Math.sqrt(den * ys.reduce((s,y)=>s+(y-my)**2,0));
+      ctx.fillStyle='rgba(45,108,223,0.8)'; ctx.font='11px sans-serif'; ctx.textAlign='right';
+      ctx.fillText('r = '+r2.toFixed(2)+' (OK sessions)', W-PAD.right-4, PAD.top+14);
+    }
+  }
+}
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+getCanvas().addEventListener('mousemove', function(e) {
+  const canvas = getCanvas();
+  const rect   = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const W  = canvas.offsetWidth;
+  const H  = 500;
+  const xField = getXField();
+  const xMax   = getXMax();
+
+  let closest = null, minDist = 20;
+  const valid = POINTS.filter(p => p[xField] !== null && p[xField] <= xMax);
+  valid.forEach(p => {
+    const [cx,cy] = dataToCanvas(p[xField], p.score, 0, xMax, 0, 0.55, W, H);
+    const d = Math.hypot(mx-cx, my-cy);
+    if (d < minDist) { minDist=d; closest=p; }
+  });
+
+  if (closest) {
+    const statusLabel = closest.status.charAt(0).toUpperCase()+closest.status.slice(1);
+    tooltip.innerHTML =
+      '<strong>'+closest.short+'…</strong><br>'+
+      '<span style="color:#aac">Status</span>: <strong>'+statusLabel+'</strong><br>'+
+      '<span style="color:#aac">Score</span>: <strong>'+closest.score.toFixed(3)+'</strong><br>'+
+      '<span style="color:#aac">Median RT</span>: <strong>'+closest.med_rt+'ms</strong><br>'+
+      '<span style="color:#aac">10th pct RT</span>: <strong>'+(closest.p10_rt||'—')+'ms</strong><br>'+
+      '<span style="color:#aac">Games</span>: <strong>'+closest.games+'</strong><br>'+
+      (closest.reasons!=='none'?'<span style="color:#e09090">'+closest.reasons+'</span>':'');
+    tooltip.style.display = 'block';
+    let tx = e.clientX+14, ty = e.clientY-10;
+    if (tx+210>window.innerWidth) tx=e.clientX-220;
+    tooltip.style.left=tx+'px'; tooltip.style.top=ty+'px';
+  } else {
+    tooltip.style.display='none';
+  }
+});
+getCanvas().addEventListener('mouseleave', ()=>tooltip.style.display='none');
+
+// Stats cards
+function buildStats() {
+  const ok = POINTS.filter(p=>p.status==='ok'&&p.med_rt!==null);
+  const flagged = POINTS.filter(p=>p.status==='flagged'&&p.med_rt!==null);
+  const allRts  = POINTS.filter(p=>p.med_rt!==null).map(p=>p.med_rt).sort((a,b)=>a-b);
+  const medAll  = allRts[Math.floor(allRts.length/2)]||0;
+  const suspicious = POINTS.filter(p=>p.rt_warn).length;
+
+  const cards = [
+    {label:'Sessions with RT data', val: POINTS.filter(p=>p.med_rt!==null).length},
+    {label:'Median RT (all sessions)', val: Math.round(medAll)+'ms'},
+    {label:'Median RT (OK sessions)', val: Math.round(ok.map(p=>p.med_rt).sort((a,b)=>a-b)[Math.floor(ok.length/2)]||0)+'ms'},
+    {label:'Suspicious (p10 < 150ms)', val: suspicious, color: suspicious>0?'#e05050':undefined},
+  ];
+  const row = document.getElementById('statsRow');
+  cards.forEach(c=>{
+    const d=document.createElement('div'); d.className='stat-card';
+    d.innerHTML='<div class="label">'+c.label+'</div>'+
+      '<div class="val"'+(c.color?' style="color:'+c.color+'"':'')+'>'+(c.val||0)+'</div>';
+    row.appendChild(d);
+  });
+}
+
+// Legend
+function buildLegend() {
+  const items = [
+    {color:'#52be80', label:'OK'},
+    {color:'#e05050', label:'Flagged'},
+    {color:'#ba68c8', label:'Disqualified'},
+    {color:'rgba(45,108,223,0.5)', label:'Trend line (OK sessions)', dash:true},
+  ];
+  // Red ring item
+  const ringItem = document.createElement('div');
+  ringItem.className = 'legend-item';
+  ringItem.innerHTML =
+    '<svg width="22" height="22" style="flex-shrink:0"><circle cx="11" cy="11" r="8" fill="rgba(45,180,100,0.5)" stroke="#e05050" stroke-width="2.5"/></svg>' +
+    'Red ring = p10 RT &lt; 150ms (suspiciously fast)';
+  document.getElementById('legend').appendChild(ringItem);
+  const leg = document.getElementById('legend');
+  items.forEach(it=>{
+    const d=document.createElement('div'); d.className='legend-item';
+    d.innerHTML='<div class="legend-dot" style="background:'+it.color+
+      (it.dash?';border-radius:0;height:3px;width:20px':'')+'"></div>'+it.label;
+    leg.appendChild(d);
+  });
+  const sz = document.createElement('div'); sz.className='legend-item';
+  sz.style.marginLeft='12px'; sz.style.color='#888';
+  sz.textContent='Dot size = number of games played';
+  leg.appendChild(sz);
+}
+
+window.addEventListener('resize', redraw);
+buildStats();
+buildLegend();
+redraw();
+</script>
+</body>
+</html>

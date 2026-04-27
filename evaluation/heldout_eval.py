@@ -156,13 +156,14 @@ def log_heldout_metrics(config, logger, eval_metrics,
     # Log table
     table_data_with_names = np.hstack((algo_name_array, metric_names_array, table_data))
 
-    # Additionally log each metric separately for parameter sweep analysis
-    for i in range(table_data_with_names.shape[0]):
-        logger.log_item(f"HeldoutEval/FinalEgoVsHeldout/{table_data_with_names[i, 1]}/mean", float(table_data_with_names[i, 2].split()[0]))
-
     aggregate_stat = config["global_heldout_settings"]["AGGREGATE_STAT"]
     logger.log_xp_matrix(f"HeldoutEval/FinalEgoVsHeldout-{aggregate_stat.capitalize()}-CI", table_data_with_names,
                          columns=["Algorithm", "Metric", f"{aggregate_stat.capitalize()} (all)"] + list(heldout_names), commit=True)
+
+    # Log mean of each metric separately for parameter sweep analysis
+    for i in range(table_data_with_names.shape[0]):
+        logger.log_item(f"HeldoutEval/FinalEgoVsHeldout/{table_data_with_names[i, 1]}/mean", float(table_data_with_names[i, 2].split()[0]))
+
 
     # Saving artifacts
     savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
