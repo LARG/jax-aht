@@ -1087,7 +1087,7 @@ def compute_sp_mask_and_ids(pop_size):
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy
-    num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
+    num_seeds, pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
     # TODO: add the eval_ep_last_info metrics
 
     ### Log evaluation metrics
@@ -1108,7 +1108,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))  # shape (pop_size - 1, num_updates)
     xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))  # shape (pop_size - 1, num_updates, pop_size)
 
-    for num_add_policies in range(trained_pop_size):
+    for num_add_policies in range(pop_size):
         for update_step in eval_steps:
             logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
             mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
