@@ -24,10 +24,7 @@
 #SBATCH -p gh                   # Partition/queue (gh = Grace Hopper production)
 #SBATCH -N 1                    # Number of nodes
 #SBATCH --ntasks-per-node=1     # Number of MPI tasks per node (1 for single-process JAX)
-#SBATCH --cpus-per-task=12      # CPU cores allocated to the task
-#SBATCH --mem=64G               # Total memory per node
-#SBATCH --gres=gpu:1            # Number of GPUs to request
-#SBATCH -t 12:00:00             # Walltime limit (HH:MM:SS)
+#SBATCH -t 2:00:00             # Walltime limit (HH:MM:SS)
 #SBATCH -o results/slurm_logs/%j_%x.out  # Stdout log (%j=job ID, %x=job name)
 #SBATCH -e results/slurm_logs/%j_%x.err  # Stderr log
 #SBATCH -A ASC25021             # Allocation account to charge
@@ -38,18 +35,19 @@ set -euo pipefail   # Exit on error (-e), undefined variable (-u), or pipe failu
 ALGO="${ALGO:-fcp}"                      # Algorithm (default: fcp)
 TASK="${TASK:-lbf}"                      # Task/environment (default: lbf)
 LABEL="${LABEL:-fcp_lbf_test}"           # Run label for logging
-NUM_SEEDS="${NUM_SEEDS:-10}"             # Number of random seeds
+NUM_SEEDS="${NUM_SEEDS:-5}"             # Number of random seeds
 LOG_TRAIN_OUT="${LOG_TRAIN_OUT:-false}"  # Whether to log training output to wandb
 LOG_LOCAL_OUT="${LOG_LOCAL_OUT:-false}"  # Whether to save output locally
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"  # Repo root, resolved relative to this script
+# ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"  # Repo root, resolved relative to this script
+ROOT_DIR="$SCRATCH/jax-aht"
 cd "$ROOT_DIR"
-mkdir -p results/slurm_logs  # Ensure log directory exists before SLURM tries to write to it
+ mkdir -p results/slurm_logs  # Ensure log directory exists before SLURM tries to write to it
 
 # ── Environment ────────────────────────────────────────────────────────────────
 export LD_LIBRARY_PATH=""  # Clear LD_LIBRARY_PATH to avoid system CUDA/cuDNN libraries conflicting with conda-installed ones
-export LD_LIBRARY_PATH=/scratch/08090/clw4542/conda_envs/bench311/lib/python3.11/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH  # Add conda cuDNN to library path
+# export LD_LIBRARY_PATH=/scratch/08090/clw4542/conda_envs/bench311/lib/python3.11/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH  # Add conda cuDNN to library path
 
 source $(conda info --base)/etc/profile.d/conda.sh  # Initialize conda for non-interactive shell
 conda activate bench311                              # Activate the project environment
@@ -66,7 +64,7 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader  # Confirm GPU as
 echo "================"
 
 # ── Run ────────────────────────────────────────────────────────────────────────
-python teammate_generation/run.py \
+XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python teammate_generation/run.py \
     algorithm="${ALGO}/${TASK}" \
     task="${TASK}" \
     label="${LABEL}" \
