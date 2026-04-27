@@ -3,9 +3,10 @@ defaults:
   - _self_ # values from this file override the values from the base file
 
 TOTAL_TIMESTEPS_PER_ITERATION: 7e6
-PARTNER_POP_SIZE: 10
-LR: 5e-4
+PARTNER_POP_SIZE: 18
+LR: 0.001
 UPDATE_EPOCHS: 15
 CLIP_EPS: 0.05
-ENT_COEF: 0.001
-COLE_ALPHA: 0.4
+ENT_COEF: 0.05
+COLE_ALPHA: 1.5
+C_UCT: 0.4

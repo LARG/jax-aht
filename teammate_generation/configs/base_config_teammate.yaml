@@ -2,7 +2,7 @@ defaults:
   - task: lbf # task configs
   - algorithm@algorithm: fcp/${task} # task-specific algorithm configs
   - hydra: hydra_simple
-  - ../../evaluation/configs/global_validation_settings
+  - ../../evaluation/configs/global_heldout_settings
   - _self_
 
 ENV_NAME: ${task.ENV_NAME}

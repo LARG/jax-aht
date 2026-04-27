@@ -3,14 +3,14 @@ defaults:
   - _self_ # values from this file override the values from the base file
 
 TOTAL_TIMESTEPS: 2e8
-PARTNER_POP_SIZE: 3
-NUM_ENVS: 128
-XP_LOSS_WEIGHTS: 0.007
-LR: 1e-3
+PARTNER_POP_SIZE: 10
+NUM_ENVS: 512
+XP_LOSS_WEIGHTS: 0.1
+LR: 5e-4
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 4
 CLIP_EPS: 0.1
-ENT_COEF: 0.001
+ENT_COEF: 0.03
 ego_train_algorithm:
   TOTAL_TIMESTEPS: 6e7
   NUM_ENVS: 256

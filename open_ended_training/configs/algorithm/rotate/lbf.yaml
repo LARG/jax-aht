@@ -5,7 +5,7 @@ defaults:
 TIMESTEPS_PER_ITER_PARTNER: 1e7 # per iter of open-ended training, divided between conf-br and conf-ego and between all partner seeds
 TIMESTEPS_PER_ITER_EGO: 2e6
 NUM_OPEN_ENDED_ITERS: 11
-REGRET_SP_WEIGHT: 2.0 # weight on the SP term in the perstep regret loss
+REGRET_SP_WEIGHT: 2.5 # weight on the SP term in the perstep regret loss
 LR: 1e-4
 CLIP_EPS: 0.1
 ENT_COEF: 0.01

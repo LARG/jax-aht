@@ -2,5 +2,11 @@ defaults:
   - meliba_ego/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 3e6
+TOTAL_TIMESTEPS: 7e6
+NUM_ENVS: 256
 UPDATE_EPOCHS: 5
+CLIP_EPS: 0.5
+DECODER_KL_WEIGHT: 0.05
+ENCODER_DECODER_LR: 7e-3
+ENT_COEF: 0.05
+LR: 7e-4
