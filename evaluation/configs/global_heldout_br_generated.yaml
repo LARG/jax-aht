@@ -1,0 +1,8 @@
+# @package _global_
+# Auto-generated BR config target. Until generated, this falls back to
+# the hand-curated global_heldout_br config.
+
+defaults:
+  - global_heldout_br
+  - _self_
+

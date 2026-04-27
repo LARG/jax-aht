@@ -163,13 +163,13 @@ run_all_jobs() {
 }
 
 # LBF extra BR jobs (8 jobs)
-add_job "lbf.br_for_lbrdiv_conf_1_0" "lbrdiv_conf_1_0_serious" "{lbrdiv-conf:{path:val_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[[1,0]],test_mode:false}}"
-add_job "lbf.br_for_lbrdiv_conf_1_1" "lbrdiv_conf_1_1_serious" "{lbrdiv-conf:{path:val_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[[1,1]],test_mode:false}}"
-add_job "lbf.br_for_lbrdiv_conf_1_2" "lbrdiv_conf_1_2_serious" "{lbrdiv-conf:{path:val_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[[1,2]],test_mode:false}}"
-add_job "lbf.br_for_comedi_1_0" "comedi_1_0_serious" "{comedi:{path:val_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,0]],test_mode:false}}"
-add_job "lbf.br_for_comedi_1_1" "comedi_1_1_serious" "{comedi:{path:val_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,1]],test_mode:false}}"
-add_job "lbf.br_for_comedi_1_2" "comedi_1_2_serious" "{comedi:{path:val_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,2]],test_mode:false}}"
-add_job "lbf.br_for_comedi_1_3" "comedi_1_3_serious" "{comedi:{path:val_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,3]],test_mode:false}}"
-add_job "lbf.br_for_comedi_1_4" "comedi_1_4_serious" "{comedi:{path:val_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,4]],test_mode:false}}"
+add_job "lbf.br_for_lbrdiv_conf_1_0" "lbrdiv_conf_1_0_serious" "{lbrdiv-conf:{path:eval_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[[1,0]],test_mode:false}}"
+add_job "lbf.br_for_lbrdiv_conf_1_1" "lbrdiv_conf_1_1_serious" "{lbrdiv-conf:{path:eval_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[[1,1]],test_mode:false}}"
+add_job "lbf.br_for_lbrdiv_conf_1_2" "lbrdiv_conf_1_2_serious" "{lbrdiv-conf:{path:eval_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[[1,2]],test_mode:false}}"
+add_job "lbf.br_for_comedi_1_0" "comedi_1_0_serious" "{comedi:{path:eval_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,0]],test_mode:false}}"
+add_job "lbf.br_for_comedi_1_1" "comedi_1_1_serious" "{comedi:{path:eval_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,1]],test_mode:false}}"
+add_job "lbf.br_for_comedi_1_2" "comedi_1_2_serious" "{comedi:{path:eval_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,2]],test_mode:false}}"
+add_job "lbf.br_for_comedi_1_3" "comedi_1_3_serious" "{comedi:{path:eval_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,3]],test_mode:false}}"
+add_job "lbf.br_for_comedi_1_4" "comedi_1_4_serious" "{comedi:{path:eval_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:10,idx_list:[[1,4]],test_mode:false}}"
 
 run_all_jobs
