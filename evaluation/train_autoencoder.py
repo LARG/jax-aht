@@ -28,8 +28,8 @@ DEFAULT_MAX_SAMPLES_PER_CLASS = 5000
 
 def get_obs_dim(env_name):
     """Get observation dimension for an environment."""
-    from envs import make_env
-    env = make_env(env_name, {})
+    from envs import make_env_from_str
+    env = make_env_from_str(env_name)
     return env.observation_space("agent_0").shape[0]
 
 

@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Trajectory Pipeline Runner
-# =========================
+# Trajectory Pipeline Runner - Overcooked coord_ring
+# ==================================================
 #
-# This script runs the complete trajectory analysis pipeline in a tmux session:
+# This script runs the complete trajectory analysis pipeline in a tmux session
+# for the overcooked-v1/coord_ring environment:
 # 1. collect_trajectories.py - Collects trajectory data from agent pairs
 # 2. train_autoencoder.py - Trains an LSTM autoencoder on the trajectories
 # 3. visualize_trajectories.py - Creates t-SNE visualizations of trajectory latents
@@ -12,22 +13,22 @@
 # before starting, ensuring proper dependency management without fixed sleep times.
 #
 # Usage:
-#   ./run_trajectory_pipeline.sh
+#   ./run_overcooked_coord_ring_pipeline.sh
 #
 # The script will:
-# - Start a tmux session named "trajectory_pipeline"
+# - Start a tmux session named "overcooked_coord_ring_pipeline"
 # - Activate the jax-aht conda environment
 # - Run each script in sequence with reasonable default parameters
 # - Keep the tmux session running so you can monitor progress
 #
 # To monitor progress:
-#   tmux attach -t trajectory_pipeline
+#   tmux attach -t overcooked_coord_ring_pipeline
 #
 # To check if it's still running:
 #   tmux ls
 #
 # To kill the session:
-#   tmux kill-session -t trajectory_pipeline
+#   tmux kill-session -t overcooked_coord_ring_pipeline
 #
 # Configuration variables are at the top of this script - modify as needed.
 
@@ -39,20 +40,12 @@ if ! command -v tmux &> /dev/null; then
     exit 1
 fi
 
-# Check if session already exists
-if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
-    echo "Warning: tmux session '${SESSION_NAME}' already exists."
-    echo "To attach: tmux attach -t ${SESSION_NAME}"
-    echo "To kill and restart: tmux kill-session -t ${SESSION_NAME} && $0"
-    exit 1
-fi
-
 # Configuration - adjust these as needed
-SESSION_NAME="trajectory_pipeline"
-ENV_NAME="lbf"
-DATA_DIR="results/${ENV_NAME}/trajectory_data"
-MODEL_DIR="results/${ENV_NAME}/autoencoder_models"
-OUTPUT_FILE="results/${ENV_NAME}/tsne_trajectory_visualization.png"
+SESSION_NAME="overcooked_coord_ring_pipeline"
+ENV_NAME="overcooked-v1/coord_ring"
+DATA_DIR="results/overcooked-v1/coord_ring/trajectory_data"
+MODEL_DIR="results/overcooked-v1/coord_ring/autoencoder_models"
+OUTPUT_FILE="results/overcooked-v1/coord_ring/tsne_trajectory_visualization.png"
 
 # Default parameters for the scripts
 K=3  # Number of rollouts per agent pair
@@ -63,6 +56,14 @@ LATENT_DIM=16  # Autoencoder latent dimension
 LEARNING_RATE=0.0003  # Learning rate
 NUM_EPOCHS=200  # Training epochs
 BATCH_SIZE=64  # Training batch size
+
+# Check if session already exists
+if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
+    echo "Warning: tmux session '${SESSION_NAME}' already exists."
+    echo "To attach: tmux attach -t ${SESSION_NAME}"
+    echo "To kill and restart: tmux kill-session -t ${SESSION_NAME} && $0"
+    exit 1
+fi
 
 echo "Starting trajectory pipeline in tmux session: ${SESSION_NAME}"
 echo "Environment: ${ENV_NAME}"

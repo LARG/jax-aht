@@ -43,9 +43,15 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
     embeddings = tsne.fit_transform(all_latents)
     print(f"t-SNE output shape: {embeddings.shape}")
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(6, 5))
     unique_labels = list(latents_dict.keys())
     colors = plt.cm.tab10(np.linspace(0, 1, max(len(unique_labels), 1)))
+
+    def _display_name(label):
+        br_marker = "_br_for_"
+        if br_marker in label:
+            return label[:label.index(br_marker)]
+        return label
 
     offset = 0
     plotted_count = 0
@@ -57,7 +63,7 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
                 embedding_slice[:, 0],
                 embedding_slice[:, 1],
                 c=[colors[i]],
-                label=label,
+                label=_display_name(label),
                 alpha=0.6,
                 s=20,
             )
@@ -65,12 +71,15 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
         offset += n
 
     print(f"Actually plotted {plotted_count} points")
-    ax.legend()
-    ax.set_title("t-SNE of Trajectory Latents")
-    ax.set_xlabel("t-SNE 1")
-    ax.set_ylabel("t-SNE 2")
+    ax.legend(fontsize=18, markerscale=1.5)
+    ax.set_title("t-SNE of LBF heldout agent-br pairs", fontsize=22)
+    ax.set_xlabel("t-SNE 1", fontsize=20)
+    ax.set_ylabel("t-SNE 2", fontsize=20)
+    ax.tick_params(axis='both', labelsize=17)
     plt.tight_layout()
-    plt.savefig(save_path, dpi=150)
+    plt.savefig(save_path, dpi=300)
+    pdf_path = save_path.rsplit(".", 1)[0] + ".pdf" if "." in save_path else save_path + ".pdf"
+    plt.savefig(pdf_path)
     plt.close()
-    print(f"t-SNE plot saved to {save_path}")
+    print(f"t-SNE plot saved to {save_path} and {pdf_path}")
     print(f"======================\n")

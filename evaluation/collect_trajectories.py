@@ -7,7 +7,7 @@ from pathlib import Path
 import jax
 import numpy as np
 
-from envs import make_env
+from envs import make_env_from_str
 from evaluation.trajectory_collection import (
     collect_heldout_pairwise_trajectories,
     collect_ippo_selfplay_trajectories,
@@ -34,7 +34,7 @@ def main(
     data_path.mkdir(parents=True, exist_ok=True)
 
     rng = jax.random.PRNGKey(42)
-    env = make_env(env_name, DEFAULT_ENV_KWARGS)
+    env = make_env_from_str(env_name)
 
     print("Collecting pairwise heldout trajectories...")
     rng, heldout_episodes, pair_labels = collect_heldout_pairwise_trajectories(
