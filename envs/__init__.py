@@ -115,7 +115,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "ego_centric_obs": False
         }
 
-        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.jax_rddl_env import JaxRDDLEnv
         from envs.rddl.grid_4x4.grid_4x4_wrapper import Grid4x4Wrapper
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         # add default args that are not already in env_kwargs
@@ -142,7 +142,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "ego_centric_obs": False
         }
 
-        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.jax_rddl_env import JaxRDDLEnv
         from envs.rddl.grid_4x4_alternating.grid_4x4_alternating_wrapper import Grid4x4AlternatingWrapper
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         # add default args that are not already in env_kwargs
@@ -169,7 +169,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "ego_centric_obs": False
         }
 
-        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.jax_rddl_env import JaxRDDLEnv
         from envs.rddl.grid_10x10.grid_10x10_wrapper import Grid10x10Wrapper
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         # add default args that are not already in env_kwargs
@@ -197,7 +197,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "single_task": False
         }
 
-        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.jax_rddl_env import JaxRDDLEnv
         from envs.rddl.grid_10x10_alternating.grid_10x10_alternating_wrapper import Grid10x10AlternatingWrapper
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         # add default args that are not already in env_kwargs
@@ -223,7 +223,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "ego_centric_obs": False
         }
 
-        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.jax_rddl_env import JaxRDDLEnv
         from envs.rddl.pizza.pizza_wrapper import PizzaWrapper
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         # add default args that are not already in env_kwargs
@@ -249,7 +249,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "ego_centric_obs": False
         }
 
-        from pyRDDLGym_jax.core.env import JaxRDDLEnv
+        from envs.rddl.jax_rddl_env import JaxRDDLEnv
         from envs.rddl.pizza_v2.pizza_v2_wrapper import PizzaWrapper
         env_kwargs_copy = dict(copy.deepcopy(env_kwargs))
         # add default args that are not already in env_kwargs

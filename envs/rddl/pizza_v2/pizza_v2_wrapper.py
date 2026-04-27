@@ -10,8 +10,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from flax.struct import dataclass
-import pyRDDLGym_jax
-from pyRDDLGym_jax.core.env import JaxRDDLEnv, EnvState
+from envs.rddl.jax_rddl_env import JaxRDDLEnv, EnvState
 from jaxmarl.environments import spaces as jaxmarl_spaces
 
 from envs.base_env import BaseEnv
@@ -326,7 +325,7 @@ class PizzaWrapper(BaseEnv):
         return dones
 
     def _convert_rddl_action_spec_to_jaxmarl_space(
-        self, space: pyRDDLGym_jax.core.spaces.Dict
+        self, space: Any
     ) -> jaxmarl_spaces.Space:
         """Discrete action space with 3 + MAX-CONNECTIONS categories.
 
@@ -338,7 +337,7 @@ class PizzaWrapper(BaseEnv):
         return jaxmarl_spaces.Discrete(num_categories=self._num_actions, dtype=jnp.int32)
 
     def _convert_rddl_obs_spec_to_jaxmarl_space(
-        self, space: pyRDDLGym_jax.core.spaces.Dict
+        self, space: Any
     ) -> Tuple[jaxmarl_spaces.Space, jaxmarl_spaces.Space]:
         """Compute flat obs size from the known observation keys only."""
         obs_size = sum(
