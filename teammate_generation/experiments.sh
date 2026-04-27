@@ -2,8 +2,8 @@
 
 # Algorithm to run
 algo="comedi"
-label="jax-aht:test"
-num_seeds=3
+label="heldout_teammates"
+num_seeds=1
 
 # Create log directory if it doesn't exist
 mkdir -p results/teammate_generation_logs/${algo}/${label}
@@ -14,12 +14,13 @@ log_file="results/teammate_generation_logs/${algo}/${label}/experiment_${timesta
 
 # Tasks to run
 tasks=(
-    "overcooked-v1/asymm_advantages"
-    "overcooked-v1/coord_ring"
-    "overcooked-v1/counter_circuit"
-    "overcooked-v1/cramped_room"
-    "overcooked-v1/forced_coord"
-    "lbf/lbf_7x7_nolevels"
+    # "overcooked-v1/asymm_advantages"
+    # "overcooked-v1/coord_ring"
+    # "overcooked-v1/counter_circuit"
+    # "overcooked-v1/cramped_room"
+    # "overcooked-v1/forced_coord"
+    # "lbf/lbf_7x7_nolevels"
+    "lbf/lbf_12x12"
 )
 
 # Function to log messages
