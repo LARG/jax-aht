@@ -2,7 +2,7 @@
 https://arxiv.org/abs/2207.14138
 
 Command to run BRDiv only on LBF:
-python teammate_generation/run.py algorithm=brdiv/lbf task=lbf label=test_brdiv run_heldout_eval=false train_ego=false
+python teammate_generation/run.py algorithm=brdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_brdiv run_heldout_eval=false train_ego=false
 
 Limitations: does not support recurrent actors.
 '''

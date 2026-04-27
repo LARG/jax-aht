@@ -1,5 +1,5 @@
 defaults:
-  - task: lbf # task configs
+  - task: lbf/lbf_7x7_nolevels # task configs
   - algorithm@algorithm: ippo/${task} # task-specific algorithm configs
   - hydra: hydra_simple
   - _self_

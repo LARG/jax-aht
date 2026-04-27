@@ -8,7 +8,7 @@ global_heldout_settings:
   NORMALIZE_RETURNS: true # if true, use performance bounds to normalize returns
 
 heldout_set:
-  lbf: # DONE - DO NOT MODIFY. In LBF, results are much better with test mode = false.
+  lbf/lbf_7x7_nolevels: # DONE - DO NOT MODIFY. In LBF, results are much better with test mode = false.
     ippo_mlp: 
       path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
       actor_type: mlp
@@ -46,6 +46,52 @@ heldout_set:
       performance_bounds:
         percent_eaten: [[0.0, 90.62], [0.0, 52.08]]
         returned_episode_returns: [[0.0, 0.45], [0.0, 0.26]]
+    seq_agent_lexi:
+      actor_type: seq_agent
+      ordering_strategy: lexicographic
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
+    seq_agent_rlexi:
+      actor_type: seq_agent
+      ordering_strategy: reverse_lexicographic
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
+    seq_agent_col:
+      actor_type: seq_agent
+      ordering_strategy: column_major
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
+    seq_agent_rcol:
+      actor_type: seq_agent
+      ordering_strategy: reverse_column_major
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
+    seq_agent_nearest:
+      actor_type: seq_agent
+      ordering_strategy: nearest_agent
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
+    seq_agent_farthest:
+      actor_type: seq_agent
+      ordering_strategy: farthest_agent
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
+  lbf/lbf_12x12: # TODO - update IPPO BR returns once available
+    ippo_mlp: 
+      path: "eval_teammates/lbf/ippo-lbf-12-levels/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0] # load in seed 0 only
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 100.0]]
+        returned_episode_returns: [[0.0, 0.5]]
     seq_agent_lexi:
       actor_type: seq_agent
       ordering_strategy: lexicographic

@@ -1,0 +1,7 @@
+ENV_NAME: lbf
+ROLLOUT_LENGTH: 128
+ENV_KWARGS:
+  grid_size: 12
+  num_food: 6
+  different_levels: true
+TASK_NAME: lbf/lbf_12x12

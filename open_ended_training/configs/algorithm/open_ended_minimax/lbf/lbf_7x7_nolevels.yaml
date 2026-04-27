@@ -1,0 +1,20 @@
+defaults:
+  - open_ended_minimax/_base_
+  - _self_ # values from this file override the values from the base file
+
+TIMESTEPS_PER_ITER_PARTNER: 1e7 # per iter of open-ended training
+TIMESTEPS_PER_ITER_EGO: 2e6
+NUM_OPEN_ENDED_ITERS: 30
+LR: .0001
+CLIP_EPS: 0.03
+ENT_COEF: 0.01
+EGO_ARGS:
+  LR: 5e-5
+  ENT_COEF: 1e-4
+  CLIP_EPS: 0.1
+  ANNEAL_LR: false
+  UPDATE_EPOCHS: 10
+  S5_D_MODEL: 128
+  S5_SSM_SIZE: 128
+  S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+  FC_N_LAYERS: 3

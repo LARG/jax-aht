@@ -2,7 +2,7 @@
 https://openreview.net/forum?id=MljeRycu9s
 
 Command to run CoMeDi only on LBF:
-python teammate_generation/run.py algorithm=comedi/lbf task=lbf label=test_comedi run_heldout_eval=false train_ego=false
+python teammate_generation/run.py algorithm=comedi/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_comedi run_heldout_eval=false train_ego=false
 
 Limitations: does not support recurrent actors.
 '''
