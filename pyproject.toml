@@ -48,7 +48,7 @@ dependencies = [
     "jumanji==1.1.0",
     "jaxmarl==0.0.7",
     # RDDL environments (pizza_v2, grid)
-    "pyRDDLGym==2.5",
+    "pyRDDLGym>=2.6",
     "pyRDDLGym_jax==0.5",
     "softjax",
     "pygame-ce",
