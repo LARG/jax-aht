@@ -40,6 +40,7 @@ $VENV_PYTHON social_laws/run_w_best_case.py \
     algorithm.EVAL_SEED=72128 \
     algorithm.USE_SAME_SEED=true \
     algorithm.FIXED_EVAL=true \
+    task.ENV_KWARGS.render=false \
     logger.project=aht-benchmark \
     logger.entity=jeffreychen287-the-university-of-texas-at-austin \
     logger.mode=online
