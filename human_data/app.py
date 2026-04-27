@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from envs import make_env
 from agents.lbf import SequentialFruitAgent
 from agents.lbf import GreedyHeuristicAgent
+from agents.lbf import EntitledAgent
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from evaluation.heldout_evaluator import extract_params
 
@@ -296,7 +297,15 @@ class GameSession:
                 heuristic=h,
             ))
 
-        return random.choice(candidates)()
+        # EntitledAgent — weighted 1.5x relative to any other single candidate
+        entitled_factory = lambda: EntitledAgent(
+            grid_size=self.grid_size,
+            num_fruits=self.num_fruits,
+        )
+        weights = [1.0] * len(candidates) + [1.5]
+        candidates.append(entitled_factory)
+
+        return random.choices(candidates, weights=weights, k=1)[0]()
 
     def _warmup_jit_compilation(self):
         """
