@@ -64,7 +64,17 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader  # Confirm GPU as
 echo "================"
 
 # ── Run ────────────────────────────────────────────────────────────────────────
-XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python teammate_generation/run.py \
+# Auto-detect module by checking which configs/ dir contains the algorithm
+if [ -d "open_ended_training/configs/algorithm/${ALGO}" ]; then
+    MODULE="open_ended_training"
+elif [ -d "ego_agent_training/configs/algorithm/${ALGO}" ]; then
+    MODULE="ego_agent_training"
+else
+    MODULE="teammate_generation"
+fi
+echo "Module:   $MODULE"
+
+XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${MODULE}/run.py" \
     algorithm="${ALGO}/${TASK}" \
     task="${TASK}" \
     label="${LABEL}" \
