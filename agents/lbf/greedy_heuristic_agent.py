@@ -26,6 +26,12 @@ class GreedyHeuristicAgent(BaseAgent):
     VALID_HEURISTICS = [
         'closest_self',
         'closest_teammate',
+        'closest_avg'
+    ]
+
+    VALID_HEURISTICS_LEVELS = [
+        'closest_self',
+        'closest_teammate',
         'closest_avg',
         'lowest_level', 
         'highest_level'
@@ -36,9 +42,10 @@ class GreedyHeuristicAgent(BaseAgent):
         super().__init__()
         self.grid_size = grid_size
         self.num_fruits = num_fruits
-        if heuristic not in self.VALID_HEURISTICS:
-             raise ValueError(f"Invalid heuristic: '{heuristic}'. Must be one of {self.VALID_HEURISTICS}")
+        if heuristic not in self.VALID_HEURISTICS_LEVELS:
+             raise ValueError(f"Invalid heuristic: '{heuristic}'. Must be one of {self.VALID_HEURISTICS_LEVELS}")
         
+        self.heuristic_name = heuristic
         print(f"Initialized GreedyHeuristicAgent with heuristic: {heuristic}")
 
         if heuristic == 'closest_self':
@@ -51,6 +58,16 @@ class GreedyHeuristicAgent(BaseAgent):
             self.heuristic = self.lowest_level
         elif heuristic == 'highest_level':
             self.heuristic = self.highest_level
+        self._jit_key = (type(self).__name__, grid_size, num_fruits, heuristic)
+
+    def __hash__(self):
+        return hash(self._jit_key)
+
+    def __eq__(self, other):
+        return isinstance(other, GreedyHeuristicAgent) and self._jit_key == other._jit_key
+
+    def get_name(self):
+        return f"GreedyHeuristicAgent({self.heuristic_name})"
 
     def init_agent_state(self, agent_id: int):
         return GreedyHeuristicAgent.GreedyAgentState(agent_id=agent_id)
