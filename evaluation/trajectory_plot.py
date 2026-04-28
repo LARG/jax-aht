@@ -71,8 +71,8 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
         offset += n
 
     print(f"Actually plotted {plotted_count} points")
-    ax.legend(fontsize=18, markerscale=1.5)
-    ax.set_title("t-SNE of LBF heldout agent-br pairs", fontsize=22)
+    ax.legend(fontsize=10, markerscale=1.2, handlelength=1.0, borderpad=0.4, labelspacing=0.3)
+    ax.set_title("LBF (7x7)", fontsize=20)
     ax.set_xlabel("t-SNE 1", fontsize=20)
     ax.set_ylabel("t-SNE 2", fontsize=20)
     ax.tick_params(axis='both', labelsize=17)

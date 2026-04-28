@@ -53,22 +53,6 @@ def main(
         pickle.dump({"episodes": heldout_episodes, "pair_labels": pair_labels}, f)
     print(f"Saved heldout episodes to {heldout_path}")
 
-    print("\nCollecting IPPO self-play trajectories...")
-    rng, ippo_episodes = collect_ippo_selfplay_trajectories(
-        rng,
-        env,
-        num_rollouts=k,
-        rollout_steps=rollout_steps,
-        num_envs=num_envs,
-    )
-    print(f"Collected {len(ippo_episodes)} IPPO self-play episodes.")
-    
-    # Save IPPO trajectories
-    ippo_path = data_path / "ippo_episodes.pkl"
-    with open(ippo_path, "wb") as f:
-        pickle.dump(ippo_episodes, f)
-    print(f"Saved IPPO episodes to {ippo_path}")
-
     print(f"\nAll trajectories saved to {data_path}")
 
 

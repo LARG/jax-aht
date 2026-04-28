@@ -47,23 +47,19 @@ DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
 DEFAULT_MODEL_DIR = "results/lbf/autoencoder_models"
 DEFAULT_MODEL_FILE = "autoencoder.pkl"
 DEFAULT_OUTPUT_FILE = "results/lbf/tsne_trajectory_visualization.png"
+DEFAULT_LATENTS_FILE = "results/lbf/latents.pkl"
 
 
-def main(
+def collect_latents(
     data_dir=DEFAULT_DATA_DIR,
     model_dir=DEFAULT_MODEL_DIR,
     model_file=DEFAULT_MODEL_FILE,
-    output_file=DEFAULT_OUTPUT_FILE,
-    env_name="lbf",
-    k=5,
-    num_envs=256,
-    rollout_steps=128,
+    latents_file=DEFAULT_LATENTS_FILE,
 ):
-    """Visualize saved trajectories using a trained autoencoder."""
+    """Encode heldout episodes with the trained autoencoder and save latents to disk."""
     data_path = Path(data_dir)
     model_path = Path(model_dir) / model_file
 
-    # Load trained model first
     if not model_path.exists():
         raise FileNotFoundError(
             f"Trained model not found at {model_path}. Run train_autoencoder.py first."
@@ -84,10 +80,8 @@ def main(
 
     print(f"Model config: {config}")
 
-    # Recreate the model and train_state from saved parameters
     model = create_classifier(obs_dim, max_seq_len, hidden_dim, num_classes, latent_dim)
-    # Create a dummy train_state with loaded parameters
-    tx = optax.adam(1e-3)  # dummy learning rate, not used for inference
+    tx = optax.adam(1e-3)
     train_state = TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
     eval_step = make_classifier_eval_step(model)
@@ -102,22 +96,17 @@ def main(
 
     encode_step = make_encoder_eval_step(model)
 
-    # Load test data
     heldout_path = data_path / "heldout_episodes.pkl"
     if not heldout_path.exists():
-        raise FileNotFoundError(
-            f"Heldout episodes not found. Collect test data first."
-        )
+        raise FileNotFoundError("Heldout episodes not found. Collect test data first.")
 
     print(f"Loading test trajectories from {heldout_path}...")
     with open(heldout_path, "rb") as f:
         data = pickle.load(f)
     test_episodes = data["episodes"]
 
-    # Pad test episodes
     padded_episodes, masks, labels, _, _ = pad_labeled_episodes(test_episodes)
 
-    # Evaluate on test data in batches to avoid OOM
     print("Evaluating classifier on test data...")
     all_logits = []
     all_latents = []
@@ -142,16 +131,10 @@ def main(
     all_logits = np.concatenate(all_logits, axis=0)
     all_latents = np.concatenate(all_latents, axis=0)
     all_true_labels = np.concatenate(all_true_labels, axis=0)
+
     predictions = np.argmax(all_logits, axis=1)
 
-    # Calculate accuracy
-    accuracy = np.mean(predictions == all_true_labels)
-    print(f"Accuracy: {accuracy:.4f}")
-
-    # Create confusion matrix and TSNE visualization
     idx_to_label = {v: k for k, v in label_to_idx.items()}
-    label_names = [idx_to_label[i] for i in range(num_classes)]
-
     latents_dict = {}
     for label_name, label_idx in label_to_idx.items():
         br_marker = "_br_for_"
@@ -162,6 +145,47 @@ def main(
         br_name = label_name[split_pos + 1:]
         if _is_specific_best_response(agent_name, br_name):
             latents_dict[label_name] = all_latents[all_true_labels == label_idx][:100]
+
+    save_data = {
+        "latents_dict": latents_dict,
+        "predictions": predictions,
+        "all_true_labels": all_true_labels,
+        "label_to_idx": label_to_idx,
+        "idx_to_label": idx_to_label,
+        "num_classes": num_classes,
+    }
+    Path(latents_file).parent.mkdir(parents=True, exist_ok=True)
+    with open(latents_file, "wb") as f:
+        pickle.dump(save_data, f)
+    print(f"Latents saved to {latents_file}")
+    return save_data
+
+
+def plot(
+    latents_file=DEFAULT_LATENTS_FILE,
+    output_file=DEFAULT_OUTPUT_FILE,
+):
+    """Load saved latents and produce confusion matrix + t-SNE plots."""
+    if not Path(latents_file).exists():
+        raise FileNotFoundError(
+            f"Latents file not found at {latents_file}. Run with --collect first."
+        )
+
+    print(f"Loading latents from {latents_file}...")
+    with open(latents_file, "rb") as f:
+        save_data = pickle.load(f)
+
+    latents_dict = save_data["latents_dict"]
+    predictions = save_data["predictions"]
+    all_true_labels = save_data["all_true_labels"]
+    label_to_idx = save_data["label_to_idx"]
+    idx_to_label = save_data["idx_to_label"]
+    num_classes = save_data["num_classes"]
+
+    accuracy = np.mean(predictions == all_true_labels)
+    print(f"Accuracy: {accuracy:.4f}")
+
+    label_names = [idx_to_label[i] for i in range(num_classes)]
 
     cm = confusion_matrix(all_true_labels, predictions)
     plt.figure(figsize=(10, 8))
@@ -180,11 +204,33 @@ def main(
     print(f"Creating t-SNE visualization from latent encodings...")
     plot_tsne(latents_dict, save_path=output_file)
 
-    # Print classification report
     print("\nClassification Report:")
     print(classification_report(all_true_labels, predictions, target_names=label_names))
 
     print(f"Evaluation complete. Confusion matrix saved to {cm_path}, t-SNE saved to {output_file}")
+
+
+def main(
+    data_dir=DEFAULT_DATA_DIR,
+    model_dir=DEFAULT_MODEL_DIR,
+    model_file=DEFAULT_MODEL_FILE,
+    output_file=DEFAULT_OUTPUT_FILE,
+    latents_file=DEFAULT_LATENTS_FILE,
+    collect=True,
+    plot_only=False,
+    env_name="lbf",
+    k=5,
+    num_envs=256,
+    rollout_steps=128,
+):
+    if not plot_only:
+        collect_latents(
+            data_dir=data_dir,
+            model_dir=model_dir,
+            model_file=model_file,
+            latents_file=latents_file,
+        )
+    plot(latents_file=latents_file, output_file=output_file)
 
 
 if __name__ == "__main__":
@@ -193,6 +239,8 @@ if __name__ == "__main__":
     parser.add_argument("--model_dir", type=str, default=DEFAULT_MODEL_DIR, help="Directory containing trained model")
     parser.add_argument("--model_file", type=str, default=DEFAULT_MODEL_FILE, help="Trained model filename")
     parser.add_argument("--output_file", type=str, default=DEFAULT_OUTPUT_FILE, help="Output visualization filename")
+    parser.add_argument("--latents_file", type=str, default=DEFAULT_LATENTS_FILE, help="Path to save/load encoded latents")
+    parser.add_argument("--plot-only", action="store_true", help="Skip data collection and plot from saved latents file")
     parser.add_argument("--env_name", type=str, default="lbf", help="Environment name")
     parser.add_argument("--k", type=int, default=5, help="Number of rollouts per agent pair")
     parser.add_argument("--num_envs", type=int, default=256, help="Number of parallel environments")
@@ -204,6 +252,8 @@ if __name__ == "__main__":
         model_dir=args.model_dir,
         model_file=args.model_file,
         output_file=args.output_file,
+        latents_file=args.latents_file,
+        plot_only=args.plot_only,
         env_name=args.env_name,
         k=args.k,
         num_envs=args.num_envs,
