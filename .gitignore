@@ -1,19 +1,12 @@
 training_state
 figures/
-figures/*
 notebooks/
-notebooks/*
 
 results*/
-results*/*
 eval_teammates/
-eval_teammates/*
 val_teammates/
-val_teammates/*
 wandb/
-wandb/*
 .vscode/
-.vscode/*
 
 # Human data raw
 human_data_collecting/collected_data_prolific/
