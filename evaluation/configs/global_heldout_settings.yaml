@@ -87,36 +87,25 @@ heldout_set:
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
-    greedy_closest_self:
-      actor_type: greedy_agent
-      heuristic: closest_self
-      performance_bounds:
-        percent_eaten: [0.0, 100.0]
-        returned_episode_returns: [0.0, 0.5]
     greedy_closest_teammate:
       actor_type: greedy_agent
       heuristic: closest_teammate
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
-    greedy_closest_avg:
-      actor_type: greedy_agent
-      heuristic: closest_avg
-      performance_bounds:
-        percent_eaten: [0.0, 100.0]
-        returned_episode_returns: [0.0, 0.5]
-    greedy_lowest_level:
-      actor_type: greedy_agent
-      heuristic: lowest_level
-      performance_bounds:
-        percent_eaten: [0.0, 100.0]
-        returned_episode_returns: [0.0, 0.5]
-    greedy_highest_level:
-      actor_type: greedy_agent
-      heuristic: highest_level
-      performance_bounds:
-        percent_eaten: [0.0, 100.0]
-        returned_episode_returns: [0.0, 0.5]
+    # TODO: incorporate for LBF variation with levels
+    # greedy_lowest_level:
+    #   actor_type: greedy_agent
+    #   heuristic: lowest_level
+    #   performance_bounds:
+    #     percent_eaten: [0.0, 100.0]
+    #     returned_episode_returns: [0.0, 0.5]
+    # greedy_highest_level:
+    #   actor_type: greedy_agent
+    #   heuristic: highest_level
+    #   performance_bounds:
+    #     percent_eaten: [0.0, 100.0]
+    #     returned_episode_returns: [0.0, 0.5]
   overcooked-v1/cramped_room: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/cramped_room/ippo/2025-04-21_22-53-04/saved_train_run"
