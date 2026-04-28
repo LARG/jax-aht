@@ -100,6 +100,13 @@ JOB_CMDS+=("python teammate_generation/run.py \
     algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
 
+JOB_NAMES+=("fcp")
+JOB_CMDS+=("python teammate_generation/run.py \
+    algorithm=fcp/lbf task=lbf label=test_fcp \
+    run_heldout_eval=false train_ego=false \
+    algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_CHECKPOINTS=2 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
+    $COMMON_FLAGS")
+
 # ── Ego training ──────────────────────────────────────────────────────────────
 # Run heldout eval for ppo ego only
 JOB_NAMES+=("ppo_ego")
@@ -161,6 +168,7 @@ RUN_JOBS=(
     brdiv
     lbrdiv
     comedi
+    fcp
     liam_ego
     meliba_ego
     ppo_ego
