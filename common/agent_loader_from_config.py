@@ -85,6 +85,7 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     agent_path = agent_config["path"]
     ckpt_key = agent_config.get("ckpt_key", "checkpoints")
     custom_loader_cfg = agent_config.get("custom_loader", None)
+
     agent_ckpt = load_checkpoints(agent_path, ckpt_key=ckpt_key, custom_loader_cfg=custom_loader_cfg)
 
     leaf0_shape = jax.tree.leaves(agent_ckpt)[0].shape

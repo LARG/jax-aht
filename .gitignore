@@ -1,15 +1,12 @@
 training_state
 figures/
-figures/*
 notebooks/
-notebooks/*
 
 results*/
-results*/*
 eval_teammates/
-eval_teammates/*
+val_teammates/
+wandb/
 .vscode/
-.vscode/*
 
 # pycache
 **/__pycache__/

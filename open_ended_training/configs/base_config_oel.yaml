@@ -36,8 +36,8 @@ logger:
     - ${label}
   mode: offline # options: online, offline, disabled
   verbose: false
-  log_train_out: true # whether to log the out dictionary
-  log_eval_out: true # whether to log the eval metrics
+  log_train_out: false # whether to log the out dictionary
+  log_eval_out: false # whether to log the eval metrics
 
 # Local logger
 local_logger:

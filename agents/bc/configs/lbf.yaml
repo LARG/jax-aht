@@ -1,0 +1,7 @@
+# BC-LSTM architecture defaults for Level-Based Foraging.
+
+obs_dim: null
+action_dim: 6
+preprocess_dim: 256
+lstm_dim: 128
+postprocess_dim: 64

@@ -45,6 +45,24 @@ class LBFWrapper(BaseEnv):
             for agent_idx, agent in enumerate(self.agents)
         }
 
+        gen = self.env._generator
+        self._jit_key = (
+            self.num_agents,
+            self.share_rewards,
+            type(gen).__name__,
+            getattr(gen, 'grid_size', None),
+            getattr(gen, 'num_food', None),
+            getattr(gen, 'fov', None),
+            getattr(gen, 'max_agent_level', None),
+            getattr(gen, 'force_coop', None),
+        )
+
+    def __hash__(self):
+        return hash(self._jit_key)
+
+    def __eq__(self, other):
+        return isinstance(other, LBFWrapper) and self._jit_key == other._jit_key
+
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey):
         env_state, timestep = self.env.reset(key)

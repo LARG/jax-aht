@@ -270,100 +270,6 @@
             display: inline-block; /* shrinkwrap to the canvas size */
         }
 
-        /* Replay controls */
-        .file-upload-section {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .file-upload-section input[type="file"] {
-            flex: 1;
-            max-width: 300px;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            background: white;
-            font-size: 0.9em;
-        }
-
-        .playback-controls {
-            display: none;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .playback-controls.active {
-            display: flex;
-        }
-
-        .playback-controls button {
-            min-width: 100px;
-        }
-
-        .replay-info-section {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff3cd;
-            border-radius: 10px;
-            border: 2px solid #ffeaa7;
-        }
-
-        .replay-info-section.active {
-            display: block;
-        }
-
-        .replay-slider {
-            margin: 10px 0;
-        }
-
-        .replay-slider input[type="range"] {
-            width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: #ddd;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .replay-slider input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-        }
-
-        .replay-slider input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-            border: none;
-        }
-
-        .replay-info {
-            text-align: center;
-            color: #666;
-            font-size: 0.95em;
-            margin: 5px 0;
-        }
-
-        .replay-metadata {
-            text-align: center;
-            color: #856404;
-            font-size: 0.9em;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #ffeaa7;
-        }
-
         .hidden {
             display: none !important;
         }
@@ -508,9 +414,334 @@
         .dont-show-again label {
             cursor: pointer;
         }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-spinner.show {
+            display: flex;
+        }
+
+        .spinner-content {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .spinner-ring {
+            border: 5px solid #f0f0f0;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner-text {
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .spinner-subtext {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* Session Progress Bar */
+        .session-progress {
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .progress-label .warmup-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 8px;
+            font-weight: 700;
+        }
+
+        .progress-label .real-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 8px;
+            font-weight: 700;
+        }
+
+        .progress-count {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.95em;
+        }
+
+        .progress-track {
+            background: #ddd;
+            border-radius: 8px;
+            height: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .progress-fill.warmup {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        }
+
+        .progress-segments {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            padding: 0 2px;
+        }
+
+        .progress-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ddd;
+            border: 2px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.completed {
+            background: #667eea;
+            border-color: #5a6fd6;
+            color: white;
+        }
+
+        .progress-dot.completed.warmup-dot {
+            background: #ffc107;
+            border-color: #e5ac00;
+            color: #333;
+        }
+
+        .progress-dot.active {
+            background: white;
+            border-color: #667eea;
+            color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.3);
+            transform: scale(1.15);
+        }
+
+        .progress-dot.active.warmup-dot {
+            border-color: #ffc107;
+            color: #ffc107;
+            box-shadow: 0 0 0 3px rgba(255,193,7,0.3);
+        }
+
+        /* Finish Screen Modal */
+        .finish-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .finish-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .finish-content {
+            background: white;
+            border-radius: 24px;
+            padding: 45px;
+            max-width: 550px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            transform: scale(0.9);
+            transition: transform 0.4s ease;
+        }
+
+        .finish-overlay.show .finish-content {
+            transform: scale(1);
+        }
+
+        .finish-emoji {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .finish-title {
+            font-size: 2em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .finish-subtitle {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .finish-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .finish-stat {
+            text-align: center;
+        }
+
+        .finish-stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .finish-stat-label {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .finish-confirmation {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .finish-confirmation-label {
+            font-size: 0.95em;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .finish-confirmation-code {
+            font-size: 1.6em;
+            font-weight: 700;
+            font-family: 'Courier New', Courier, monospace;
+            color: #667eea;
+            background: #f0f0f8;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: 2px dashed #667eea;
+            display: inline-block;
+            letter-spacing: 0.5px;
+            user-select: all;
+            margin-bottom: 16px;
+        }
+        .finish-completion-btn {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #fff;
+            background: #667eea;
+            padding: 14px 28px;
+            border-radius: 10px;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .finish-completion-btn:hover {
+            background: #5a6fd8;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-content">
+            <div class="spinner-ring"></div>
+            <div class="spinner-text" id="spinnerText">Loading Game...</div>
+            <div class="spinner-subtext" id="spinnerSubtext"></div>
+        </div>
+    </div>
+
+    <!-- Research Information Sheet Modal -->
+    <div id="researchModal" class="modal-overlay" aria-modal="true" role="dialog">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 style="font-size: 1.5em;">Research Information Sheet</h2>
+            </div>
+            <div class="modal-body" style="font-size: 0.97em;">
+                <p><strong>Title of the Project: Ad Hoc Teamwork with Humans in Level-Based Foraging</strong><br>
+                <strong>UT Austin Investigator:</strong> Prof. Peter Stone</p>
+
+                <p>You are invited to be part of a research study. Your participation is voluntary, and it is totally up to you to decide whether you want to participate. Even if you decide to be part of the study now, you can change your mind and stop at any time.</p>
+
+                <p>If you agree to take part in this study, you will be asked to play several games (2 warmup games, 8 main games) of Level-Based Foraging with an AI partner. Each game should take less than 1 minute.</p>
+
+                <h3>Contact Information</h3>
+                <p>If you have any questions, concerns, or complaints about this research now or in the future, you may contact <em>Prof. Peter Stone, pstone@cs.utexas.edu</em>.</p>
+
+                <p>If you have questions about your rights as a research participant, or wish to obtain information, ask questions, or discuss any concerns about this study with someone other than the researcher(s), please contact the following:</p>
+
+                <p style="margin-left: 15px;">
+                    The University of Texas at Austin Institutional Review Board<br>
+                    Phone: 512-232-1543<br>
+                    IRB #STUDY00008549<br>
+                    Email: <a href="mailto:irb@austin.utexas.edu" style="color: #667eea;">irb@austin.utexas.edu</a>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeResearchModal()">I Understand, Continue &rarr;</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Welcome Modal -->
     <div id="welcomeModal" class="modal-overlay" aria-modal="true" role="dialog">
         <div class="modal-content">
@@ -574,7 +805,41 @@
             </div>
         </div>
     </div>
+
+    <!-- Finish Screen Modal -->
+    <div id="finishModal" class="finish-overlay" aria-modal="true" role="dialog">
+        <div class="finish-content">
+            <div class="finish-emoji">🎉🏆🎉</div>
+            <div class="finish-title">Session Complete!</div>
+            <div class="finish-subtitle">Thank you for playing all 10 games.<br>Your data has been saved.</div>
+            <div class="finish-stats">
+                <div class="finish-stat">
+                    <div class="finish-stat-value" id="finishGamesPlayed">10</div>
+                    <div class="finish-stat-label">Games Played</div>
+                </div>
+            </div>
+            {% if prolific_completion %}
+            <div class="finish-confirmation">
+                <div class="finish-confirmation-label">Your completion code:</div>
+                <div class="finish-confirmation-code" id="finishConfirmationCode"></div>
+                <a id="finishCompletionLink" href="#" target="_blank" class="finish-completion-btn">
+                    Click here to complete your submission
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="container">
+        <!-- Session Progress Bar -->
+        <div id="sessionProgress" class="session-progress" style="display: none;">
+            <div class="progress-header">
+                <span class="progress-label" id="progressLabel">Game 1 of 10</span>
+                <span class="progress-count" id="progressCount"></span>
+            </div>
+            <div class="progress-segments" id="progressDots"></div>
+        </div>
+
         <h1>Level-Based Foraging</h1>
         <p class="subtitle">Play cooperatively with an AI agent to collect food!</p>
 
@@ -585,47 +850,13 @@
                 <div class="canvas-wrapper">
                     <canvas id="gameCanvas" width="600" height="600"></canvas>
                     <div id="gameOverlay" class="overlay" aria-hidden="true">
-                        <div class="overlay-text">🎮 Episode Complete — Click the button below to play again</div>
+                        <div class="overlay-text">� All Games Complete! Great job!</div>
                     </div>
                 </div>
                 
-                <!-- Normal Play Mode Controls -->
-                <div id="playModeControls" class="button-group">
-                    <button id="mainActionBtn" onclick="mainAction()">New Game</button>
-                    <button onclick="showFileUpload()">📂 Load Replay</button>
-                </div>
-                
-                <!-- File Upload (shown when Load Replay is clicked) -->
-                <div id="fileUploadSection" class="file-upload-section hidden">
-                    <input type="file" id="replayFile" accept=".json" />
-                    <button onclick="uploadReplay()">Upload & Play</button>
-                    <button onclick="cancelFileUpload()">Cancel</button>
-                </div>
-                
-                <!-- Replay Mode Controls -->
-                <div id="replayControls" class="playback-controls">
-                    <button onclick="replayControl('reset')">⏮️ Reset</button>
-                    <button onclick="replayControl('prev')">⏪ Prev</button>
-                    <button onclick="replayControl('next')">⏩ Next</button>
-                    <button onclick="exitReplay()" style="background: #e74c3c;">❌ Exit Replay</button>
-                </div>
-                
-                <p id="normalModeNote" style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9em;">
+                <p style="text-align: center; color: #666; margin-top: 10px; font-size: 0.9em;">
                     📝 Episodes are automatically saved when completed
                 </p>
-                
-                <!-- Replay Info Section (below buttons) -->
-                <div id="replayInfoSection" class="replay-info-section">
-                    <div class="replay-info">
-                        <strong>Step <span id="replayStep">0</span> / <span id="replayTotal">0</span></strong>
-                    </div>
-                    
-                    <div class="replay-slider">
-                        <input type="range" id="replaySlider" min="0" max="0" value="0" onchange="seekReplay(this.value)" />
-                    </div>
-                    
-                    <div class="replay-metadata" id="replayMetadata"></div>
-                </div>
             </div>
 
             <div class="info-panel">
@@ -634,6 +865,14 @@
                     <div class="stat-row">
                         <span class="stat-label">Steps:</span>
                         <span class="stat-value" id="stepCount">0 / 0</span>
+                    </div>
+                    <div class="stat-row" id="multiProgressRow" style="display: none;">
+                        <span class="stat-label">Game Progress:</span>
+                        <span class="stat-value" id="multiProgress">1 / 1</span>
+                    </div>
+                    <div class="stat-row" id="currentConfigRow" style="display: none;">
+                        <span class="stat-label">Current Config:</span>
+                        <span class="stat-value" id="currentConfig">7x7 / same</span>
                     </div>
                     <div class="stat-row player-score">
                         <span class="stat-label">👤 Your Score:</span>
@@ -702,12 +941,14 @@
     <script>
         let gameState = null;
         let sessionId = null;
-        let replayMode = false;
-        let replayId = null;
         let lastHumanAction = null;
         let lastAIAction = null;
         let actionAnimationTimer = null;
         let actionAnimationAlpha = 1.0;
+        let actionInProgress = false;
+        let sessionComplete = false;
+        const dataSource = {{ (data_source or '')|tojson }};
+        const _pc = {{ (prolific_completion or '')|tojson }};
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -739,6 +980,23 @@
             'q': ACTIONS.NOOP,
             'Q': ACTIONS.NOOP
         };
+        // Research Information Sheet Modal Functions
+        function showResearchModal() {
+            const modal = document.getElementById('researchModal');
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeResearchModal() {
+            const modal = document.getElementById('researchModal');
+            modal.classList.remove('show');
+            // After closing research modal, show welcome/instructions modal if needed
+            if (shouldShowWelcomeModal()) {
+                showWelcomeModal();
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
 
         // Welcome Modal Functions
         function showWelcomeModal() {
@@ -755,17 +1013,105 @@
             document.body.style.overflow = ''; // Restore scrolling
             
             if (dontShowAgain) {
-                localStorage.setItem('lbf_hide_welcome', 'true');
+                sessionStorage.setItem('lbf_hide_welcome', 'true');
             }
         }
 
         function shouldShowWelcomeModal() {
-            return localStorage.getItem('lbf_hide_welcome') !== 'true';
+            return sessionStorage.getItem('lbf_hide_welcome') !== 'true';
+        }
+
+        // Loading Spinner Functions
+        function showLoadingSpinner(text = 'Loading Game...', subtext = '') {
+            const spinner = document.getElementById('loadingSpinner');
+            const spinnerText = document.getElementById('spinnerText');
+            const spinnerSubtext = document.getElementById('spinnerSubtext');
+            if (spinner) {
+                spinner.classList.add('show');
+                if (spinnerText) spinnerText.textContent = text;
+                if (spinnerSubtext) spinnerSubtext.textContent = subtext;
+            }
+        }
+
+        function hideLoadingSpinner() {
+            const spinner = document.getElementById('loadingSpinner');
+            if (spinner) {
+                spinner.classList.remove('show');
+            }
+        }
+
+        // ===== SESSION PROGRESS BAR =====
+        function updateProgressBar() {
+            if (!gameState || !gameState.multi) {
+                document.getElementById('sessionProgress').style.display = 'none';
+                return;
+            }
+
+            const progressEl = document.getElementById('sessionProgress');
+            progressEl.style.display = '';
+
+            const totalGames = gameState.total_games || 10;
+            const currentIdx = gameState.current_game_index || 0;
+            const numWarmup = gameState.num_warmup || 2;
+            const isWarmup = gameState.is_warmup;
+            const isDone = gameState.done && gameState.session_complete;
+
+            // Label
+            const label = document.getElementById('progressLabel');
+            if (isDone) {
+                label.innerHTML = 'All games complete!';
+            } else if (isWarmup) {
+                label.innerHTML = `Warmup ${currentIdx + 1} of ${numWarmup} <span class="warmup-badge">WARMUP</span>`;
+            } else {
+                const realIdx = currentIdx - numWarmup + 1;
+                const realTotal = totalGames - numWarmup;
+                label.innerHTML = `Game ${realIdx} of ${realTotal} <span class="real-badge">RECORDED</span>`;
+            }
+
+            // Dots
+            const dotsEl = document.getElementById('progressDots');
+            let dotsHTML = '';
+            for (let i = 0; i < totalGames; i++) {
+                const isWarmupDot = i < numWarmup;
+                let cls = 'progress-dot';
+                if (isWarmupDot) cls += ' warmup-dot';
+                if (i < currentIdx || (i === currentIdx && gameState.done)) {
+                    cls += ' completed';
+                } else if (i === currentIdx) {
+                    cls += ' active';
+                }
+                const dotLabel = isWarmupDot ? 'W' : (i - numWarmup + 1);
+                dotsHTML += `<div class="${cls}">${dotLabel}</div>`;
+            }
+            dotsEl.innerHTML = dotsHTML;
+        }
+
+        // ===== FINISH SCREEN =====
+        function showFinishScreen() {
+            sessionComplete = true;
+            const totalGames = gameState ? (gameState.total_games || 10) : 10;
+            document.getElementById('finishGamesPlayed').textContent = totalGames;
+            if (_pc) {
+                const url = atob(_pc);
+                const link = document.getElementById('finishCompletionLink');
+                link.href = url;
+                const code = new URL(url).searchParams.get('cc');
+                if (code) {
+                    document.getElementById('finishConfirmationCode').textContent = code;
+                }
+            }
+            document.getElementById('finishModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
         }
 
         // Close modal on escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
+                const researchModal = document.getElementById('researchModal');
+                if (researchModal.classList.contains('show')) {
+                    closeResearchModal();
+                    return;
+                }
                 const modal = document.getElementById('welcomeModal');
                 if (modal.classList.contains('show')) {
                     closeWelcomeModal();
@@ -775,16 +1121,15 @@
 
         // Initialize game on page load
         window.onload = function() {
-            // Show welcome modal if user hasn't opted out
-            if (shouldShowWelcomeModal()) {
-                showWelcomeModal();
-            }
+            // Show research info sheet first, then welcome modal
+            showResearchModal();
             startNewGame();
         };
 
         // Keyboard controls
         document.addEventListener('keydown', function(event) {
-            if (replayMode) return; // Disable keyboard controls in replay mode
+            if (event.repeat) return; // Ignore held-down key repeats
+            if (sessionComplete) return; // Disable during finish screen
             if (!gameState || gameState.done) return;
             
             const action = keyMap[event.key];
@@ -807,15 +1152,17 @@
 
         async function startNewGame() {
             try {
+                showLoadingSpinner('Loading Game...', 'Initializing game session');
                 const response = await fetch('/api/new_game', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        max_steps: 50,
-                        grid_size: 7,
-                        num_fruits: 3
+                        data_source: dataSource,
+                        prolific_pid: new URLSearchParams(window.location.search).get('PROLIFIC_PID'),
+                        study_id: new URLSearchParams(window.location.search).get('STUDY_ID'),
+                        prolific_session_id: new URLSearchParams(window.location.search).get('SESSION_ID')
                     })
                 });
                 
@@ -823,48 +1170,27 @@
                 if (data.success) {
                     sessionId = data.session_id;
                     gameState = data.state;
+                    sessionComplete = false;
                     lastHumanAction = null;
                     lastAIAction = null;
+                    updateProgressBar();
                     updateDisplay();
+                    hideLoadingSpinner();
                     showMessage('New game started! Good luck!', 'success');
-                    // Update main action button label to 'Reset' since a session now exists
-                    const mainBtn = document.getElementById('mainActionBtn');
-                    if (mainBtn) mainBtn.textContent = 'Reset';
+                } else {
+                    hideLoadingSpinner();
                 }
             } catch (error) {
+                hideLoadingSpinner();
                 console.error('Error starting new game:', error);
                 showMessage('Error starting game. Please try again.', 'warning');
             }
         }
 
-        async function resetGame() {
-            try {
-                const response = await fetch('/api/reset', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    gameState = data.state;
-                    lastHumanAction = null;
-                    lastAIAction = null;
-                    updateDisplay();
-                    showMessage('Game reset!', 'info');
-                    // Ensure main action button remains labeled 'Reset'
-                    const mainBtn = document.getElementById('mainActionBtn');
-                    if (mainBtn) mainBtn.textContent = 'Reset';
-                }
-            } catch (error) {
-                console.error('Error resetting game:', error);
-                showMessage('Error resetting game. Please try again.', 'warning');
-            }
-        }
-
         async function executeAction(action) {
             if (!gameState || gameState.done) return;
+            if (actionInProgress) return;
+            actionInProgress = true;
             
             try {
                 const response = await fetch('/api/step', {
@@ -881,36 +1207,40 @@
                     lastHumanAction = data.human_action;
                     lastAIAction = data.ai_action;
                     startActionAnimation();
+                    updateProgressBar();
                     updateDisplay();
                     
                     if (gameState.done) {
-                        const teamScore = gameState.total_rewards.agent_0 + gameState.total_rewards.agent_1;
-                        showMessage(`🎉 Episode Complete! Team Score: ${teamScore.toFixed(2)} - Automatically Saved!`, 'success');
+                        // Check if the entire session is complete
+                        if (gameState.session_complete) {
+                            updateProgressBar();
+                            setTimeout(() => showFinishScreen(), 800);
+                        } else {
+                            const teamScore = gameState.total_rewards.agent_0 + gameState.total_rewards.agent_1;
+                            showMessage(`🎉 Episode Complete! Team Score: ${teamScore.toFixed(2)} - Automatically Saved!`, 'success');
+                        }
+                    }
+                    
+                    // Game advanced to next in sequence
+                    if (gameState.game_just_advanced) {
+                        const numWarmup = gameState.num_warmup || 2;
+                        const idx = gameState.current_game_index || 0;
+                        let gameLabel;
+                        if (idx < numWarmup) {
+                            gameLabel = `Warmup ${idx + 1} of ${numWarmup}`;
+                        } else {
+                            gameLabel = `Game ${idx - numWarmup + 1} of ${gameState.total_games - numWarmup}`;
+                        }
+                        showLoadingSpinner('Loading Next Game...', gameLabel);
+                        setTimeout(hideLoadingSpinner, 150);
                     }
                 }
             } catch (error) {
                 console.error('Error executing action:', error);
                 showMessage('Error executing action. Please try again.', 'warning');
+            } finally {
+                actionInProgress = false;
             }
-        }
-
-        // Unified button handler: start a new game if no session or the episode is done,
-        // otherwise reset the existing session. No saving is triggered by this button.
-        async function mainAction() {
-            // If there is no active session, start a new one
-            if (!sessionId) {
-                await startNewGame();
-                return;
-            }
-
-            // If the episode is complete, start a fresh session (new game)
-            if (gameState && gameState.done) {
-                await startNewGame();
-                return;
-            }
-
-            // Otherwise, reset the current session
-            await resetGame();
         }
 
         function updateDisplay() {
@@ -929,13 +1259,146 @@
             // Draw game state
             drawGame();
 
-            // Show/hide the game-over overlay so the player knows to click Reset
-            setGameOverOverlay(Boolean(gameState.done) && !replayMode);
-            
-            // Update replay UI if in replay mode
-            if (replayMode) {
-                updateReplayUI();
+            // Update multi-game progress if provided by server
+            const multiRow = document.getElementById('multiProgressRow');
+            const multiLabel = document.getElementById('multiProgress');
+            const cfgRow = document.getElementById('currentConfigRow');
+            const cfgLabel = document.getElementById('currentConfig');
+            if (gameState.multi) {
+                if (multiRow) multiRow.style.display = '';
+                if (multiLabel) multiLabel.textContent = `${(gameState.current_game_index || 0) + 1} / ${gameState.total_games || 1}`;
+                if (cfgRow) cfgRow.style.display = '';
+                try {
+                    const idx = gameState.current_game_index || 0;
+                    const configs = gameState.game_configs || [];
+                    const cfg = configs[idx] || {grid_size: gameState.grid_size || 7, different_levels: gameState.different_levels || false};
+                    if (cfgLabel) cfgLabel.textContent = `${cfg.grid_size}x${cfg.grid_size} • ${cfg.different_levels ? 'different levels' : 'same levels'}`;
+                } catch (e) {
+                    if (cfgLabel) cfgLabel.textContent = '';
+                }
+            } else {
+                if (multiRow) multiRow.style.display = 'none';
+                if (cfgRow) cfgRow.style.display = 'none';
             }
+
+            // Show/hide the game-over overlay — only show when the game is done
+            // AND the session is also complete (all games finished)
+            const showOverlay = Boolean(gameState.done) && Boolean(gameState.session_complete);
+            setGameOverOverlay(showOverlay);
+            
+            // Update progress bar
+            updateProgressBar();
+            
+        }
+
+        // --- Action animation helpers ---
+        function startActionAnimation() {
+            actionAnimationAlpha = 1.0;
+            if (actionAnimationTimer) cancelAnimationFrame(actionAnimationTimer);
+            fadeActionIndicators();
+        }
+
+        function fadeActionIndicators() {
+            actionAnimationAlpha -= 0.025;
+            if (actionAnimationAlpha <= 0) {
+                actionAnimationAlpha = 0;
+                return; // done fading
+            }
+            drawGame();
+            actionAnimationTimer = requestAnimationFrame(fadeActionIndicators);
+        }
+
+        // Draw a directional arrow on an agent's cell
+        function drawDirectionArrow(row, col, action, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const arrowLen = cellSize * 0.35;
+            const headLen = 10;
+            const headAngle = Math.PI / 6;
+
+            let dx = 0, dy = 0;
+            if (action === ACTIONS.UP)    { dx = 0;  dy = -1; }
+            if (action === ACTIONS.DOWN)  { dx = 0;  dy =  1; }
+            if (action === ACTIONS.LEFT)  { dx = -1; dy =  0; }
+            if (action === ACTIONS.RIGHT) { dx =  1; dy =  0; }
+            if (dx === 0 && dy === 0) return;
+
+            const ex = cx + dx * arrowLen;
+            const ey = cy + dy * arrowLen;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(cx - dx * arrowLen * 0.3, cy - dy * arrowLen * 0.3);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ex - headLen * Math.cos(angle - headAngle), ey - headLen * Math.sin(angle - headAngle));
+            ctx.lineTo(ex - headLen * Math.cos(angle + headAngle), ey - headLen * Math.sin(angle + headAngle));
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw a "collecting" indicator (pulsing ring + sparkles) around an agent
+        function drawLoadIndicator(row, col, cellSize, color) {
+            const cx = (col + 0.5) * cellSize;
+            const cy = (row + 0.5) * cellSize;
+            const radius = cellSize * 0.48;
+
+            ctx.save();
+            ctx.globalAlpha = actionAnimationAlpha;
+
+            // Outer glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Inner glow ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Sparkle lines radiating outward
+            const sparkleCount = 8;
+            const innerR = radius * 0.55;
+            const outerR = radius * 1.1;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            for (let s = 0; s < sparkleCount; s++) {
+                const a = (Math.PI * 2 * s) / sparkleCount + (actionAnimationAlpha * Math.PI);
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+                ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+                ctx.stroke();
+            }
+
+            // "⚡" label above the cell
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = color;
+            ctx.fillText('⚡ COLLECT', cx, row * cellSize - 2);
+
+            ctx.restore();
         }
 
         // --- Action animation helpers ---
@@ -1050,10 +1513,10 @@
 
         function drawGame() {
             if (!gameState || !gameState.state) return;
-            
-            const state = gameState.state;
-            const gridSize = 7; // Default grid size
-            const cellSize = canvas.width / gridSize;
+
+            const state = gameState.state || {};
+            const gridSize = gameState.grid_size || gameState.state.grid_size || 7; // dynamic grid size
+            const cellSize = Math.min(canvas.width, canvas.height) / gridSize;
             
             // Clear canvas
             ctx.fillStyle = '#f0f0f0';
@@ -1075,21 +1538,30 @@
             }
             
             // Draw food items
-            for (let i = 0; i < state.food_positions.length; i++) {
-                if (!state.food_eaten[i]) {
-                    const [row, col] = state.food_positions[i];
-                    const level = state.food_levels[i];
-                    
+            const foodPositions = state.food_positions || [];
+            const foodEaten = state.food_eaten || [];
+            const foodLevels = state.food_levels || [];
+            for (let i = 0; i < foodPositions.length; i++) {
+                try {
+                    if (foodEaten[i]) continue;
+                    const pos = foodPositions[i];
+                    if (!pos || pos.length < 2) continue;
+                    const row = pos[0], col = pos[1];
+                    const level = foodLevels[i] !== undefined ? foodLevels[i] : '';
+
                     ctx.fillStyle = '#95e1d3';
                     ctx.fillRect(col * cellSize + 2, row * cellSize + 2, 
                                 cellSize - 4, cellSize - 4);
-                    
+
                     // Draw level
                     ctx.fillStyle = '#000';
-                    ctx.font = 'bold 20px Arial';
+                    ctx.font = Math.max(12, Math.floor(cellSize * 0.25)) + 'px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(`🍎${level}`, (col + 0.5) * cellSize, (row + 0.5) * cellSize);
+                } catch (e) {
+                    // drawing error for this food item -> skip
+                    continue;
                 }
             }
             
@@ -1097,9 +1569,14 @@
             const agentColors = ['#ff6b6b', '#4ecdc4'];
             const agentLabels = ['👤', '🤖'];
             
-            for (let i = 0; i < state.agent_positions.length; i++) {
-                const [row, col] = state.agent_positions[i];
-                const level = state.agent_levels[i];
+            const agentPositions = state.agent_positions || [];
+            const agentLevels = state.agent_levels || [];
+            for (let i = 0; i < agentPositions.length; i++) {
+                try {
+                    const pos = agentPositions[i];
+                    if (!pos || pos.length < 2) continue;
+                    const row = pos[0], col = pos[1];
+                    const level = agentLevels[i] !== undefined ? agentLevels[i] : '';
                 
                 // Draw agent background
                 ctx.fillStyle = agentColors[i];
@@ -1116,13 +1593,16 @@
                 
                 // Draw agent icon and level
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 24px Arial';
+                ctx.font = 'bold ' + Math.max(12, Math.floor(cellSize * 0.4)) + 'px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(agentLabels[i], (col + 0.5) * cellSize, (row + 0.35) * cellSize);
-                
-                ctx.font = 'bold 16px Arial';
+                ctx.fillText(agentLabels[i] || '', (col + 0.5) * cellSize, (row + 0.35) * cellSize);
+
+                ctx.font = 'bold ' + Math.max(10, Math.floor(cellSize * 0.25)) + 'px Arial';
                 ctx.fillText(`Lv${level}`, (col + 0.5) * cellSize, (row + 0.65) * cellSize);
+            } catch (e) {
+                continue;
+            }
             }
 
             // --- Draw action indicators (arrows & load rings) ---
@@ -1162,174 +1642,6 @@
             }
         }
 
-        // ===== REPLAY FUNCTIONS =====
-        
-        function showFileUpload() {
-            document.getElementById('playModeControls').classList.add('hidden');
-            document.getElementById('fileUploadSection').classList.remove('hidden');
-            document.getElementById('normalModeNote').classList.add('hidden');
-        }
-        
-        function cancelFileUpload() {
-            document.getElementById('playModeControls').classList.remove('hidden');
-            document.getElementById('fileUploadSection').classList.add('hidden');
-            document.getElementById('normalModeNote').classList.remove('hidden');
-            document.getElementById('replayFile').value = '';
-        }
-        
-        async function uploadReplay() {
-            const fileInput = document.getElementById('replayFile');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                showMessage('Please select a file to upload', 'warning');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/api/upload_replay', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    replayMode = true;
-                    replayId = data.replay_id;
-                    gameState = data.state;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    
-                    // Hide file upload, show replay controls
-                    document.getElementById('fileUploadSection').classList.add('hidden');
-                    document.getElementById('playModeControls').classList.add('hidden');
-                    document.getElementById('normalModeNote').classList.add('hidden');
-                    document.getElementById('replayControls').classList.add('active');
-                    document.getElementById('replayInfoSection').classList.add('active');
-                    
-                    // Update replay UI
-                    document.getElementById('replayTotal').textContent = data.state.total_steps;
-                    document.getElementById('replaySlider').max = data.state.total_steps - 1;
-                    
-                    // Show metadata
-                    const metadata = data.metadata;
-                    document.getElementById('replayMetadata').innerHTML = 
-                        `<strong>Player:</strong> ${metadata.player_name} | ` +
-                        `<strong>Date:</strong> ${metadata.timestamp} | ` +
-                        `<strong>Grid:</strong> ${metadata.grid_size}x${metadata.grid_size} | ` +
-                        `<strong>Fruits:</strong> ${metadata.num_fruits}`;
-                    
-                    updateDisplay();
-                    showMessage('Replay loaded successfully!', 'success');
-                } else {
-                    showMessage(data.error || 'Failed to load replay', 'warning');
-                }
-            } catch (error) {
-                console.error('Error uploading replay:', error);
-                showMessage('Error loading replay file', 'warning');
-            }
-        }
-        
-        async function replayControl(action) {
-            if (!replayMode) return;
-            
-            try {
-                const response = await fetch('/api/replay/step', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ action: action })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    gameState = data.state;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    updateDisplay();
-                }
-            } catch (error) {
-                console.error('Error controlling replay:', error);
-                showMessage('Error controlling replay', 'warning');
-            }
-        }
-        
-        async function seekReplay(stepIndex) {
-            if (!replayMode) return;
-            
-            try {
-                const response = await fetch('/api/replay/step', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        action: 'goto',
-                        step_index: parseInt(stepIndex)
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    gameState = data.state;
-                    lastHumanAction = gameState.human_action !== undefined ? gameState.human_action : null;
-                    lastAIAction = gameState.ai_action !== undefined ? gameState.ai_action : null;
-                    actionAnimationAlpha = 1.0;
-                    updateDisplay();
-                }
-            } catch (error) {
-                console.error('Error seeking replay:', error);
-            }
-        }
-        
-        async function exitReplay() {
-            try {
-                await fetch('/api/exit_replay', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                // Reset replay state
-                replayMode = false;
-                replayId = null;
-                
-                // Reset UI - hide replay controls, show play controls
-                document.getElementById('replayControls').classList.remove('active');
-                document.getElementById('replayInfoSection').classList.remove('active');
-                document.getElementById('playModeControls').classList.remove('hidden');
-                document.getElementById('fileUploadSection').classList.add('hidden');
-                document.getElementById('normalModeNote').classList.remove('hidden');
-                document.getElementById('replayFile').value = '';
-                
-                // Start a new game
-                await startNewGame();
-                
-                showMessage('Exited replay mode', 'info');
-            } catch (error) {
-                console.error('Error exiting replay:', error);
-            }
-        }
-        
-        function updateReplayUI() {
-            if (!replayMode || !gameState) return;
-            
-            document.getElementById('replayStep').textContent = gameState.current_step + 1;
-            document.getElementById('replaySlider').value = gameState.current_step;
-            
-            // Show action information if available
-            if (gameState.human_action !== undefined && gameState.ai_action !== undefined) {
-                const actionNames = ['NOOP', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'LOAD'];
-                console.log(`Step ${gameState.current_step + 1}: Human=${actionNames[gameState.human_action]}, AI=${actionNames[gameState.ai_action]}`);
-            }
-        }
     </script>
 </body>
 </html>

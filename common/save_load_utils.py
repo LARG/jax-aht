@@ -32,20 +32,51 @@ def save_train_run(out, savedir, savename):
     return savepath
 
 def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None):
-    '''Load checkpoints from orbax checkpoint. 
+    '''Load checkpoints from orbax checkpoint.
     Orbax requires absolute paths, so we compute the absolute path to the repo root.'''
-    restored = load_train_run(path)
     if custom_loader_cfg is None:
+        restored = load_train_run(path)
         return restored[ckpt_key]
     elif custom_loader_cfg["name"] == "open_ended":
+        # Open-ended loader needs the full checkpoint
+        restored = load_train_run(path)
         partner_out, ego_out = restored
         out = ego_out if custom_loader_cfg["type"] == "ego" else partner_out
         if ckpt_key == "final_buffer":
             return out["final_buffer"]["params"]
         else:
             return out[ckpt_key]
+    elif custom_loader_cfg["name"] == "partial_load":
+        return _load_partial(path, ckpt_key)
     else:
         raise ValueError(f"Invalid custom loader name: {custom_loader_cfg['name']}")
+
+def _load_partial(path, ckpt_key):
+    '''Load only a single top-level key from an orbax checkpoint, avoiding OOM
+    from loading the entire pytree (e.g. skipping metrics).'''
+    if not os.path.isabs(path):
+        path = os.path.join(REPO_PATH, path)
+
+    checkpointer = orbax.checkpoint.PyTreeCheckpointer()
+    cpu_sharding = jax.sharding.SingleDeviceSharding(jax.devices('cpu')[0])
+    meta = checkpointer.metadata(path)
+
+    if ckpt_key not in meta:
+        raise KeyError(f"Key '{ckpt_key}' not found in checkpoint. Available keys: {list(meta.keys())}")
+
+    subtree_meta = meta[ckpt_key]
+    item = {ckpt_key: jax.tree.map(
+        lambda m: np.empty(m.shape, dtype=m.dtype) if hasattr(m, 'shape') else m,
+        subtree_meta,
+    )}
+    transforms = {ckpt_key: orbax.checkpoint.Transform()}
+    restore_args = {ckpt_key: jax.tree.map(
+        lambda _: orbax.checkpoint.ArrayRestoreArgs(sharding=cpu_sharding),
+        subtree_meta,
+    )}
+
+    restored = checkpointer.restore(path, item=item, transforms=transforms, restore_args=restore_args)
+    return restored[ckpt_key]
 
 def load_train_run(path):
     '''Load checkpoints from orbax checkpoint. 

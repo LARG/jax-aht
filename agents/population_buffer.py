@@ -32,25 +32,27 @@ def get_final_buffer(buffer):
     ages: (max_pop_size, 1, 1, max_pop_size)
     filled: (max_pop_size, 1, max_pop_size)
     filled_count: (max_pop_size, 1, 1)
+    write_ptr: (max_pop_size, 1, 1)
     # configuration parameters
     buffer_size: int
     staleness_coef: float
     temp: float
     '''
-    # adding extra 1 dimension purely for compatibility with previous implementation
-    # TODO: remove this hack once we're done with experiments 
-    # which returned the buffer for all OEL iterations.
+    # adding extra 1 dimension purely for compatibility with previous versions
+    # TODO: remove this hack for v1
     last_params = jax.tree.map(lambda x: x[-1][jnp.newaxis], buffer.params)
     last_scores = jax.tree.map(lambda x: x[-1][jnp.newaxis], buffer.scores)
     last_ages = jax.tree.map(lambda x: x[-1][jnp.newaxis], buffer.ages)
     last_filled = jax.tree.map(lambda x: x[-1][jnp.newaxis], buffer.filled)
     last_filled_count = jax.tree.map(lambda x: x[-1][jnp.newaxis], buffer.filled_count)
+    last_write_ptr = jax.tree.map(lambda x: x[-1][jnp.newaxis], buffer.write_ptr)
     return PopulationBuffer(
         params=last_params,
         scores=last_scores,
         ages=last_ages,
         filled=last_filled,
         filled_count=last_filled_count,
+        write_ptr=last_write_ptr,
         buffer_size=buffer.buffer_size,
         staleness_coef=buffer.staleness_coef,
         temp=buffer.temp,
@@ -63,6 +65,7 @@ class PopulationBuffer(struct.PyTreeNode):
     ages: chex.Array  # Age (staleness) of each agent
     filled: chex.Array  # Boolean mask for filled slots
     filled_count: chex.Array  # Count of filled slots
+    write_ptr: chex.Array  # FIFO write pointer for uniform/softmax eviction
     
     # Configuration parameters
     buffer_size: int = struct.field(pytree_node=False, default=100)
@@ -82,18 +85,18 @@ class BufferedPopulation(AgentPopulation):
         Args:
             max_pop_size: Maximum number of agents in the population
             policy_cls: Agent policy class
-            sampling_strategy: Method for sampling partners ('plr' or 'uniform').
+            sampling_strategy: Method for sampling partners ('plr', 'uniform', or 'softmax').
             staleness_coef: Weight for staleness in 'plr' sampling. If 0, 
                 only the score is used for sampling. If scores are 1s (default), 
                 sampling becomes uniform over filled slots (equivalent to 'uniform' strategy).
-            temp: Temperature for score-based sampling distribution (currently has no effect).
+            temp: Temperature for score-based sampling distribution.
         """
         super().__init__(max_pop_size, policy_cls)
         self.max_pop_size = max_pop_size
         self.staleness_coef = staleness_coef
-        self.temp = temp # Note: Currently ineffective
+        self.temp = temp
         self.sampling_strategy = sampling_strategy
-        assert sampling_strategy in ["plr", "uniform"], "sampling_strategy must be 'plr' or 'uniform'"
+        assert sampling_strategy in ["plr", "uniform", "softmax"], "sampling_strategy must be 'plr', 'uniform' or 'softmax'"
     
     @partial(jax.jit, static_argnums=(0,))
     def reset_buffer(self, example_params):
@@ -117,6 +120,7 @@ class BufferedPopulation(AgentPopulation):
             ages=jnp.zeros(self.max_pop_size, dtype=jnp.int32),
             filled=jnp.zeros(self.max_pop_size, dtype=bool),
             filled_count=jnp.zeros(1, dtype=jnp.int32),
+            write_ptr=jnp.zeros(1, dtype=jnp.int32),
             buffer_size=self.max_pop_size,
             staleness_coef=self.staleness_coef,
             temp=self.temp,
@@ -139,9 +143,11 @@ class BufferedPopulation(AgentPopulation):
         Returns:
             Distribution over agents
         """
-        # Score distribution (use scores only for filled slots)
-        # TODO: temp currently doesn't do anything. check the PLR paper for correct implementation.
-        score_dist = buffer.scores * buffer.filled / buffer.temp
+        # Score distribution (use scores only for filled slots).
+        # Raise scores to the power of 1/temp before normalising so that temp
+        # actually controls the sharpness of the distribution (higher temp -> flatter).
+        # Requires scores > 0, which is ensured by the default score of 1.0.
+        score_dist = jnp.where(buffer.filled, jnp.power(buffer.scores, 1.0 / buffer.temp), 0.0)
         score_sum = score_dist.sum()  # sum of scores over filled slots
         # if filled slots exist, use score distribution. otherwise, uniform over filled slots
         score_dist = jnp.where(
@@ -161,10 +167,35 @@ class BufferedPopulation(AgentPopulation):
         
         # Combined distribution
         return (1 - buffer.staleness_coef) * score_dist + buffer.staleness_coef * staleness_dist
+
+    @partial(jax.jit, static_argnums=(0,))
+    def _get_softmax_sampling_dist(self, buffer):
+        """Get softmax distribution over filled slots based on scores."""
+        # Mask unfilled slots with -inf so they have 0 probability after softmax
+        masked_scores = jnp.where(buffer.filled, buffer.scores / buffer.temp, -1e10)
+        return jax.nn.softmax(masked_scores)
+    
+    @partial(jax.jit, static_argnums=(0,))
+    def _get_sampling_dist(self, buffer):
+        """Select distribution based on the instance's sampling strategy."""
+        if self.sampling_strategy == "uniform":
+            return self._get_uniform_sampling_dist(buffer)
+        elif self.sampling_strategy == "plr":
+            return self._get_plr_sampling_dist(buffer)
+        elif self.sampling_strategy == "softmax":
+            return self._get_softmax_sampling_dist(buffer)
+        else:
+            raise ValueError(f"Unknown sampling strategy: {self.sampling_strategy}")
     
     @partial(jax.jit, static_argnums=(0,))
     def _get_next_insert_idx(self, buffer):
-        """Get index for next insertion (either first empty or replace lowest-scored).
+        """Get index for next insertion.
+        
+        - 'plr': while filling, uses filled_count; once full, evicts the agent
+          with the lowest PLR sampling probability (argmin).
+        - 'uniform' / 'softmax': always uses a FIFO write pointer that wraps
+          around modulo buffer_size, so every slot is replaced in round-robin
+          order once the buffer is full.
         
         Args:
             buffer: The population buffer
@@ -172,19 +203,18 @@ class BufferedPopulation(AgentPopulation):
         Returns:
             Index to insert the next agent
         """
-        # Select distribution based on the instance's sampling strategy
-        sampling_dist = jax.lax.cond(
-            self.sampling_strategy == "uniform",
-            self._get_uniform_sampling_dist,
-            self._get_plr_sampling_dist,
-            buffer # Pass buffer as the operand to the selected function
-        )
-
-        return jax.lax.cond(
-            jnp.less(buffer.filled_count[0], buffer.buffer_size),
-            lambda: buffer.filled_count[0],
-            lambda: jnp.argmin(sampling_dist)
-        )
+        if self.sampling_strategy == "plr":
+            # PLR: argmin eviction once full
+            sampling_dist = self._get_plr_sampling_dist(buffer)
+            return jax.lax.cond(
+                jnp.less(buffer.filled_count[0], buffer.buffer_size),
+                lambda: buffer.filled_count[0],
+                lambda: jnp.argmin(sampling_dist)
+            )
+        else:
+            # FIFO: write_ptr already wraps correctly for both the initial fill
+            # phase (0, 1, 2, ...) and subsequent overwrites.
+            return buffer.write_ptr[0]
     
     @partial(jax.jit, static_argnums=(0,))
     def add_agent(self, buffer, new_params, score=None):
@@ -219,13 +249,32 @@ class BufferedPopulation(AgentPopulation):
         ages_plus_one = (buffer.ages + 1) * buffer.filled
         new_ages = ages_plus_one.at[insert_idx].set(0)
         
+        # Advance FIFO write pointer (used by uniform/softmax strategies)
+        new_write_ptr = (buffer.write_ptr + 1) % buffer.buffer_size
+        
         return buffer.replace(
             params=new_buffer_params,
             filled=new_filled,
             filled_count=new_filled_count,
             scores=new_scores,
-            ages=new_ages
+            ages=new_ages,
+            write_ptr=new_write_ptr,
         )
+    
+    @partial(jax.jit, static_argnums=(0,))
+    def update_scores(self, buffer, indices, new_scores):
+        """Supports updating scores for specific agents in the buffer.
+        
+        Args:
+            buffer: The population buffer
+            indices: Indices of agents to update (scalar or array)
+            new_scores: New scores for these agents (scalar or array)
+            
+        Returns:
+            Updated population buffer
+        """
+        updated_scores = buffer.scores.at[indices].set(new_scores)
+        return buffer.replace(scores=updated_scores)
     
     @partial(jax.jit, static_argnums=(0, 2))
     def sample_agent_indices(self, buffer, n, rng, needs_resample_mask=None):
@@ -251,12 +300,7 @@ class BufferedPopulation(AgentPopulation):
         buffer_has_agents = jnp.greater(buffer.filled.sum(), 0)
         
         # Select distribution based on the instance's sampling strategy
-        sampling_dist = jax.lax.cond(
-            self.sampling_strategy == "uniform",
-            self._get_uniform_sampling_dist,
-            self._get_plr_sampling_dist,
-            buffer # Pass buffer as the operand to the selected function
-        )
+        sampling_dist = self._get_sampling_dist(buffer)
         
 
         def handle_empty_buffer():
@@ -301,13 +345,10 @@ class BufferedPopulation(AgentPopulation):
                 return current_buffer
 
             # Apply age updates only for 'plr' strategy to skip for-i loop if possible.
-            updated_buffer = jax.lax.cond(
-                self.sampling_strategy == "uniform",
-                skip_age_update,
-                update_ages_plr,
-                # Operands for the conditional functions:
-                buffer, indices, needs_resample_mask 
-            )
+            if self.sampling_strategy == "plr":
+                updated_buffer = update_ages_plr(buffer, indices, needs_resample_mask)
+            else:
+                updated_buffer = buffer
             
             return indices, updated_buffer
 
@@ -337,32 +378,63 @@ class BufferedPopulation(AgentPopulation):
     def get_actions(self, buffer, agent_indices, obs, done, avail_actions, hstate, rng, 
                     env_state=None, aux_obs=None, test_mode=False):
         """Get actions from agents in the buffer.
-        
+
+        Callers pass obs/done/avail_actions with shape (num_envs, ...) and hstate
+        as returned by policy.init_hstate(num_envs).  For recurrent policies (RNN,
+        S5) hstate leaves have shape (..., num_envs, H) with the env axis at -2.
+        For MLP pass hstate=None.
+
         Args:
-            buffer: The population buffer 
+            buffer: The population buffer
             agent_indices: Indices with shape (num_envs,), each in [0, buffer_size)
-            obs: Observations with shape (num_envs, ...)
+            obs: Observations with shape (num_envs, obs_dim)
             done: Done flags with shape (num_envs,)
             avail_actions: Available actions with shape (num_envs, num_actions)
-            hstate: Hidden state with shape (num_envs, ...) or None
+            hstate: Hidden state in policy.init_hstate(num_envs) format, or None
             rng: Random key
             env_state: Environment state with shape (num_envs, ...) or None
             aux_obs: Optional auxiliary vector to append to observation
             test_mode: Whether to use test mode (deterministic actions)
-            
+
         Returns:
             actions: Actions with shape (num_envs,)
-            new_hstate: New hidden state with shape (num_envs, ...) or None
+            new_hstate: New hidden state in the same format as hstate
         """
         gathered_params = self.gather_agent_params(buffer, agent_indices)
         num_envs = agent_indices.squeeze().shape[0]
         rngs_batched = jax.random.split(rng, num_envs)
-        
-        vmapped_get_action = jax.vmap(partial(self.policy_cls.get_action, 
-                                             aux_obs=aux_obs, 
-                                             env_state=env_state, 
-                                             test_mode=test_mode))
-        actions, new_hstate = vmapped_get_action(
-            gathered_params, obs, done, avail_actions, hstate, 
-            rngs_batched)
-        return actions, new_hstate 
+
+        # We vmap over the per-env params axis only, keeping the (seq_len, batch)
+        # dims that recurrent policies (S5, RNN) require inside each forward call.
+        # Each per-env invocation receives (1, 1, ...) shaped obs/done/avail and
+        # a hstate with a singleton env axis (..., 1, H).
+        def _get_action_one_env(params_i, obs_i, done_i, avail_i, hstate_i, rng_i):
+            # obs_i: (obs_dim,)  done_i: ()  avail_i: (num_actions,)
+            # hstate_i: pytree with leaves (..., H) — env axis stripped by outer vmap
+            act_i, _, _, new_h_i = self.policy_cls.get_action_value_policy(
+                params=params_i,
+                obs=obs_i[jnp.newaxis, jnp.newaxis, :],            # (1, 1, obs_dim)
+                done=done_i[jnp.newaxis, jnp.newaxis],              # (1, 1)
+                avail_actions=avail_i[jnp.newaxis, jnp.newaxis, :], # (1, 1, num_actions)
+                hstate=jax.tree.map(lambda h: h[..., jnp.newaxis, :], hstate_i),
+                rng=rng_i,
+            )
+            # Squeeze (1,1) action → scalar; drop the inserted singleton env axis
+            return act_i.squeeze(), jax.tree.map(lambda h: h[..., 0, :], new_h_i)
+
+        # Move env axis to position 0 so vmap strips it per-env, then restore.
+        if hstate is not None:
+            hstate_env_first = jax.tree.map(lambda h: jnp.moveaxis(h, -2, 0), hstate)
+        else:
+            hstate_env_first = None
+
+        actions, new_hstate_env_first = jax.vmap(_get_action_one_env)(
+            gathered_params, obs, done, avail_actions, hstate_env_first, rngs_batched
+        )
+
+        if new_hstate_env_first is not None:
+            new_hstate = jax.tree.map(lambda h: jnp.moveaxis(h, 0, -2), new_hstate_env_first)
+        else:
+            new_hstate = None
+
+        return actions, new_hstate

@@ -1,0 +1,7 @@
+# BC-LSTM architecture defaults for Hanabi (full, 2-player).
+
+obs_dim: 658
+action_dim: 21
+preprocess_dim: 1024
+lstm_dim: 512
+postprocess_dim: 256

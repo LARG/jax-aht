@@ -80,7 +80,7 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
     config["NUM_GAME_AGENTS"] = num_agents
     config["NUM_CONF_ACTORS"] = config["NUM_ENVS"]
     config["NUM_BR_ACTORS"] = config["NUM_ENVS"]
-    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // (num_agents * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
+    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // (config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
 
     def make_brdiv_agents(config):
         def linear_schedule(count):
