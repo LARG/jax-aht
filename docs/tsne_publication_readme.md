@@ -15,6 +15,53 @@
 cd /scratch/cluster/montek/projects/jax-aht
 ```
 
+## Quick Start: One Command End-to-End Pipeline
+
+Run BR -> checkpoint-ingestion -> XP -> per-task t-SNE -> publication meta-figure:
+
+```bash
+python3 scripts/br_xp_pipeline.py run \
+  --gpu-list 1,2 \
+  --parallel-jobs 2 \
+  --total-timesteps 10000000
+```
+
+This writes a run directory with status, logs, and a reproducibility manifest at:
+
+- `results/pipeline_runs/<run_id>/status.json`
+- `results/pipeline_runs/<run_id>/pipeline.log`
+- `results/pipeline_runs/<run_id>/manifest.json`
+
+Check current status (latest run):
+
+```bash
+python3 scripts/br_xp_pipeline.py status
+```
+
+Check status for a specific run id:
+
+```bash
+python3 scripts/br_xp_pipeline.py status --run-id <run_id> --json
+```
+
+SSH-safe detached launch example:
+
+```bash
+RUN_ID="$(date -u +%Y%m%d_%H%M%S)_br_xp"
+nohup python3 scripts/br_xp_pipeline.py run \
+  --run-id "$RUN_ID" \
+  --gpu-list 1,2 \
+  --parallel-jobs 2 \
+  --total-timesteps 10000000 \
+  > "results/pipeline_runs/${RUN_ID}/nohup.out" 2>&1 &
+
+python3 scripts/br_xp_pipeline.py status --run-id "$RUN_ID"
+```
+
+Adding a new domain/task is registry-driven via:
+
+- `evaluation/configs/pipeline_task_registry.yaml`
+
 ## 1) (If Needed) Generate Extra BR Policies
 
 LBF extra teammates:
@@ -156,3 +203,4 @@ python3 evaluation/plot_tsne_meta_figure.py \
   --global-xlabel "t-SNE 1" \
   --global-ylabel "t-SNE 2"
 ```
+

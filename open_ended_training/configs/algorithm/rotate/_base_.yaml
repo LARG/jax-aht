@@ -18,7 +18,7 @@ EGO_TEAMMATE: final # choices: [final, all] # whether to use the final conf para
 SAMPLING_STRATEGY: uniform # 'plr' or 'uniform'
 STALENESS_COEF: 0.3 # used only for 'plr' sampling strategy
 SCORE_TEMP: 1.0 # used only for 'plr' sampling strategy, currently ineffective
-NUM_ENVS: 16
+NUM_ENVS: 64
 LR: 1.e-4
 UPDATE_EPOCHS: 20
 NUM_MINIBATCHES: 4

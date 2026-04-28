@@ -1,0 +1,44 @@
+# Registry for the BR -> XP -> t-SNE publication pipeline.
+# Add new domains/tasks here to extend the pipeline.
+
+pipeline:
+  name: br_xp_tsne_publication
+  default_xp_config: heldout_xp_all_teammates_generated
+  label_prefix: all_teammates_norm_rows_
+  xp_csv_name: returned_episode_returns_mean_normalized=True.csv
+  output_root: results/pipeline_runs
+
+meta_figure:
+  output_png: results/publication/br_tsne_meta_option_a_kde_contour.png
+  preset: journal-wide
+  density_backdrop: kde
+  density_contours: true
+  no_subplot_axis_ticks: true
+  hide_subplot_axis_labels: true
+  global_xlabel: t-SNE 1
+  global_ylabel: t-SNE 2
+
+domains:
+  lbf:
+    br_scripts:
+      - scripts/run_lbf_br_jobs.sh
+      - scripts/run_lbf_extra_br_jobs.sh
+    tasks:
+      - task: lbf
+        title: LBF
+
+  overcooked-v1:
+    br_scripts:
+      - scripts/run_overcooked_br_jobs.sh
+      - scripts/run_overcooked_extra_br_jobs.sh
+    tasks:
+      - task: overcooked-v1/cramped_room
+        title: cramped_room
+      - task: overcooked-v1/asymm_advantages
+        title: asymm_advantages
+      - task: overcooked-v1/counter_circuit
+        title: counter_circuit
+      - task: overcooked-v1/coord_ring
+        title: coord_ring
+      - task: overcooked-v1/forced_coord
+        title: forced_coord

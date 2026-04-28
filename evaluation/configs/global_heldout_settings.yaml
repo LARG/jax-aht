@@ -82,6 +82,26 @@ heldout_set:
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
+    lbrdiv-conf:
+      path: "eval_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run/"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 90.10], [0.0, 89.98], [0.0, 92.19]]
+        returned_episode_returns: [[0.0, 0.45], [0.0, 0.45], [0.0, 0.46]]
+    comedi:
+      path: "eval_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run/"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 100.00], [0.0, 51.56], [0.0, 100.00], [0.0, 100.00], [0.0, 99.48]]
+        returned_episode_returns: [[0.0, 0.50], [0.0, 0.32], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50]]
   overcooked-v1/cramped_room: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/cramped_room/ippo/2025-04-21_22-53-04/saved_train_run"
@@ -127,6 +147,26 @@ heldout_set:
       performance_bounds:
         base_return: [0.0, 137.5]
         returned_episode_returns: [0.0, 146.45]
+    lbrdiv-conf:
+      path: "eval_teammates/overcooked-v1/cramped_room/lbrdiv/2026-03-03_19-04-46/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 183.75], [0.0, 232.50], [0.0, 206.25]]
+        returned_episode_returns: [[0.0, 196.60], [0.0, 249.40], [0.0, 220.36]]
+    comedi:
+      path: "eval_teammates/overcooked-v1/cramped_room/comedi/2026-03-03_22-28-24/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 250.31], [0.0, 202.19], [0.0, 209.69], [0.0, 208.44], [0.0, 201.25]]
+        returned_episode_returns: [[0.0, 267.72], [0.0, 216.13], [0.0, 224.01], [0.0, 222.96], [0.0, 215.27]]
   overcooked-v1/asymm_advantages: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/asymm_advantages/ippo/2025-04-21_22-53-56/saved_train_run"
@@ -165,6 +205,26 @@ heldout_set:
       performance_bounds:
         base_return: [0.0, 191.25]
         returned_episode_returns: [0.0, 191.25]
+    lbrdiv-conf:
+      path: "eval_teammates/overcooked-v1/asymm_advantages/lbrdiv/2026-03-03_17-02-53/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 254.69], [0.0, 306.88], [0.0, 326.56]]
+        returned_episode_returns: [[0.0, 254.69], [0.0, 306.88], [0.0, 326.56]]
+    comedi:
+      path: "eval_teammates/overcooked-v1/asymm_advantages/comedi/2026-03-03_17-06-25/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 360.31], [0.0, 275.94], [0.0, 265.00], [0.0, 261.56], [0.0, 273.75]]
+        returned_episode_returns: [[0.0, 360.31], [0.0, 275.94], [0.0, 265.00], [0.0, 261.56], [0.0, 273.75]]
   overcooked-v1/counter_circuit: # DONE - DO NOT MODIFY
     ippo_mlp_cc: # counterclockwise mmt 
       path: "eval_teammates/overcooked-v1/counter_circuit/ippo/2025-04-21_22-55-42/saved_train_run"
@@ -215,6 +275,26 @@ heldout_set:
       performance_bounds:
         base_return: [0.0, 55.31]
         returned_episode_returns: [0.0, 57.91]
+    lbrdiv-conf:
+      path: "eval_teammates/overcooked-v1/counter_circuit/lbrdiv/2026-03-03_17-49-14/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 91.88], [0.0, 102.81], [0.0, 100.62]]
+        returned_episode_returns: [[0.0, 96.79], [0.0, 108.76], [0.0, 106.33]]
+    comedi:
+      path: "eval_teammates/overcooked-v1/counter_circuit/comedi/2026-03-03_19-57-43/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 134.06], [0.0, 96.25], [0.0, 46.88], [0.0, 100.62], [0.0, 50.00]]
+        returned_episode_returns: [[0.0, 141.76], [0.0, 101.69], [0.0, 48.18], [0.0, 106.34], [0.0, 52.27]]
   overcooked-v1/coord_ring: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/coord_ring/ippo/2025-04-21_22-58-26/saved_train_run"
@@ -262,6 +342,26 @@ heldout_set:
       performance_bounds:
         base_return: [0.0, 67.5]
         returned_episode_returns: [0.0, 70.33]
+    lbrdiv-conf:
+      path: "eval_teammates/overcooked-v1/coord_ring/lbrdiv/2026-03-02_14-56-18/saved_train_run/"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 167.81], [0.0, 180.94], [0.0, 177.50]]
+        returned_episode_returns: [[0.0, 178.57], [0.0, 192.48], [0.0, 189.04]]
+    comedi:
+      path: "eval_teammates/overcooked-v1/coord_ring/comedi/2026-03-01_22-32-32/saved_train_run/"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 189.69], [0.0, 176.25], [0.0, 137.50], [0.0, 141.56], [0.0, 154.69]]
+        returned_episode_returns: [[0.0, 201.83], [0.0, 187.43], [0.0, 145.86], [0.0, 150.90], [0.0, 164.88]]
   overcooked-v1/forced_coord:  # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/forced_coord/ippo/2025-04-21_23-00-17/saved_train_run"
@@ -306,3 +406,23 @@ heldout_set:
       performance_bounds:
         base_return: [0.0, 61.88]
         returned_episode_returns: [0.0, 65.22]
+    lbrdiv-conf:
+      path: "eval_teammates/overcooked-v1/forced_coord/lbrdiv/2026-03-03_19-30-49/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 170.94], [0.0, 166.25], [0.0, 142.50]]
+        returned_episode_returns: [[0.0, 181.74], [0.0, 176.92], [0.0, 151.09]]
+    comedi:
+      path: "eval_teammates/overcooked-v1/forced_coord/comedi/2026-03-04_00-28-31/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 250.62], [0.0, 67.19], [0.0, 48.12], [0.0, 51.25], [0.0, 101.56]]
+        returned_episode_returns: [[0.0, 267.41], [0.0, 70.21], [0.0, 49.78], [0.0, 53.41], [0.0, 107.21]]
