@@ -80,10 +80,14 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
             Train a pool IPPO agents w/parameter sharing.
             Returns out, a dictionary of the model checkpoints, final parameters, and metrics.
             '''
-            config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
-            config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
+            # POP_SIZE is referenced throughout the CoMeDi training loops
             config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
-            out = make_ppo_train(config, env, wandb_logger)(partner_rng) # train a single PPO agent
+            # Use a local copy for warmup-specific overrides to avoid
+            # mutating the shared config (ACTOR_TYPE, TOTAL_TIMESTEPS)
+            warmup_config = dict(config)
+            warmup_config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
+            warmup_config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
+            out = make_ppo_train(warmup_config, env, wandb_logger)(partner_rng)
             return out
 
         def train(rng):
@@ -1093,7 +1097,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     ### Log evaluation metrics
     # xp_eval_returns and sp_eval_returns logged at each evaluation only.
     algorithm_config = config["algorithm"]
-    ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
+    ckpt_and_eval_interval = max(1, num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1))
     # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
     eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
     if (num_updates - 1) not in eval_steps:

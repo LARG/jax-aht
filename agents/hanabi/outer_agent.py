@@ -1,52 +1,23 @@
-"""Outer agent (Walton-Rivers 2017). Hints before discarding.
-
-Canonical priority:
-  1. PlaySafeCard
-  2. OsawaDiscard (discard certainly-useless; frees info tokens for hinting)
-  3. TellAnyoneAboutPlayableCard (hint about a playable card)
-  4. TellUnknown (hint about anything the partner doesn't fully know yet)
-  5. DiscardRandomly
-
-The earlier version here skipped rule 2 and rule 4, so Outer was
-effectively "play > hint playable > hint random > discard random",
-which burned info tokens fast and scored 0/25 on full Hanabi. Adding
-OsawaDiscard and TellUnknown should bring it closer to the paper's
-numbers.
-"""
-from typing import Tuple
-
 import jax
 import jax.numpy as jnp
-
 from agents.hanabi.iggi_agent import IGGIAgent
 from agents.hanabi.base_agent import AgentState
+from typing import Tuple
 
 
 class OuterAgent(IGGIAgent):
-    """play > osawa > hint playable > tell unknown > discard random"""
-
     def _find_tell_unknown_mask(self, partner_hand, partner_knowledge_2d, avail_mask):
-        """Hints that reveal new information about the partner's cards.
+        partner_colors = jnp.argmax(partner_hand.sum(axis=2), axis=1)
+        partner_ranks = jnp.argmax(partner_hand.sum(axis=1), axis=1)
 
-        Any color or rank the partner doesn't fully know yet in at least
-        one of their cards. Color hint is valid if some partner card has
-        that color AND the partner's belief over colors for that card is
-        not yet narrowed to one color.
-        """
-        partner_colors = jnp.argmax(partner_hand.sum(axis=2), axis=1)  # (hand_size,)
-        partner_ranks = jnp.argmax(partner_hand.sum(axis=1), axis=1)  # (hand_size,)
+        color_possibilities = partner_knowledge_2d.sum(axis=2)
+        n_colors_possible = (color_possibilities > 0).sum(axis=1)
+        color_unknown_per_card = n_colors_possible > 1
 
-        # For each card, is the color "known" (narrowed to 1)?
-        color_possibilities = partner_knowledge_2d.sum(axis=2)  # (hand_size, num_colors)
-        n_colors_possible = (color_possibilities > 0).sum(axis=1)  # (hand_size,)
-        color_unknown_per_card = n_colors_possible > 1  # (hand_size,)
+        rank_possibilities = partner_knowledge_2d.sum(axis=1)
+        n_ranks_possible = (rank_possibilities > 0).sum(axis=1)
+        rank_unknown_per_card = n_ranks_possible > 1
 
-        rank_possibilities = partner_knowledge_2d.sum(axis=1)  # (hand_size, num_ranks)
-        n_ranks_possible = (rank_possibilities > 0).sum(axis=1)  # (hand_size,)
-        rank_unknown_per_card = n_ranks_possible > 1  # (hand_size,)
-
-        # Color hint c is informative if some card actually has color c
-        # AND that card's color isn't yet fully known.
         colors_with_unknown = jnp.zeros(self.num_colors)
         for c in range(self.num_colors):
             has_color = (partner_colors == c)
@@ -96,7 +67,6 @@ class OuterAgent(IGGIAgent):
         partner_hand = env_state.player_hands[partner_id]
         info_tokens = jnp.sum(env_state.info_tokens)
 
-        # 1. PlaySafeCard
         is_playable = self._is_certainly_playable(my_knowledge_2d, next_playable_rank)
         safe_play_mask = jnp.zeros(self.num_actions)
         safe_play_mask = safe_play_mask.at[self.play_start:self.play_end].set(
@@ -105,8 +75,7 @@ class OuterAgent(IGGIAgent):
         safe_play_mask = safe_play_mask * avail_mask
         has_safe_play = safe_play_mask.sum() > 0
 
-        # 2. OsawaDiscard (canonical rule 2, missing from the old impl)
-        is_useless = self._is_certainly_useless(my_knowledge_2d, next_playable_rank)
+        is_useless = self._is_certainly_useless(my_knowledge_2d, next_playable_rank, env_state)
         useless_discard_mask = jnp.zeros(self.num_actions)
         useless_discard_mask = useless_discard_mask.at[self.discard_start:self.discard_end].set(
             is_useless.astype(jnp.float32)
@@ -114,46 +83,22 @@ class OuterAgent(IGGIAgent):
         useless_discard_mask = useless_discard_mask * avail_mask
         has_useless_discard = useless_discard_mask.sum() > 0
 
-        # 3. TellPlayable
         hint_playable_mask = self._find_playable_hint_mask(
             partner_hand, next_playable_rank, avail_mask
         )
         can_hint_playable = (hint_playable_mask.sum() > 0) & (info_tokens > 0)
 
-        # 4. TellUnknown (canonical rule 4, hint anything the partner doesn't know yet)
         tell_unknown_mask = self._find_tell_unknown_mask(
             partner_hand, partner_knowledge_2d, avail_mask
         )
         can_tell_unknown = (tell_unknown_mask.sum() > 0) & (info_tokens > 0)
 
-        # 5. DiscardRandomly
-        discard_only_mask = jnp.zeros(self.num_actions)
-        discard_only_mask = discard_only_mask.at[self.discard_start:self.discard_end].set(1.0)
-        discard_only_mask = discard_only_mask * avail_mask
-
-        action_logits = jnp.where(
-            has_safe_play,
-            jnp.where(safe_play_mask > 0, 0.0, -1e9),
-            jnp.where(
-                has_useless_discard,
-                jnp.where(useless_discard_mask > 0, 0.0, -1e9),
-                jnp.where(
-                    can_hint_playable,
-                    jnp.where(hint_playable_mask > 0, 0.0, -1e9),
-                    jnp.where(
-                        can_tell_unknown,
-                        jnp.where(tell_unknown_mask > 0, 0.0, -1e9),
-                        # DiscardRandomly (terminal rule; restrict to discard range)
-                        jnp.where(
-                            (jnp.arange(self.num_actions) >= self.discard_start) &
-                            (jnp.arange(self.num_actions) < self.discard_end) &
-                            (avail_mask > 0),
-                            0.0, -1e9
-                        )
-                    )
-                )
-            )
-        )
-
-        action = jax.random.categorical(rng, action_logits)
+        m2l = self._mask_to_logits
+        rules = [
+            (has_safe_play,       m2l(safe_play_mask)),
+            (has_useless_discard, m2l(useless_discard_mask)),
+            (can_hint_playable,   m2l(hint_playable_mask)),
+            (can_tell_unknown,    m2l(tell_unknown_mask)),
+        ]
+        action = self._select_priority_action(rules, avail_mask, rng)
         return action, agent_state

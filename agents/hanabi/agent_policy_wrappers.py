@@ -1,6 +1,6 @@
-"""AgentPolicy wrappers for Hanabi held-out partners."""
 import jax
 import jax.numpy as jnp
+import os
 from agents.agent_interface import AgentPolicy
 from agents.hanabi.random_agent import RandomAgent
 from agents.hanabi.rule_based_agent import RuleBasedAgent
@@ -11,11 +11,11 @@ from agents.hanabi.outer_agent import OuterAgent
 from agents.hanabi.van_den_bergh_agent import VanDenBerghAgent
 from agents.hanabi.smartbot_agent import SmartBotAgent
 from agents.hanabi.obl_r2d2_agent import OBLAgentR2D2
-from agents.hanabi.bc_lstm_agent import BCLSTMAgent, bc_lstm_forward
+from agents.hanabi.bc_lstm_agent import BCLSTMAgent as LegacyBCLSTMAgent
+from common.save_load_utils import REPO_PATH
 
 
 class HanabiRandomPolicyWrapper(AgentPolicy):
-
     def __init__(self, num_actions: int = 20, using_log_wrapper: bool = False,
                  agent_names=None):
         self.policy = RandomAgent(num_actions=num_actions,
@@ -35,8 +35,6 @@ class HanabiRandomPolicyWrapper(AgentPolicy):
 
 
 class HanabiRuleBasedPolicyWrapper(AgentPolicy):
-    """Parameterized play/hint/discard priority. See rule_based_agent.py."""
-
     def __init__(self, strategy: str = "cautious",
                  hand_size: int = 5, num_colors: int = 5, num_ranks: int = 5,
                  num_actions: int = 21, using_log_wrapper: bool = False,
@@ -208,7 +206,7 @@ class HanabiSmartBotPolicyWrapper(AgentPolicy):
             env_state = env_state.env_state
         obs = obs.reshape(-1)
         action, new_hstate = self.policy.get_action(obs, env_state, hstate, rng)
-        # reset conventions on episode end
+
         new_hstate = jax.lax.cond(
             done.squeeze(),
             lambda: self.policy.init_agent_state(hstate.agent_id),
@@ -221,14 +219,11 @@ class HanabiSmartBotPolicyWrapper(AgentPolicy):
 
 
 class HanabiOBLPolicyWrapper(AgentPolicy):
-    """OBL R2D2 pretrained agent. hstate is LSTM carry, not AgentState."""
 
     def __init__(self, weight_file: str, using_log_wrapper: bool = False):
         self.agent = OBLAgentR2D2()
         self.using_log_wrapper = using_log_wrapper
-        # resolve relative to repo root (Hydra changes CWD)
-        import os
-        from common.save_load_utils import REPO_PATH
+        
         if not os.path.isabs(weight_file):
             weight_file = os.path.join(REPO_PATH, weight_file)
         self.weight_file = weight_file
@@ -270,11 +265,28 @@ class HanabiOBLPolicyWrapper(AgentPolicy):
 
 
 class HanabiBCLSTMPolicyWrapper(AgentPolicy):
-    """BC-LSTM human proxy. hstate is LSTM carry; params baked in at init."""
 
     def __init__(self, weight_file: str, using_log_wrapper: bool = False,
                  greedy: bool = True):
-        self.agent = BCLSTMAgent(weight_path=weight_file)
+        import os, yaml
+        yaml_path = weight_file.rsplit('.', 1)[0] + '.yaml'
+        from common.save_load_utils import REPO_PATH
+        abs_yaml = yaml_path if os.path.isabs(yaml_path) else os.path.join(REPO_PATH, yaml_path)
+
+        if os.path.exists(abs_yaml):
+            from agents.bc import BCLSTMAgent, BCLSTMConfig
+            with open(abs_yaml) as f:
+                cfg = yaml.safe_load(f)
+            config = BCLSTMConfig(
+                obs_dim=cfg['obs_dim'], action_dim=cfg['action_dim'],
+                preprocess_dim=cfg.get('preprocess_dim', 1024),
+                lstm_dim=cfg.get('lstm_dim', 512),
+                postprocess_dim=cfg.get('postprocess_dim', 256),
+                dropout_rate=cfg.get('dropout_rate', 0.0),
+            )
+            self.agent = BCLSTMAgent(config, weight_path=weight_file)
+        else:
+            self.agent = LegacyBCLSTMAgent(weight_path=weight_file)
         self.using_log_wrapper = using_log_wrapper
         self.greedy = greedy
 
@@ -294,12 +306,14 @@ class HanabiBCLSTMPolicyWrapper(AgentPolicy):
         else:
             carry, action = self.agent.sample_act(hstate, obs_flat, legal_mask, rng)
 
+        init_fn = getattr(self.agent, 'initialize_carry', None) or self.agent.init_carry
         carry = jax.lax.cond(
             done.squeeze().astype(bool),
-            lambda: self.agent.initialize_carry(),
+            lambda: init_fn(),
             lambda: carry,
         )
         return action, carry
 
     def init_hstate(self, batch_size: int, aux_info=None):
-        return self.agent.initialize_carry()
+        init_fn = getattr(self.agent, 'initialize_carry', None) or self.agent.init_carry
+        return init_fn()

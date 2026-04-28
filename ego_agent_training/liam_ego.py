@@ -289,6 +289,13 @@ def train_liam_ego_agent(config, env, train_rng,
                 grad_fn = jax.value_and_grad(_loss_fn, argnums=(0,1), has_aux=True)
                 (loss_val, aux_vals), (grads, encoder_decoder_grads) = grad_fn(
                     train_state.params, encoder_decoder_train_state.params, init_ego_hstate, traj_batch, advantages, returns)
+                # Phase A ablation knob. When FREEZE_ENCODER_DECODER=true the
+                # encoder-decoder weights stay at their random init and the
+                # policy keeps consuming that fixed embedding, which isolates
+                # encoder learning from the extra capacity / random-feature
+                # contribution of adding the encoder-decoder in the first place.
+                if config.get("FREEZE_ENCODER_DECODER", False):
+                    encoder_decoder_grads = jax.tree.map(jnp.zeros_like, encoder_decoder_grads)
                 train_state = train_state.apply_gradients(grads=grads)
                 encoder_decoder_train_state = encoder_decoder_train_state.apply_gradients(grads=encoder_decoder_grads)
 

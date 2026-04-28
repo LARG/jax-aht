@@ -1,11 +1,4 @@
-"""SmartBot convention system. Bilateral: sender and receiver must agree.
-
-Conv 1: newest touched maybe-playable card is inferred playable.
-Conv 2: if partner didn't warn, my discard candidate isn't valuable.
-Conv 3 (value-warning): rank hint touching discard candidate = it's valuable.
-
-Hint detection uses colors_revealed/ranks_revealed (not card_knowledge diffing).
-
+"""SmartBot convention system.
 Not implemented: discard finesse. C++ SmartBot has a convention where
 if partner discards from a known slot, the receiving agent uses the
 position shift of remaining cards to infer what was at that slot.
@@ -33,17 +26,16 @@ from agents.hanabi.smartbot_knowledge import (
 @struct.dataclass
 class SmartBotState:
     agent_id: int
-    prev_info_tokens_sum: jnp.ndarray     # scalar int
-    prev_score: jnp.ndarray               # scalar int
-    prev_life_tokens_sum: jnp.ndarray     # scalar int
-    prev_num_discarded: jnp.ndarray       # scalar int
-    prev_turn: jnp.ndarray                # scalar int
-    prev_colors_revealed: jnp.ndarray     # (hand_size, num_colors)
-    prev_ranks_revealed: jnp.ndarray      # (hand_size, num_ranks)
-    discard_safe: jnp.ndarray             # (hand_size,) bool
-    # persisted convention constraint mask (all-ones = no constraint)
-    conv_mask: jnp.ndarray                # (hand_size, num_colors, num_ranks)
-    prev_my_action: jnp.ndarray           # scalar int
+    prev_info_tokens_sum: jnp.ndarray
+    prev_score: jnp.ndarray
+    prev_life_tokens_sum: jnp.ndarray
+    prev_num_discarded: jnp.ndarray
+    prev_turn: jnp.ndarray
+    prev_colors_revealed: jnp.ndarray
+    prev_ranks_revealed: jnp.ndarray
+    discard_safe: jnp.ndarray
+    conv_mask: jnp.ndarray
+    prev_my_action: jnp.ndarray
 
 
 def init_smartbot_state(agent_id, hand_size=5, num_colors=5, num_ranks=5):
@@ -64,7 +56,6 @@ def init_smartbot_state(agent_id, hand_size=5, num_colors=5, num_ranks=5):
 
 
 def get_removed_slot(action, hand_size):
-    """Which slot was removed by play/discard? -1 if hint/noop."""
     is_discard = (action >= 0) & (action < hand_size)
     is_play = (action >= hand_size) & (action < 2 * hand_size)
     return jnp.where(is_discard, action,
@@ -72,7 +63,6 @@ def get_removed_slot(action, hand_size):
 
 
 def shift_bool_array(arr, removed_slot, hand_size):
-    """Left-shift after card removal. New card at rightmost slot."""
     needs_shift = removed_slot >= 0
     indices = jnp.arange(hand_size)
     src_indices = jnp.where(indices < removed_slot, indices, indices + 1)
@@ -83,7 +73,6 @@ def shift_bool_array(arr, removed_slot, hand_size):
 
 
 def shift_conv_mask(mask, removed_slot, hand_size):
-    """Left-shift 3D convention mask after card removal."""
     needs_shift = removed_slot >= 0
     indices = jnp.arange(hand_size)
     src_indices = jnp.where(indices < removed_slot, indices, indices + 1)
@@ -94,9 +83,8 @@ def shift_conv_mask(mask, removed_slot, hand_size):
 
 
 def apply_conv_mask_to_beliefs(public_beliefs, conv_mask):
-    """Intersect beliefs with convention mask. Falls back if intersection is empty."""
     result = public_beliefs * conv_mask
-    slot_sums = result.sum(axis=(-2, -1))  # (hand_size,)
+    slot_sums = result.sum(axis=(-2, -1))
     orig_sums = public_beliefs.sum(axis=(-2, -1))
     use_original = (slot_sums < 1e-8) & (orig_sums > 1e-8)
     result = jnp.where(use_original[:, None, None], public_beliefs, result)
@@ -104,7 +92,6 @@ def apply_conv_mask_to_beliefs(public_beliefs, conv_mask):
 
 
 def detect_partner_action(env_state, smartbot_state):
-    """Infer partner's action type from state diffs. 0=play_ok, 1=play_fail, 2=discard, 3=hint."""
     cur_info = jnp.sum(env_state.info_tokens)
     cur_score = env_state.score
     cur_lives = jnp.sum(env_state.life_tokens)
@@ -131,22 +118,21 @@ def detect_partner_action(env_state, smartbot_state):
 
 
 def detect_hint_details(env_state, smartbot_state, hand_size, num_colors, num_ranks):
-    """Detect what hint I received by diffing colors_revealed/ranks_revealed."""
     my_id = smartbot_state.agent_id
 
-    cur_colors = env_state.colors_revealed[my_id]  # (hs, nc)
+    cur_colors = env_state.colors_revealed[my_id]
     prev_colors = smartbot_state.prev_colors_revealed
-    new_color_reveals = (cur_colors - prev_colors)  # 1 where newly revealed
+    new_color_reveals = (cur_colors - prev_colors)
     new_color_reveals = jnp.clip(new_color_reveals, 0, 1)
     any_color_reveal = new_color_reveals.sum() > 0.5
 
-    cur_ranks = env_state.ranks_revealed[my_id]  # (hs, nr)
+    cur_ranks = env_state.ranks_revealed[my_id]
     prev_ranks = smartbot_state.prev_ranks_revealed
     new_rank_reveals = jnp.clip(cur_ranks - prev_ranks, 0, 1)
     any_rank_reveal = new_rank_reveals.sum() > 0.5
 
-    color_touched = new_color_reveals.sum(axis=1) > 0.5  # (hs,)
-    rank_touched = new_rank_reveals.sum(axis=1) > 0.5  # (hs,)
+    color_touched = new_color_reveals.sum(axis=1) > 0.5
+    rank_touched = new_rank_reveals.sum(axis=1) > 0.5
 
     touched = jnp.where(any_color_reveal, color_touched, rank_touched)
     received_hint = any_color_reveal | any_rank_reveal
@@ -160,7 +146,6 @@ def detect_hint_details(env_state, smartbot_state, hand_size, num_colors, num_ra
 
 
 def find_convention_target(beliefs, touched, playable_matrix, hand_size):
-    """Newest touched maybe-playable card. Used by both sender and receiver."""
     certainly_playable = batch_is_certainly_playable(beliefs, playable_matrix)
     playable_poss = (beliefs * playable_matrix[None, :, :]).sum(axis=(-2, -1))
     has_any = beliefs.sum(axis=(-2, -1)) > 0
@@ -176,7 +161,6 @@ def find_convention_target(beliefs, touched, playable_matrix, hand_size):
 
 def apply_newest_card_convention(my_beliefs, touched, playable_matrix,
                                  hand_size):
-    """Conv 1: eliminate non-playable possibilities from convention target."""
     directly_revealed = batch_is_certainly_playable(my_beliefs, playable_matrix)
     any_direct_reveal = directly_revealed.any()
 
@@ -200,9 +184,12 @@ def apply_newest_card_convention(my_beliefs, touched, playable_matrix,
 
 def apply_no_warning_inference(my_beliefs, discard_safe, partner_action_type,
                                next_playable_rank, played_count, card_counts,
-                               unreachable_matrix, num_colors, num_ranks, hand_size):
-    """Conv 2: if partner didn't warn me, my discard candidate is not valuable."""
-    partner_did_not_warn = (partner_action_type >= 0) & (partner_action_type != 3)
+                               unreachable_matrix, num_colors, num_ranks, hand_size,
+                               is_value_warning=None):
+    if is_value_warning is None:
+        is_value_warning = jnp.bool_(False)
+
+    partner_did_not_warn = (partner_action_type >= 0) & ~is_value_warning
 
     playable_matrix = compute_playable_matrix(next_playable_rank, num_colors, num_ranks)
     prob_worthless = batch_probability_worthless(my_beliefs, unreachable_matrix)
@@ -250,7 +237,6 @@ def apply_all_conventions(my_beliefs, env_state, smartbot_state,
                           card_counts, unreachable_matrix,
                           num_colors, num_ranks, hand_size,
                           conv_mask, discard_safe, public_beliefs):
-    """Apply all conventions. conv_mask/discard_safe already shifted by caller."""
     partner_action = detect_partner_action(env_state, smartbot_state)
 
     received_hint, touched, hint_type, hint_value = detect_hint_details(
@@ -258,7 +244,6 @@ def apply_all_conventions(my_beliefs, env_state, smartbot_state,
     )
     received_hint = received_hint & (partner_action == 3)
 
-    # discard candidate computed on pre-convention beliefs
     prob_worthless_pre = batch_probability_worthless(my_beliefs, unreachable_matrix)
     is_play_pre = batch_is_certainly_playable(my_beliefs, playable_matrix)
     is_worth_pre = batch_is_certainly_worthless(my_beliefs, unreachable_matrix)
@@ -267,7 +252,6 @@ def apply_all_conventions(my_beliefs, env_state, smartbot_state,
     )
     my_discard_candidate = jnp.argmax(candidate_fitness_pre)
 
-    # conv 1: find target using public beliefs (bilateral agreement)
     directly_revealed_pub = batch_is_certainly_playable(public_beliefs, playable_matrix)
     any_direct_reveal_pub = directly_revealed_pub.any()
     has_target, target_idx = find_convention_target(
@@ -275,7 +259,6 @@ def apply_all_conventions(my_beliefs, env_state, smartbot_state,
     )
     conv1_should_apply = has_target & ~any_direct_reveal_pub
 
-    # apply conv 1 to private beliefs
     for slot in range(hand_size):
         is_target = (slot == target_idx) & conv1_should_apply & received_hint
         new_slot = my_beliefs[slot] * playable_matrix
@@ -295,7 +278,6 @@ def apply_all_conventions(my_beliefs, env_state, smartbot_state,
             jnp.where(is_target, new_slot_mask, conv_mask[slot])
         )
 
-    # conv 2 positive: value-warning detection
     is_rank_hint = (hint_type == 1)
     candidate_was_touched = touched[my_discard_candidate]
     is_value_warning = received_hint & is_rank_hint & candidate_was_touched
@@ -311,7 +293,6 @@ def apply_all_conventions(my_beliefs, env_state, smartbot_state,
                 (is_last & not_unreach).astype(jnp.float32)
             )
 
-    # keep only valuable possibilities for warned card
     candidate_beliefs = my_beliefs[my_discard_candidate]
     warned_beliefs = candidate_beliefs * valuable_mask
     warned_beliefs = jnp.where(
@@ -333,14 +314,14 @@ def apply_all_conventions(my_beliefs, env_state, smartbot_state,
         conv_mask
     )
 
-    # conv 3: no-warning inference
     my_beliefs, new_discard_safe = apply_no_warning_inference(
         my_beliefs, discard_safe, partner_action,
         next_playable_rank, played_count, card_counts, unreachable_matrix,
-        num_colors, num_ranks, hand_size
+        num_colors, num_ranks, hand_size,
+        is_value_warning=is_value_warning,
     )
 
-    partner_did_not_warn = (partner_action >= 0) & (partner_action != 3)
+    partner_did_not_warn = (partner_action >= 0) & ~is_value_warning
     nw_candidate_fitness = jnp.where(
         is_play_pre | is_worth_pre, -100.0, prob_worthless_pre
     )

@@ -1,34 +1,16 @@
-"""Van Den Bergh agent (Walton-Rivers 2017).
-
-Canonical priority from the paper:
-  1. If lives > 1: PlayProbablySafe(0.6). Else: PlaySafeCard.
-  2. DiscardProbablyUseless(1.0): certain useless cards first
-  3. TellAnyoneAboutUsefulCard
-  4. TellAnyoneAboutUselessCard (TellDispensable)
-  5. TellMostInformation (hint that reveals max new info)
-  6. DiscardProbablyUseless(0.0): probabilistic fallback
-
-Old implementation was missing the probabilistic play (rule 1's
-PlayProbablySafe) and TellMostInformation (rule 5), and had the order
-of TellPlayable and OsawaDiscard swapped. Fixed here.
-"""
-from typing import Tuple
-
 import jax
 import jax.numpy as jnp
-
 from agents.hanabi.iggi_agent import IGGIAgent
 from agents.hanabi.base_agent import AgentState
+from typing import Tuple
 
 
 class VanDenBerghAgent(IGGIAgent):
-
     def __init__(self, play_threshold: float = 0.6, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.play_threshold = play_threshold
 
     def _probability_playable(self, my_knowledge_2d, next_playable_rank):
-        """Per-card probability of being playable = playable_poss / total_poss."""
         rank_idx = jnp.arange(self.num_ranks)
         playable_matrix = (rank_idx[None, :] == next_playable_rank[:, None]).astype(jnp.float32)
         playable_possibilities = (my_knowledge_2d * playable_matrix[None, :, :]).sum(axis=(1, 2))
@@ -37,7 +19,6 @@ class VanDenBerghAgent(IGGIAgent):
         return prob
 
     def _probability_useless(self, my_knowledge_2d, next_playable_rank):
-        """Per-card probability of being useless = completed_poss / total_poss."""
         rank_idx = jnp.arange(self.num_ranks)
         completed_matrix = (rank_idx[None, :] < next_playable_rank[:, None]).astype(jnp.float32)
         useless_possibilities = (my_knowledge_2d * completed_matrix[None, :, :]).sum(axis=(1, 2))
@@ -60,16 +41,10 @@ class VanDenBerghAgent(IGGIAgent):
         return hint_mask * avail_mask
 
     def _find_most_informative_hint_mask(self, partner_hand, partner_knowledge_2d, avail_mask):
-        """Hint that reveals max number of new facts about partner's cards.
-
-        Score each possible hint by how many partner cards it newly identifies.
-        A color hint for color c "reveals" cards whose belief has c among
-        multiple possibilities and whose actual color is c.
-        """
-        partner_colors = jnp.argmax(partner_hand.sum(axis=2), axis=1)  # (hand_size,)
+        partner_colors = jnp.argmax(partner_hand.sum(axis=2), axis=1)
         partner_ranks = jnp.argmax(partner_hand.sum(axis=1), axis=1)
 
-        color_poss = partner_knowledge_2d.sum(axis=2)  # (hand_size, num_colors)
+        color_poss = partner_knowledge_2d.sum(axis=2)
         n_colors_possible = (color_poss > 0).sum(axis=1)
         color_unknown = n_colors_possible > 1
 
@@ -77,7 +52,6 @@ class VanDenBerghAgent(IGGIAgent):
         n_ranks_possible = (rank_poss > 0).sum(axis=1)
         rank_unknown = n_ranks_possible > 1
 
-        # Count cards each color hint would reveal
         color_scores = jnp.zeros(self.num_colors)
         for c in range(self.num_colors):
             count = ((partner_colors == c) & color_unknown).sum().astype(jnp.float32)
@@ -122,11 +96,9 @@ class VanDenBerghAgent(IGGIAgent):
         info_tokens = jnp.sum(env_state.info_tokens)
         life_tokens = jnp.sum(env_state.life_tokens)
 
-        # 1. PlayProbablySafe(0.6) if lives > 1, else PlaySafeCard
         prob_playable = self._probability_playable(my_knowledge_2d, next_playable_rank)
         is_certainly_playable = self._is_certainly_playable(my_knowledge_2d, next_playable_rank)
-        # When we have extra lives, accept any card with p(playable) >= threshold.
-        # Otherwise, only play certain ones.
+
         can_gamble = life_tokens > 1
         play_cond = jnp.where(
             can_gamble,
@@ -140,8 +112,7 @@ class VanDenBerghAgent(IGGIAgent):
         safe_play_mask = safe_play_mask * avail_mask
         has_safe_play = safe_play_mask.sum() > 0
 
-        # 2. DiscardProbablyUseless(1.0) = OsawaDiscard
-        is_useless = self._is_certainly_useless(my_knowledge_2d, next_playable_rank)
+        is_useless = self._is_certainly_useless(my_knowledge_2d, next_playable_rank, env_state)
         useless_discard_mask = jnp.zeros(self.num_actions)
         useless_discard_mask = useless_discard_mask.at[self.discard_start:self.discard_end].set(
             is_useless.astype(jnp.float32)
@@ -149,27 +120,22 @@ class VanDenBerghAgent(IGGIAgent):
         useless_discard_mask = useless_discard_mask * avail_mask
         has_useless_discard = useless_discard_mask.sum() > 0
 
-        # 3. TellAnyoneAboutUsefulCard
         hint_playable_mask = self._find_playable_hint_mask(
             partner_hand, next_playable_rank, avail_mask
         )
         can_hint_playable = (hint_playable_mask.sum() > 0) & (info_tokens > 0)
 
-        # 4. TellAnyoneAboutUselessCard (dispensable)
         hint_dispensable_mask = self._find_dispensable_hint_mask(
             partner_hand, next_playable_rank, avail_mask
         )
         can_hint_dispensable = (hint_dispensable_mask.sum() > 0) & (info_tokens > 0)
 
-        # 5. TellMostInformation
         most_info_mask = self._find_most_informative_hint_mask(
             partner_hand, partner_knowledge_2d, avail_mask
         )
-        # Pick the single highest-score hint (argmax with mask)
         most_info_best = (most_info_mask == jnp.max(most_info_mask)).astype(jnp.float32) * (most_info_mask > 0)
         can_tell_most_info = (most_info_mask.sum() > 0) & (info_tokens > 0)
 
-        # 6. DiscardProbablyUseless(0.0) for probabilistic fallback
         prob_useless = self._probability_useless(my_knowledge_2d, next_playable_rank)
         prob_discard_weights = jnp.zeros(self.num_actions)
         prob_discard_weights = prob_discard_weights.at[self.discard_start:self.discard_end].set(
@@ -181,39 +147,14 @@ class VanDenBerghAgent(IGGIAgent):
         )
         has_prob_discard = (prob_discard_weights.sum() > 0)
 
-        # Priority cascade matching canonical order
-        action_logits = jnp.where(
-            has_safe_play,
-            jnp.where(safe_play_mask > 0, 0.0, -1e9),
-            jnp.where(
-                has_useless_discard,
-                jnp.where(useless_discard_mask > 0, 0.0, -1e9),
-                jnp.where(
-                    can_hint_playable,
-                    jnp.where(hint_playable_mask > 0, 0.0, -1e9),
-                    jnp.where(
-                        can_hint_dispensable,
-                        jnp.where(hint_dispensable_mask > 0, 0.0, -1e9),
-                        jnp.where(
-                            can_tell_most_info,
-                            jnp.where(most_info_best > 0, 0.0, -1e9),
-                            # DiscardProbablyUseless(0.0) for probabilistic discard
-                            # is already the canonical terminal rule for VDB.
-                            jnp.where(
-                                has_prob_discard,
-                                prob_discard_logits,
-                                jnp.where(
-                                    (jnp.arange(self.num_actions) >= self.discard_start) &
-                                    (jnp.arange(self.num_actions) < self.discard_end) &
-                                    (avail_mask > 0),
-                                    0.0, -1e9
-                                )
-                            )
-                        )
-                    )
-                )
-            )
-        )
-
-        action = jax.random.categorical(rng, action_logits)
+        m2l = self._mask_to_logits
+        rules = [
+            (has_safe_play,        m2l(safe_play_mask)),
+            (has_useless_discard,  m2l(useless_discard_mask)),
+            (can_hint_playable,    m2l(hint_playable_mask)),
+            (can_hint_dispensable, m2l(hint_dispensable_mask)),
+            (can_tell_most_info,   m2l(most_info_best)),
+            (has_prob_discard,     prob_discard_logits),
+        ]
+        action = self._select_priority_action(rules, avail_mask, rng)
         return action, agent_state

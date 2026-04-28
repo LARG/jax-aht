@@ -1,9 +1,5 @@
 # Hanabi: ego agent training task config.
 # Full 2-player Hanabi (5 colors, 5 ranks, hand size 5).
-# Hanabi is natively 2-player, so the ego_agent_training num_agents == 2
-# assertion is satisfied by default (unlike DSSE which reduces from 4 to 2
-# drones for ego training).
-#
 # Max score: 25 (5 colors x 5 ranks). Observation dim: 658. Action space: 21.
 ENV_NAME: hanabi
 ROLLOUT_LENGTH: 128

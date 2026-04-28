@@ -11,9 +11,6 @@ defaults:
 #   - UPDATE_EPOCHS 4 (not 10; higher causes overfitting on small batches)
 #   - GAMMA 0.999 (better credit assignment for delayed Hanabi rewards)
 #   - NUM_ENVS limited by VRAM with S5 actor on 48GB GPUs
-#
-# Previous config used DSSE hyperparams (LR=3e-4, ENT_COEF=0.01,
-# UPDATE_EPOCHS=10, ANNEAL_LR=false) which caused policy collapse at 100M.
 TOTAL_TIMESTEPS: 1000000000
 NUM_ENVS: 64
 NUM_EGO_TRAIN_SEEDS: 1

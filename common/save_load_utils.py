@@ -5,6 +5,7 @@ from flax.training import orbax_utils
 import jax
 import jax.numpy as jnp
 import numpy as np
+from orbax.checkpoint import ArrayRestoreArgs, RestoreArgs
 
 # suppress logging from orbax 
 import logging
@@ -100,7 +101,36 @@ def load_train_run(path):
         path = os.path.join(REPO_PATH, path)
     # load the checkpoint
     checkpointer = orbax.checkpoint.PyTreeCheckpointer()
-    restored = checkpointer.restore(path)
+    def _restore_with_numpy_args():
+        metadata = checkpointer.metadata(path)
+
+        def _mk_restore_args(leaf):
+            if hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
+                return ArrayRestoreArgs(restore_type=np.ndarray)
+            return RestoreArgs()
+
+        restore_args = jax.tree_util.tree_map(_mk_restore_args, metadata.tree)
+        return checkpointer.restore(path, restore_args=restore_args)
+
+    force_cpu_restore = (
+        os.environ.get("JAX_AHT_FORCE_CPU_RESTORE", "0") == "1"
+        or os.environ.get("JAX_PLATFORMS", "").lower() == "cpu"
+    )
+
+    if force_cpu_restore:
+        restored = _restore_with_numpy_args()
+    else:
+        try:
+            restored = checkpointer.restore(path)
+        except Exception as exc:
+            msg = str(exc)
+            recoverable = (
+                "sharding passed to deserialization" in msg
+                or "Device cuda:0 was not found in jax.local_devices()" in msg
+            )
+            if not recoverable:
+                raise
+            restored = _restore_with_numpy_args()
     # convert pytree leaves from np arrays to jax arrays
     restored = jax.tree_util.tree_map(
         lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,

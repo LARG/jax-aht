@@ -536,11 +536,9 @@ def run_ego_training(config, wandb_logger):
     # (Latent dim * 4) + observation dimension
     algorithm_config['POLICY_INPUT_DIM'] = (algorithm_config['ENCODER_LATENT_DIM'] * 4) + env.observation_space(env.agents[0]).shape[0]
 
-    # Derive DECODER_OUTPUT_DIM from the partner's action space instead
-    # of using the hardcoded 32 from _base_.yaml. 32 happens to match
-    # Overcooked so it never crashed there, but Hanabi has 21 actions
-    # (and DSSE has yet another number), so the reconstruction head was
-    # silently producing logits for nonexistent actions before this.
+    # Derive DECODER_OUTPUT_DIM from the partner's action space at runtime
+    # so the reconstruction head matches the env. The previous default of
+    # 32 silently mismatched envs whose action_space.n != 32.
     algorithm_config['DECODER_OUTPUT_DIM'] = env.action_space(env.agents[1]).n
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])

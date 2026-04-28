@@ -1,5 +1,6 @@
 act_fn: gelu
 action_dim: 21
+obs_dim: 658
 batch_size: 128
 dropout: 0.5
 limited_data_ratio: null

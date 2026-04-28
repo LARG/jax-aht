@@ -1,18 +1,11 @@
-"""BC-LSTM agent that imitates human Hanabi play. Trained on AH2AC2 data.
-
-Manual forward pass because AH2AC2 splits LSTM gates into separate
-input/hidden projections (not Flax's combined kernel).
-"""
-import os
-from functools import partial
-
 import jax
 import jax.numpy as jnp
+import os
+from functools import partial
 from safetensors.numpy import load_file as load_safetensors
 
 
 def load_bc_params(weight_path):
-    """Load BC-LSTM params from safetensors. Returns flat dict of JAX arrays."""
     from common.save_load_utils import REPO_PATH
 
     if not os.path.isabs(weight_path):
@@ -24,8 +17,13 @@ def load_bc_params(weight_path):
             "Train with AH2AC2's bc.py to regenerate."
         )
 
-    params = load_safetensors(weight_path)
-    return {k: jnp.array(v) for k, v in params.items()}
+    raw = load_safetensors(weight_path)
+    params = {}
+    for k, v in raw.items():
+        nk = k.replace('/', ',')
+        nk = nk.replace('OptimizedLSTMCell_0', 'ScanLstmCellWithHiddenStateReset_0')
+        params[nk] = jnp.array(v)
+    return params
 
 
 def _layer_norm(x, scale, bias, eps=1e-5):
@@ -35,7 +33,6 @@ def _layer_norm(x, scale, bias, eps=1e-5):
 
 
 def _lstm_cell(carry, x, params):
-    # AH2AC2 uses separate input/hidden projections per gate, no bias on input side
     c, h = carry
     p = 'ScanLstmCellWithHiddenStateReset_0'
 
@@ -50,20 +47,16 @@ def _lstm_cell(carry, x, params):
 
 
 def bc_lstm_forward(params, carry, obs, legal_actions=None):
-    """Forward pass: Dense(1024) -> GELU -> LN -> LSTM(512) -> Dense(256) -> GELU -> Dense(21)."""
-    # preprocess
     x = obs @ params['Dense_0,kernel'] + params['Dense_0,bias']
     x = jax.nn.gelu(x)
     x = _layer_norm(x, params['LayerNorm_0,scale'], params['LayerNorm_0,bias'])
 
     carry, x = _lstm_cell(carry, x, params)
 
-    # postprocess
     x = x @ params['Dense_1,kernel'] + params['Dense_1,bias']
     x = jax.nn.gelu(x)
     logits = x @ params['Dense_2,kernel'] + params['Dense_2,bias']
 
-    # mask illegal actions
     if legal_actions is not None:
         logits = jnp.where(legal_actions > 0, logits, -1e9)
 
@@ -71,8 +64,6 @@ def bc_lstm_forward(params, carry, obs, legal_actions=None):
 
 
 class BCLSTMAgent:
-    """BC-LSTM inference wrapper. Params baked in at init."""
-
     def __init__(self, weight_path='agents/hanabi/bc_lstm_weights/bc_2p.safetensors',
                  lstm_dim=512):
         self.params = load_bc_params(weight_path)

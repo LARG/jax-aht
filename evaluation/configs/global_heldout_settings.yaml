@@ -310,148 +310,373 @@ heldout_set:
     # random_agent and rule_based agents work out-of-the-box.
     # obl_r2d2 requires downloading pretrained weights:
     #   bash agents/hanabi/download_obl_r2d2.sh
-    # NOTE: No IPPO partner for full Hanabi. The default regen script trains
-    # mini-Hanabi partners (13 actions); loading them into a full-Hanabi eval
-    # (21 actions) would crash on shape mismatch. To add full-Hanabi IPPO
-    # held-out partners, run:
-    #   TASK=hanabi ALGO=ippo/hanabi bash scripts/regenerate_hanabi_eval_teammates.sh
-    # and add an ippo entry here pointing at the resulting checkpoint.
-    # Performance bounds are [0, 25] (max Hanabi score = 5 colors x 5 ranks).
+    # Performance bounds use BR diagonal scores as empirical upper bounds
+    # (ROTATE framework, Wang 2025). Partners with BR score = 0 retain
+    # theoretical max [0, 25] to avoid division by zero.
     random_agent:
       actor_type: random_agent
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 25.0] # BR=0.0, keep theoretical max
     rule_based_cautious:
       actor_type: rule_based
       strategy: cautious
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 4.12]
     rule_based_aggressive:
       actor_type: rule_based
       strategy: aggressive
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 25.0] # BR=0.0, keep theoretical max
     rule_based_communicative:
       actor_type: rule_based
       strategy: communicative
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 3.70]
     rule_based_frugal:
       actor_type: rule_based
       strategy: frugal
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 1.77]
     iggi:
       actor_type: iggi
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 13.33]
     piers:
       actor_type: piers
       play_threshold: 0.6
       hint_threshold: 4
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 10.69]
     flawed_30:
       actor_type: flawed
       mistake_prob: 0.3
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 1.80]
     flawed_60:
       actor_type: flawed
       mistake_prob: 0.6
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 0.30]
     outer:
       actor_type: outer
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 8.98]
     van_den_bergh:
       actor_type: van_den_bergh
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 8.55]
     smartbot:
       actor_type: smartbot
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
-    obl_r2d2:
+        returned_episode_returns: [0.0, 8.41]
+    obl_r2d2_l1:
       actor_type: obl_r2d2
       weight_file: agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 11.66]
+    obl_r2d2_l4:
+      actor_type: obl_r2d2
+      weight_file: agents/hanabi/obl-r2d2-flax/icml_OBL4/OFF_BELIEF1_SHUFFLE_COLOR0_LOAD1_BZA0_BELIEF_a.safetensors
+      performance_bounds:
+        returned_episode_returns: [0.0, 8.52]
     bc_lstm_human_proxy:
       actor_type: bc_lstm
-      weight_file: agents/hanabi/bc_lstm_weights/bc_2p.safetensors
+      weight_file: agents/bc_weights/hanabi_ah2ac2_bc.safetensors
       greedy: true
       performance_bounds:
-        returned_episode_returns: [0.0, 25.0]
+        returned_episode_returns: [0.0, 4.39]
+    # MLP IPPO self-play (1e9 steps, 3 seeds, FC_HIDDEN_DIM=64).
+    # Self-play: seed0 17.19, seed1 15.50, seed2 14.48. BR: 12.17, 10.36, 11.87.
+    # Trained before FC_HIDDEN_DIM plumbing fix, so actual hidden_dim=64.
+    ippo_mlp_seed0:
+      path: "eval_teammates/hanabi/ippo_fullhanabi/mlp_1e9_3seeds/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0]
+      FC_HIDDEN_DIM: 64
+      ACTIVATION: relu
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 12.17]]
+    ippo_mlp_seed1:
+      path: "eval_teammates/hanabi/ippo_fullhanabi/mlp_1e9_3seeds/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [1]
+      FC_HIDDEN_DIM: 64
+      ACTIVATION: relu
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 10.36]]
+    ippo_mlp_seed2:
+      path: "eval_teammates/hanabi/ippo_fullhanabi/mlp_1e9_3seeds/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [2]
+      FC_HIDDEN_DIM: 64
+      ACTIVATION: relu
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 11.87]]
+    # S5 recurrent IPPO self-play (1e9 steps, d_model=16, ssm=16, fc=64).
+    # S5 maintains hidden state across the episode, enabling card tracking.
+    # Self-play: seed42=17.95, seed123=18.05, seed31415=18.98.
+    # BR scores: 12.12, 12.16, 11.69.
+    ippo_s5_seed42:
+      path: "eval_teammates/hanabi/ippo_s5/seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 12.12]]
+    ippo_s5_seed123:
+      path: "eval_teammates/hanabi/ippo_s5/seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 12.16]]
+    ippo_s5_seed31415:
+      path: "eval_teammates/hanabi/ippo_s5/seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 11.69]]
+    # S5 IPPO with Other-Play (1e9 steps, color permutation for agent 1).
+    # OtherPlay breaks convention fragility: agents learn to cooperate
+    # regardless of color mapping, improving cross-play generalization.
+    # BR scores: seed42=12.87, seed123=11.91.
+    ippo_s5_op_seed42:
+      path: "eval_teammates/hanabi/ippo_s5_op/seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 12.87]]
+    ippo_s5_op_seed123:
+      path: "eval_teammates/hanabi/ippo_s5_op/seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 11.91]]
   mini-hanabi: # Mini-Hanabi (3 colors, 3 ranks) held-out partner set
     # OBL R2D2 is NOT included here because its architecture is hardcoded
     # for full Hanabi (out_dim=21, obs split at [125:]). Mini-Hanabi has
     # a different action count and observation layout. A mini-compatible
     # OBL agent would need separate weights and architecture parameters.
-    # ippo_seed123 requires training held-out partners first:
-    #   bash scripts/regenerate_hanabi_eval_teammates.sh
-    ippo_seed123:
-      path: "eval_teammates/hanabi/ippo/seed123/saved_train_run"
+    # Performance bounds use BR diagonal scores as empirical upper bounds
+    # (ROTATE framework, Wang 2025).
+    ippo_mlp_seed0:
+      path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
       idx_list: [0]
+      FC_HIDDEN_DIM: 256
+      ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 9.0]]
+        returned_episode_returns: [[0.0, 7.28]]
+    ippo_mlp_seed1:
+      path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [1]
+      FC_HIDDEN_DIM: 256
+      ACTIVATION: relu
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.80]]
     random_agent:
       actor_type: random_agent
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 2.16]
     rule_based_cautious:
       actor_type: rule_based
       strategy: cautious
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 4.72]
     rule_based_aggressive:
       actor_type: rule_based
       strategy: aggressive
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 0.61]
     rule_based_communicative:
       actor_type: rule_based
       strategy: communicative
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 4.36]
     rule_based_frugal:
       actor_type: rule_based
       strategy: frugal
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 3.36]
     iggi:
       actor_type: iggi
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 6.50]
     piers:
       actor_type: piers
       play_threshold: 0.6
       hint_threshold: 4
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 6.33]
     flawed_30:
       actor_type: flawed
       mistake_prob: 0.3
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 5.75]
     flawed_60:
       actor_type: flawed
       mistake_prob: 0.6
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 4.03]
     outer:
       actor_type: outer
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 5.92]
     van_den_bergh:
       actor_type: van_den_bergh
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 6.03]
     smartbot:
       actor_type: smartbot
       performance_bounds:
-        returned_episode_returns: [0.0, 9.0]
+        returned_episode_returns: [0.0, 6.92]
+    ippo_mlp_seed2:
+      path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [2]
+      FC_HIDDEN_DIM: 256
+      ACTIVATION: relu
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.56]]
+    brdiv_conf:
+      path: "eval_teammates/hanabi/brdiv/heldout_matrix/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 5.67], [0.0, 5.77], [0.0, 5.06]]
+    lbrdiv_conf:
+      path: "eval_teammates/hanabi/lbrdiv/heldout_matrix/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 5.22], [0.0, 5.98], [0.0, 4.95]]
+    comedi_conf:
+      path: "eval_teammates/hanabi/comedi_v2/heldout_matrix/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 5
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 6.25], [0.0, 5.77], [0.0, 6.45], [0.0, 6.52], [0.0, 6.52]]
+    # S5 recurrent IPPO self-play partners. BR scores: 7.56, 7.80, 7.88.
+    ippo_s5_seed42:
+      path: "eval_teammates/hanabi/ippo_s5_mini/seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.56]]
+    ippo_s5_seed123:
+      path: "eval_teammates/hanabi/ippo_s5_mini/seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.80]]
+    ippo_s5_seed31415:
+      path: "eval_teammates/hanabi/ippo_s5_mini/seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.88]]
+    # S5 IPPO with Other-Play. BR scores: 7.59, 7.70, 7.92.
+    ippo_s5_op_seed42:
+      path: "eval_teammates/hanabi/ippo_s5_op_mini/seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.59]]
+    ippo_s5_op_seed123:
+      path: "eval_teammates/hanabi/ippo_s5_op_mini/seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.70]]
+    ippo_s5_op_seed31415:
+      path: "eval_teammates/hanabi/ippo_s5_op_mini/seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.92]]

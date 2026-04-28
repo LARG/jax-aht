@@ -2,10 +2,6 @@ defaults:
   - meliba_ego/_base_
   - _self_
 
-# Full 2-player Hanabi MeLIBA ego. MeLIBA learns a variational teammate
-# model. Encoder dimensions come from _base_ and do not need per-task
-# overrides. Not benchmarked end-to-end on Hanabi yet; treat as a
-# starting point.
 TOTAL_TIMESTEPS: 10000000
 NUM_ENVS: 32
 NUM_EGO_TRAIN_SEEDS: 1
@@ -14,4 +10,5 @@ ENT_COEF: 0.01
 CLIP_EPS: 0.1
 ANNEAL_LR: false
 UPDATE_EPOCHS: 5
-POLICY_OPTIMIZER: adam  # rmsprop did not converge on Hanabi
+POLICY_OPTIMIZER: adam
+DECODER_OUTPUT_DIM: 21  # match Hanabi action_space.n
