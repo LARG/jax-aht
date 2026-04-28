@@ -24,7 +24,7 @@
 #SBATCH -p gh                   # Partition/queue (gh = Grace Hopper production)
 #SBATCH -N 1                    # Number of nodes
 #SBATCH --ntasks-per-node=1     # Number of MPI tasks per node (1 for single-process JAX)
-#SBATCH -t 2:00:00             # Walltime limit (HH:MM:SS)
+#SBATCH -t 12:00:00             # Walltime limit (HH:MM:SS)
 #SBATCH -o results/slurm_logs/%j_%x.out  # Stdout log (%j=job ID, %x=job name)
 #SBATCH -e results/slurm_logs/%j_%x.err  # Stderr log
 #SBATCH -A ASC25021             # Allocation account to charge
