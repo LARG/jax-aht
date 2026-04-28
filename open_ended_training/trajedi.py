@@ -1,4 +1,4 @@
-'''Implemented to be as faithful to the original PAIRED as possible.'''
+'''TrajeDi: trains a population of confederates via self-play and cross-play against an ego agent.'''
 import shutil
 import time
 import logging
@@ -66,18 +66,16 @@ def gather_params(partner_params_pytree, idx_vec):
     return jax.tree.map(gather_leaf, partner_params_pytree)
 
 def train_trajedi_partners(config, env, partner_rng):
-    '''
-    Train regret-maximizing confederate/best-response pairs, and an ego agent.
-    Return model checkpoints and metrics.
-    '''
+    '''Train a population of confederates and an ego agent; return model checkpoints and metrics.'''
     def make_train(config):
         num_agents = env.num_agents
         assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
-        # Right now assume control of just 1 agent
         config["NUM_CONF_ACTORS"] = config["NUM_ENVS_CONFS"]
         config["NUM_EGO_ACTORS"] = config["NUM_ENVS_BR"]
 
+        # TOTAL_TIMESTEPS is the total env steps budget across all rollouts; each confederate member
+        # sees ~TOTAL_TIMESTEPS / PARTNER_POP_SIZE steps on average.
         config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // (config["ROLLOUT_LENGTH"] * (2*config["NUM_ENVS_CONFS"]+config["NUM_ENVS_BR"]))
         assert config["NUM_CONF_ACTORS"] % config["NUM_MINIBATCHES"] == 0, "NUM_CONF_ACTORS must be divisible by NUM_MINIBATCHES"
         assert config["NUM_EGO_ACTORS"] % config["NUM_MINIBATCHES"] == 0, "NUM_EGO_ACTORS must be divisible by NUM_MINIBATCHES"
@@ -89,7 +87,7 @@ def train_trajedi_partners(config, env, partner_rng):
             return config["LR"] * frac
 
         def train(rng):
-            # Initialize all three policies: ego, confederate, and best response
+            # Initialize ego and confederate policies
             rng, init_ego_rng, init_conf_rng = jax.random.split(rng, 3)
             all_conf_init_rngs = jax.random.split(init_conf_rng, config["PARTNER_POP_SIZE"])
 
@@ -128,7 +126,7 @@ def train_trajedi_partners(config, env, partner_rng):
                 init_all_networks_and_optimizers = jax.vmap(init_single_pop_member_optimizers)
                 all_conf_params = init_all_networks_and_optimizers(rng_agents)
 
-                # Define optimizers for both confederate and BR policy
+                # Define optimizer for confederate policy
                 tx = optax.chain(
                     optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
                     optax.adam(learning_rate=linear_schedule if config["ANNEAL_LR"] else config["LR"],
@@ -170,8 +168,8 @@ def train_trajedi_partners(config, env, partner_rng):
             # --------------------------
             def _env_step_confs_sp(runner_state, unused):
                 """
-                agent_0 = confederate, agent_1 = br
-                Returns updated runner_state, and Transitions for agent_0 and agent_1
+                Self-play: agent_0 and agent_1 are both confederates (same sampled policy).
+                Returns updated runner_state, and Transitions for agent_0 and agent_1.
                 """
                 (
                     all_train_state_conf, last_conf_ids,
@@ -196,7 +194,7 @@ def train_trajedi_partners(config, env, partner_rng):
                 )
 
                 # Reset the hidden states for resampled conf and br if they are not None
-                # WARNING: BRDiv was not tested with recurrent actors, so the code for if the hstate is not None may not work
+                # WARNING: recurrent actors are not fully tested; hstate reset logic below may not work correctly
                 if (last_conf_h_p1 is not None) and (last_conf_h_p2 is not None):
                     updated_conf_h_p1 = jnp.where(
                         needs_resample,
@@ -299,8 +297,8 @@ def train_trajedi_partners(config, env, partner_rng):
 
             def _env_step_confs_xp(runner_state, unused):
                 """
-                agent_0 = confederate, agent_1 = br
-                Returns updated runner_state, and Transitions for agent_0 and agent_1
+                Cross-play: agent_0 = confederate, agent_1 = ego.
+                Returns updated runner_state, and Transitions for agent_0 and agent_1.
                 """
                 (
                     all_train_state_conf, train_state_ego, last_conf_ids,
@@ -322,7 +320,7 @@ def train_trajedi_partners(config, env, partner_rng):
                 )
 
                 # Reset the hidden states for resampled conf and br if they are not None
-                # WARNING: BRDiv was not tested with recurrent actors, so the code for if the hstate is not None may not work
+                # WARNING: recurrent actors are not fully tested; hstate reset logic below may not work correctly
                 if (last_conf_h is not None):
                     updated_conf_h = jnp.where(
                         needs_resample,
@@ -429,8 +427,8 @@ def train_trajedi_partners(config, env, partner_rng):
 
             def _env_step_br_sp(runner_state, unused):
                 """
-                agent_0 = confederate, agent_1 = br
-                Returns updated runner_state, and Transitions for agent_0 and agent_1
+                Self-play: agent_0 and agent_1 are both the ego policy.
+                Returns updated runner_state, and Transitions for agent_0 and agent_1.
                 """
                 (
                     train_state_ego, env_state_br_sp, last_obs_br_sp, 
@@ -442,7 +440,6 @@ def train_trajedi_partners(config, env, partner_rng):
                 needs_resample = last_done_br_sp["__all__"]
                 
                 # Reset the hidden states for resampled conf and br if they are not None
-                # WARNING: BRDiv was not tested with recurrent actors, so the code for if the hstate is not None may not work
                 updated_br_h_p1 = last_br_h_p1
                 updated_br_h_p2 = last_br_h_p2
 
@@ -571,7 +568,7 @@ def train_trajedi_partners(config, env, partner_rng):
                         traj_batch_conf_xp, gae_conf_xp, target_v_conf_xp,
                         agent_id
                     ):
-                        # get policy and value of confederate versus ego and best response agents respectively
+                        # get policy and value of confederate for xp (vs ego) and sp (vs confederate) interactions
 
                         is_relevant_sp1 = jnp.equal(
                             jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1),
@@ -836,7 +833,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             loss_weights_xp
                         )
 
-                        # Value loss for interaction with best response agent
+                        # Value loss for self-play (confederate vs confederate)
                         value_pred_conf_sp1_clipped = traj_batch_conf_sp1.value + (
                             value_conf_sp1 - traj_batch_conf_sp1.value
                             ).clip(
@@ -872,7 +869,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             loss_weights_xp
                         )
 
-                        # Policy gradient loss for interaction with best response agent
+                        # Policy gradient loss for self-play (confederate vs confederate)
                         ratio_conf_sp1 = jnp.exp(log_prob_conf_sp1 - traj_batch_conf_sp1.log_prob)
                         gae_norm_conf_sp1 = (gae_conf_sp1 - gae_conf_sp1.mean()) / (gae_conf_sp1.std() + 1e-8)
                         pg_loss_1_conf_sp1 = ratio_conf_sp1 * gae_norm_conf_sp1
@@ -902,7 +899,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             entropy_conf_xp,
                             loss_weights_xp
                         )
-                        # Entropy for interaction with best response agent
+                        # Entropy for self-play (confederate vs confederate)
                         entropy_conf_sp1 = compute_mean_weighted_losses(
                             entropy_conf_sp1,
                             loss_weights_sp1
@@ -1086,10 +1083,12 @@ def train_trajedi_partners(config, env, partner_rng):
 
             def _update_step(update_runner_state, unused):
                 """
-                1. Collect rollout for interactions against ego agent.
-                2. Collect rollout for interactions against br agent.
-                3. Compute advantages for ego-conf and conf-br interactions.
-                4. PPO updates for best response and confederate policies.
+                1. Collect confederate self-play rollout.
+                2. Collect confederate cross-play rollout (vs ego).
+                3. Collect ego self-play rollout.
+                4. Compute advantages for confederate (sp and xp).
+                5. Compute advantages for ego (xp and sp).
+                6. PPO updates for confederate and ego policies.
                 """
                 (
                     all_train_state_conf, train_state_ego,
@@ -1124,7 +1123,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     last_conf_h_sp_p2, last_eps_counter, last_timestep_counter, rng_conf
                 ) = runner_state_conf_sp
 
-                # 2) rollout for interactions of confederate against br agent
+                # 2) rollout for cross-play interactions of confederate against ego
                 runner_state_conf_xp = (
                     all_train_state_conf, train_state_ego, conf_ids_xp,
                     last_env_state_confs_xp, last_obs_confs_xp, 
@@ -1139,7 +1138,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     last_conf_h_xp, last_br_h_xp, rng_conf
                 ) = runner_state_conf_xp
 
-                # 3) rollout self-play interactions of br agent
+                # 3) rollout self-play interactions of ego agent
                 runner_state_br_sp = (
                     train_state_ego, last_env_state_br_sp, last_obs_br_sp, 
                     last_done_br_sp, last_br_h_sp_p1, last_br_h_sp_p2,
@@ -1154,10 +1153,10 @@ def train_trajedi_partners(config, env, partner_rng):
                 ) = runner_state_br_sp
 
                 def _compute_advantages_and_targets_conf(batch_size, env_state, policy_params, policy_hstate,
-                                                   last_obs, last_dones, last_conf_ids, traj_batch, 
+                                                   last_obs, last_dones, last_conf_ids, traj_batch,
                                                    agent_name, value_idx=None):
-                    '''Value_idx argument is to support the ActorWithDoubleCritic (confederate) policy, which
-                    has two value heads. Value head 0 models the ego agent while value head 1 models the best response.'''
+                    '''value_idx selects which of the confederate's two value heads to use:
+                    head 0 = self-play, head 1 = cross-play against ego.'''
                     avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)[agent_name].astype(jnp.float32)
                     rng_key = jax.random.PRNGKey(0)  # dummy key as we don't sample actions
                     rng_keys = jax.random.split(rng_key, last_obs[agent_name].shape[0])
@@ -1177,8 +1176,6 @@ def train_trajedi_partners(config, env, partner_rng):
 
                 def _compute_advantages_and_targets_br(batch_size, env_state, policy_params, policy_hstate,
                                                    last_obs, last_dones, traj_batch, agent_name):
-                    '''Value_idx argument is to support the ActorWithDoubleCritic (confederate) policy, which
-                    has two value heads. Value head 0 models the ego agent while value head 1 models the best response.'''
                     avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)[agent_name].astype(jnp.float32)
                     _, vals, _, _ = ego_policy.get_action_value_policy(
                         params=policy_params,
@@ -1208,7 +1205,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     traj_batch_conf_p1, "agent_1", value_idx=0
                 )
 
-                # 4b) compute advantage for confederate agent from interaction with BR Policy
+                # 4b) compute advantage for confederate agent from cross-play against ego
                 advantages_xp_conf, targets_xp_conf = _compute_advantages_and_targets_conf(
                     config["NUM_CONF_ACTORS"],
                     last_env_state_confs_xp, all_train_state_conf.params, 
@@ -1239,7 +1236,7 @@ def train_trajedi_partners(config, env, partner_rng):
                     traj_batch_br_sp_p2, "agent_1"
                 )
                 
-                # 3) PPO update
+                # 6) PPO update
                 update_state = (
                     all_train_state_conf, train_state_ego,
                     traj_batch_conf_p0, traj_batch_conf_p1, traj_batch_conf_xp,
