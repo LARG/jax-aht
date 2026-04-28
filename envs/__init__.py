@@ -138,6 +138,17 @@ def make_env(env_name: str, env_kwargs: dict = {}):
 
     return env
 
+def make_env_from_str(env_str: str, extra_kwargs: dict = {}):
+    """Parse 'base_env/layout' strings (e.g. 'overcooked-v1/coord_ring') and call make_env."""
+    if "/" in env_str:
+        base_name, layout = env_str.split("/", 1)
+        kwargs = {"layout": layout, **extra_kwargs}
+    else:
+        base_name = env_str
+        kwargs = extra_kwargs
+    return make_env(base_name, kwargs)
+
+
 if __name__ == "__main__":
     # sanity check: test environment creation
     env = make_env('lbf-reward-shaping', {'num_agents': 3, 'grid_size': 9})
