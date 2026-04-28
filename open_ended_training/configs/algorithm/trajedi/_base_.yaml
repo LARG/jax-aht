@@ -1,7 +1,7 @@
 # @package algorithm
 # ^ tells hydra to place these value directly under algorithm key
 ALG: trajedi
-TOTAL_TIMESTEPS: 1e8 # per iter of open-ended training, divided between conf-br and conf-ego and between all partner seeds
+TOTAL_TIMESTEPS: 1e8 # controls training length; each confederate member sees ~TOTAL_TIMESTEPS / PARTNER_POP_SIZE env steps per iter
 NUM_CHECKPOINTS: 2 # num checkpoints
 PARTNER_POP_SIZE: 5 # true pop size is PARTNER_POP_SIZE * NUM_CHECKPOINTS per iter of open-ended training
 NUM_ENVS_CONFS: 80
