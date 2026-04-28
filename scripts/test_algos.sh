@@ -82,6 +82,7 @@ JOB_CMDS+=("python marl/run.py \
 JOB_NAMES+=("brdiv")
 JOB_CMDS+=("python teammate_generation/run.py \
     algorithm=brdiv/lbf task=lbf label=test_brdiv \
+    run_heldout_eval=false train_ego=false \
     algorithm.TOTAL_TIMESTEPS=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
 
@@ -100,6 +101,15 @@ JOB_CMDS+=("python teammate_generation/run.py \
     $COMMON_FLAGS")
 
 # ── Ego training ──────────────────────────────────────────────────────────────
+# Run heldout eval for ppo ego only
+JOB_NAMES+=("ppo_ego")
+JOB_CMDS+=("python ego_agent_training/run.py \
+    algorithm=ppo_ego/lbf task=lbf label=test_ppo_ego \
+    algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_EGO_TRAIN_SEEDS=1 \
+    algorithm.partner_agent.ippo.path=$PARTNER_PATH \
+    run_heldout_eval=true \
+    $COMMON_FLAGS")
+
 JOB_NAMES+=("liam_ego")
 JOB_CMDS+=("python ego_agent_training/run.py \
     algorithm=liam_ego/lbf task=lbf label=test_liam_ego \
@@ -111,14 +121,6 @@ JOB_CMDS+=("python ego_agent_training/run.py \
 JOB_NAMES+=("meliba_ego")
 JOB_CMDS+=("python ego_agent_training/run.py \
     algorithm=meliba_ego/lbf task=lbf label=test_meliba_ego \
-    algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_EGO_TRAIN_SEEDS=1 \
-    algorithm.partner_agent.ippo.path=$PARTNER_PATH \
-    run_heldout_eval=false \
-    $COMMON_FLAGS")
-
-JOB_NAMES+=("ppo_ego")
-JOB_CMDS+=("python ego_agent_training/run.py \
-    algorithm=ppo_ego/lbf task=lbf label=test_ppo_ego \
     algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_EGO_TRAIN_SEEDS=1 \
     algorithm.partner_agent.ippo.path=$PARTNER_PATH \
     run_heldout_eval=false \
