@@ -71,15 +71,15 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
         offset += n
 
     print(f"Actually plotted {plotted_count} points")
-    ax.legend(fontsize=10, markerscale=1.2, handlelength=1.0, borderpad=0.4, labelspacing=0.3)
+    leg = ax.legend(loc='center left', bbox_to_anchor=(1.01, 0.5), fontsize=10, markerscale=1.2, handlelength=1.0, borderpad=0.4, labelspacing=0.3)
+    leg.get_frame().set_alpha(0.4)
     ax.set_title("LBF (7x7)", fontsize=20)
     ax.set_xlabel("t-SNE 1", fontsize=20)
     ax.set_ylabel("t-SNE 2", fontsize=20)
     ax.tick_params(axis='both', labelsize=17)
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300)
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
     pdf_path = save_path.rsplit(".", 1)[0] + ".pdf" if "." in save_path else save_path + ".pdf"
-    plt.savefig(pdf_path)
+    plt.savefig(pdf_path, bbox_inches='tight')
     plt.close()
     print(f"t-SNE plot saved to {save_path} and {pdf_path}")
     print(f"======================\n")
