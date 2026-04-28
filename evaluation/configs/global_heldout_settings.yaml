@@ -84,7 +84,7 @@ heldout_set:
         returned_episode_returns: [0.0, 0.5]
   lbf/lbf_12x12: # TODO - update IPPO BR returns once available
     ippo_mlp: 
-      path: "eval_teammates/lbf/ippo-lbf-12-levels/saved_train_run"
+      path: "eval_teammates/lbf/ippo/ippo-lbf-12-levels/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
       idx_list: [0] # load in seed 0 only
