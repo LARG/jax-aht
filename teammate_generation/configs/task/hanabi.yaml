@@ -1,0 +1,16 @@
+# Hanabi: teammate generation task config.
+# Mirrors ego_agent_training/configs/task/hanabi.yaml because
+# teammate_generation methods (FCP, BRDiv, LBRDiv, CoMeDi) call into
+# ego_agent_training as a subroutine, which asserts num_agents == 2.
+# Hanabi is natively 2-player so this is satisfied by default.
+ENV_NAME: hanabi
+ROLLOUT_LENGTH: 128
+ENV_KWARGS:
+  num_agents: 2
+  num_colors: 5
+  num_ranks: 5
+  hand_size: 5
+  max_info_tokens: 8
+  max_life_tokens: 3
+  num_cards_of_rank: [3, 2, 2, 2, 1]
+TASK_NAME: hanabi

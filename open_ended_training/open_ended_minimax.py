@@ -607,9 +607,22 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     teammate_stats = get_stats(teammate_metrics, metric_names) # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_partner_updates, 2)
     teammate_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 2))[..., 0], teammate_stats) # shape (num_open_ended_iters, num_partner_updates)
 
-    # Extract ego train stats
-    ego_stats = get_stats(ego_metrics, metric_names) # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates, 2)
-    ego_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 2))[..., 0], ego_stats) # shape (num_open_ended_iters, num_ego_updates)
+    # Extract ego train stats.
+    # Ego metrics come from ppo_ego which condenses per-timestep data to
+    # per-update scalars. Detect via the loss ndim: condensed has 4 dims
+    # (seeds, iters, ego_seeds, updates) vs 6 for full metrics.
+    ego_condensed = np.asarray(ego_metrics["value_loss"]).ndim <= 4
+
+    if ego_condensed:
+        # Condensed: metrics are already per-update means.
+        # Average over seeds (0) and ego_seeds (2).
+        ego_stat_means = {
+            name: np.mean(np.array(ego_metrics[name]), axis=(0, 2))
+            for name in metric_names
+        }
+    else:
+        ego_stats = get_stats(ego_metrics, metric_names) # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates, 2)
+        ego_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 2))[..., 0], ego_stats) # shape (num_open_ended_iters, num_ego_updates)
 
     # Process/extract minimax-specific losses
     # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates, num_eval_episodes, num_agents_per_env)
@@ -628,11 +641,18 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_updates, num_partners, num_eval_episodes, num_agents_per_env)
     avg_ego_returns = np.asarray(ego_metrics["eval_ep_last_info"]["returned_episode_returns"]).mean(axis=(0, 2, 4, 5, 6))
 
-    # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_updates, update_epochs, num_minibatches)
-    avg_ego_value_losses = np.asarray(ego_metrics["value_loss"]).mean(axis=(0, 2, 4, 5))
-    avg_ego_actor_losses = np.asarray(ego_metrics["actor_loss"]).mean(axis=(0, 2, 4, 5))
-    avg_ego_entropy_losses = np.asarray(ego_metrics["entropy_loss"]).mean(axis=(0, 2, 4, 5))
-    avg_ego_grad_norms = np.asarray(ego_metrics["avg_grad_norm"]).mean(axis=(0, 2, 4, 5))
+    # Ego loss metrics: condensed (seeds, iters, ego_seeds, updates) or
+    # full (seeds, iters, ego_seeds, updates, epochs, minibatches).
+    if ego_condensed:
+        avg_ego_value_losses = np.asarray(ego_metrics["value_loss"]).mean(axis=(0, 2))
+        avg_ego_actor_losses = np.asarray(ego_metrics["actor_loss"]).mean(axis=(0, 2))
+        avg_ego_entropy_losses = np.asarray(ego_metrics["entropy_loss"]).mean(axis=(0, 2))
+        avg_ego_grad_norms = np.asarray(ego_metrics["avg_grad_norm"]).mean(axis=(0, 2))
+    else:
+        avg_ego_value_losses = np.asarray(ego_metrics["value_loss"]).mean(axis=(0, 2, 4, 5))
+        avg_ego_actor_losses = np.asarray(ego_metrics["actor_loss"]).mean(axis=(0, 2, 4, 5))
+        avg_ego_entropy_losses = np.asarray(ego_metrics["entropy_loss"]).mean(axis=(0, 2, 4, 5))
+        avg_ego_grad_norms = np.asarray(ego_metrics["avg_grad_norm"]).mean(axis=(0, 2, 4, 5))
     for iter_idx in range(num_open_ended_iters):
         # Log all partner metrics
         for step in range(num_partner_updates):

@@ -1,0 +1,18 @@
+defaults:
+  - meliba_ego/_base_
+  - _self_
+
+# Mini-Hanabi (3c/3r/hand3) MeLIBA ego. Smaller obs allows more envs.
+TOTAL_TIMESTEPS: 100000000
+NUM_ENVS: 128
+NUM_EGO_TRAIN_SEEDS: 3
+LR: 3e-4
+ENCODER_DECODER_LR: 7e-4
+ENT_COEF: 0.001
+CLIP_EPS: 0.1
+ANNEAL_LR: true
+UPDATE_EPOCHS: 4
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+MAX_GRAD_NORM: 0.5
+POLICY_OPTIMIZER: adam  # rmsprop did not converge on Hanabi

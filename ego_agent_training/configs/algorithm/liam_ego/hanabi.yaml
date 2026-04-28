@@ -1,0 +1,31 @@
+defaults:
+  - liam_ego/_base_
+  - _self_
+
+# Full 2-player Hanabi LIAM ego. MLP actor with LIAM encoder.
+# POLICY_INPUT_DIM is overridden at runtime to ENCODER_OUTPUT_DIM + obs_dim
+# (20 + 658 = 678 for full Hanabi). See ego_agent_training/liam_ego.py.
+#
+# Key changes from previous (collapsed) config:
+#   - ANNEAL_LR: true (was false, caused collapse at 100M)
+#   - UPDATE_EPOCHS: 4 (was 5, less overfitting on small batches)
+#   - ENT_COEF: 0.001 (was 0.01, matching LBF LIAM)
+#   - ENCODER_HIDDEN_DIM: 128 (was 64, matching LBF LIAM)
+#   - DECODER_HIDDEN_DIM: 128 (was 64)
+#   - GAMMA: 0.999 (was 0.99, better for delayed Hanabi rewards)
+TOTAL_TIMESTEPS: 1000000000
+NUM_ENVS: 64
+NUM_EGO_TRAIN_SEEDS: 1
+LR: 3e-4
+ENCODER_DECODER_LR: 7e-4
+ENT_COEF: 0.001
+CLIP_EPS: 0.1
+ANNEAL_LR: true
+UPDATE_EPOCHS: 4
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+MAX_GRAD_NORM: 0.5
+ENCODER_HIDDEN_DIM: 128
+ENCODER_OUTPUT_DIM: 20
+DECODER_HIDDEN_DIM: 128
+POLICY_INPUT_DIM: 20

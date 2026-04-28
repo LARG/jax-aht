@@ -113,6 +113,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "num_agents": 2,
             "num_colors": 5,
             "num_ranks": 5,
+            "hand_size": 5,
             "max_info_tokens": 8,
             "max_life_tokens": 3,
             "num_cards_of_rank": np.array([3, 2, 2, 2, 1]),
@@ -133,7 +134,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
 
     else:
         raise NotImplementedError(f"Environment {env_name} not implemented in make_env.")
-    
+
     return env
 
 if __name__ == "__main__":

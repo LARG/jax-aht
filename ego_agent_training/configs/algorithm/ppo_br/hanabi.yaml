@@ -1,0 +1,23 @@
+defaults:
+  - ppo_br/_base_
+  - _self_
+
+# Full 2-player Hanabi PPO best-response. Trains an ego via PPO against
+# a single frozen partner, defaulting to random_agent (zero-intelligence
+# baseline). Override partner_agent via CLI to use OBL or an IPPO
+# checkpoint, e.g.:
+#   algorithm.partner_agent.random_agent=null
+#   +algorithm.partner_agent.obl_r2d2.actor_type=obl_r2d2
+#   +algorithm.partner_agent.obl_r2d2.weight_file=agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
+TOTAL_TIMESTEPS: 10000000
+NUM_ENVS: 32
+NUM_EGO_TRAIN_SEEDS: 1
+LR: 3e-4
+ENT_COEF: 0.01
+CLIP_EPS: 0.2
+ANNEAL_LR: false
+UPDATE_EPOCHS: 10
+partner_agent:
+  independent_agent_0.6: null  # clear Overcooked partner inherited from _base_
+  random_agent:
+    actor_type: random_agent

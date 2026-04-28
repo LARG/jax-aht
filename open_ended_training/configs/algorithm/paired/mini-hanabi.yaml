@@ -1,0 +1,16 @@
+defaults:
+  - paired/_base_
+  - _self_
+
+# Mini-Hanabi (3c/3r/hand3) PAIRED config.
+TOTAL_TIMESTEPS: 1e8
+LR: 5e-4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+NUM_ENVS: 128
+UPDATE_EPOCHS: 4
+NUM_MINIBATCHES: 4
+ANNEAL_LR: true
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+MAX_GRAD_NORM: 0.5

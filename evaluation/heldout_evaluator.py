@@ -10,11 +10,17 @@ import os
 import hydra
 
 from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper
-from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
+from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper,
     OvercookedOnionPolicyWrapper,
     OvercookedPlatePolicyWrapper,
     OvercookedStaticPolicyWrapper,
     OvercookedRandomPolicyWrapper)
+from agents.hanabi.agent_policy_wrappers import (HanabiRandomPolicyWrapper,
+    HanabiRuleBasedPolicyWrapper, HanabiIGGIPolicyWrapper,
+    HanabiPiersPolicyWrapper, HanabiFlawedPolicyWrapper,
+    HanabiOuterPolicyWrapper, HanabiVanDenBerghPolicyWrapper,
+    HanabiSmartBotPolicyWrapper, HanabiOBLPolicyWrapper,
+    HanabiBCLSTMPolicyWrapper)
 
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from common.run_episodes import run_episodes
@@ -101,6 +107,10 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
     '''
     heldout_agents = {}
     for agent_name, agent_config in heldout_config.items():
+        # Allow env-specific configs to null out entries inherited from a
+        # base config (skip entries set to null in the task-specific block).
+        if agent_config is None:
+            continue
         params_list = None
         idx_labels = None
         test_mode = agent_config.get("test_mode", False)
@@ -148,8 +158,80 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                     p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0))
             elif agent_config["actor_type"] == 'plate_agent':
                 policy = OvercookedPlatePolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
+                    aug_layout_dict, using_log_wrapper=True,
                     p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
+
+        elif 'hanabi' in task_name:
+            performance_bounds = agent_config.get("performance_bounds", None)
+            # Hanabi game parameters for rule-based agents (derived from env_kwargs)
+            hand_size = env_kwargs.get("hand_size", 5)
+            num_colors = env_kwargs.get("num_colors", 5)
+            num_ranks = env_kwargs.get("num_ranks", 5)
+            num_actions = 2 * hand_size + num_colors + num_ranks + 1
+            # Mini-Hanabi uses [2,2,1] not a slice of the standard [3,2,2,2,1],
+            # so SmartBot's belief tracking needs the real counts.
+            num_cards_of_rank = env_kwargs.get("num_cards_of_rank", None)
+            if agent_config["actor_type"] == 'random_agent':
+                policy = HanabiRandomPolicyWrapper(num_actions=num_actions,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'obl_r2d2':
+                weight_file = agent_config.get("weight_file",
+                    "agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors")
+                policy = HanabiOBLPolicyWrapper(weight_file=weight_file,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'rule_based':
+                strategy = agent_config.get("strategy", "cautious")
+                policy = HanabiRuleBasedPolicyWrapper(
+                    strategy=strategy,
+                    hand_size=hand_size, num_colors=num_colors,
+                    num_ranks=num_ranks, num_actions=num_actions,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'iggi':
+                policy = HanabiIGGIPolicyWrapper(
+                    hand_size=hand_size, num_colors=num_colors,
+                    num_ranks=num_ranks, num_actions=num_actions,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'piers':
+                play_threshold = agent_config.get("play_threshold", 0.6)
+                hint_threshold = agent_config.get("hint_threshold", 4)
+                policy = HanabiPiersPolicyWrapper(
+                    play_threshold=play_threshold,
+                    hint_threshold=hint_threshold,
+                    hand_size=hand_size, num_colors=num_colors,
+                    num_ranks=num_ranks, num_actions=num_actions,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'flawed':
+                mistake_prob = agent_config.get("mistake_prob", 0.3)
+                policy = HanabiFlawedPolicyWrapper(
+                    mistake_prob=mistake_prob,
+                    hand_size=hand_size, num_colors=num_colors,
+                    num_ranks=num_ranks, num_actions=num_actions,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'smartbot':
+                policy = HanabiSmartBotPolicyWrapper(
+                    hand_size=hand_size, num_colors=num_colors,
+                    num_ranks=num_ranks, num_actions=num_actions,
+                    card_counts=num_cards_of_rank,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'outer':
+                policy = HanabiOuterPolicyWrapper(
+                    hand_size=hand_size, num_colors=num_colors,
+                    num_ranks=num_ranks, num_actions=num_actions,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'van_den_bergh':
+                policy = HanabiVanDenBerghPolicyWrapper(
+                    hand_size=hand_size, num_colors=num_colors,
+                    num_ranks=num_ranks, num_actions=num_actions,
+                    using_log_wrapper=True)
+            elif agent_config["actor_type"] == 'bc_lstm':
+                weight_file = agent_config.get("weight_file",
+                    "agents/hanabi/bc_lstm_weights/bc_2p.safetensors")
+                greedy = agent_config.get("greedy", True)
+                policy = HanabiBCLSTMPolicyWrapper(
+                    weight_file=weight_file, using_log_wrapper=True,
+                    greedy=greedy)
+            else:
+                raise ValueError(f"Unknown Hanabi actor_type: {agent_config['actor_type']}")
         else:
             raise ValueError(f"Unknown task: {task_name}")
         

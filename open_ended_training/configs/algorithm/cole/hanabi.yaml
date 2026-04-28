@@ -1,0 +1,13 @@
+defaults:
+  - cole/_base_
+  - _self_
+
+# Full 2-player Hanabi CoLE config. CoLE does not have a DSSE config
+# in the current repo, so this follows the cole/lbf.yaml pattern.
+TOTAL_TIMESTEPS_PER_ITERATION: 6e6
+PARTNER_POP_SIZE: 10
+LR: 3e-4
+UPDATE_EPOCHS: 10
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+COLE_ALPHA: 0.4

@@ -65,21 +65,34 @@ def train_ego_agent(config, logger, partner_params, partner_population):
                               out["final_params"])
     ego_policy, init_ego_params = initialize_ego_agent(algorithm_config, env, init_rng)
 
-    # Log metrics
+    # Save checkpoint BEFORE logging metrics. Metrics logging reshapes
+    # large tensors that can OOM on long runs (e.g. 1e9 steps produces
+    # ~7 GB eval_ep_last_info). Saving first ensures the checkpoint
+    # survives even if metrics logging fails.
+    # Hit this the hard way: lost ~20h of FCP 1e9 ego training to an OOM
+    # in log_ego_metrics AFTER training finished, before the save. Order
+    # matters here: save, then log. And always .device_get() before big
+    # reshapes.
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    out_savepath = save_train_run(out, savedir, savename="ego_train_run")
+    log.info(f"Saved ego checkpoint to {out_savepath}")
+
+    # Log metrics (transfer to CPU to avoid GPU OOM on reshape)
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
-    log_ego_metrics(config, out, logger, metric_names)
+    log_ego_metrics(config, out, logger, metric_names, out_savepath)
 
     return ego_params, ego_policy, init_ego_params
 
-def log_ego_metrics(config, out, logger, metric_names: tuple):
+def log_ego_metrics(config, out, logger, metric_names: tuple, out_savepath: str):
     '''Log metrics for the ego agent returned by the above train_ego_agent function.
     '''
-    train_metrics = out["metrics"]
+    # Transfer metrics to CPU before reshaping to avoid GPU OOM on long runs.
+    train_metrics = jax.device_get(out["metrics"])
 
     # each leaf of out["metrics"] has shape (num_seeds, num_ego_train_seeds, num_updates, ...)
-    # we combine the first two dimensions together to get a single seeds dimension, 
+    # we combine the first two dimensions together to get a single seeds dimension,
     num_seeds, num_ego_train_seeds = train_metrics["returned_episode_returns"].shape[:2]
-    train_metrics = jax.tree.map(lambda x: x.reshape(num_seeds * num_ego_train_seeds, *x.shape[2:]), 
+    train_metrics = jax.tree.map(lambda x: x.reshape(num_seeds * num_ego_train_seeds, *x.shape[2:]),
                                  train_metrics)
 
     #### Extract train metrics ####
@@ -87,22 +100,29 @@ def log_ego_metrics(config, out, logger, metric_names: tuple):
     # each key in train_stats is a metric name, and the value is an array of shape (num_seeds, num_updates, 2)
     # where the last dimension contains the mean and std of the metric
     train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
-    
-    all_ego_value_losses = np.asarray(train_metrics["value_loss"]) # shape (num_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (num_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (num_seeds, num_updates, num_partners, num_minibatches)
 
-    # Process eval return metrics - average across ego seeds, eval episodes,  training partners 
-    # and num_agents per game for each checkpoint
-    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (num_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
+    all_ego_value_losses = np.asarray(train_metrics["value_loss"])
+    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"])
+    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"])
+
+    # Process eval return metrics - average across ego seeds, eval episodes,
+    # training partners and num_agents per game for each checkpoint.
+    # eval_ep_last_info is always multi-dimensional (not condensed).
+    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"])
     average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
 
-    # Process loss metrics - average across ego seeds, partners and minibatches dims
-    # Loss metrics shape should be (num_seeds, num_updates, ...)
-    average_ego_value_losses = np.mean(all_ego_value_losses, axis=(0, 2, 3))
-    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=(0, 2, 3))
-    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=(0, 2, 3))
-    
+    # Process loss metrics - average down to (num_updates,).
+    # Condensed: shape (num_seeds, num_updates) - losses already scalar per update.
+    # Full: shape (num_seeds, num_updates, update_epochs, num_minibatches).
+    if all_ego_value_losses.ndim == 2:
+        average_ego_value_losses = np.mean(all_ego_value_losses, axis=0)
+        average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=0)
+        average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=0)
+    else:
+        average_ego_value_losses = np.mean(all_ego_value_losses, axis=(0, 2, 3))
+        average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=(0, 2, 3))
+        average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=(0, 2, 3))
+
     # Log metrics for each update step
     num_updates = len(average_ego_value_losses)
     for step in range(num_updates):
@@ -115,15 +135,10 @@ def log_ego_metrics(config, out, logger, metric_names: tuple):
         logger.log_item("Train/EgoValueLoss", average_ego_value_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoActorLoss", average_ego_actor_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
-        
+
         logger.commit()
-    
-    # Saving artifacts
-    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    # TODO: in the future, add video logging feature
-    out_savepath = save_train_run(out, savedir, savename="ego_train_run")
+
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="ego_train_run", path=out_savepath, type_name="train_run")
-        # Cleanup locally logged out file
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)

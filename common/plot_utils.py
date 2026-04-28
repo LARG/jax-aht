@@ -11,6 +11,8 @@ def get_metric_names(env_name):
         return ("percent_eaten", "returned_episode_returns")
     elif env_name == "overcooked-v1":
         return ("base_return", "returned_episode_returns")
+    elif env_name == "hanabi":
+        return ("returned_episode_returns",)
     else:
         return ("returned_episode_returns",)
 
@@ -26,22 +28,32 @@ def get_stats(metrics, stats: tuple):
     '''
     # Get mask for final steps of episodes
     mask = metrics["returned_episode"]
-    
+
     # Initialize output dictionary
     all_stats = {}
     stats = list(stats) # convert to list to correctly iterate if the tuple only has a single element
+
+    # Detect condensed metrics: if mask is scalar per update (no rollout/env dims),
+    # the metrics are already episode-masked means from scan condensation.
+    condensed = (mask.ndim <= 2)
+
     for stat_name in stats:
         # Get the metric array
-        metric_data = metrics[stat_name]  # Shape: (..., rollout_length, num_envs)
+        metric_data = metrics[stat_name]
 
-        # Compute means and stds for each seed and update
-        # Use masked operations to only consider final episode steps
-        means = jnp.where(mask, metric_data, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
-        # For std, first compute masked values
-        masked_vals = jnp.where(mask, metric_data, 0)
-        squared_diff = (masked_vals - means[..., None, None]) ** 2
-        variance = jnp.where(mask, squared_diff, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
-        stds = jnp.sqrt(variance)
+        if condensed:
+            # Condensed metrics are already per-update scalar means.
+            # Return (mean, std=0) to match expected output format.
+            means = metric_data
+            stds = jnp.zeros_like(means)
+        else:
+            # Full metrics: shape (..., rollout_length, num_envs)
+            # Use masked operations to only consider final episode steps
+            means = jnp.where(mask, metric_data, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
+            masked_vals = jnp.where(mask, metric_data, 0)
+            squared_diff = (masked_vals - means[..., None, None]) ** 2
+            variance = jnp.where(mask, squared_diff, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
+            stds = jnp.sqrt(variance)
         # Stack means and stds
         all_stats[stat_name] = jnp.stack([means, stds], axis=-1)
     

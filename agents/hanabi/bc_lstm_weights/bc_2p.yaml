@@ -1,0 +1,29 @@
+act_fn: gelu
+action_dim: 21
+batch_size: 128
+dropout: 0.5
+limited_data_ratio: null
+limited_data_regime_games: null
+lr_final: 0.0001
+lr_initial: 0.005
+lstm_features:
+- 512
+num_epochs: 50
+num_seeds: 1
+num_steps: 400
+num_steps_per_epoch: 8
+postprocessing_features:
+- 256
+preprocessing_features:
+- 1024
+project_name: null
+run_name: null
+save_best_val_path: ./models/bc_2p_best
+save_path: ./models/bc_2p
+seed: 1
+self_play_eval_num_games: 5000
+should_augment_data: true
+train_data_path: ./data/2_player_games_train_1k.safetensors
+tune: false
+use_wandb: false
+val_data_path: ./data/2_player_games_val.safetensors

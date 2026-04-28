@@ -1131,7 +1131,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     }
 
     xs = list(range(num_updates))
-    keys = [f"pair {i}" for i in range(pop_size)]
+    keys = [f"pair {i}" for i in range(trained_pop_size)]
 
     for loss_name, loss_data in processed_losses.items():
         logger.log_item(f"Losses/{loss_name}",

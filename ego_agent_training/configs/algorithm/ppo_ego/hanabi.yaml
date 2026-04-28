@@ -1,0 +1,32 @@
+defaults:
+  - ppo_ego/_base_
+  - _self_
+
+# Full 2-player Hanabi PPO ego. S5 recurrent actor.
+#
+# Hyperparameters based on JaxMARL Table 6 (NeurIPS 2024) and the
+# "Entropy is all you need for Cross-Play" paper (Ruhdorfer et al. 2025):
+#   - LR 5e-4 with linear annealing (consensus across all Hanabi papers)
+#   - ENT_COEF 0.01 (standard for self-play; 0.05 for cross-play)
+#   - UPDATE_EPOCHS 4 (not 10; higher causes overfitting on small batches)
+#   - GAMMA 0.999 (better credit assignment for delayed Hanabi rewards)
+#   - NUM_ENVS limited by VRAM with S5 actor on 48GB GPUs
+#
+# Previous config used DSSE hyperparams (LR=3e-4, ENT_COEF=0.01,
+# UPDATE_EPOCHS=10, ANNEAL_LR=false) which caused policy collapse at 100M.
+TOTAL_TIMESTEPS: 1000000000
+NUM_ENVS: 64
+NUM_EGO_TRAIN_SEEDS: 1
+LR: 5e-4
+ENT_COEF: 0.01
+CLIP_EPS: 0.2
+ANNEAL_LR: true
+UPDATE_EPOCHS: 4
+NUM_MINIBATCHES: 4
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+MAX_GRAD_NORM: 0.5
+S5_D_MODEL: 128
+S5_SSM_SIZE: 128
+S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+FC_N_LAYERS: 3

@@ -89,14 +89,27 @@ def log_metrics(config, out, logger):
     '''Log statistics, save train run output and log to wandb as artifact.'''
     metric_names = get_metric_names(config["ENV_NAME"])
     # metrics is a pytree where each leaf has shape
-    # (num_seeds, partner_pop_size, num_partner_updates, rollout_length, agents_per_env * num_envs)
+    #   full:      (num_seeds, partner_pop_size, num_partner_updates, rollout_length, agents_per_env * num_envs)
+    #   condensed: (num_seeds, partner_pop_size, num_partner_updates)
     partner_metrics = out["metrics"]
     num_partner_updates = partner_metrics["returned_episode_returns"].shape[2]
-    # Extract partner train stats
-    num_controlled_actors = config["algorithm"]["NUM_ENVS"]
-    partner_metrics = jax.tree.map(lambda x: x[..., :num_controlled_actors], partner_metrics)
-    partner_stats = get_stats(partner_metrics, metric_names) # shape (num_seeds, partner_pop_size, num_partner_updates, 2)
-    partner_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 1))[..., 0], partner_stats) # shape (num_partner_updates)
+
+    sample_leaf = partner_metrics["returned_episode_returns"]
+    condensed = sample_leaf.ndim <= 3
+
+    if condensed:
+        # Condensed metrics are already per-update episode-masked means.
+        # Average over seeds (axis 0) and partner pop (axis 1).
+        partner_stat_means = {
+            name: np.mean(np.array(partner_metrics[name]), axis=(0, 1))
+            for name in metric_names
+        }
+    else:
+        # Full metrics: slice controlled actors, then compute episode stats.
+        num_controlled_actors = config["algorithm"]["NUM_ENVS"]
+        partner_metrics = jax.tree.map(lambda x: x[..., :num_controlled_actors], partner_metrics)
+        partner_stats = get_stats(partner_metrics, metric_names) # shape (num_seeds, partner_pop_size, num_partner_updates, 2)
+        partner_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 1))[..., 0], partner_stats) # shape (num_partner_updates)
 
     for step in range(num_partner_updates):
         for stat_name, stat_data in partner_stat_means.items():

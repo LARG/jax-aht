@@ -306,3 +306,152 @@ heldout_set:
       performance_bounds:
         base_return: [0.0, 61.88]
         returned_episode_returns: [0.0, 65.22]
+  hanabi: # Full 2-player Hanabi (5 colors, 5 ranks) held-out partner set
+    # random_agent and rule_based agents work out-of-the-box.
+    # obl_r2d2 requires downloading pretrained weights:
+    #   bash agents/hanabi/download_obl_r2d2.sh
+    # NOTE: No IPPO partner for full Hanabi. The default regen script trains
+    # mini-Hanabi partners (13 actions); loading them into a full-Hanabi eval
+    # (21 actions) would crash on shape mismatch. To add full-Hanabi IPPO
+    # held-out partners, run:
+    #   TASK=hanabi ALGO=ippo/hanabi bash scripts/regenerate_hanabi_eval_teammates.sh
+    # and add an ippo entry here pointing at the resulting checkpoint.
+    # Performance bounds are [0, 25] (max Hanabi score = 5 colors x 5 ranks).
+    random_agent:
+      actor_type: random_agent
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    rule_based_cautious:
+      actor_type: rule_based
+      strategy: cautious
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    rule_based_aggressive:
+      actor_type: rule_based
+      strategy: aggressive
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    rule_based_communicative:
+      actor_type: rule_based
+      strategy: communicative
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    rule_based_frugal:
+      actor_type: rule_based
+      strategy: frugal
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    iggi:
+      actor_type: iggi
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    piers:
+      actor_type: piers
+      play_threshold: 0.6
+      hint_threshold: 4
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    flawed_30:
+      actor_type: flawed
+      mistake_prob: 0.3
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    flawed_60:
+      actor_type: flawed
+      mistake_prob: 0.6
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    outer:
+      actor_type: outer
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    van_den_bergh:
+      actor_type: van_den_bergh
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    smartbot:
+      actor_type: smartbot
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    obl_r2d2:
+      actor_type: obl_r2d2
+      weight_file: agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+    bc_lstm_human_proxy:
+      actor_type: bc_lstm
+      weight_file: agents/hanabi/bc_lstm_weights/bc_2p.safetensors
+      greedy: true
+      performance_bounds:
+        returned_episode_returns: [0.0, 25.0]
+  mini-hanabi: # Mini-Hanabi (3 colors, 3 ranks) held-out partner set
+    # OBL R2D2 is NOT included here because its architecture is hardcoded
+    # for full Hanabi (out_dim=21, obs split at [125:]). Mini-Hanabi has
+    # a different action count and observation layout. A mini-compatible
+    # OBL agent would need separate weights and architecture parameters.
+    # ippo_seed123 requires training held-out partners first:
+    #   bash scripts/regenerate_hanabi_eval_teammates.sh
+    ippo_seed123:
+      path: "eval_teammates/hanabi/ippo/seed123/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 9.0]]
+    random_agent:
+      actor_type: random_agent
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    rule_based_cautious:
+      actor_type: rule_based
+      strategy: cautious
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    rule_based_aggressive:
+      actor_type: rule_based
+      strategy: aggressive
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    rule_based_communicative:
+      actor_type: rule_based
+      strategy: communicative
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    rule_based_frugal:
+      actor_type: rule_based
+      strategy: frugal
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    iggi:
+      actor_type: iggi
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    piers:
+      actor_type: piers
+      play_threshold: 0.6
+      hint_threshold: 4
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    flawed_30:
+      actor_type: flawed
+      mistake_prob: 0.3
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    flawed_60:
+      actor_type: flawed
+      mistake_prob: 0.6
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    outer:
+      actor_type: outer
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    van_den_bergh:
+      actor_type: van_den_bergh
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
+    smartbot:
+      actor_type: smartbot
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.0]
