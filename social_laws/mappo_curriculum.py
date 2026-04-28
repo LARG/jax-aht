@@ -123,9 +123,9 @@ def train_mappo_agent(config, env, no_law_env, train_rng,
         config["CLIP_EPS"] = config["CLIP_EPS"] / env.num_agents if config["SCALE_CLIP_EPS"] else config["CLIP_EPS"]
 
         # Curriculum switch settings.
-        convergence_tol = float(config.get("CURRICULUM_CONVERGENCE_TOL", 1e-3))
+        convergence_tol = float(config.get("CURRICULUM_CONVERGENCE_TOL", 1e-4))
         convergence_patience = int(config.get("CURRICULUM_CONVERGENCE_PATIENCE", 5))
-        min_updates_before_switch = int(config.get("CURRICULUM_MIN_UPDATES_BEFORE_SWITCH", 50))
+        min_updates_before_switch = int(config.get("CURRICULUM_MIN_UPDATES_BEFORE_SWITCH", 25))
         target_eval_return = float(config.get("CURRICULUM_TARGET_EVAL_RETURN", -jnp.inf))
         ema_alpha = float(config.get("CURRICULUM_EMA_ALPHA", 0.1))
         law_ent_coef = float(config["ENT_COEF"])
