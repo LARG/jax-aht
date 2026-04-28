@@ -2,16 +2,18 @@ defaults:
   - fcp/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 1e6
-LR: .0001
-NUM_ENVS: 8
+TOTAL_TIMESTEPS: 2e6
+NUM_ENVS: 96
+PARTNER_POP_SIZE: 30
+LR: .001
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 4
-CLIP_EPS: 0.03
-ENT_COEF: 0.01
-ego_train_algorithm: 
+CLIP_EPS: 0.5
+ENT_COEF: 0.05
+ego_train_algorithm:
   TOTAL_TIMESTEPS: 3e7
-  LR: 1e-4
-  ENT_COEF: 0.01
-  CLIP_EPS: 0.05
+  NUM_ENVS: 256
+  LR: 1e-3
+  ENT_COEF: 0.001
+  CLIP_EPS: 0.5
 

@@ -45,7 +45,7 @@ class ResetTransition(NamedTuple):
     conf_hstate: jnp.ndarray
     partner_hstate: jnp.ndarray
 
-def train_comedi_partners(train_rng, env, config):
+def train_comedi_partners(train_rng, wandb_logger, env, config):
     num_agents = env.num_agents
     assert num_agents == 2, "This code assumes the environment has exactly 2 agents."
 
@@ -56,8 +56,19 @@ def train_comedi_partners(train_rng, env, config):
     # Right now assume control of both agent and its BR
     config["NUM_CONTROLLED_ACTORS"] = config["NUM_ACTORS"]
 
-    # Divide by 4 because we have 4 types of rollouts
-    config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS_PER_ITERATION"] // ( 4 * num_agents * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"])
+    # Compute numbber of updates PER outermost iteration
+    # Calculate timesteps per update
+    # 1. Overhead from population selection rollouts
+    # We divide by 2 because for ease in Jax, this implementation uses a vmap over PARTNER_POP_SIZE to 
+    # evaluate the agent generated at each outermost iteration against all previously 
+    # generated agents, but a non-Jax implementation would only need to evaluate against 
+    # *previously* generated agents.
+    selection_steps = config["PARTNER_POP_SIZE"] * config["NUM_ARGMAX_ROLLOUT_EPS"] * config["ROLLOUT_LENGTH"] // 2
+    # 2. Training rollouts: 4 distinct rollout phases (SP, XP, MP, MP2) each using NUM_ENVS
+    training_steps = 4 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
+
+    steps_per_update = selection_steps + training_steps
+    config["NUM_UPDATES"] = int(config["TOTAL_TIMESTEPS_PER_ITERATION"] // steps_per_update)
 
     def make_comedi_agents(config):
         def linear_schedule(count):
@@ -72,7 +83,7 @@ def train_comedi_partners(train_rng, env, config):
             config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
             config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
             config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
-            out = make_ppo_train(config, env)(partner_rng) # train a single PPO agent
+            out = make_ppo_train(config, env, wandb_logger)(partner_rng) # train a single PPO agent
             return out
 
         def train(rng):
@@ -1045,7 +1056,10 @@ def run_comedi(config, wandb_logger):
     with jax.disable_jit(False):
         vmapped_train_fn = jax.jit(
             jax.vmap(
-                partial(train_comedi_partners, env=env, config=algorithm_config)
+                partial(train_comedi_partners, 
+                        wandb_logger=wandb_logger,
+                        env=env, 
+                        config=algorithm_config)
             )
         )
         out = vmapped_train_fn(rngs)
@@ -1072,33 +1086,40 @@ def compute_sp_mask_and_ids(pop_size):
 
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
+    # trained_pop_size excludes the initial policy
     num_seeds, pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
     # TODO: add the eval_ep_last_info metrics
 
     ### Log evaluation metrics
-    # we plot XP return curves separately from SP return curves
-    # shape (num_seeds, num_updates, pop_size,  num_eval_episodes, num_agents_per_game)
+    # xp_eval_returns and sp_eval_returns logged at each evaluation only.
+    algorithm_config = config["algorithm"]
+    ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
+    # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
+    eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
+    if (num_updates - 1) not in eval_steps:
+        eval_steps.append(num_updates - 1)
+
+    # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
-    # shape (num_seeds, num_updates, pop_size, pop_size, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
     all_returns_xp = np.asarray(outs["last_ep_infos_xp"]["returned_episode_returns"])
-    xs = list(range(num_updates))
 
     # Average over seeds, then over agent pairs, episodes and num_agents_per_game
-    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))
-    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))
+    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))  # shape (pop_size - 1, num_updates)
+    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))  # shape (pop_size - 1, num_updates, pop_size)
 
     for num_add_policies in range(pop_size):
-        for step in range(num_updates):
-            logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, step], train_step=step)
-            mean_xp_returns = xp_return_curve[num_add_policies][:, :(num_add_policies+1)].mean(axis=-1)
-            logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[step], train_step=step)
+        for update_step in eval_steps:
+            logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
+            mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
+            logger.log_item("Eval/AvgXPReturnCurve", mean_xp_returns[update_step], train_step=update_step)
     logger.commit()
 
     ### Log population loss as multi-line plots, where each line is a different population member
-    # both xp and xp metrics has shape (num_seeds, pop_size, num_updates, update_epochs, num_minibatches)
+    # both xp and xp metrics has shape (num_seeds, pop_size - 1, num_updates, update_epochs, num_minibatches)
     # Average over seeds
     processed_losses = {
-        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size, num_updates)
+        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size - 1, num_updates)
         "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=(0, 3, 4)),
         "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=(0, 3, 4)),
         "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=(0, 3, 4)),

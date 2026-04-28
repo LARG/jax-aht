@@ -5,7 +5,18 @@ Command to run ROTATE only on LBF:
 python open_ended_training/run.py algorithm=rotate/lbf task=lbf label=test_rotate
 
 Suggested debug command:
-python open_ended_training/run.py algorithm=rotate/lbf task=lbf label=test_rotate logger.mode=offline algorithm.NUM_OPEN_ENDED_ITERS=1 algorithm.TIMESTEPS_PER_ITER_PARTNER=1e5 algorithm.TIMESTEPS_PER_ITER_EGO=1e5
+python open_ended_training/run.py \
+    algorithm=rotate/lbf \
+    task=lbf \
+    label=test_rotate \
+    algorithm.NUM_OPEN_ENDED_ITERS=1 \
+    algorithm.TIMESTEPS_PER_ITER_PARTNER=1e5 \
+    algorithm.TIMESTEPS_PER_ITER_EGO=1e5 \
+    logger.mode=offline \
+    logger.log_train_out=false \
+    logger.log_eval_out=false \
+    local_logger.save_train_out=false \
+    local_logger.save_eval_out=false
 '''
 import copy
 from functools import partial
@@ -1172,9 +1183,6 @@ def train_persistent(rng, env, algorithm_config, ego_config):
         length=algorithm_config["NUM_OPEN_ENDED_ITERS"]
     )
 
-    # Save only the buffer from the last iteration of OEL, rather than all iterations
-    outs[1]["final_buffer"] = get_final_buffer(outs[1]["final_buffer"])
-
     return outs
 
 def run_rotate(config, wandb_logger):
@@ -1211,13 +1219,17 @@ def run_rotate(config, wandb_logger):
 
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
 
-    # Log metrics
-    log_metrics(config, wandb_logger, outs, metric_names)
-
     # Prepare return values for heldout evaluation
-    _, ego_outs = outs
+    teammate_outs, ego_outs = outs
     ego_params = jax.tree_map(lambda x: x[:, :, 0], ego_outs["final_params"]) # shape (num_seeds, num_open_ended_iters, 1, num_ckpts, leaf_dim)
     ego_policy, init_ego_params = initialize_s5_agent(algorithm_config, env, init_ego_rng)
+
+    # Log metrics
+    # Save only the buffer from the last iteration of OEL, rather than all iterations
+    ego_outs["final_buffer"] = get_final_buffer(ego_outs["final_buffer"])
+    # Save only the final ego agent from the last iteration of OEL
+    ego_outs["final_params"] = jax.tree_map(lambda x: x[:, -1], ego_outs["final_params"])
+    log_metrics(config, wandb_logger, (teammate_outs, ego_outs), metric_names)
 
     return ego_policy, ego_params, init_ego_params
 
@@ -1237,7 +1249,7 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     num_seeds, num_open_ended_iters, _, num_ego_updates = ego_metrics["returned_episode_returns"].shape[:4]
     num_partner_updates = teammate_metrics["returned_episode_returns"].shape[3]
 
-    ### Process/extract PAIRED-specific losses
+    ### Process/extract ROTATE-specific losses
     # Conf vs ego, conf vs br, br losses
     # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates, num_eval_episodes, num_agents_per_env)
     teammate_mean_dims = (0, 2, 4, 5)

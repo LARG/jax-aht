@@ -2,10 +2,12 @@ defaults:
   - ppo_ego/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 1.2e8
+TOTAL_TIMESTEPS: 1.5e7
+NUM_ENVS: 128
+ACTIVATION: "tanh"
 NUM_MINIBATCHES: 8
-LR: 3e-5
-ENT_COEF: .001
+LR: 1e-3
+ENT_COEF: 1e-3
 CLIP_EPS: 0.1
 UPDATE_EPOCHS: 10
 ANNEAL_LR: false
