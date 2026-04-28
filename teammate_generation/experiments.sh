@@ -2,10 +2,8 @@
 
 # Algorithm to run
 algo="fcp"
-label="jax-aht:test"
-num_seeds=10
-log_train_out="false"
-log_local_out="false"
+label="neurips:benchmark"
+num_seeds=5
 # Create log directory if it doesn't exist
 mkdir -p results/teammate_generation_logs/${algo}/${label}
 
@@ -20,7 +18,7 @@ tasks=(
     "overcooked-v1/counter_circuit"
     "overcooked-v1/cramped_room"
     "overcooked-v1/forced_coord"
-    "lbf"
+    # "lbf"
 )
 
 # Function to log messages
@@ -38,11 +36,8 @@ failure_count=0
 for task in "${tasks[@]}"; do
     log "Starting task: ${algo}/${task}"
     
-    if python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
+    if PYTHONPATH=. XLA_PYTHON_CLIENT_PREALLOCATE=false python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
         algorithm.NUM_SEEDS="${num_seeds}" \
-        logger.log_train_out="${log_train_out}" \
-        local_logger.save_train_out="${log_local_out}" \
-        local_logger.save_eval_out="${log_local_out}" \
         2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
         ((success_count++))
