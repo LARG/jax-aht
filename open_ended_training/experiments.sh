@@ -2,8 +2,8 @@
 
 # Algorithm to run
 algo="rotate"
-label="jax-aht:test"
-num_seeds=3
+label="neurips:benchmark"
+num_seeds=5
 
 # Create log directory if it doesn't exist
 mkdir -p results/oe_logs/${algo}/${label}

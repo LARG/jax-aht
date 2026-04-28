@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="fcp"
+algo="brdiv"
 label="neurips:benchmark"
 num_seeds=5
 # Create log directory if it doesn't exist
