@@ -13,14 +13,17 @@ GAMMA: 0.99
 # SAP value bounds.
 # Observed SAP episode return: -200 (40 steps x -1 x 5 orders, no collision possible).
 # Buffer added for safety.
-VMIN: -250
+VMIN: -20000
 VMAX: 0
 
 # Joint value bounds.
-# Worst case: collision at step 1 with 10 orders pending.
-# Combined: COLLISION_PENALTY(-220) + step_penalty(-5) per truck x2 = -450.
-JOINT_VMIN: -500
+JOINT_VMIN: -25000
 JOINT_VMAX: 0
+
+# Increase bins so bin_width = 20000/499 ≈ 40 units — enough to distinguish
+# -200 from -400 (5 bins apart) without triggering the mysterious -14800 issue
+# that appears when VMIN is set tight (-250/-500).
+NUM_BINS: 500
 
 ANNEAL_LR: false
 NUM_EPOCHS: 4
