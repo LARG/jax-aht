@@ -155,6 +155,11 @@ if __name__ == "__main__":
             "filename": "overcooked-v1",
             "target_directory": "eval_teammates/",
         },
+        "lbf_12x12_teammates": {
+            "type": "dir",
+            "filename": "lbf_12x12",
+            "target_directory": "eval_teammates/",
+        },
     }
 
     for data_name, data_info in data_files.items():
