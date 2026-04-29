@@ -52,8 +52,8 @@ def _filter_agent_br_pairs(pairs):
 # Config — paths are relative to the repo root (two levels up from this script)
 _REPO_ROOT = Path(__file__).parent.parent.parent
 DEFAULT_DATA_DIR = str(_REPO_ROOT / "results/lbf/trajectory_data")
-DEFAULT_MODEL_DIR = str(_REPO_ROOT / "results/lbf/autoencoder_models")
-DEFAULT_MODEL_FILE = "autoencoder"
+DEFAULT_MODEL_DIR = str(_REPO_ROOT / "results/lbf/models")
+DEFAULT_MODEL_FILE = "trajectory_classifier"
 DEFAULT_OUTPUT_FILE = str(_REPO_ROOT / "results/lbf/tsne_trajectory_visualization.png")
 DEFAULT_LATENTS_FILE = str(_REPO_ROOT / "results/lbf/latents.pkl")
 
@@ -70,7 +70,7 @@ def collect_latents(
 
     if not model_path.exists():
         raise FileNotFoundError(
-            f"Trained model not found at {model_path}. Run train_autoencoder.py first."
+            f"Trained model not found at {model_path}. Run train_classifier.py first."
         )
 
     print(f"Loading trained model from {model_path}...")

@@ -16,9 +16,15 @@ from trajectory_collection import (
 DEFAULT_ENV_NAME = "overcooked-v1/coord_ring"
 DEFAULT_ENV_KWARGS = {}
 DEFAULT_NUM_ENVS = 2048
-DEFAULT_ROLLOUT_STEPS = 64
+DEFAULT_ROLLOUT_STEPS = None  # auto-selected based on env when not provided
 DEFAULT_K = 1
 DEFAULT_DATA_DIR = "results/overcooked-v1/coord_ring/trajectory_data"
+
+
+def _default_rollout_steps(env_name: str) -> int:
+    if env_name.startswith("overcooked"):
+        return 450  # overcooked episodes last up to 400 steps
+    return 128  # sufficient for LBF and other short-episode envs
 
 
 def main(
@@ -29,6 +35,9 @@ def main(
     data_dir=DEFAULT_DATA_DIR,
 ):
     """Collect and save trajectories."""
+    if rollout_steps is None:
+        rollout_steps = _default_rollout_steps(env_name)
+
     data_path = Path(data_dir)
     data_path.mkdir(parents=True, exist_ok=True)
 

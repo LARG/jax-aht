@@ -17,7 +17,7 @@ from trajectory_autoencoder import (
 from common.save_load_utils import save_train_run
 # Config
 DEFAULT_DATA_DIR = "results/overcooked-v1/coord_ring/trajectory_data"
-DEFAULT_MODEL_DIR = "results/overcooked-v1/coord_ring/autoencoder_models"
+DEFAULT_MODEL_DIR = "results/overcooked-v1/coord_ring/models"
 DEFAULT_ENV_NAME = "overcooked-v1/coord_ring"
 DEFAULT_HIDDEN_DIM = 64
 DEFAULT_LATENT_DIM = 16
@@ -45,7 +45,7 @@ def main(
     batch_size=DEFAULT_BATCH_SIZE,
     max_samples_per_class=DEFAULT_MAX_SAMPLES_PER_CLASS,
 ):
-    """Train autoencoder on saved trajectories."""
+    """Train classifier on saved trajectories."""
     data_path = Path(data_dir)
     model_path = Path(model_dir)
     model_path.mkdir(parents=True, exist_ok=True)
@@ -110,7 +110,7 @@ def main(
         "label_to_idx": {k: np.array(v, dtype=np.int32) for k, v in label_to_idx.items()},
     }
 
-    save_path = save_train_run(checkpoint, model_dir, "autoencoder")
+    save_path = save_train_run(checkpoint, model_dir, "trajectory_classifier")
     print(f"Model saved to {save_path}")
 
     # Save training losses
@@ -123,7 +123,7 @@ def main(
     plt.plot(losses)
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    plt.title('Autoencoder Training Loss Curve')
+    plt.title('LSTM Classifier Training Loss Curve')
     plt.grid(True)
     loss_plot_file = model_path / "loss_curve.png"
     plt.savefig(loss_plot_file)
@@ -132,7 +132,7 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train trajectory autoencoder on saved data.")
+    parser = argparse.ArgumentParser(description="Train trajectory classifier on saved data.")
     parser.add_argument("--data_dir", type=str, default=DEFAULT_DATA_DIR, help="Directory containing trajectory data")
     parser.add_argument("--model_dir", type=str, default=DEFAULT_MODEL_DIR, help="Directory to save trained model")
     parser.add_argument("--env_name", type=str, default=DEFAULT_ENV_NAME, help="Environment name")

@@ -64,7 +64,7 @@ if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
     exit 1
 fi
 DATA_DIR="results/${ENV_NAME}/trajectory_data"
-MODEL_DIR="results/${ENV_NAME}/autoencoder_models"
+MODEL_DIR="results/${ENV_NAME}/models"
 OUTPUT_FILE="results/${ENV_NAME}/tsne_trajectory_visualization.png"
 
 # Default parameters for the scripts
@@ -86,7 +86,7 @@ echo ""
 echo "The pipeline will run the following steps sequentially:"
 echo "1. Activate conda environment (${CONDA_ENV_NAME})"
 echo "2. Collect trajectories from agent pairs"
-echo "3. Train LSTM autoencoder on trajectories"
+echo "3. Train LSTM classifier on trajectories"
 echo "4. Generate t-SNE visualizations"
 echo ""
 echo "Each step will wait for the previous one to complete before starting."
@@ -95,7 +95,7 @@ echo "Each step will wait for the previous one to complete before starting."
 tmux new-session -d -s "${SESSION_NAME}"
 
 # Send commands to activate conda environment and run the pipeline sequentially
-tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --env_name ${ENV_NAME} --k ${K} --num_envs ${NUM_ENVS} --rollout_steps ${ROLLOUT_STEPS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_autoencoder.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --env_name ${ENV_NAME} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --env_name ${ENV_NAME} --k 5 --num_envs 256 --rollout_steps 128 && echo 'Pipeline complete!'" C-m
+tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --env_name ${ENV_NAME} --k ${K} --num_envs ${NUM_ENVS} --rollout_steps ${ROLLOUT_STEPS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_classifier.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --env_name ${ENV_NAME} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --env_name ${ENV_NAME} --k 5 --num_envs 256 --rollout_steps 128 && echo 'Pipeline complete!'" C-m
 
 echo "Pipeline started in tmux session '${SESSION_NAME}'"
 echo "The commands will execute sequentially - each step waits for the previous to complete."

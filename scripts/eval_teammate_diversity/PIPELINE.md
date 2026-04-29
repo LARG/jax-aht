@@ -8,7 +8,7 @@ This directory contains three independent scripts for collecting trajectories, t
 results/<env>/
 ├── trajectory_data/                      # Collected trajectories (collect_trajectories.py)
 │   └── heldout_episodes.pkl              # Heldout pairwise trajectories with pair labels
-├── autoencoder_models/                   # Trained models (train_autoencoder.py)
+├── models/                               # Trained models (train_classifier.py)
 │   ├── autoencoder.pkl
 │   ├── training_losses.npy
 │   └── loss_curve.png
@@ -46,9 +46,9 @@ python scripts/eval_teammate_diversity/collect_trajectories.py \
 Train the recurrent LSTM classifier on the collected trajectories. The model predicts agent-pair type directly from observations (no reconstruction objective):
 
 ```bash
-python scripts/eval_teammate_diversity/train_autoencoder.py \
+python scripts/eval_teammate_diversity/train_classifier.py \
     --data_dir results/overcooked-v1/coord_ring/trajectory_data \
-    --model_dir results/overcooked-v1/coord_ring/autoencoder_models \
+    --model_dir results/overcooked-v1/coord_ring/models \
     --env_name overcooked-v1/coord_ring \
     --hidden_dim 64 \
     --latent_dim 16 \
@@ -60,7 +60,7 @@ python scripts/eval_teammate_diversity/train_autoencoder.py \
 
 **Options:**
 - `--data_dir`: Directory containing trajectory data
-- `--model_dir`: Directory to save trained model (default: `"results/overcooked-v1/coord_ring/autoencoder_models"`)
+- `--model_dir`: Directory to save trained model (default: `"results/overcooked-v1/coord_ring/models"`)
 - `--env_name`: Environment name for `obs_dim` inference
 - `--hidden_dim`: LSTM hidden dimension (default: `64`)
 - `--latent_dim`: Latent/embedding dimension (default: `16`)
@@ -70,7 +70,7 @@ python scripts/eval_teammate_diversity/train_autoencoder.py \
 - `--max_samples_per_class`: Max training episodes per class; `0` = use all data (default: `5000`)
 
 **Output:**
-- `autoencoder` — model params and config
+- `trajectory_classifier` — model params and config
 - `training_losses.npy` — per-epoch loss array
 - `loss_curve.png` — training loss plot
 
@@ -81,8 +81,8 @@ Encode trajectories into latents and create a t-SNE visualization:
 ```bash
 python scripts/eval_teammate_diversity/visualize_trajectories.py \
     --data_dir results/overcooked-v1/coord_ring/trajectory_data \
-    --model_dir results/overcooked-v1/coord_ring/autoencoder_models \
-    --model_file autoencoder \
+    --model_dir results/overcooked-v1/coord_ring/models \
+    --model_file trajectory_classifier \
     --output_file results/overcooked-v1/coord_ring/tsne_trajectory_visualization.png \
     --latents_file results/overcooked-v1/coord_ring/latents.pkl
 ```
@@ -99,7 +99,7 @@ python scripts/eval_teammate_diversity/visualize_trajectories.py \
 **Options:**
 - `--data_dir`: Directory containing trajectory data
 - `--model_dir`: Directory containing trained model
-- `--model_file`: Trained model filename (default: `"autoencoder"`)
+- `--model_file`: Trained model filename (default: `"trajectory_classifier"`)
 - `--output_file`: Output visualization filename (default: `"results/overcooked-v1/coord_ring/tsne_trajectory_visualization.png"`)
 - `--latents_file`: Path to save/load encoded latents (default: `"results/overcooked-v1/coord_ring/latents.pkl"`)
 - `--plot-only`: Skip encoding; plot directly from a saved `latents_file`

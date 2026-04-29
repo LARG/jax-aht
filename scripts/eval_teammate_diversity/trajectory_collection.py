@@ -11,6 +11,18 @@ from common.agent_loader_from_config import (
     HEURISTIC_ACTOR_TYPES,
 )
 
+def _get_avail_actions(state, agent, env, num_envs):
+    """Return avail_actions for a single agent from a batched state.
+
+    LBF stores avail_actions as a dict in the state; overcooked stores a flat
+    placeholder array. In the latter case all actions are always available.
+    """
+    if isinstance(state.avail_actions, dict):
+        return state.avail_actions[agent]
+    n_actions = env.action_space(agent).n
+    return jnp.ones((num_envs, n_actions))
+
+
 def collect_random_trajectories(rng, env, num_rollouts, rollout_steps, num_envs=256):
     all_episodes = []
 
@@ -26,7 +38,7 @@ def collect_random_trajectories(rng, env, num_rollouts, rollout_steps, num_envs=
             actions = {}
             for agent in env.agents:
                 rng, rng_a = jax.random.split(rng)
-                avail = state.avail_actions[agent]
+                avail = _get_avail_actions(state, agent, env, num_envs)
                 rng_keys = jax.random.split(rng_a, num_envs)
                 logits = jnp.where(avail, 0.0, -1e10)
                 actions[agent] = jax.vmap(lambda key, lg: jax.random.categorical(key, lg))(rng_keys, logits)
@@ -151,7 +163,7 @@ def collect_pair_trajectories(
                 teammate_params,
                 obs[agent0],
                 jnp.zeros(num_envs, dtype=bool),
-                state.avail_actions[agent0],
+                _get_avail_actions(state, agent0, env, num_envs),
                 teammate_hstate,
                 rng_t,
                 state,
@@ -161,7 +173,7 @@ def collect_pair_trajectories(
                 br_params,
                 obs[agent1],
                 jnp.zeros(num_envs, dtype=bool),
-                state.avail_actions[agent1],
+                _get_avail_actions(state, agent1, env, num_envs),
                 br_hstate,
                 rng_b,
                 state,
