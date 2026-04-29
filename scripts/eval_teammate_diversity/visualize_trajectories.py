@@ -178,6 +178,7 @@ def collect_latents(
 def plot(
     latents_file=DEFAULT_LATENTS_FILE,
     output_file=DEFAULT_OUTPUT_FILE,
+    plot_title="t-SNE",
 ):
     """Load saved latents and produce confusion matrix + t-SNE plots."""
     if not Path(latents_file).exists():
@@ -199,13 +200,14 @@ def plot(
     accuracy = np.mean(predictions == all_true_labels)
     print(f"Accuracy: {accuracy:.4f}")
 
-    label_names = [idx_to_label[i] for i in range(num_classes)]
+    unique_labels = np.unique(np.concatenate([all_true_labels, predictions]))
+    label_names = [idx_to_label[i] for i in unique_labels]
 
     print(f"Creating t-SNE visualization from latent encodings...")
-    plot_tsne(latents_dict, save_path=output_file)
+    plot_tsne(latents_dict, save_path=output_file, title=plot_title)
 
     print("\nClassification Report:")
-    print(classification_report(all_true_labels, predictions, target_names=label_names))
+    print(classification_report(all_true_labels, predictions, labels=unique_labels, target_names=label_names))
 
     print(f"Evaluation complete. t-SNE saved to {output_file}")
 
@@ -217,6 +219,7 @@ def main(
     output_file=DEFAULT_OUTPUT_FILE,
     latents_file=DEFAULT_LATENTS_FILE,
     plot_only=False,
+    plot_title="t-SNE",
 ):
     if not plot_only:
         collect_latents(
@@ -225,7 +228,7 @@ def main(
             model_file=model_file,
             latents_file=latents_file,
         )
-    plot(latents_file=latents_file, output_file=output_file)
+    plot(latents_file=latents_file, output_file=output_file, plot_title=plot_title)
 
 
 if __name__ == "__main__":
@@ -236,6 +239,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_file", type=str, default=DEFAULT_OUTPUT_FILE, help="Output visualization filename")
     parser.add_argument("--latents_file", type=str, default=DEFAULT_LATENTS_FILE, help="Path to save/load encoded latents")
     parser.add_argument("--plot-only", action="store_true", help="Skip data collection and plot from saved latents file")
+    parser.add_argument("--plot_title", type=str, default="t-SNE", help="Title for the t-SNE plot")
     args = parser.parse_args()
     main(
         data_dir=args.data_dir,
@@ -244,4 +248,5 @@ if __name__ == "__main__":
         output_file=args.output_file,
         latents_file=args.latents_file,
         plot_only=args.plot_only,
+        plot_title=args.plot_title,
     )

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
 
-def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
+def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30, title="t-SNE"):
     # Validate input
     if not latents_dict:
         print("ERROR: latents_dict is empty!")
@@ -45,9 +45,14 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
 
     fig, ax = plt.subplots(figsize=(6, 5))
     unique_labels = list(latents_dict.keys())
-    n_cats = max(len(unique_labels), 1)
-    cmap = plt.cm.get_cmap("tab20", n_cats)
-    colors = [cmap(i) for i in range(n_cats)]
+
+    _TYPE_CMAPS = {
+        "ippo":   plt.cm.Greens,
+        "brdiv":  plt.cm.Blues,
+        "comedi": plt.cm.Purples,
+        "lbrdiv": plt.cm.Oranges,
+        "seq":    plt.cm.Reds,
+    }
 
     _DISPLAY_NAMES = {
         "brdiv-conf1_0": "brdiv1-0",
@@ -65,10 +70,45 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
         "seq_agent_rlexi": "seq-rlexi",
     }
 
+    _AGENT_MARKERS = {
+        "ippo": "o",
+        "brdiv": "^",
+        "comedi": "s",
+        "lbrdiv": "v",
+        "seq": "P",
+    }
+
+    def _agent_type(agent_name):
+        for prefix in ("lbrdiv", "brdiv", "comedi", "ippo", "seq"):
+            if agent_name.startswith(prefix):
+                return prefix
+        return None
+
     def _display_name(label):
         br_marker = "_br_for_"
         agent = label[:label.index(br_marker)] if br_marker in label else label
         return _DISPLAY_NAMES.get(agent, agent)
+
+    def _marker(label):
+        br_marker = "_br_for_"
+        agent = label[:label.index(br_marker)] if br_marker in label else label
+        atype = _agent_type(agent)
+        return _AGENT_MARKERS.get(atype, "o")
+
+    # Group labels by agent type, then assign shades within each type's colormap.
+    from collections import defaultdict
+    type_to_labels = defaultdict(list)
+    for label in unique_labels:
+        br_marker = "_br_for_"
+        agent = label[:label.index(br_marker)] if br_marker in label else label
+        type_to_labels[_agent_type(agent)].append(label)
+
+    label_colors = {}
+    for atype, type_labels in type_to_labels.items():
+        cmap = _TYPE_CMAPS.get(atype, plt.cm.Greys)
+        shades = np.linspace(0.4, 0.85, max(len(type_labels), 1))
+        for label, shade in zip(type_labels, shades):
+            label_colors[label] = cmap(shade)
 
     offset = 0
     plotted_count = 0
@@ -79,8 +119,9 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
             ax.scatter(
                 embedding_slice[:, 0],
                 embedding_slice[:, 1],
-                c=[colors[i]],
+                color=label_colors[label],
                 label=_display_name(label),
+                marker=_marker(label),
                 alpha=0.6,
                 s=20,
             )
@@ -90,7 +131,7 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
     print(f"Actually plotted {plotted_count} points")
     leg = ax.legend(loc='center left', bbox_to_anchor=(1.01, 0.5), fontsize=10, markerscale=1.2, handlelength=1.0, borderpad=0.4, labelspacing=0.3)
     leg.get_frame().set_alpha(0.4)
-    ax.set_title("LBF (7x7)", fontsize=20)
+    ax.set_title(title, fontsize=20)
     ax.set_xlabel("t-SNE 1", fontsize=20)
     ax.set_ylabel("t-SNE 2", fontsize=20)
     ax.tick_params(axis='both', labelsize=17)
