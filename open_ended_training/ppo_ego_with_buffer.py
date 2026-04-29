@@ -317,12 +317,16 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
                 _, loss_terms, avg_grad_norm = losses_and_grads
 
                 # Metrics
-                metric = traj_batch.info
+                def mask_and_mean(x, mask):
+                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+
+                mask = traj_batch.info.get("returned_episode", jnp.ones_like(traj_batch.reward))
+                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
                 metric["update_steps"] = update_steps
-                metric["actor_loss"] = loss_terms[1]
-                metric["value_loss"] = loss_terms[0]
-                metric["entropy_loss"] = loss_terms[2]
-                metric["avg_grad_norm"] = avg_grad_norm
+                metric["actor_loss"] = loss_terms[1].mean()
+                metric["value_loss"] = loss_terms[0].mean()
+                metric["entropy_loss"] = loss_terms[2].mean()
+                metric["avg_grad_norm"] = avg_grad_norm.mean()
                 new_runner_state = (train_state, buffer, rng, update_steps + 1)
                 return (new_runner_state, metric)
 
