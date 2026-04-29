@@ -112,9 +112,9 @@ heldout_set:
         percent_eaten: [[0.0, 100.0]]
         returned_episode_returns: [[0.0, 0.5]]
     comedi:
-      path: "results/lbf/lbf_12x12/comedi/heldout_teammates/2026-04-29_00-28-53/saved_train_run"
+      path: "eval_teammates/lbf_12x12/comedi/2026-04-29_00-28-53/saved_train_run"
       actor_type: actor_with_conditional_critic
-      idx_list: [[-1, 0], [-1, 2], [-1, 4], [-1, 6], [-1, 8]] # TODO: has shape 5, 10, 64 (no checkpoint dimension which is causing annoying issues
+      idx_list: [[-1, 0], [-1, 2], [-1, 4], [-1, 6], [-1, 8]]
       ckpt_key: final_params_conf
       POP_SIZE: 10
       test_mode: false
