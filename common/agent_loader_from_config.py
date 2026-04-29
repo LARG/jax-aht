@@ -74,7 +74,8 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
     agent_config must include "actor_type".
     env_kwargs is used as a fallback for env-level parameters (e.g. grid_size,
     num_fruits for lbf; layout for overcooked-v1).  Per-agent values in
-    agent_config take priority.
+    agent_config take priority. Note that the LBF enviornment calls this
+    'num_food'.
 
     Returns:
         policy: policy function (no checkpoint or params required)
@@ -88,7 +89,7 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
     if 'lbf' in task_name:
         # Grid dimensions: per-agent config > env_kwargs > defaults (7x7, 3 fruits).
         grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
-        num_fruits = agent_config.get("num_food", env_kwargs.get("num_fruits", 3))
+        num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_food", 3))
 
         if actor_type == "random_agent":
             return LBFRandomPolicyWrapper()
