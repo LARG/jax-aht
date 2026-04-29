@@ -2,10 +2,10 @@
 https://ojs.aaai.org/index.php/AAAI/article/view/29702
 
 Command to run LBRDiv only on LBF:
-python teammate_generation/run.py algorithm=lbrdiv/lbf task=lbf label=test_lbrdiv run_heldout_eval=false train_ego=false
+python teammate_generation/run.py algorithm=lbrdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_lbrdiv run_heldout_eval=false train_ego=false
 
 Suggested Debug command:
-python teammate_generation/run.py algorithm=lbrdiv/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5 algorithm.PARTNER_POP_SIZE=2 train_ego=false run_heldout_eval=false
+python teammate_generation/run.py algorithm=lbrdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5 algorithm.PARTNER_POP_SIZE=2 train_ego=false run_heldout_eval=false
 
 Limitations: does not support recurrent actors.
 '''

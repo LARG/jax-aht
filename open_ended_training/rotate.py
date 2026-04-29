@@ -2,12 +2,12 @@
 https://arxiv.org/abs/2505.23686
 
 Command to run ROTATE only on LBF:
-python open_ended_training/run.py algorithm=rotate/lbf task=lbf label=test_rotate
+python open_ended_training/run.py algorithm=rotate/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_rotate
 
 Suggested debug command:
 python open_ended_training/run.py \
-    algorithm=rotate/lbf \
-    task=lbf \
+    algorithm=rotate/lbf/lbf_7x7_nolevels \
+    task=lbf/lbf_7x7_nolevels \
     label=test_rotate \
     algorithm.NUM_OPEN_ENDED_ITERS=1 \
     algorithm.TIMESTEPS_PER_ITER_PARTNER=1e5 \
