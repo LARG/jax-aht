@@ -20,7 +20,7 @@ from evaluation.trajectory_collection import (
     collect_pair_trajectories,
     get_agent_pair_configs,
 )
-from evaluation.trajectory_plot import plot_tsne
+from evaluation.plot_tsne_trajectory import plot_tsne
 from envs import make_env
 
 
