@@ -8,16 +8,17 @@ import jax
 import numpy as np
 import matplotlib.pyplot as plt
 
-from evaluation.trajectory_autoencoder import (
+from trajectory_autoencoder import (
     init_classifier,
     make_classifier_train_step,
     train_classifier,
     pad_labeled_episodes,
 )
+from common.save_load_utils import save_train_run
 # Config
-DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
-DEFAULT_MODEL_DIR = "results/lbf/autoencoder_models"
-DEFAULT_ENV_NAME = "lbf"
+DEFAULT_DATA_DIR = "results/overcooked-v1/coord_ring/trajectory_data"
+DEFAULT_MODEL_DIR = "results/overcooked-v1/coord_ring/autoencoder_models"
+DEFAULT_ENV_NAME = "overcooked-v1/coord_ring"
 DEFAULT_HIDDEN_DIM = 64
 DEFAULT_LATENT_DIM = 16
 DEFAULT_LEARNING_RATE = 3e-4
@@ -60,7 +61,6 @@ def main(
     episodes_with_labels = data["episodes"]
     pair_labels = data["pair_labels"]
     print(f"Loaded {len(episodes_with_labels)} heldout pairwise episodes.")
-    print(f"Available pair labels: {list(pair_labels.values())}")
 
     obs_dim = get_obs_dim(env_name)
     padded_episodes, masks, labels, max_seq_len, label_to_idx = pad_labeled_episodes(
@@ -95,24 +95,23 @@ def main(
     )
 
     print("Training complete. Saving model...")
-    
-    # Save only the parameters and config (JAX model objects aren't pickleable)
+
+    # Wrap scalar config values and label_to_idx values as numpy arrays so
+    # orbax can serialize them alongside the params pytree.
     checkpoint = {
         "params": train_state.params,
         "config": {
-            "hidden_dim": hidden_dim,
-            "latent_dim": latent_dim,
-            "obs_dim": obs_dim,
-            "max_seq_len": max_seq_len,
-            "num_classes": num_classes,
-            "label_to_idx": label_to_idx,
-        }
+            "hidden_dim": np.array(hidden_dim, dtype=np.int32),
+            "latent_dim": np.array(latent_dim, dtype=np.int32),
+            "obs_dim": np.array(obs_dim, dtype=np.int32),
+            "max_seq_len": np.array(max_seq_len, dtype=np.int32),
+            "num_classes": np.array(num_classes, dtype=np.int32),
+        },
+        "label_to_idx": {k: np.array(v, dtype=np.int32) for k, v in label_to_idx.items()},
     }
-    
-    model_file = model_path / "autoencoder.pkl"
-    with open(model_file, "wb") as f:
-        pickle.dump(checkpoint, f)
-    print(f"Model saved to {model_file}")
+
+    save_path = save_train_run(checkpoint, model_dir, "autoencoder")
+    print(f"Model saved to {save_path}")
 
     # Save training losses
     loss_file = model_path / "training_losses.npy"

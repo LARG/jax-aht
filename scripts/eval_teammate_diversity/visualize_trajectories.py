@@ -11,16 +11,17 @@ from flax.training.train_state import TrainState
 import optax
 from sklearn.metrics import classification_report
 
-from evaluation.trajectory_autoencoder import (
+from trajectory_autoencoder import (
     create_classifier,
     make_classifier_eval_step,
     pad_labeled_episodes,
 )
-from evaluation.trajectory_collection import (
+from trajectory_collection import (
     collect_pair_trajectories,
     get_agent_pair_configs,
 )
-from evaluation.plot_tsne_trajectory import plot_tsne
+from plot_tsne_trajectory import plot_tsne
+from common.save_load_utils import load_train_run
 from envs import make_env
 
 
@@ -42,7 +43,7 @@ def _filter_agent_br_pairs(pairs):
 # Config
 DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
 DEFAULT_MODEL_DIR = "results/lbf/autoencoder_models"
-DEFAULT_MODEL_FILE = "autoencoder.pkl"
+DEFAULT_MODEL_FILE = "autoencoder"
 DEFAULT_OUTPUT_FILE = "results/lbf/tsne_trajectory_visualization.png"
 DEFAULT_LATENTS_FILE = "results/lbf/latents.pkl"
 
@@ -63,19 +64,18 @@ def collect_latents(
         )
 
     print(f"Loading trained model from {model_path}...")
-    with open(model_path, "rb") as f:
-        checkpoint = pickle.load(f)
+    restored = load_train_run(str(model_path))
 
-    params = checkpoint["params"]
-    config = checkpoint["config"]
-    hidden_dim = config["hidden_dim"]
-    latent_dim = config["latent_dim"]
-    obs_dim = config["obs_dim"]
-    max_seq_len = config["max_seq_len"]
-    num_classes = config["num_classes"]
-    label_to_idx = config["label_to_idx"]
+    params = restored["params"]
+    config = restored["config"]
+    hidden_dim = int(config["hidden_dim"])
+    latent_dim = int(config["latent_dim"])
+    obs_dim = int(config["obs_dim"])
+    max_seq_len = int(config["max_seq_len"])
+    num_classes = int(config["num_classes"])
+    label_to_idx = {k: int(v) for k, v in restored["label_to_idx"].items()}
 
-    print(f"Model config: {config}")
+    print(f"Model config: hidden_dim={hidden_dim}, latent_dim={latent_dim}, obs_dim={obs_dim}, max_seq_len={max_seq_len}, num_classes={num_classes}")
 
     model = create_classifier(obs_dim, max_seq_len, hidden_dim, num_classes, latent_dim)
     tx = optax.adam(1e-3)

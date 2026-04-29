@@ -8,18 +8,17 @@ import jax
 import numpy as np
 
 from envs import make_env
-from evaluation.trajectory_collection import (
+from trajectory_collection import (
     collect_heldout_pairwise_trajectories,
-    collect_ippo_selfplay_trajectories,
 )
 
 # Config
-DEFAULT_ENV_NAME = "lbf"
+DEFAULT_ENV_NAME = "overcooked-v1/coord_ring"
 DEFAULT_ENV_KWARGS = {}
 DEFAULT_NUM_ENVS = 2048
 DEFAULT_ROLLOUT_STEPS = 64
 DEFAULT_K = 1
-DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
+DEFAULT_DATA_DIR = "results/overcooked-v1/coord_ring/trajectory_data"
 
 
 def main(

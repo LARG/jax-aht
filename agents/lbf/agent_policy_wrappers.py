@@ -6,8 +6,6 @@ from agents.agent_interface import AgentPolicy
 from agents.lbf.random_agent import RandomAgent
 from agents.lbf.sequential_fruit_agent import SequentialFruitAgent
 
-
-
 class LBFRandomPolicyWrapper(AgentPolicy):
     def __init__(self):
         self.policy = RandomAgent() # agent id doesn't matter for the random agent

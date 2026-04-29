@@ -23,8 +23,8 @@ results/<env>/
 Collect and save pairwise heldout trajectory data:
 
 ```bash
-python evaluation/collect_trajectories.py \
-    --env_name lbf \
+python scripts/eval_teammate_diversity/collect_trajectories.py \
+    --env_name overcooked-v1/coord_ring \
     --k 1 \
     --num_envs 2048 \
     --rollout_steps 64 \
@@ -32,11 +32,11 @@ python evaluation/collect_trajectories.py \
 ```
 
 **Options:**
-- `--env_name`: Environment name (default: `"lbf"`)
+- `--env_name`: Environment name (default: `"overcooked-v1/coord_ring"`)
 - `--k`: Number of rollouts per agent pair (default: `1`)
 - `--num_envs`: Number of parallel environments (default: `2048`)
 - `--rollout_steps`: Steps per rollout (default: `64`)
-- `--data_dir`: Directory to save trajectory data (default: `"results/lbf/trajectory_data"`)
+- `--data_dir`: Directory to save trajectory data (default: `"results/overcooked-v1/coord_ring/trajectory_data"`)
 
 **Output:**
 - `heldout_episodes.pkl` — heldout pairwise trajectories with embedded pair labels
@@ -46,10 +46,10 @@ python evaluation/collect_trajectories.py \
 Train the recurrent LSTM classifier on the collected trajectories. The model predicts agent-pair type directly from observations (no reconstruction objective):
 
 ```bash
-python evaluation/train_autoencoder.py \
-    --data_dir results/lbf/trajectory_data \
-    --model_dir results/lbf/autoencoder_models \
-    --env_name lbf \
+python scripts/eval_teammate_diversity/train_autoencoder.py \
+    --data_dir results/overcooked-v1/coord_ring/trajectory_data \
+    --model_dir results/overcooked-v1/coord_ring/autoencoder_models \
+    --env_name overcooked-v1/coord_ring \
     --hidden_dim 64 \
     --latent_dim 16 \
     --learning_rate 3e-4 \
@@ -60,7 +60,7 @@ python evaluation/train_autoencoder.py \
 
 **Options:**
 - `--data_dir`: Directory containing trajectory data
-- `--model_dir`: Directory to save trained model (default: `"results/lbf/autoencoder_models"`)
+- `--model_dir`: Directory to save trained model (default: `"results/overcooked-v1/coord_ring/autoencoder_models"`)
 - `--env_name`: Environment name for `obs_dim` inference
 - `--hidden_dim`: LSTM hidden dimension (default: `64`)
 - `--latent_dim`: Latent/embedding dimension (default: `16`)
@@ -70,7 +70,7 @@ python evaluation/train_autoencoder.py \
 - `--max_samples_per_class`: Max training episodes per class; `0` = use all data (default: `5000`)
 
 **Output:**
-- `autoencoder.pkl` — model params and config
+- `autoencoder` — model params and config
 - `training_losses.npy` — per-epoch loss array
 - `loss_curve.png` — training loss plot
 
@@ -79,31 +79,31 @@ python evaluation/train_autoencoder.py \
 Encode trajectories into latents and create a t-SNE visualization:
 
 ```bash
-python evaluation/visualize_trajectories.py \
-    --data_dir results/lbf/trajectory_data \
-    --model_dir results/lbf/autoencoder_models \
-    --model_file autoencoder.pkl \
-    --output_file results/lbf/tsne_trajectory_visualization.png \
-    --latents_file results/lbf/latents.pkl
+python scripts/eval_teammate_diversity/visualize_trajectories.py \
+    --data_dir results/overcooked-v1/coord_ring/trajectory_data \
+    --model_dir results/overcooked-v1/coord_ring/autoencoder_models \
+    --model_file autoencoder \
+    --output_file results/overcooked-v1/coord_ring/tsne_trajectory_visualization.png \
+    --latents_file results/overcooked-v1/coord_ring/latents.pkl
 ```
 
 To skip re-encoding and plot from previously saved latents:
 
 ```bash
-python evaluation/visualize_trajectories.py \
-    --latents_file results/lbf/latents.pkl \
-    --output_file results/lbf/tsne_trajectory_visualization.png \
+python scripts/eval_teammate_diversity/visualize_trajectories.py \
+    --latents_file results/overcooked-v1/coord_ring/latents.pkl \
+    --output_file results/overcooked-v1/coord_ring/tsne_trajectory_visualization.png \
     --plot-only
 ```
 
 **Options:**
 - `--data_dir`: Directory containing trajectory data
 - `--model_dir`: Directory containing trained model
-- `--model_file`: Trained model filename (default: `"autoencoder.pkl"`)
-- `--output_file`: Output visualization filename (default: `"results/lbf/tsne_trajectory_visualization.png"`)
-- `--latents_file`: Path to save/load encoded latents (default: `"results/lbf/latents.pkl"`)
+- `--model_file`: Trained model filename (default: `"autoencoder"`)
+- `--output_file`: Output visualization filename (default: `"results/overcooked-v1/coord_ring/tsne_trajectory_visualization.png"`)
+- `--latents_file`: Path to save/load encoded latents (default: `"results/overcooked-v1/coord_ring/latents.pkl"`)
 - `--plot-only`: Skip encoding; plot directly from a saved `latents_file`
-- `--env_name`: Environment name (default: `"lbf"`)
+- `--env_name`: Environment name (default: `"overcooked-v1/coord_ring"`)
 - `--k`: Number of rollouts per agent pair (default: `5`)
 - `--num_envs`: Number of parallel environments (default: `256`)
 - `--rollout_steps`: Steps per rollout (default: `128`)
@@ -111,6 +111,7 @@ python evaluation/visualize_trajectories.py \
 **Output:**
 - `latents.pkl` — encoded latent vectors with labels
 - `tsne_trajectory_visualization.png` — t-SNE visualization
+- `tsne_trajectory_visualization.pdf` — pdf of t-SNE visualization
 
 ## Running the Full Pipeline (tmux)
 
@@ -118,13 +119,13 @@ Shell scripts are provided to run all three steps sequentially in a tmux session
 
 ```bash
 # LBF
-./evaluation/run_lbf_pipeline.sh
+./scripts/eval_teammate_diversity/run_lbf_pipeline.sh
 
 # Overcooked coord_ring
-./evaluation/run_overcooked_coord_ring_pipeline.sh
+./scripts/eval_teammate_diversity/run_overcooked_coord_ring_pipeline.sh
 ```
 
-Both scripts use sensible defaults (`K=3`, `NUM_ENVS=8192`, `ROLLOUT_STEPS=128`, `HIDDEN_DIM=128`, `LATENT_DIM=16`). Edit the configuration block at the top of each script to adjust parameters.
+Both scripts use sensible defaults (`K=1`, `NUM_ENVS=4096`, `ROLLOUT_STEPS=128`, `HIDDEN_DIM=64`, `LATENT_DIM=16`). Edit the configuration block at the top of each script to adjust parameters.
 
 To monitor progress after launching:
 

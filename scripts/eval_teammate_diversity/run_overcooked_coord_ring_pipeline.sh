@@ -34,6 +34,18 @@
 
 set -e  # Exit on any error
 
+# Resolve project root and conda base dynamically so this script works for any clone
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+if [ -n "${CONDA_EXE}" ]; then
+    CONDA_BASE="$(dirname "$(dirname "${CONDA_EXE}")")"
+elif command -v conda &> /dev/null; then
+    CONDA_BASE="$(conda info --base)"
+else
+    echo "Error: conda not found. Please ensure conda is initialized (run 'conda init') and re-open your shell."
+    exit 1
+fi
+
 # Check if tmux is available
 if ! command -v tmux &> /dev/null; then
     echo "Error: tmux is not installed. Please install tmux first."
@@ -42,20 +54,8 @@ fi
 
 # Configuration - adjust these as needed
 SESSION_NAME="overcooked_coord_ring_pipeline"
+CONDA_ENV_NAME="jax-aht"
 ENV_NAME="overcooked-v1/coord_ring"
-DATA_DIR="results/overcooked-v1/coord_ring/trajectory_data"
-MODEL_DIR="results/overcooked-v1/coord_ring/autoencoder_models"
-OUTPUT_FILE="results/overcooked-v1/coord_ring/tsne_trajectory_visualization.png"
-
-# Default parameters for the scripts
-K=3  # Number of rollouts per agent pair
-NUM_ENVS=8192  # Number of parallel environments
-ROLLOUT_STEPS=128  # Steps per rollout
-HIDDEN_DIM=128  # Autoencoder hidden dimension
-LATENT_DIM=16  # Autoencoder latent dimension
-LEARNING_RATE=0.0003  # Learning rate
-NUM_EPOCHS=200  # Training epochs
-BATCH_SIZE=64  # Training batch size
 
 # Check if session already exists
 if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
@@ -64,6 +64,19 @@ if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
     echo "To kill and restart: tmux kill-session -t ${SESSION_NAME} && $0"
     exit 1
 fi
+DATA_DIR="results/${ENV_NAME}/trajectory_data"
+MODEL_DIR="results/${ENV_NAME}/autoencoder_models"
+OUTPUT_FILE="results/${ENV_NAME}/tsne_trajectory_visualization.png"
+
+# Default parameters for the scripts
+K=1  # Number of rollouts per agent pair
+NUM_ENVS=4096  # Number of parallel environments
+ROLLOUT_STEPS=128  # Steps per rollout
+HIDDEN_DIM=64  # Autoencoder hidden dimension
+LATENT_DIM=16  # Autoencoder latent dimension
+LEARNING_RATE=0.0003  # Learning rate
+NUM_EPOCHS=200  # Training epochs
+BATCH_SIZE=512  # Training batch size
 
 echo "Starting trajectory pipeline in tmux session: ${SESSION_NAME}"
 echo "Environment: ${ENV_NAME}"
@@ -72,7 +85,7 @@ echo "Model directory: ${MODEL_DIR}"
 echo "Output file: ${OUTPUT_FILE}"
 echo ""
 echo "The pipeline will run the following steps sequentially:"
-echo "1. Activate conda environment (jax-aht)"
+echo "1. Activate conda environment (${CONDA_ENV_NAME})"
 echo "2. Collect trajectories from agent pairs"
 echo "3. Train LSTM autoencoder on trajectories"
 echo "4. Generate t-SNE visualizations"
@@ -83,7 +96,7 @@ echo "Each step will wait for the previous one to complete before starting."
 tmux new-session -d -s "${SESSION_NAME}"
 
 # Send commands to activate conda environment and run the pipeline sequentially
-tmux send-keys -t "${SESSION_NAME}" "source /scratch/cluster/adityam/miniconda3/etc/profile.d/conda.sh && conda activate jax-aht && cd /scratch/cluster/adityam/jax-aht && echo 'Starting trajectory collection...' && python evaluation/collect_trajectories.py --env_name ${ENV_NAME} --k ${K} --num_envs ${NUM_ENVS} --rollout_steps ${ROLLOUT_STEPS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && python evaluation/train_autoencoder.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --env_name ${ENV_NAME} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && python evaluation/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --env_name ${ENV_NAME} --k 5 --num_envs 256 --rollout_steps 128 && echo 'Pipeline complete!'" C-m
+tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --env_name ${ENV_NAME} --k ${K} --num_envs ${NUM_ENVS} --rollout_steps ${ROLLOUT_STEPS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_autoencoder.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --env_name ${ENV_NAME} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --env_name ${ENV_NAME} --k 5 --num_envs 256 --rollout_steps 128 && echo 'Pipeline complete!'" C-m
 
 echo "Pipeline started in tmux session '${SESSION_NAME}'"
 echo "The commands will execute sequentially - each step waits for the previous to complete."
