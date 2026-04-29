@@ -2,12 +2,12 @@
 https://arxiv.org/abs/2505.23686
 
 Command to run ROTATE only on LBF:
-python open_ended_training/run.py algorithm=rotate/lbf task=lbf label=test_rotate
+python open_ended_training/run.py algorithm=rotate/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_rotate
 
 Suggested debug command:
 python open_ended_training/run.py \
-    algorithm=rotate/lbf \
-    task=lbf \
+    algorithm=rotate/lbf/lbf_7x7_nolevels \
+    task=lbf/lbf_7x7_nolevels \
     label=test_rotate \
     algorithm.NUM_OPEN_ENDED_ITERS=1 \
     algorithm.TIMESTEPS_PER_ITER_PARTNER=1e5 \
@@ -832,23 +832,27 @@ def train_regret_maximizing_partners(config, env,
                 (br_value_loss, br_pg_loss, br_entropy) = br_losses[1]
 
                 # Metrics
-                metric = traj_batch_xp.info
+                def mask_and_mean(x, mask):
+                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+
+                mask = traj_batch_xp.info.get("returned_episode", jnp.ones_like(traj_batch_xp.reward))
+                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_xp.info)
                 metric["update_steps"] = update_steps
-                metric["value_loss_conf_against_ego"] = conf_value_loss_xp
-                metric["value_loss_conf_against_br"] = conf_value_loss_sp
+                metric["value_loss_conf_against_ego"] = conf_value_loss_xp.mean()
+                metric["value_loss_conf_against_br"] = conf_value_loss_sp.mean()
 
-                metric["pg_loss_conf_against_ego"] = conf_pg_loss_xp
-                metric["pg_loss_conf_against_br"] = conf_pg_loss_sp
+                metric["pg_loss_conf_against_ego"] = conf_pg_loss_xp.mean()
+                metric["pg_loss_conf_against_br"] = conf_pg_loss_sp.mean()
 
-                metric["entropy_conf_against_ego"] = conf_entropy_xp
-                metric["entropy_conf_against_br"] = conf_entropy_sp
+                metric["entropy_conf_against_ego"] = conf_entropy_xp.mean()
+                metric["entropy_conf_against_br"] = conf_entropy_sp.mean()
 
                 metric["average_rewards_ego"] = conf_avg_reward_ego
                 metric["average_rewards_br"] = conf_avg_reward_br
 
-                metric["value_loss_br"] = br_value_loss
-                metric["pg_loss_br"] = br_pg_loss
-                metric["entropy_loss_br"] = br_entropy
+                metric["value_loss_br"] = br_value_loss.mean()
+                metric["pg_loss_br"] = br_pg_loss.mean()
+                metric["entropy_loss_br"] = br_entropy.mean()
 
                 new_update_runner_state = (
                     train_state_conf, train_state_br,
@@ -1252,43 +1256,52 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     ### Process/extract ROTATE-specific losses
     # Conf vs ego, conf vs br, br losses
     # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates, num_eval_episodes, num_agents_per_env)
-    teammate_mean_dims = (0, 2, 4, 5)
-    avg_teammate_sp_returns = np.asarray(teammate_metrics["eval_ep_last_info_br"]["returned_episode_returns"]).mean(axis=teammate_mean_dims)
-    avg_teammate_xp_returns = np.asarray(teammate_metrics["eval_ep_last_info_ego"]["returned_episode_returns"]).mean(axis=teammate_mean_dims)
-
-    #  shape (num_open_ended_iters, num_partner_seeds, num_partner_updates, update_epochs, num_minibatches)
-    avg_value_losses_teammate_against_ego = np.asarray(teammate_metrics["value_loss_conf_against_ego"]).mean(axis=teammate_mean_dims)
-    avg_value_losses_teammate_against_br = np.asarray(teammate_metrics["value_loss_conf_against_br"]).mean(axis=teammate_mean_dims)
-    avg_value_losses_br = np.asarray(teammate_metrics["value_loss_br"]).mean(axis=teammate_mean_dims)
-
-    avg_actor_losses_teammate_against_ego = np.asarray(teammate_metrics["pg_loss_conf_against_ego"]).mean(axis=teammate_mean_dims)
-    avg_actor_losses_teammate_against_br = np.asarray(teammate_metrics["pg_loss_conf_against_br"]).mean(axis=teammate_mean_dims)
-    avg_actor_losses_br = np.asarray(teammate_metrics["pg_loss_br"]).mean(axis=teammate_mean_dims)
-
-    avg_entropy_losses_teammate_against_ego = np.asarray(teammate_metrics["entropy_conf_against_ego"]).mean(axis=teammate_mean_dims)
-    avg_entropy_losses_teammate_against_br = np.asarray(teammate_metrics["entropy_conf_against_br"]).mean(axis=teammate_mean_dims)
-    avg_entropy_losses_br = np.asarray(teammate_metrics["entropy_loss_br"]).mean(axis=teammate_mean_dims)
+    eval_mean_dims = (0, 2, 4, 5)
+    avg_teammate_sp_returns = np.asarray(teammate_metrics["eval_ep_last_info_br"]["returned_episode_returns"]).mean(axis=eval_mean_dims)
+    avg_teammate_xp_returns = np.asarray(teammate_metrics["eval_ep_last_info_ego"]["returned_episode_returns"]).mean(axis=eval_mean_dims)
 
     # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_partner_updates)
-    avg_rewards_teammate_against_br = np.asarray(teammate_metrics["average_rewards_br"]).mean(axis=(0, 2))
-    avg_rewards_teammate_against_ego = np.asarray(teammate_metrics["average_rewards_ego"]).mean(axis=(0, 2))
+    loss_mean_dims = (0, 2)
+    avg_value_losses_teammate_against_ego = np.asarray(teammate_metrics["value_loss_conf_against_ego"]).mean(axis=loss_mean_dims)
+    avg_value_losses_teammate_against_br = np.asarray(teammate_metrics["value_loss_conf_against_br"]).mean(axis=loss_mean_dims)
+    avg_value_losses_br = np.asarray(teammate_metrics["value_loss_br"]).mean(axis=loss_mean_dims)
+
+    avg_actor_losses_teammate_against_ego = np.asarray(teammate_metrics["pg_loss_conf_against_ego"]).mean(axis=loss_mean_dims)
+    avg_actor_losses_teammate_against_br = np.asarray(teammate_metrics["pg_loss_conf_against_br"]).mean(axis=loss_mean_dims)
+    avg_actor_losses_br = np.asarray(teammate_metrics["pg_loss_br"]).mean(axis=loss_mean_dims)
+
+    avg_entropy_losses_teammate_against_ego = np.asarray(teammate_metrics["entropy_conf_against_ego"]).mean(axis=loss_mean_dims)
+    avg_entropy_losses_teammate_against_br = np.asarray(teammate_metrics["entropy_conf_against_br"]).mean(axis=loss_mean_dims)
+    avg_entropy_losses_br = np.asarray(teammate_metrics["entropy_loss_br"]).mean(axis=loss_mean_dims)
+
+    # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_partner_updates)
+    avg_rewards_teammate_against_br = np.asarray(teammate_metrics["average_rewards_br"]).mean(axis=loss_mean_dims)
+    avg_rewards_teammate_against_ego = np.asarray(teammate_metrics["average_rewards_ego"]).mean(axis=loss_mean_dims)
 
     # Process ego-specific metrics
     # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates, num_partners, num_eval_episodes, num_agents_per_env)
     avg_ego_returns = np.asarray(ego_metrics["eval_ep_last_info"]["returned_episode_returns"]).mean(axis=(0, 2, 4, 5, 6))
-    # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates, update_epochs, num_minibatches)
-    avg_ego_value_losses = np.asarray(ego_metrics["value_loss"]).mean(axis=(0, 2, 4, 5))
-    avg_ego_actor_losses = np.asarray(ego_metrics["actor_loss"]).mean(axis=(0, 2, 4, 5))
-    avg_ego_entropy_losses = np.asarray(ego_metrics["entropy_loss"]).mean(axis=(0, 2, 4, 5))
-    avg_ego_grad_norms = np.asarray(ego_metrics["avg_grad_norm"]).mean(axis=(0, 2, 4, 5))
+    # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates)
+    avg_ego_value_losses = np.asarray(ego_metrics["value_loss"]).mean(axis=loss_mean_dims)
+    avg_ego_actor_losses = np.asarray(ego_metrics["actor_loss"]).mean(axis=loss_mean_dims)
+    avg_ego_entropy_losses = np.asarray(ego_metrics["entropy_loss"]).mean(axis=loss_mean_dims)
+    avg_ego_grad_norms = np.asarray(ego_metrics["avg_grad_norm"]).mean(axis=loss_mean_dims)
 
     # extract teammate-vs-ego stats
-    teammate_stats = get_stats(teammate_metrics, metric_names) # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_partner_updates, 2)
-    teammate_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 2))[..., 0], teammate_stats) # shape (num_open_ended_iters, num_partner_updates)
+    # metrics pre-averaged to scalars per step; shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_partner_updates)
+    teammate_stat_means = {
+        stat_name: np.mean(np.asarray(teammate_metrics[stat_name]), axis=loss_mean_dims)
+        for stat_name in metric_names
+        if stat_name in teammate_metrics
+    }  # shape (num_open_ended_iters, num_partner_updates)
 
     # extract ego stats
-    ego_stats = get_stats(ego_metrics, metric_names) # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates, 2)
-    ego_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 2))[..., 0], ego_stats) # shape (num_open_ended_iters, num_ego_updates)
+    # metrics pre-averaged to scalars per step; shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates)
+    ego_stat_means = {
+        stat_name: np.mean(np.asarray(ego_metrics[stat_name]), axis=loss_mean_dims)
+        for stat_name in metric_names
+        if stat_name in ego_metrics
+    }  # shape (num_open_ended_iters, num_ego_updates)
 
     for iter_idx in range(num_open_ended_iters):
         # Log all partner metrics

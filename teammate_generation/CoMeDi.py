@@ -2,7 +2,7 @@
 https://openreview.net/forum?id=MljeRycu9s
 
 Command to run CoMeDi only on LBF:
-python teammate_generation/run.py algorithm=comedi/lbf task=lbf label=test_comedi run_heldout_eval=false train_ego=false
+python teammate_generation/run.py algorithm=comedi/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_comedi run_heldout_eval=false train_ego=false
 
 Limitations: does not support recurrent actors.
 '''
@@ -870,19 +870,23 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                     )
 
                     # Metrics
-                    metric = traj_batch_xp.info
+                    def mask_and_mean(x, mask):
+                        return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+                    
+                    mask = traj_batch_xp.info.get("returned_episode", jnp.ones_like(traj_batch_xp.reward))
+                    metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_xp.info)
                     metric["update_steps"] = update_steps
-                    metric["value_loss_conf_xp"] = conf_value_loss_xp
-                    metric["value_loss_conf_sp"] = conf_value_loss_sp
-                    metric["value_loss_conf_mp"] = conf_value_loss_mp
+                    metric["value_loss_conf_xp"] = conf_value_loss_xp.mean()
+                    metric["value_loss_conf_sp"] = conf_value_loss_sp.mean()
+                    metric["value_loss_conf_mp"] = conf_value_loss_mp.mean()
 
-                    metric["pg_loss_conf_xp"] = conf_pg_loss_xp
-                    metric["pg_loss_conf_sp"] = conf_pg_loss_sp
-                    metric["pg_loss_conf_mp"] = conf_pg_loss_mp
+                    metric["pg_loss_conf_xp"] = conf_pg_loss_xp.mean()
+                    metric["pg_loss_conf_sp"] = conf_pg_loss_sp.mean()
+                    metric["pg_loss_conf_mp"] = conf_pg_loss_mp.mean()
 
-                    metric["entropy_conf_xp"] = conf_entropy_xp
-                    metric["entropy_conf_sp"] = conf_entropy_sp
-                    metric["entropy_conf_mp"] = conf_entropy_mp
+                    metric["entropy_conf_xp"] = conf_entropy_xp.mean()
+                    metric["entropy_conf_sp"] = conf_entropy_sp.mean()
+                    metric["entropy_conf_mp"] = conf_entropy_mp.mean()
 
                     metric["average_rewards_ego"] = jnp.mean(traj_batch_xp.reward)
                     metric["average_rewards_br_sp"] = jnp.mean(traj_batch_sp_agent1.reward)
@@ -1087,7 +1091,7 @@ def compute_sp_mask_and_ids(pop_size):
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy
-    num_seeds, pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
+    num_seeds, pop_size, num_updates = metrics["pg_loss_conf_sp"].shape
     # TODO: add the eval_ep_last_info metrics
 
     ### Log evaluation metrics
@@ -1119,15 +1123,15 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     # both xp and xp metrics has shape (num_seeds, pop_size - 1, num_updates, update_epochs, num_minibatches)
     # Average over seeds
     processed_losses = {
-        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size - 1, num_updates)
-        "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=(0, 3, 4)),
-        "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossXP": np.asarray(metrics["value_loss_conf_xp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossMP": np.asarray(metrics["value_loss_conf_mp"]).mean(axis=(0, 3, 4)),
-        "EntropySP": np.asarray(metrics["entropy_conf_sp"]).mean(axis=(0, 3, 4)),
-        "EntropyXP": np.asarray(metrics["entropy_conf_xp"]).mean(axis=(0, 3, 4)),
-        "EntropyMP": np.asarray(metrics["entropy_conf_mp"]).mean(axis=(0, 3, 4)),
+        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=0), # desired shape (pop_size - 1, num_updates)
+        "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=0),
+        "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=0),
+        "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=0),
+        "ConfValLossXP": np.asarray(metrics["value_loss_conf_xp"]).mean(axis=0),
+        "ConfValLossMP": np.asarray(metrics["value_loss_conf_mp"]).mean(axis=0),
+        "EntropySP": np.asarray(metrics["entropy_conf_sp"]).mean(axis=0),
+        "EntropyXP": np.asarray(metrics["entropy_conf_xp"]).mean(axis=0),
+        "EntropyMP": np.asarray(metrics["entropy_conf_mp"]).mean(axis=0),
     }
 
     xs = list(range(num_updates))

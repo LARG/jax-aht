@@ -7,10 +7,10 @@ If running the script directly, please specify a partner agent config at
 `ego_agent_training/configs/algorithm/ppo_ego/_base_.yaml`.
 
 Command to run PPO ego training:
-python ego_agent_training/run.py algorithm=ppo_ego/lbf task=lbf label=test_ppo_ego
+python ego_agent_training/run.py algorithm=ppo_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_ppo_ego
 
 Suggested debug command:
-python ego_agent_training/run.py algorithm=ppo_ego/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
+python ego_agent_training/run.py algorithm=ppo_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
 '''
 import shutil
 import time
@@ -328,12 +328,16 @@ def train_ppo_ego_agent(config, env, train_rng,
                 train_state = update_state[0]
                 _, loss_terms, avg_grad_norm = losses_and_grads
                 
-                metric = traj_batch.info
+                def mask_and_mean(x, mask):
+                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+                
+                mask = traj_batch.info.get("returned_episode", jnp.ones_like(traj_batch.reward))
+                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
                 metric["update_steps"] = update_steps
-                metric["actor_loss"] = loss_terms[1]
-                metric["value_loss"] = loss_terms[0]
-                metric["entropy_loss"] = loss_terms[2]
-                metric["avg_grad_norm"] = avg_grad_norm
+                metric["actor_loss"] = loss_terms[1].mean()
+                metric["value_loss"] = loss_terms[0].mean()
+                metric["entropy_loss"] = loss_terms[2].mean()
+                metric["avg_grad_norm"] = avg_grad_norm.mean()
                 new_runner_state = (train_state, rng, update_steps + 1)
                 return (new_runner_state, metric)
 
@@ -561,11 +565,11 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
 
     # Process loss metrics - average across ego seeds, partners and minibatches dims
-    # Loss metrics shape should be (n_ego_train_seeds, num_updates, ...)
-    average_ego_value_losses = np.mean(all_ego_value_losses, axis=(0, 2, 3))
-    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=(0, 2, 3))
-    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=(0, 2, 3))
-    average_ego_grad_norms = np.mean(all_ego_grad_norms, axis=(0, 2, 3))
+    # Loss metrics shape should be (n_ego_train_seeds, num_updates)
+    average_ego_value_losses = np.mean(all_ego_value_losses, axis=0)
+    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=0)
+    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=0)
+    average_ego_grad_norms = np.mean(all_ego_grad_norms, axis=0)
 
     # Log metrics for each update step
     num_updates = len(average_ego_value_losses)

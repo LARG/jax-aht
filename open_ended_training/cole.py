@@ -4,18 +4,18 @@ Paper: https://proceedings.mlr.press/v202/li23au.html
 Code: https://github.com/liyang619/COLE-Platform/tree/COLE_training
 
 Suggested debug command:
-python open_ended_training/run.py
-    algorithm=cole/lbf 
-    task=lbf
-    label=test_cole
-    run_heldout_eval=false
-    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5
-    algorithm.PARTNER_POP_SIZE=2
-    algorithm.NUM_SEEDS=1
-    logger.mode=offline
-    logger.log_train_out=false
-    logger.log_eval_out=false
-    local_logger.save_train_out=false
+python open_ended_training/run.py \
+    algorithm=cole/lbf/lbf_7x7_nolevels \
+    task=lbf/lbf_7x7_nolevels \
+    label=test_cole \
+    run_heldout_eval=false \
+    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 \
+    algorithm.PARTNER_POP_SIZE=2 \
+    algorithm.NUM_SEEDS=1 \
+    logger.mode=offline \
+    logger.log_train_out=false \
+    logger.log_eval_out=false \
+    local_logger.save_train_out=false \
     local_logger.save_eval_out=false
 """
 from functools import partial
@@ -30,6 +30,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
+
+
 
 from agents.initialize_agents import (
     initialize_s5_agent,
@@ -736,16 +738,20 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                     )
 
                     # Metrics
-                    metric = traj_batch_xp.info
+                    def mask_and_mean(x, mask):
+                        return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+
+                    mask = traj_batch_xp.info.get("returned_episode", jnp.ones_like(traj_batch_xp.reward))
+                    metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_xp.info)
                     metric["update_steps"] = update_steps
-                    metric["value_loss_xp"] = value_loss_xp
-                    metric["value_loss_sp"] = value_loss_sp
+                    metric["value_loss_xp"] = value_loss_xp.mean()
+                    metric["value_loss_sp"] = value_loss_sp.mean()
 
-                    metric["pg_loss_xp"] = pg_loss_xp
-                    metric["pg_loss_sp"] = pg_loss_sp
+                    metric["pg_loss_xp"] = pg_loss_xp.mean()
+                    metric["pg_loss_sp"] = pg_loss_sp.mean()
 
-                    metric["entropy_xp"] = entropy_xp
-                    metric["entropy_sp"] = entropy_sp
+                    metric["entropy_xp"] = entropy_xp.mean()
+                    metric["entropy_sp"] = entropy_sp.mean()
 
                     metric["average_rewards_xp"] = jnp.mean(traj_batch_xp.reward)
                     metric["average_rewards_sp"] = jnp.mean(traj_batch_sp1.reward)
@@ -1088,11 +1094,11 @@ def log_metrics_intermediate(metric, logger):
 
     Metric keys and their shapes (before vmap over seeds collapses them):
       update_steps            : scalar int
-      value_loss_xp/sp        : (UPDATE_EPOCHS, NUM_MINIBATCHES)
-      pg_loss_xp/sp           : (UPDATE_EPOCHS, NUM_MINIBATCHES)
-      entropy_xp/sp           : (UPDATE_EPOCHS, NUM_MINIBATCHES)
-      average_rewards_xp/sp  : scalar float
-      returned_episode_returns: (ROLLOUT_LENGTH, NUM_ENVS)  – from LogWrapper
+      value_loss_xp/sp        : scalar float
+      pg_loss_xp/sp           : scalar float
+      entropy_xp/sp           : scalar float
+      average_rewards_xp/sp   : scalar float
+      returned_episode_returns: scalar float  – masked mean over episode-terminal steps
     """
     metric = dict(metric)  # shallow copy – avoid mutating the original
     step = int(np.array(metric.pop("update_steps")))
@@ -1128,7 +1134,7 @@ def log_final_metrics(config, outs, logger, metric_names: tuple):
     """
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy, so it's pop_size - 1
-    num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_sp"].shape
+    num_seeds, trained_pop_size, num_updates = metrics["pg_loss_sp"].shape
 
     ### Log last XP matrix
     final_xp_matrix = np.asarray(outs["final_xp_matrix"]).mean(axis=0)  # shape (pop_size, pop_size)

@@ -2,10 +2,10 @@
 https://ojs.aaai.org/index.php/AAAI/article/view/29702
 
 Command to run LBRDiv only on LBF:
-python teammate_generation/run.py algorithm=lbrdiv/lbf task=lbf label=test_lbrdiv run_heldout_eval=false train_ego=false
+python teammate_generation/run.py algorithm=lbrdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_lbrdiv run_heldout_eval=false train_ego=false
 
 Suggested Debug command:
-python teammate_generation/run.py algorithm=lbrdiv/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5 algorithm.PARTNER_POP_SIZE=2 train_ego=false run_heldout_eval=false
+python teammate_generation/run.py algorithm=lbrdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5 algorithm.PARTNER_POP_SIZE=2 train_ego=false run_heldout_eval=false
 
 Limitations: does not support recurrent actors.
 '''
@@ -792,18 +792,22 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 (_, (value_loss_conf, pg_loss_conf, entropy_conf)), (_, (value_loss_br, pg_loss_br, entropy_br)) = all_losses
 
                 # Metrics
-                metric = traj_batch_conf.info
+                def mask_and_mean(x, mask):
+                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+                
+                mask = traj_batch_conf.info.get("returned_episode", jnp.ones_like(traj_batch_conf.reward))
+                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_conf.info)
                 metric["lms_vertical"] = lms_vertical
                 metric["lms_horizontal"] = lms_horizontal
                 metric["update_steps"] = update_steps
-                metric["value_loss_conf_agent"] = value_loss_conf
-                metric["value_loss_br_agent"] = value_loss_br
+                metric["value_loss_conf_agent"] = value_loss_conf.mean(axis=(0, 1))
+                metric["value_loss_br_agent"] = value_loss_br.mean(axis=(0, 1))
 
-                metric["pg_loss_conf_agent"] = pg_loss_conf
-                metric["pg_loss_br_agent"] = pg_loss_br
+                metric["pg_loss_conf_agent"] = pg_loss_conf.mean(axis=(0, 1))
+                metric["pg_loss_br_agent"] = pg_loss_br.mean(axis=(0, 1))
 
-                metric["entropy_conf"] = entropy_conf
-                metric["entropy_br"] = entropy_br
+                metric["entropy_conf"] = entropy_conf.mean(axis=(0, 1))
+                metric["entropy_br"] = entropy_br.mean(axis=(0, 1))
 
                 new_runner_state = (
                     all_train_state_conf, all_train_state_br,
@@ -1026,8 +1030,8 @@ def run_lbrdiv(config, wandb_logger):
 
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
-    # metrics now has shape (num_seeds, num_updates, _, _, pop_size)
-    num_seeds, num_updates, _, _, pop_size = metrics["pg_loss_conf_agent"].shape # number of trained pairs
+    # metrics now has shape (num_seeds, num_updates, pop_size)
+    num_seeds, num_updates, pop_size = metrics["pg_loss_conf_agent"].shape # number of trained pairs
 
     ### Log evaluation metrics
     all_returns = np.asarray(metrics["eval_ep_last_info"]["returned_episode_returns"])
@@ -1056,12 +1060,12 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     # shape (num_seeds, num_updates, update_epochs, num_minibatches, pop_size)
     # Average over seeds
     processed_losses = {
-        "ConfPGLoss": np.asarray(metrics["pg_loss_conf_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "BRPGLoss": np.asarray(metrics["pg_loss_br_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "ConfValLoss": np.asarray(metrics["value_loss_conf_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "BRValLoss": np.asarray(metrics["value_loss_br_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "ConfEntropy": np.asarray(metrics["entropy_conf"]).mean(axis=(0, 2, 3)).transpose(),
-        "BREntropy": np.asarray(metrics["entropy_br"]).mean(axis=(0, 2, 3)).transpose(),
+        "ConfPGLoss": np.asarray(metrics["pg_loss_conf_agent"]).mean(axis=0).transpose(),
+        "BRPGLoss": np.asarray(metrics["pg_loss_br_agent"]).mean(axis=0).transpose(),
+        "ConfValLoss": np.asarray(metrics["value_loss_conf_agent"]).mean(axis=0).transpose(),
+        "BRValLoss": np.asarray(metrics["value_loss_br_agent"]).mean(axis=0).transpose(),
+        "ConfEntropy": np.asarray(metrics["entropy_conf"]).mean(axis=0).transpose(),
+        "BREntropy": np.asarray(metrics["entropy_br"]).mean(axis=0).transpose(),
     }
 
     xs = list(range(num_updates))

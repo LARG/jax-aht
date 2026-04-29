@@ -44,7 +44,7 @@ python download_eval_data.py
 
 6. Test the installation by running our IPPO implementation: 
 ```bash
-python marl/run.py task=lbf algorithm=ippo/lbf
+python marl/run.py task=lbf/lbf_7x7_nolevels algorithm=ippo/lbf/lbf_7x7_nolevels
 ```
 
 
