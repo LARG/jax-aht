@@ -87,7 +87,6 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     custom_loader_cfg = agent_config.get("custom_loader", None)
 
     agent_ckpt = load_checkpoints(agent_path, ckpt_key=ckpt_key, custom_loader_cfg=custom_loader_cfg)
-
     leaf0_shape = jax.tree.leaves(agent_ckpt)[0].shape
 
     if agent_config["idx_list"] is None: # load all checkpoints
@@ -110,7 +109,6 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
 
     # Create index labels for the loaded checkpoints
     idx_labels = create_idx_labels(idx_list, leaf0_shape)
-
 
     rng, init_rng = jax.random.split(rng, 2)
     
@@ -136,5 +134,10 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         raise ValueError(f"Invalid actor type: {agent_config['actor_type']}")
 
     assert jax.tree.structure(agent_params) == jax.tree.structure(init_params), "Agent parameters and initial parameters must have the same structure."
+
+    # TODO: remove this after debugging
+    # agent_params_shapes = [l.shape for l in jax.tree.leaves(agent_params)]
+    # init_params_shapes = [l.shape for l in jax.tree.leaves(init_params)]
+    # import pdb; pdb.set_trace()
 
     return policy, agent_params, init_params, idx_labels

@@ -9,7 +9,8 @@ from envs import make_env
 from envs.log_wrapper import LogWrapper
 from evaluation.heldout_evaluator import load_heldout_set, print_metrics_table, normalize_metrics
 
-def heldout_crossplay(config, env, rng, num_episodes, heldout_agent_list, br_agent_list):
+def heldout_crossplay(config, env, rng, num_episodes, heldout_agent_list, br_agent_list,
+                      heldout_agent_names=None, br_agent_names=None):
     '''Evaluate all heldout agents against each other
     Args: 
         heldout_agent_list: a list of (policy, params, test_mode) tuples for each heldout partner. params might be None for heuristic agents.
@@ -62,7 +63,9 @@ def heldout_crossplay(config, env, rng, num_episodes, heldout_agent_list, br_age
                     merged_perf_bounds = merge_performance_bounds(performance_bounds1, performance_bounds2)
                     eval_metrics = normalize_metrics(eval_metrics, merged_perf_bounds)
                 else:
-                    print(f"Warning: no performance bounds provided for {heldout_agent1} and {br_agent}. Skipping normalization.")
+                    name1 = heldout_agent_names[i] if heldout_agent_names is not None else f"heldout_{i}"
+                    name2 = br_agent_names[j] if br_agent_names is not None else f"br_{j}"
+                    print(f"Warning: no performance bounds provided for {name1} and {name2}. Skipping normalization.")
 
             partner_i_metrics.append(eval_metrics)
 
@@ -92,19 +95,21 @@ def run_heldout_xp_evaluation(config, print_metrics=False):
     # load heldout agents
     heldout_cfg = config["heldout_set"][config["TASK_NAME"]]
     heldout_agents = load_heldout_set(heldout_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], heldout_init_rng)
+    heldout_agent_names = list(heldout_agents.keys())
     heldout_agent_list = list(heldout_agents.values())
-    
+
     # load best response agents
     br_cfg = config["best_response_set"][config["TASK_NAME"]]
     br_agents = load_heldout_set(br_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], br_init_rng)
+    br_agent_names = list(br_agents.keys())
     br_agent_list = list(br_agents.values())
 
     # sanity check
     assert len(heldout_agent_list) == len(br_agent_list), "Number of heldout agents and best response agents must be the same."
     # run evaluation
     eval_metrics = heldout_crossplay(
-        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"], 
-        heldout_agent_list, br_agent_list)
+        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"],
+        heldout_agent_list, br_agent_list, heldout_agent_names, br_agent_names)
 
     if print_metrics:
         # each leaf of eval_metrics has shape (num_heldout_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)
