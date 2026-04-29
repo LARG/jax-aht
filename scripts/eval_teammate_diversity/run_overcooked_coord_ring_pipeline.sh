@@ -70,7 +70,7 @@ OUTPUT_FILE="results/${ENV_NAME}/tsne_trajectory_visualization.png"
 
 # Default parameters for the scripts
 K=1  # Number of rollouts per agent pair
-NUM_ENVS=4096  # Number of parallel environments
+NUM_ENVS=1024  # Number of parallel environments
 ROLLOUT_STEPS=450  # Steps per rollout (overcooked episodes last up to 400 steps)
 HIDDEN_DIM=64  # Autoencoder hidden dimension
 LATENT_DIM=16  # Autoencoder latent dimension
