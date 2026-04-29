@@ -61,7 +61,7 @@ Our modularization is restricted to environments, agents, and populations, which
 
 | Environment | Source | Description | Variants | Evaluation Teammates |
 |-------------|--------|-------------|----------|----------------------|
-| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | 7x7 grid with full observability | ✅ |
+| **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | lbf_7x7_nolevels (7x7, 3 food, no levels), lbf_12x12 (12x12, 6 food, with levels) | ✅ |
 | **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | ✅  |
 
 
@@ -177,13 +177,13 @@ Hydra's command line argument support.
 
 For example, the following command runs Fictitious Co-Play on the Level-Based Foraging (LBF) task:
 ```bash
-python teammate_generation/run.py task=lbf algorithm=fcp/lbf
+python teammate_generation/run.py task=lbf/lbf_7x7_nolevels algorithm=fcp/lbf/lbf_7x7_nolevels
 ```
 
 Note that Hydra allows the user to modify any config value specified in the algorithm/task config files from the command line. For example, to set the number of training interactions for FCP, use the following command:
 
 ```bash
-python teammate_generation/run.py task=lbf algorithm=fcp/lbf algorithm.TOTAL_TIMESTEPS=1e5
+python teammate_generation/run.py task=lbf/lbf_7x7_nolevels algorithm=fcp/lbf/lbf_7x7_nolevels algorithm.TOTAL_TIMESTEPS=1e5
 ```
 
 #### Logging

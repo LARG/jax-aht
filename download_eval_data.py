@@ -150,6 +150,11 @@ if __name__ == "__main__":
             "filename": "lbf",
             "target_directory": "eval_teammates/",
         },
+        "lbf_12x12_teammates": {
+            "type": "dir",
+            "filename": "lbf_12x12",
+            "target_directory": "eval_teammates/",
+        },
         "overcooked-v1_teammates": {
             "type": "dir",
             "filename": "overcooked-v1",

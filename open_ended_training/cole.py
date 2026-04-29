@@ -4,18 +4,18 @@ Paper: https://proceedings.mlr.press/v202/li23au.html
 Code: https://github.com/liyang619/COLE-Platform/tree/COLE_training
 
 Suggested debug command:
-python open_ended_training/run.py /
-    algorithm=cole/lbf /
-    task=lbf /
-    label=test_cole /
-    run_heldout_eval=false /
-    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 /
-    algorithm.PARTNER_POP_SIZE=2 /
-    algorithm.NUM_SEEDS=1 /
-    logger.mode=offline /
-    logger.log_train_out=false /
-    logger.log_eval_out=false /
-    local_logger.save_train_out=false /
+python open_ended_training/run.py \
+    algorithm=cole/lbf/lbf_7x7_nolevels \
+    task=lbf/lbf_7x7_nolevels \
+    label=test_cole \
+    run_heldout_eval=false \
+    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 \
+    algorithm.PARTNER_POP_SIZE=2 \
+    algorithm.NUM_SEEDS=1 \
+    logger.mode=offline \
+    logger.log_train_out=false \
+    logger.log_eval_out=false \
+    local_logger.save_train_out=false \
     local_logger.save_eval_out=false
 """
 from functools import partial
