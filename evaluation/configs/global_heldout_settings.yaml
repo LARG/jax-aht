@@ -21,7 +21,7 @@ heldout_set:
     ippo_mlp_s2c0:
       path: "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run"
       actor_type: mlp
-      idx_list: [[2, 0]] # load in seed 2 ckpt 0
+      idx_list: [[2, 0]] # load in seed 2 ckpt 0w
       test_mode: false
       performance_bounds:
         percent_eaten: [[0.0, 69.27]]
