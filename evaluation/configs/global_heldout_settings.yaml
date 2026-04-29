@@ -82,6 +82,17 @@ heldout_set:
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
+    entitled_agent:
+      actor_type: entitled_agent
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
+    greedy_closest_teammate:
+      actor_type: greedy_agent
+      heuristic: closest_teammate
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
   lbf/lbf_12x12: # TODO - update performance bounds when available
     ippo_mlp: 
       path: "eval_teammates/lbf/ippo/ippo-lbf-12-levels/saved_train_run"
