@@ -100,11 +100,14 @@ JOB_CMDS+=("python teammate_generation/run.py \
     algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
 
+# test training ego agent
 JOB_NAMES+=("fcp")
 JOB_CMDS+=("python teammate_generation/run.py \
     algorithm=fcp/lbf task=lbf label=test_fcp \
-    run_heldout_eval=false train_ego=false \
-    algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_CHECKPOINTS=2 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
+    run_heldout_eval=false train_ego=true \
+    algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_CHECKPOINTS=2 \
+    algorithm.ego_train_algorithm.TOTAL_TIMESTEPS=1e5 \
+    algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
 
 # ── Ego training ──────────────────────────────────────────────────────────────
