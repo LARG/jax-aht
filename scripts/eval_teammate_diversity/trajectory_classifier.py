@@ -195,11 +195,39 @@ def make_classifier_eval_step(model):
     return eval_step
 
 
-def train_classifier(rng, train_state, train_step_fn, padded_episodes, masks, labels, num_epochs, batch_size):
+def train_classifier(
+    rng,
+    train_state,
+    train_step_fn,
+    padded_episodes,
+    masks,
+    labels,
+    num_epochs,
+    batch_size,
+    test_padded=None,
+    test_masks=None,
+    test_labels=None,
+):
     N = padded_episodes.shape[0]
     num_batches = max(1, N // batch_size)
+    apply_fn = train_state.apply_fn
+
+    @jax.jit
+    def _logits_batch(params, x, mask):
+        return jax.vmap(lambda xi, mi: apply_fn(params, xi, mi))(x, mask)
+
+    def _accuracy(params, data, data_masks, data_labels):
+        n = data.shape[0]
+        correct = 0
+        for i in range(0, n, batch_size):
+            logits = np.array(_logits_batch(params, data[i:i+batch_size], data_masks[i:i+batch_size]))
+            preds = np.argmax(logits, axis=-1)
+            correct += (preds == np.array(data_labels[i:i+batch_size])).sum()
+        return correct / n
 
     losses = []
+    train_accs = []
+    test_accs = []
     for epoch in range(num_epochs):
         rng, rng_perm = jax.random.split(rng)
         perm = np.array(jax.random.permutation(rng_perm, N))
@@ -213,17 +241,29 @@ def train_classifier(rng, train_state, train_step_fn, padded_episodes, masks, la
             epoch_losses.append(float(loss))
         avg_loss = np.mean(epoch_losses)
         losses.append(avg_loss)
+
+        train_acc = float(_accuracy(train_state.params, padded_episodes, masks, labels))
+        train_accs.append(train_acc)
+
+        if test_padded is not None:
+            test_acc = float(_accuracy(train_state.params, test_padded, test_masks, test_labels))
+            test_accs.append(test_acc)
+
         if epoch % 10 == 0 or epoch == num_epochs - 1:
-            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.6f}")
-    return rng, train_state, losses
+            acc_str = f", Train Acc: {train_acc:.4f}"
+            if test_padded is not None:
+                acc_str += f", Test Acc: {test_accs[-1]:.4f}"
+            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.6f}{acc_str}")
+    return rng, train_state, losses, train_accs, test_accs
 
 
-def pad_labeled_episodes(episodes_with_labels, max_samples_per_class=None):
+def pad_labeled_episodes(episodes_with_labels, max_samples_per_class=None, label_to_idx=None):
     """Pad episodes with labels to the same length.
 
     Args:
         episodes_with_labels: List of (trajectory_array, label) tuples
         max_samples_per_class: If set, randomly subsample each class to this many episodes.
+        label_to_idx: Optional pre-existing label mapping. If None, derived from the data.
 
     Returns:
         padded: (N, max_len, obs_dim) array of padded observations
@@ -238,9 +278,10 @@ def pad_labeled_episodes(episodes_with_labels, max_samples_per_class=None):
     print(f"[pad_labeled_episodes] Processing {len(episodes)} labeled trajectory episodes")
 
     # Create label mapping
-    unique_labels = sorted(set(string_labels))
-    label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
-    print(f"[pad_labeled_episodes] Found {len(unique_labels)} unique labels")
+    if label_to_idx is None:
+        unique_labels = sorted(set(string_labels))
+        label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
+    print(f"[pad_labeled_episodes] Found {len(label_to_idx)} unique labels")
 
     if max_samples_per_class is not None:
         rng_np = np.random.default_rng(42)

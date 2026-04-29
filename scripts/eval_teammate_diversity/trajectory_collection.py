@@ -416,9 +416,25 @@ def collect_heldout_pairwise_trajectories(
         for episode in episodes:
             train_episodes.append((episode, pair_label))
 
-        # For specific-BR pairs, collect num_points_per_pair additional episodes into the validation set
-        if _is_specific_br_pair(agent_name, br_name) and num_points_per_pair is not None:
-            pair_val_episodes = []
+        # Collect val episodes for ALL pairs so the test set covers the full
+        # class space (not just specific-BR pairs).  Always collect at least
+        # one rollout; top up to num_points_per_pair episodes if that flag is set.
+        pair_val_episodes = []
+        rng, episodes = collect_pair_trajectories(
+            rng,
+            env,
+            teammate_policy,
+            teammate_params,
+            br_policy,
+            br_params,
+            num_rollouts=1,
+            rollout_steps=rollout_steps,
+            num_envs=num_envs,
+            agent_idx=agent_idx,
+            br_idx=br_idx,
+        )
+        pair_val_episodes.extend(episodes)
+        if num_points_per_pair is not None:
             while len(pair_val_episodes) < num_points_per_pair:
                 rng, episodes = collect_pair_trajectories(
                     rng,
@@ -434,8 +450,9 @@ def collect_heldout_pairwise_trajectories(
                     br_idx=br_idx,
                 )
                 pair_val_episodes.extend(episodes)
-            for episode in pair_val_episodes[:num_points_per_pair]:
-                val_episodes.append((episode, pair_label))
+            pair_val_episodes = pair_val_episodes[:num_points_per_pair]
+        for episode in pair_val_episodes:
+            val_episodes.append((episode, pair_label))
 
         print(f"Collected {agent_name}, {br_name}")
 

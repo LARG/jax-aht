@@ -112,7 +112,8 @@ def collect_latents(
         data = pickle.load(f)
     test_episodes = data["episodes"]
 
-    padded_episodes, masks, labels, _, ep_label_to_idx = pad_labeled_episodes(test_episodes)
+    # Use the training label_to_idx so integer labels align with classifier logit indices.
+    padded_episodes, masks, labels, _, _ = pad_labeled_episodes(test_episodes, label_to_idx=label_to_idx)
 
     print("Evaluating classifier on test data...")
     all_logits = []
@@ -141,11 +142,14 @@ def collect_latents(
 
     predictions = np.argmax(all_logits, axis=1)
 
-    # Use ep_label_to_idx (from pad_labeled_episodes) to index all_true_labels —
-    # this is the mapping that was actually used to assign label ints to episodes.
+    # Build idx_to_label from the training mapping (same mapping used for labels above).
     idx_to_label = {v: k for k, v in label_to_idx.items()}
+
+    # For the t-SNE, only include trajectories where an agent plays against its
+    # specific best-response (not cross-BR pairs).  The val set now contains all
+    # pairs, so we filter here rather than in collection.
     latents_dict = {}
-    for label_name, label_idx in ep_label_to_idx.items():
+    for label_name, label_idx in label_to_idx.items():
         br_marker = "_br_for_"
         if br_marker not in label_name:
             continue

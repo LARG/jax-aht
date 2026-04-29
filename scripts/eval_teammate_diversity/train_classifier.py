@@ -66,7 +66,21 @@ def main(
     padded_episodes, masks, labels, max_seq_len, label_to_idx = pad_labeled_episodes(
         episodes_with_labels, max_samples_per_class=max_samples_per_class
     )
-    
+
+    # Load val episodes for overfitting diagnostics (optional)
+    val_padded, val_masks, val_labels = None, None, None
+    val_path = data_path / "val_episodes.pkl"
+    if val_path.exists():
+        print(f"Loading val episodes from {val_path}...")
+        with open(val_path, "rb") as f:
+            val_data = pickle.load(f)
+        val_padded, val_masks, val_labels, _, _ = pad_labeled_episodes(
+            val_data["episodes"], label_to_idx=label_to_idx
+        )
+        print(f"Loaded {len(val_data['episodes'])} val episodes.")
+    else:
+        print("No val_episodes.pkl found; skipping test accuracy tracking.")
+
     num_classes = len(label_to_idx)
 
     rng = jax.random.PRNGKey(42)
@@ -83,7 +97,7 @@ def main(
 
     print(f"Training classifier on {len(episodes_with_labels)} episodes (padded length {max_seq_len})")
     print(f"Model config: hidden_dim={hidden_dim}, latent_dim={latent_dim}, num_classes={num_classes}")
-    rng, train_state, losses = train_classifier(
+    rng, train_state, losses, train_accs, test_accs = train_classifier(
         rng,
         train_state,
         train_step,
@@ -92,6 +106,9 @@ def main(
         labels,
         num_epochs=num_epochs,
         batch_size=batch_size,
+        test_padded=val_padded,
+        test_masks=val_masks,
+        test_labels=val_labels,
     )
 
     print("Training complete. Saving model...")
@@ -113,14 +130,17 @@ def main(
     save_path = save_train_run(checkpoint, model_dir, "trajectory_classifier")
     print(f"Model saved to {save_path}")
 
-    # Save training losses
+    # Save training losses and accuracies
     loss_file = model_path / "training_losses.npy"
     np.save(loss_file, np.array(losses))
     print(f"Training losses saved to {loss_file}")
 
+    epochs = np.arange(1, num_epochs + 1)
+    has_test = len(test_accs) > 0
+
     # Plot loss curve
     plt.figure(figsize=(10, 6))
-    plt.plot(losses)
+    plt.plot(epochs, losses)
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('LSTM Classifier Training Loss Curve')
@@ -129,6 +149,21 @@ def main(
     plt.savefig(loss_plot_file)
     plt.close()
     print(f"Loss curve saved to {loss_plot_file}")
+
+    # Plot train (and test) accuracy curves
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs, train_accs, label='Train')
+    if has_test:
+        plt.plot(epochs, test_accs, label='Test')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('LSTM Classifier Train/Test Accuracy')
+    plt.legend()
+    plt.grid(True)
+    acc_plot_file = model_path / "accuracy_curve.png"
+    plt.savefig(acc_plot_file)
+    plt.close()
+    print(f"Accuracy curve saved to {acc_plot_file}")
 
 
 if __name__ == "__main__":
