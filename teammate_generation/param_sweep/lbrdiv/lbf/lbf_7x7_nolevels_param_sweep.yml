@@ -26,8 +26,8 @@ command:
   - ${env}
   - python
   - ${program}
-  - task=lbf
-  - algorithm=lbrdiv/lbf
+  - task=lbf/lbf_7x7_nolevels
+  - algorithm=lbrdiv/lbf/lbf_7x7_nolevels
   - train_ego=true
   - run_heldout_eval=true
   - logger.log_train_out=false

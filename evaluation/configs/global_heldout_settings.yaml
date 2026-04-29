@@ -177,26 +177,6 @@ heldout_set:
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
-    lbrdiv-conf:
-      path: "eval_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run/"
-      actor_type: actor_with_conditional_critic
-      idx_list: [[1, 0], [1, 1], [1, 2]]
-      ckpt_key: final_params_conf
-      POP_SIZE: 3
-      test_mode: false
-      performance_bounds:
-        percent_eaten: [[0.0, 90.10], [0.0, 89.98], [0.0, 92.19]]
-        returned_episode_returns: [[0.0, 0.45], [0.0, 0.45], [0.0, 0.46]]
-    comedi:
-      path: "eval_teammates/lbf/comedi/2026-03-02_00-58-19/saved_train_run/"
-      actor_type: actor_with_conditional_critic
-      idx_list: [[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]
-      ckpt_key: final_params_conf
-      POP_SIZE: 10
-      test_mode: false
-      performance_bounds:
-        percent_eaten: [[0.0, 100.00], [0.0, 51.56], [0.0, 100.00], [0.0, 100.00], [0.0, 99.48]]
-        returned_episode_returns: [[0.0, 0.50], [0.0, 0.32], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50]]
     entitled_agent:
       actor_type: entitled_agent
       performance_bounds:

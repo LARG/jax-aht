@@ -7,7 +7,7 @@ This guide explains how to run heldout cross-play (XP) evaluation, what outputs 
 Run heldout XP evaluation:
 
 ```bash
-python3 evaluation/run.py --config-name heldout_xp task=lbf
+python3 evaluation/run.py --config-name heldout_xp task=lbf/lbf_7x7_nolevels
 ```
 
 You can swap tasks as needed, for example:
@@ -28,7 +28,7 @@ xp_matrix_outputs:
 Disable heatmap generation for a run:
 
 ```bash
-python3 evaluation/run.py --config-name heldout_xp task=lbf xp_matrix_outputs.save_heatmap=false
+python3 evaluation/run.py --config-name heldout_xp task=lbf/lbf_7x7_nolevels xp_matrix_outputs.save_heatmap=false
 ```
 
 ## Output Files

@@ -1,6 +1,6 @@
 '''This script generates a XP matrix for the heldout set.
 
-Run via `python evaluation/run.py -cn heldout_xp task=lbf`.
+Run via `python evaluation/run.py -cn heldout_xp task=lbf/lbf_7x7_nolevels`.
 '''
 import jax
 

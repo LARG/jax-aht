@@ -219,7 +219,7 @@ More details on how to specify the partner config are provided at the top of the
 Run heldout cross-play (XP) evaluation with:
 
 ```bash
-python3 evaluation/run.py --config-name heldout_xp task=lbf
+python3 evaluation/run.py --config-name heldout_xp task=lbf/lbf_7x7_nolevels
 ```
 
 For complete details on XP outputs, heatmap flags, tidy CSV format, and plotting commands,

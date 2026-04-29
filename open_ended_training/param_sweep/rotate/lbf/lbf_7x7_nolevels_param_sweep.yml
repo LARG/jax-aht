@@ -19,8 +19,8 @@ command:
   - ${env}
   - python
   - ${program}
-  - task=lbf
-  - algorithm=rotate/lbf
+  - task=lbf/lbf_7x7_nolevels
+  - algorithm=rotate/lbf/lbf_7x7_nolevels
   - run_heldout_eval=true
   - logger.mode=online
   - logger.log_train_out=false
