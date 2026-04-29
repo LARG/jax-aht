@@ -4,6 +4,7 @@
 algo="comedi"
 label="neurips:benchmark"
 num_seeds=5
+num_checkpoints=1
 # Create log directory if it doesn't exist
 mkdir -p results/teammate_generation_logs/${algo}/${label}
 
@@ -38,6 +39,7 @@ for task in "${tasks[@]}"; do
     
     if PYTHONPATH=. XLA_PYTHON_CLIENT_PREALLOCATE=false python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
         algorithm.NUM_SEEDS="${num_seeds}" \
+        algorithm.NUM_CHECKPOINTS="${num_checkpoints}" \
         2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
         ((success_count++))

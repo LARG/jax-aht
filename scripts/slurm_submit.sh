@@ -79,6 +79,7 @@ XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${MODULE}/run.py" \
     task="${TASK}" \
     label="${LABEL}" \
     algorithm.NUM_SEEDS="${NUM_SEEDS}" \
+    algorithm.NUM_CHECKPOINTS=1 \
     logger.log_train_out="${LOG_TRAIN_OUT}" \
     local_logger.save_train_out="${LOG_LOCAL_OUT}" \
     local_logger.save_eval_out="${LOG_LOCAL_OUT}"
