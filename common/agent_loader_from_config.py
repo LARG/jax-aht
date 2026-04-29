@@ -6,7 +6,17 @@ from omegaconf import OmegaConf
 from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, \
     initialize_rnn_agent, initialize_actor_with_double_critic, \
     initialize_actor_with_conditional_critic
+from agents.lbf.agent_policy_wrappers import (
+    LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper,
+    LBFEntitledPolicyWrapper, LBFGreedyHeuristicPolicyWrapper,
+)
+from agents.overcooked.agent_policy_wrappers import (
+    OvercookedRandomPolicyWrapper, OvercookedIndependentPolicyWrapper,
+    OvercookedOnionPolicyWrapper, OvercookedPlatePolicyWrapper,
+    OvercookedStaticPolicyWrapper,
+)
 from common.save_load_utils import load_checkpoints
+from envs.overcooked.augmented_layouts import augmented_layouts
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +68,86 @@ def create_idx_labels(idx_list, checkpoint_shape):
         idx_labels = [f"{idx}" for idx in idx_list]
     return idx_labels
 
+def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, env_kwargs=None):
+    '''Load a heuristic (non-RL) agent from config, dispatching on task_name.
+
+    agent_config must include "actor_type".
+    env_kwargs is used as a fallback for env-level parameters (e.g. grid_size,
+    num_fruits for lbf; layout for overcooked-v1).  Per-agent values in
+    agent_config take priority.
+
+    Returns:
+        policy: policy function (no checkpoint or params required)
+    '''
+    assert "actor_type" in agent_config, "Actor type must be provided."
+    actor_type = agent_config["actor_type"]
+
+    if env_kwargs is None:
+        env_kwargs = {}
+
+    if task_name == 'lbf':
+        # Grid dimensions: per-agent config > env_kwargs > defaults (7x7, 3 fruits).
+        grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
+        num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_fruits", 3))
+
+        if actor_type == "random_agent":
+            return LBFRandomPolicyWrapper()
+        if actor_type == "seq_agent":
+            ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
+            return LBFSequentialFruitPolicyWrapper(
+                grid_size=grid_size,
+                num_fruits=num_fruits,
+                ordering_strategy=ordering_strategy,
+                using_log_wrapper=True,
+            )
+        if actor_type == "entitled_agent":
+            return LBFEntitledPolicyWrapper(
+                grid_size=grid_size,
+                num_fruits=num_fruits,
+                using_log_wrapper=True,
+            )
+        if actor_type == "greedy_agent":
+            heuristic = agent_config.get("heuristic", "closest_self")
+            return LBFGreedyHeuristicPolicyWrapper(
+                grid_size=grid_size,
+                num_fruits=num_fruits,
+                heuristic=heuristic,
+                using_log_wrapper=True,
+            )
+        raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
+
+    if 'overcooked-v1' in task_name:
+        aug_layout_dict = augmented_layouts[env_kwargs["layout"]]
+
+        if actor_type == "random_agent":
+            return OvercookedRandomPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
+        if actor_type == "static_agent":
+            return OvercookedStaticPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
+        if actor_type == "independent_agent":
+            return OvercookedIndependentPolicyWrapper(
+                aug_layout_dict,
+                using_log_wrapper=True,
+                p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0),
+                p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
+            )
+        if actor_type == "onion_agent":
+            return OvercookedOnionPolicyWrapper(
+                aug_layout_dict,
+                using_log_wrapper=True,
+                p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0),
+            )
+        if actor_type == "plate_agent":
+            return OvercookedPlatePolicyWrapper(
+                aug_layout_dict,
+                using_log_wrapper=True,
+                p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
+            )
+        raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
+
+    raise ValueError(
+        f"Unknown task '{task_name}' for heuristic agent {agent_name}. "
+        f"Expected 'lbf' or a task containing 'overcooked-v1'."
+    )
 
 def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     '''Load RL agent from checkpoint and initialize from config.

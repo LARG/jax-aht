@@ -9,22 +9,16 @@ import time
 import os
 import hydra
 
-from agents.lbf.agent_policy_wrappers import (LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper,
-    LBFEntitledPolicyWrapper, LBFGreedyHeuristicPolicyWrapper)
-from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
-    OvercookedOnionPolicyWrapper,
-    OvercookedPlatePolicyWrapper,
-    OvercookedStaticPolicyWrapper,
-    OvercookedRandomPolicyWrapper)
-
-from common.agent_loader_from_config import initialize_rl_agent_from_config
+from common.agent_loader_from_config import (
+    initialize_rl_agent_from_config,
+    initialize_heuristic_agent_from_config,
+)
 from common.run_episodes import run_episodes
 from common.tree_utils import tree_stack
 from common.plot_utils import get_metric_names
 from common.stat_utils import compute_aggregate_stat_and_ci_per_task
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from envs.overcooked.augmented_layouts import augmented_layouts
 
 
 def extract_params(params, init_params, idx_labels=None):
@@ -115,64 +109,11 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
             performance_bounds_list = extract_performance_bounds(agent_config, len(params_list))
 
         # Load non-RL-based heuristic agents
-        elif task_name == 'lbf':
-            performance_bounds = agent_config.get("performance_bounds", None)
-            # Grid dimensions: per-agent config > env_kwargs > defaults (7x7, 3 fruits).
-            # Per-agent overrides allow entries in global_heldout_settings to be self-contained
-            # for tasks whose ENV_KWARGS does not explicitly set these fields.
-            grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
-            num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_fruits", 3))
-            if agent_config["actor_type"] == 'random_agent':
-                policy = LBFRandomPolicyWrapper()
-            elif agent_config["actor_type"] == 'seq_agent':
-                ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
-                policy = LBFSequentialFruitPolicyWrapper(
-                    grid_size=grid_size,
-                    num_fruits=num_fruits,
-                    ordering_strategy=ordering_strategy,
-                    using_log_wrapper=True
-                )
-            elif agent_config["actor_type"] == 'entitled_agent':
-                policy = LBFEntitledPolicyWrapper(
-                    grid_size=grid_size,
-                    num_fruits=num_fruits,
-                    using_log_wrapper=True
-                )
-            elif agent_config["actor_type"] == 'greedy_agent':
-                heuristic = agent_config.get("heuristic", "closest_self")
-                policy = LBFGreedyHeuristicPolicyWrapper(
-                    grid_size=grid_size,
-                    num_fruits=num_fruits,
-                    heuristic=heuristic,
-                    using_log_wrapper=True
-                )
-            else:
-                raise ValueError(f"Unrecognized actor type for {task_name}: {agent_config['actor_type']}")
-
-        elif 'overcooked-v1' in task_name:
-            performance_bounds = agent_config.get("performance_bounds", None)
-            aug_layout_dict = augmented_layouts[env_kwargs["layout"]]
-            if agent_config["actor_type"] == 'random_agent':
-                policy = OvercookedRandomPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'static_agent':
-                policy = OvercookedStaticPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'independent_agent':
-                policy = OvercookedIndependentPolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0), 
-                    p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
-            elif agent_config["actor_type"] == 'onion_agent':
-                policy = OvercookedOnionPolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0))
-            elif agent_config["actor_type"] == 'plate_agent':
-                policy = OvercookedPlatePolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
-            else:
-                raise ValueError(f"Unrecognized actor type for {task_name}: {agent_config['actor_type']}")
         else:
-            raise ValueError(f"Unknown task: {task_name}")
+            performance_bounds = agent_config.get("performance_bounds", None)
+            policy = initialize_heuristic_agent_from_config(
+                agent_config, agent_name, task_name, env_kwargs
+            )
         
         # Generate agent labels
         if params_list is None: # heuristic agent
