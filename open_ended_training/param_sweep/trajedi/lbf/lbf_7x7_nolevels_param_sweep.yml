@@ -22,15 +22,13 @@ parameters:
     values: [0.1, 0.05, 0.03, 0.01, 0.005]
 
 
-  # algorithm.CLIP_EPS:
-  #   values: [0.5, 0.3, 0.1, 0.03, 0.05]
-
 command:
   - ${env}
   - python
   - ${program}
   - task=lbf/lbf_7x7_nolevels
   - algorithm=trajedi/lbf/lbf_7x7_nolevels
+  - algorithm.TOTAL_TIMESTEPS=1e8
   - run_heldout_eval=true
   - logger.mode=online
   - logger.log_train_out=false
