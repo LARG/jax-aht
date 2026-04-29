@@ -123,7 +123,7 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
             grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
             num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_fruits", 3))
             if agent_config["actor_type"] == 'random_agent':
-                policy = LBFRandomPolicyWrapper(using_log_wrapper=True)
+                policy = LBFRandomPolicyWrapper()
             elif agent_config["actor_type"] == 'seq_agent':
                 ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
                 policy = LBFSequentialFruitPolicyWrapper(
@@ -146,6 +146,8 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                     heuristic=heuristic,
                     using_log_wrapper=True
                 )
+            else:
+                raise ValueError(f"Unrecognized actor type for {task_name}: {agent_config['actor_type']}")
 
         elif 'overcooked-v1' in task_name:
             performance_bounds = agent_config.get("performance_bounds", None)
@@ -167,6 +169,8 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                 policy = OvercookedPlatePolicyWrapper(
                     aug_layout_dict, using_log_wrapper=True, 
                     p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
+            else:
+                raise ValueError(f"Unrecognized actor type for {task_name}: {agent_config['actor_type']}")
         else:
             raise ValueError(f"Unknown task: {task_name}")
         
