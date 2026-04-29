@@ -11,13 +11,15 @@ NUM_MINIBATCHES: 160
 TARGET_ENTROPY_MULT: 0.01
 GAMMA: 0.99
 # SAP value bounds.
-# Observed episode returns on TACC SPR ~-14800 (37x the theoretical -400, likely
-# due to Intel XPU JAX reward scaling). Set VMIN well below observed minimum.
-VMIN: -20000
+# Observed SAP episode return: -200 (40 steps x -1 x 5 orders, no collision possible).
+# Buffer added for safety.
+VMIN: -250
 VMAX: 0
 
-# Joint value bounds: match SAP scale, plus collision penalty headroom.
-JOINT_VMIN: -25000
+# Joint value bounds.
+# Worst case: collision at step 1 with 10 orders pending.
+# Combined: COLLISION_PENALTY(-220) + step_penalty(-5) per truck x2 = -450.
+JOINT_VMIN: -500
 JOINT_VMAX: 0
 
 ANNEAL_LR: false
