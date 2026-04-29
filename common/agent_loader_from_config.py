@@ -135,9 +135,4 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
 
     assert jax.tree.structure(agent_params) == jax.tree.structure(init_params), "Agent parameters and initial parameters must have the same structure."
 
-    # TODO: remove this after debugging
-    # agent_params_shapes = [l.shape for l in jax.tree.leaves(agent_params)]
-    # init_params_shapes = [l.shape for l in jax.tree.leaves(init_params)]
-    # import pdb; pdb.set_trace()
-
     return policy, agent_params, init_params, idx_labels
