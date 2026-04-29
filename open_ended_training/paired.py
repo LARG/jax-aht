@@ -657,26 +657,30 @@ def train_paired(config, env, partner_rng):
                 train_state_ego = update_state[2]
 
                 # Metrics
-                metric = traj_batch_ego.info
+                def mask_and_mean(x, mask):
+                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+
+                mask = traj_batch_ego.info.get("returned_episode", jnp.ones_like(traj_batch_ego.reward))
+                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_ego.info)
                 metric["update_steps"] = update_steps
 
                 # Conf agent losses: value_loss_ego, value_loss_br, pg_loss_ego, pg_loss_br, entropy_ego, entropy_br
-                metric["value_loss_conf_against_ego"] = all_losses_conf[1][0]
-                metric["value_loss_conf_against_br"] = all_losses_conf[1][1]
-                metric["pg_loss_conf_against_ego"] = all_losses_conf[1][2]
-                metric["pg_loss_conf_against_br"] = all_losses_conf[1][3]
-                metric["entropy_conf_against_ego"] = all_losses_conf[1][4]
-                metric["entropy_conf_against_br"] = all_losses_conf[1][5]
+                metric["value_loss_conf_against_ego"] = all_losses_conf[1][0].mean()
+                metric["value_loss_conf_against_br"] = all_losses_conf[1][1].mean()
+                metric["pg_loss_conf_against_ego"] = all_losses_conf[1][2].mean()
+                metric["pg_loss_conf_against_br"] = all_losses_conf[1][3].mean()
+                metric["entropy_conf_against_ego"] = all_losses_conf[1][4].mean()
+                metric["entropy_conf_against_br"] = all_losses_conf[1][5].mean()
 
                 # Ego agent losses
-                metric["value_loss_ego"] = all_losses_ego[1][0]
-                metric["pg_loss_ego"] = all_losses_ego[1][1]
-                metric["entropy_loss_ego"] = all_losses_ego[1][2]
+                metric["value_loss_ego"] = all_losses_ego[1][0].mean()
+                metric["pg_loss_ego"] = all_losses_ego[1][1].mean()
+                metric["entropy_loss_ego"] = all_losses_ego[1][2].mean()
 
                 # br agent losses
-                metric["value_loss_br"] = all_losses_br[1][0]
-                metric["pg_loss_br"] = all_losses_br[1][1]
-                metric["entropy_loss_br"] = all_losses_br[1][2]
+                metric["value_loss_br"] = all_losses_br[1][0].mean()
+                metric["pg_loss_br"] = all_losses_br[1][1].mean()
+                metric["entropy_loss_br"] = all_losses_br[1][2].mean()
 
                 metric["average_rewards_conf_against_ego"] = jnp.mean(traj_batch_conf_ego.reward)
                 metric["average_rewards_conf_against_br"] = jnp.mean(traj_batch_conf_br.reward) # redundant with br reward
@@ -879,25 +883,25 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     avg_conf_returns_vs_br = np.asarray(metrics["eval_ep_last_info_br"]["returned_episode_returns"]).mean(axis=(0, 2, 3))
 
     # Value losses
-    # shape (num_seeds, num_updates, update_epochs, num_minibatches)
-    avg_value_losses_conf_vs_ego = np.asarray(metrics["value_loss_conf_against_ego"]).mean(axis=(0, 2, 3))
-    avg_value_losses_conf_vs_br = np.asarray(metrics["value_loss_conf_against_br"]).mean(axis=(0, 2, 3))
-    avg_value_losses_br = np.asarray(metrics["value_loss_br"]).mean(axis=(0, 2, 3))
-    avg_value_losses_ego = np.asarray(metrics["value_loss_ego"]).mean(axis=(0, 2, 3))
+    # shape (num_seeds, num_updates)
+    avg_value_losses_conf_vs_ego = np.asarray(metrics["value_loss_conf_against_ego"]).mean(axis=0)
+    avg_value_losses_conf_vs_br = np.asarray(metrics["value_loss_conf_against_br"]).mean(axis=0)
+    avg_value_losses_br = np.asarray(metrics["value_loss_br"]).mean(axis=0)
+    avg_value_losses_ego = np.asarray(metrics["value_loss_ego"]).mean(axis=0)
 
     # Actor losses
-    # shape (num_seeds, num_updates, update_epochs, num_minibatches)
-    avg_actor_losses_conf_vs_ego = np.asarray(metrics["pg_loss_conf_against_ego"]).mean(axis=(0, 2, 3))
-    avg_actor_losses_conf_vs_br = np.asarray(metrics["pg_loss_conf_against_br"]).mean(axis=(0, 2, 3))
-    avg_actor_losses_br = np.asarray(metrics["pg_loss_br"]).mean(axis=(0, 2, 3))
-    avg_actor_losses_ego = np.asarray(metrics["pg_loss_ego"]).mean(axis=(0, 2, 3))
+    # shape (num_seeds, num_updates)
+    avg_actor_losses_conf_vs_ego = np.asarray(metrics["pg_loss_conf_against_ego"]).mean(axis=0)
+    avg_actor_losses_conf_vs_br = np.asarray(metrics["pg_loss_conf_against_br"]).mean(axis=0)
+    avg_actor_losses_br = np.asarray(metrics["pg_loss_br"]).mean(axis=0)
+    avg_actor_losses_ego = np.asarray(metrics["pg_loss_ego"]).mean(axis=0)
 
     # Entropy losses
-    #  shape (num_seeds, num_updates, update_epochs, num_minibatches)
-    avg_entropy_losses_conf_vs_ego = np.asarray(metrics["entropy_conf_against_ego"]).mean(axis=(0, 2, 3))
-    avg_entropy_losses_conf_vs_br = np.asarray(metrics["entropy_conf_against_br"]).mean(axis=(0, 2, 3))
-    avg_entropy_losses_br = np.asarray(metrics["entropy_loss_br"]).mean(axis=(0, 2, 3))
-    avg_entropy_losses_ego = np.asarray(metrics["entropy_loss_ego"]).mean(axis=(0, 2, 3))
+    #  shape (num_seeds, num_updates)
+    avg_entropy_losses_conf_vs_ego = np.asarray(metrics["entropy_conf_against_ego"]).mean(axis=0)
+    avg_entropy_losses_conf_vs_br = np.asarray(metrics["entropy_conf_against_br"]).mean(axis=0)
+    avg_entropy_losses_br = np.asarray(metrics["entropy_loss_br"]).mean(axis=0)
+    avg_entropy_losses_ego = np.asarray(metrics["entropy_loss_ego"]).mean(axis=0)
 
     # Rewards
     # shape (num_seeds, num_updates)
