@@ -8,7 +8,7 @@ import jax
 import numpy as np
 import matplotlib.pyplot as plt
 
-from trajectory_autoencoder import (
+from trajectory_classifier import (
     init_classifier,
     make_classifier_train_step,
     train_classifier,
@@ -51,16 +51,16 @@ def main(
     model_path.mkdir(parents=True, exist_ok=True)
 
     # Load trajectories
-    heldout_path = data_path / "heldout_episodes.pkl"
-    if not heldout_path.exists():
-        raise FileNotFoundError(f"Heldout episodes not found at {heldout_path}. Run collect_trajectories.py first.")
+    train_path = data_path / "train_episodes.pkl"
+    if not train_path.exists():
+        raise FileNotFoundError(f"Train episodes not found at {train_path}. Run collect_trajectories.py first.")
 
-    print(f"Loading trajectories from {heldout_path}...")
-    with open(heldout_path, "rb") as f:
+    print(f"Loading trajectories from {train_path}...")
+    with open(train_path, "rb") as f:
         data = pickle.load(f)
     episodes_with_labels = data["episodes"]
     pair_labels = data["pair_labels"]
-    print(f"Loaded {len(episodes_with_labels)} heldout pairwise episodes.")
+    print(f"Loaded {len(episodes_with_labels)} train pairwise episodes.")
 
     obs_dim = get_obs_dim(env_name)
     padded_episodes, masks, labels, max_seq_len, label_to_idx = pad_labeled_episodes(

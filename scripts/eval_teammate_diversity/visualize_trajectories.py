@@ -11,7 +11,7 @@ from flax.training.train_state import TrainState
 import optax
 from sklearn.metrics import classification_report
 
-from trajectory_autoencoder import (
+from trajectory_classifier import (
     create_classifier,
     make_classifier_eval_step,
     pad_labeled_episodes,
@@ -103,12 +103,12 @@ def collect_latents(
 
     encode_step = make_encoder_eval_step(model)
 
-    heldout_path = data_path / "heldout_episodes.pkl"
-    if not heldout_path.exists():
-        raise FileNotFoundError("Heldout episodes not found. Collect test data first.")
+    val_path = data_path / "val_episodes.pkl"
+    if not val_path.exists():
+        raise FileNotFoundError(f"Validation episodes not found at {val_path}. Run collect_trajectories.py first.")
 
-    print(f"Loading test trajectories from {heldout_path}...")
-    with open(heldout_path, "rb") as f:
+    print(f"Loading validation trajectories from {val_path}...")
+    with open(val_path, "rb") as f:
         data = pickle.load(f)
     test_episodes = data["episodes"]
 
@@ -153,7 +153,7 @@ def collect_latents(
         agent_name = label_name[:split_pos]
         br_name = label_name[split_pos + 1:]
         if _is_specific_best_response(agent_name, br_name):
-            latents = all_latents[all_true_labels == label_idx][:100]
+            latents = all_latents[all_true_labels == label_idx]
             if len(latents) == 0:
                 print(f"ERROR: No trajectory data found for '{label_name}' — agent or its best response was not collected. Skipping from t-SNE.")
                 continue
@@ -216,12 +216,7 @@ def main(
     model_file=DEFAULT_MODEL_FILE,
     output_file=DEFAULT_OUTPUT_FILE,
     latents_file=DEFAULT_LATENTS_FILE,
-    collect=True,
     plot_only=False,
-    env_name="lbf",
-    k=5,
-    num_envs=256,
-    rollout_steps=128,
 ):
     if not plot_only:
         collect_latents(
@@ -241,11 +236,6 @@ if __name__ == "__main__":
     parser.add_argument("--output_file", type=str, default=DEFAULT_OUTPUT_FILE, help="Output visualization filename")
     parser.add_argument("--latents_file", type=str, default=DEFAULT_LATENTS_FILE, help="Path to save/load encoded latents")
     parser.add_argument("--plot-only", action="store_true", help="Skip data collection and plot from saved latents file")
-    parser.add_argument("--env_name", type=str, default="lbf", help="Environment name")
-    parser.add_argument("--k", type=int, default=5, help="Number of rollouts per agent pair")
-    parser.add_argument("--num_envs", type=int, default=256, help="Number of parallel environments")
-    parser.add_argument("--rollout_steps", type=int, default=128, help="Steps per rollout")
-
     args = parser.parse_args()
     main(
         data_dir=args.data_dir,
@@ -254,8 +244,4 @@ if __name__ == "__main__":
         output_file=args.output_file,
         latents_file=args.latents_file,
         plot_only=args.plot_only,
-        env_name=args.env_name,
-        k=args.k,
-        num_envs=args.num_envs,
-        rollout_steps=args.rollout_steps,
     )

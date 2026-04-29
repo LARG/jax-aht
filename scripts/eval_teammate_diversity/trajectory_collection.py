@@ -209,6 +209,20 @@ def _normalize_name(name):
     return name.replace("-", "_")
 
 
+def _is_specific_br_pair(agent_name, br_name):
+    """Return True if br_name is the specific best response for agent_name."""
+    if not br_name.startswith("br_for_"):
+        return False
+    norm = _normalize_name(agent_name)
+    suffix = br_name[len("br_for_"):]
+    if suffix == norm:
+        return True
+    if suffix.startswith(norm + "_"):
+        rest = suffix[len(norm) + 1:]
+        return all(c.isdigit() or c == "_" for c in rest)
+    return False
+
+
 def _find_specific_br(agent_name, br_names):
     """Return the specific BR name for agent_name among br_names, or None."""
     norm = _normalize_name(agent_name)
@@ -294,7 +308,7 @@ def get_agent_pair_configs(env_name="lbf", settings_path=None, br_path=None):
 def collect_heldout_pairwise_trajectories(
     rng,
     env,
-    k=5,
+    num_points_per_pair=None,
     rollout_steps=128,
     num_envs=256,
     env_name="lbf",
@@ -302,7 +316,8 @@ def collect_heldout_pairwise_trajectories(
     br_path=None,
 ):
     pairs = get_agent_pair_configs(env_name, settings_path=settings_path, br_path=br_path)
-    all_episodes = []  # Will store (trajectory, agent_pair_label) tuples
+    train_episodes = []  # (trajectory, agent_pair_label) tuples for training
+    val_episodes = []    # (trajectory, agent_pair_label) tuples for validation (specific-BR pairs only)
 
     def _load_agent(agent_cfg, agent_name, env, rng):
         actor_type = agent_cfg.get("actor_type", "")
@@ -385,23 +400,43 @@ def collect_heldout_pairwise_trajectories(
         br_idx = br_name_to_idx[br_name]
         pair_label = pair_labels[(agent_idx, br_idx)]
 
-        for i in range(k):
-            rng, episodes = collect_pair_trajectories(
-                rng,
-                env,
-                teammate_policy,
-                teammate_params,
-                br_policy,
-                br_params,
-                num_rollouts=1,
-                rollout_steps=rollout_steps,
-                num_envs=num_envs,
-                agent_idx=agent_idx,
-                br_idx=br_idx,
-            )
-            # Store trajectories with their pair labels
-            for episode in episodes:
-                all_episodes.append((episode, pair_label))
+        rng, episodes = collect_pair_trajectories(
+            rng,
+            env,
+            teammate_policy,
+            teammate_params,
+            br_policy,
+            br_params,
+            num_rollouts=1,
+            rollout_steps=rollout_steps,
+            num_envs=num_envs,
+            agent_idx=agent_idx,
+            br_idx=br_idx,
+        )
+        for episode in episodes:
+            train_episodes.append((episode, pair_label))
+
+        # For specific-BR pairs, collect num_points_per_pair additional episodes into the validation set
+        if _is_specific_br_pair(agent_name, br_name) and num_points_per_pair is not None:
+            pair_val_episodes = []
+            while len(pair_val_episodes) < num_points_per_pair:
+                rng, episodes = collect_pair_trajectories(
+                    rng,
+                    env,
+                    teammate_policy,
+                    teammate_params,
+                    br_policy,
+                    br_params,
+                    num_rollouts=1,
+                    rollout_steps=rollout_steps,
+                    num_envs=num_envs,
+                    agent_idx=agent_idx,
+                    br_idx=br_idx,
+                )
+                pair_val_episodes.extend(episodes)
+            for episode in pair_val_episodes[:num_points_per_pair]:
+                val_episodes.append((episode, pair_label))
+
         print(f"Collected {agent_name}, {br_name}")
 
-    return rng, all_episodes, pair_labels
+    return rng, train_episodes, val_episodes, pair_labels
