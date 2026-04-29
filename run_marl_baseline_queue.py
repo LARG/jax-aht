@@ -125,10 +125,22 @@ def main():
         truly_free = [g for g in free_gpus if g not in active_processes]
         
         while len(truly_free) > 0 and len(pending_jobs) > 0:
+            # Peek at the next job
+            job = pending_jobs[0]
+            logfile = job["logfile"]
+            
+            # Check if another instance already started this job
+            if os.path.exists(logfile) and os.path.getsize(logfile) > 500:
+                pending_jobs.pop(0) # Remove and skip
+                continue
+                
             gpu = truly_free.pop(0)
-            job = pending_jobs.pop(0)
+            job = pending_jobs.pop(0) # Actually pop it now
             
             print(f"[GPU {gpu}] Starting {job['desc']}")
+            
+            # Create the logfile immediately to claim it
+            open(logfile, 'a').close()
             
             env = os.environ.copy()
             env["CUDA_VISIBLE_DEVICES"] = str(gpu)
