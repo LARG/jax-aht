@@ -6,9 +6,16 @@ from evaluation.heldout_eval import run_heldout_evaluation, log_heldout_metrics
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
 from open_ended_training.rotate import run_rotate
+<<<<<<< HEAD
 from open_ended_training.open_ended_minimax import run_minimax
 from open_ended_training.paired import run_paired
 from open_ended_training.cole import run_cole
+=======
+from open_ended_training.cole import run_cole
+from open_ended_minimax import run_minimax
+from open_ended_training.paired import run_paired
+from open_ended_training.trajedi import run_trajedi
+>>>>>>> origin/main
 
 @hydra.main(version_base=None, config_path="configs", config_name="base_config_oel")
 def run_training(cfg):
@@ -23,12 +30,14 @@ def run_training(cfg):
         ego_policy, final_ego_params, init_ego_params = run_minimax(cfg, wandb_logger)
     elif cfg.algorithm["ALG"] == "paired":
         ego_policy, final_ego_params, init_ego_params = run_paired(cfg, wandb_logger)
+    elif cfg.algorithm["ALG"] == "trajedi":
+        ego_policy, final_ego_params, init_ego_params = run_trajedi(cfg, wandb_logger)
     else:
         raise NotImplementedError("Selected method not implemented.")
 
     if cfg["run_heldout_eval"]:
         metric_names = get_metric_names(cfg["task"]["ENV_NAME"])
-        ego_as_2d = False if cfg.algorithm["ALG"] in ["cole", "paired"] else True
+        ego_as_2d = False if cfg.algorithm["ALG"] in ["cole", "paired", "trajedi"] else True
         eval_metrics, ego_names, heldout_names = run_heldout_evaluation(
             cfg, ego_policy, final_ego_params, init_ego_params, ego_as_2d=ego_as_2d
         )
