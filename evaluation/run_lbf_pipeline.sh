@@ -55,8 +55,8 @@ MODEL_DIR="results/${ENV_NAME}/autoencoder_models"
 OUTPUT_FILE="results/${ENV_NAME}/tsne_trajectory_visualization.png"
 
 # Default parameters for the scripts
-K=3  # Number of rollouts per agent pair
-NUM_ENVS=8192  # Number of parallel environments
+K=1  # Number of rollouts per agent pair
+NUM_ENVS=4096  # Number of parallel environments
 ROLLOUT_STEPS=128  # Steps per rollout
 HIDDEN_DIM=128  # Autoencoder hidden dimension
 LATENT_DIM=16  # Autoencoder latent dimension
@@ -82,7 +82,7 @@ echo "Each step will wait for the previous one to complete before starting."
 tmux new-session -d -s "${SESSION_NAME}"
 
 # Send commands to activate conda environment and run the pipeline sequentially
-tmux send-keys -t "${SESSION_NAME}" "source /scratch/cluster/adityam/miniconda3/etc/profile.d/conda.sh && conda activate jax-aht && cd /scratch/cluster/adityam/jax-aht && echo 'Starting trajectory collection...' && python evaluation/collect_trajectories.py --env_name ${ENV_NAME} --k ${K} --num_envs ${NUM_ENVS} --rollout_steps ${ROLLOUT_STEPS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && python evaluation/train_autoencoder.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --env_name ${ENV_NAME} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && python evaluation/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --env_name ${ENV_NAME} --k 5 --num_envs 256 --rollout_steps 128 && echo 'Pipeline complete!'" C-m
+tmux send-keys -t "${SESSION_NAME}" "source /scratch/cluster/adityam/miniconda3/etc/profile.d/conda.sh && conda activate jax-aht && cd /scratch/cluster/adityam/jax-aht && echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python evaluation/collect_trajectories.py --env_name ${ENV_NAME} --k ${K} --num_envs ${NUM_ENVS} --rollout_steps ${ROLLOUT_STEPS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && CUDA_VISIBLE_DEVICES=1 python evaluation/train_autoencoder.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --env_name ${ENV_NAME} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python evaluation/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --env_name ${ENV_NAME} --k 5 --num_envs 256 --rollout_steps 128 && echo 'Pipeline complete!'" C-m
 
 echo "Pipeline started in tmux session '${SESSION_NAME}'"
 echo "The commands will execute sequentially - each step waits for the previous to complete."

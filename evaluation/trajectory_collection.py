@@ -120,27 +120,20 @@ def _policy_action(policy, params, obs, done, avail_actions, hstate, rng, env_st
 
     num_envs = obs.shape[0]
     rng_keys = jax.random.split(rng, num_envs)
-    # MLP Policies (e.g. IPPO)
+
+    # MLP policies: no hstate, vmap directly over envs
     if hstate is None:
         actions, _ = jax.vmap(partial(policy.get_action, params))(
-            obs,
-            done,
-            avail_actions,
-            None,
-            rng_keys,
-            env_state,
+            obs, done, avail_actions, None, rng_keys, env_state,
         )
         return actions, None
 
-    # Recurrent path for S5-style policy where hstate is an ndarray tree (not a tuple of dataclasses)
-    # Check if hstate is a tuple/list: if so, check if it's sequential agents (dataclass instances)
-    is_sequential_batch = isinstance(hstate, (tuple, list)) and len(hstate) > 0 and not isinstance(hstate[0], jnp.ndarray)
-    
-    if not is_sequential_batch and (isinstance(hstate, jnp.ndarray) or all(isinstance(x, jnp.ndarray) for x in jax.tree_leaves(hstate))):
-        obs_exp = obs[None]  # (1, num_envs, obs_dim)
+    # S5-style recurrent policy: hstate is a jnp.ndarray or list of jnp.ndarrays.
+    # A single call handles all envs internally via the (1, num_envs, ...) convention.
+    if isinstance(hstate, (jnp.ndarray, list)):
+        obs_exp = obs[None]    # (1, num_envs, obs_dim)
         done_exp = done[None]  # (1, num_envs)
         avail_exp = avail_actions[None]  # (1, num_envs, n_actions)
-
         actions_exp, new_hstate = policy.get_action(params, obs_exp, done_exp, avail_exp, hstate, rng, env_state)
         if actions_exp.ndim == 2:
             actions = actions_exp.squeeze(0)
@@ -148,16 +141,20 @@ def _policy_action(policy, params, obs, done, avail_actions, hstate, rng, env_st
             actions = actions_exp
         return actions, new_hstate
 
-    # Generic fallback: iterate over environment batch for non-vectorized policies (e.g., sequential agents with tuple states)
-    # hstate should be a tuple/list of individual states, one per environment
-    rng_keys = jax.random.split(rng, num_envs)
-    def single_call(i):
-        env_state_i = jax.tree_map(lambda x: x[i] if isinstance(x, jnp.ndarray) else x, env_state)
-        return policy.get_action(params, obs[i], done[i], avail_actions[i], hstate[i], rng_keys[i], env_state_i)
-    actions, new_hstates = jax.vmap(single_call)(jnp.arange(num_envs))
-    actions = jnp.array(actions)
-    new_hstate = tuple(new_hstates)
-    return actions, new_hstates
+    # Per-env structured hstate (e.g. heuristic AgentState): vmap over the env axis so
+    # each call receives single-env obs/hstate/env_state.
+    # init_hstate returns a single state; tile scalar leaves to (num_envs,) so vmap
+    # has a leading axis to map over on the first step (subsequent steps are already batched).
+    leaves = jax.tree_leaves(hstate)
+    if leaves and jnp.asarray(leaves[0]).ndim == 0:
+        hstate = jax.tree_map(
+            lambda x: jnp.broadcast_to(jnp.asarray(x), (num_envs,) + jnp.asarray(x).shape),
+            hstate,
+        )
+    actions, new_hstate = jax.vmap(partial(policy.get_action, params))(
+        obs, done, avail_actions, hstate, rng_keys, env_state,
+    )
+    return actions, new_hstate
 
 def collect_pair_trajectories(
     rng,
@@ -253,9 +250,62 @@ def collect_pair_trajectories(
     return rng, all_episodes
 
 
+def _normalize_name(name):
+    return name.replace("-", "_")
+
+
+def _find_specific_br(agent_name, br_names):
+    """Return the specific BR name for agent_name among br_names, or None."""
+    norm = _normalize_name(agent_name)
+    for br in br_names:
+        if not br.startswith("br_for_"):
+            continue
+        suffix = br[len("br_for_"):]
+        if suffix == norm or suffix.startswith(norm + "_"):
+            return br
+    return None
+
+
+def _find_agent_for_br(br_name, agent_names):
+    """Return the agent name that br_name is specifically for, or None."""
+    if not br_name.startswith("br_for_"):
+        return None
+    suffix = br_name[len("br_for_"):]
+    for agent in agent_names:
+        norm = _normalize_name(agent)
+        if suffix == norm or suffix.startswith(norm + "_"):
+            return agent
+    return None
+
+
 def _load_yaml(path):
     with open(path, "r") as f:
         return yaml.safe_load(f)
+
+
+def _expand_multi_index_configs(agent_configs):
+    """Expand configs with multiple idx_list entries into one config per index.
+
+    For 1-D indices like [0, 1, 2] the expanded names are ``{name}_0``,
+    ``{name}_1``, ``{name}_2``.  For 2-D indices like [[1, 0], [1, 1]] the
+    expanded names are ``{name}_1_0``, ``{name}_1_1``, matching the convention
+    used in the BR config yaml.
+    """
+    expanded = {}
+    for name, cfg in agent_configs.items():
+        idx_list = cfg.get("idx_list", None)
+        if idx_list is None or "path" not in cfg or len(idx_list) <= 1:
+            expanded[name] = cfg
+            continue
+        for idx in idx_list:
+            if isinstance(idx, (list, tuple)):
+                suffix = "_".join(str(i) for i in idx)
+            else:
+                suffix = str(idx)
+            new_cfg = dict(cfg)
+            new_cfg["idx_list"] = [idx]
+            expanded[f"{name}_{suffix}"] = new_cfg
+    return expanded
 
 
 def get_agent_pair_configs(env_name="lbf", settings_path=None, br_path=None):
@@ -275,7 +325,7 @@ def get_agent_pair_configs(env_name="lbf", settings_path=None, br_path=None):
     if env_name not in best_response_set:
         raise ValueError(f"Env {env_name} not found in best response set")
 
-    agent_configs = heldout_set[env_name]
+    agent_configs = _expand_multi_index_configs(heldout_set[env_name])
     br_configs = best_response_set[env_name]
 
     pairs = []
@@ -313,47 +363,74 @@ def collect_heldout_pairwise_trajectories(
             init_params = {}
         return policy, params, init_params
 
-    # Collect unique agents to load only once
+    # Gather ordered unique names and their configs
+    names_to_cfg = {}
+    for agent_name, agent_cfg, br_name, br_cfg in pairs:
+        names_to_cfg.setdefault(agent_name, agent_cfg)
+        names_to_cfg.setdefault(br_name, br_cfg)
+
+    all_agent_names = list({p[0] for p in pairs})
+    all_br_names = list({p[2] for p in pairs})
+
+    # Load all unique agents/BRs, catching failures instead of crashing
     print("Initializing Agents...")
     unique_agents = {}
-    for agent_name, agent_cfg, br_name, br_cfg in pairs:
-        if agent_name not in unique_agents:
-            rng, rng_load = jax.random.split(rng)
-            unique_agents[agent_name] = _load_agent(agent_cfg, agent_name, env, rng_load)
-        if br_name not in unique_agents:
-            rng, rng_load = jax.random.split(rng)
-            unique_agents[br_name] = _load_agent(br_cfg, br_name, env, rng_load)
+    failed_names = set()
+    for name, cfg in names_to_cfg.items():
+        rng, rng_load = jax.random.split(rng)
+        try:
+            unique_agents[name] = _load_agent(cfg, name, env, rng_load)
+        except Exception as e:
+            print(f"ERROR: Could not load '{name}': {e}")
+            failed_names.add(name)
+
+    # Propagate each failure to its specific partner (agent ↔ its specific BR)
+    for name in list(failed_names):
+        partner = _find_specific_br(name, all_br_names)
+        if partner is None:
+            partner = _find_agent_for_br(name, all_agent_names)
+        if partner is not None and partner not in failed_names:
+            print(f"ERROR: Also removing '{partner}' from data collection (paired with failed '{name}').")
+            failed_names.add(partner)
+            unique_agents.pop(partner, None)
+
     print("Initialized Agents...")
+
+    # Filter to pairs where both members loaded successfully
+    valid_pairs = [
+        (an, ac, bn, bc) for an, ac, bn, bc in pairs
+        if an not in failed_names and bn not in failed_names
+    ]
 
     # Create mappings from agent/BR names to indices for tracking
     agent_name_to_idx = {}
     br_name_to_idx = {}
     agent_idx_counter = 0
     br_idx_counter = 0
-    
-    for agent_name, agent_cfg, br_name, br_cfg in pairs:
+
+    for agent_name, _, br_name, _ in valid_pairs:
         if agent_name not in agent_name_to_idx:
             agent_name_to_idx[agent_name] = agent_idx_counter
             agent_idx_counter += 1
         if br_name not in br_name_to_idx:
             br_name_to_idx[br_name] = br_idx_counter
             br_idx_counter += 1
-    
+
     # Create a mapping from (agent_idx, br_idx) to pair label
     pair_labels = {}
-    for agent_name, agent_cfg, br_name, br_cfg in pairs:
+    for agent_name, _, br_name, _ in valid_pairs:
         agent_idx = agent_name_to_idx[agent_name]
         br_idx = br_name_to_idx[br_name]
         pair_labels[(agent_idx, br_idx)] = f"{agent_name}_{br_name}"
-    
-    for agent_name, agent_cfg, br_name, br_cfg in pairs:
+
+    for agent_name, agent_cfg, br_name, br_cfg in valid_pairs:
         print(f"Collecting {agent_name} (idx={agent_name_to_idx[agent_name]}), {br_name} (idx={br_name_to_idx[br_name]})...")
-        teammate_policy, teammate_params, teammate_init_params = unique_agents[agent_name]
-        br_policy, br_params, br_init_params = unique_agents[br_name]
+        teammate_policy, teammate_params, _ = unique_agents[agent_name]
+        br_policy, br_params, _ = unique_agents[br_name]
         agent_idx = agent_name_to_idx[agent_name]
         br_idx = br_name_to_idx[br_name]
         pair_label = pair_labels[(agent_idx, br_idx)]
-        
+
         for i in range(k):
             rng, episodes = collect_pair_trajectories(
                 rng,

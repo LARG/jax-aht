@@ -9,9 +9,7 @@ import jax.numpy as jnp
 import numpy as np
 from flax.training.train_state import TrainState
 import optax
-import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, classification_report
-import seaborn as sns
+from sklearn.metrics import classification_report
 
 from evaluation.trajectory_autoencoder import (
     create_classifier,
@@ -144,7 +142,11 @@ def collect_latents(
         agent_name = label_name[:split_pos]
         br_name = label_name[split_pos + 1:]
         if _is_specific_best_response(agent_name, br_name):
-            latents_dict[label_name] = all_latents[all_true_labels == label_idx][:100]
+            latents = all_latents[all_true_labels == label_idx][:100]
+            if len(latents) == 0:
+                print(f"ERROR: No trajectory data found for '{label_name}' — agent or its best response was not collected. Skipping from t-SNE.")
+                continue
+            latents_dict[label_name] = latents
 
     save_data = {
         "latents_dict": latents_dict,
@@ -187,27 +189,13 @@ def plot(
 
     label_names = [idx_to_label[i] for i in range(num_classes)]
 
-    cm = confusion_matrix(all_true_labels, predictions)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=label_names, yticklabels=label_names)
-    plt.title('Confusion Matrix')
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
-    plt.xticks(rotation=45, ha='right')
-    plt.yticks(rotation=45, ha='right')
-    plt.tight_layout()
-    cm_path = output_file.replace('.png', '_confusion_matrix.png')
-    plt.savefig(cm_path, dpi=150)
-    plt.close()
-
     print(f"Creating t-SNE visualization from latent encodings...")
     plot_tsne(latents_dict, save_path=output_file)
 
     print("\nClassification Report:")
     print(classification_report(all_true_labels, predictions, target_names=label_names))
 
-    print(f"Evaluation complete. Confusion matrix saved to {cm_path}, t-SNE saved to {output_file}")
+    print(f"Evaluation complete. t-SNE saved to {output_file}")
 
 
 def main(
