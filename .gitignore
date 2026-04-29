@@ -13,6 +13,11 @@ wandb/
 .vscode/
 .claude/
 
+# Human data raw
+human_data_collecting/collected_data_prolific/
+human_data_collecting/*.tar.gz
+*.safetensors
+
 # pycache
 **/__pycache__/
 **/*.pyc
