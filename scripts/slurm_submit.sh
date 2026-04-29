@@ -74,7 +74,7 @@ else
 fi
 echo "Module:   $MODULE"
 
-XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${MODULE}/run.py" \
+PYTHONPATH=. python "${MODULE}/run.py" \
     algorithm="${ALGO}/${TASK}" \
     task="${TASK}" \
     label="${LABEL}" \

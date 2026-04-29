@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="comedi"
+algo="lbrdiv"
 label="neurips:benchmark"
 num_seeds=5
 num_checkpoints=1
@@ -15,9 +15,9 @@ log_file="results/teammate_generation_logs/${algo}/${label}/experiment_${timesta
 # Tasks to run
 tasks=(
     "overcooked-v1/asymm_advantages"
-    # "overcooked-v1/coord_ring"
+    "overcooked-v1/coord_ring"
     "overcooked-v1/counter_circuit"
-    # "overcooked-v1/cramped_room"
+    "overcooked-v1/cramped_room"
     "overcooked-v1/forced_coord"
     # "lbf"
 )
@@ -37,7 +37,7 @@ failure_count=0
 for task in "${tasks[@]}"; do
     log "Starting task: ${algo}/${task}"
     
-    if PYTHONPATH=. XLA_PYTHON_CLIENT_PREALLOCATE=false python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
+    if PYTHONPATH=. python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
         algorithm.NUM_SEEDS="${num_seeds}" \
         algorithm.NUM_CHECKPOINTS="${num_checkpoints}" \
         2>> "${log_file}"; then
