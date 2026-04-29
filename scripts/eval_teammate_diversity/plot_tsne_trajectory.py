@@ -45,13 +45,30 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30):
 
     fig, ax = plt.subplots(figsize=(6, 5))
     unique_labels = list(latents_dict.keys())
-    colors = plt.cm.tab10(np.linspace(0, 1, max(len(unique_labels), 1)))
+    n_cats = max(len(unique_labels), 1)
+    cmap = plt.cm.get_cmap("tab20", n_cats)
+    colors = [cmap(i) for i in range(n_cats)]
+
+    _DISPLAY_NAMES = {
+        "brdiv-conf1_0": "brdiv1-0",
+        "brdiv-conf1_1": "brdiv1-1",
+        "brdiv-conf1_2": "brdiv1-2",
+        "brdiv-conf2_0": "brdiv2-0",
+        "brdiv-conf2_1": "brdiv2-1",
+        "ippo_mlp": "ippo-mlp",
+        "ippo_mlp_s2c0": "ippo-s2c0",
+        "seq_agent_col": "seq-col",
+        "seq_agent_farthest": "seq-far",
+        "seq_agent_lexi": "seq-lexi",
+        "seq_agent_nearest": "seq-near",
+        "seq_agent_rcol": "seq-rcol",
+        "seq_agent_rlexi": "seq-rlexi",
+    }
 
     def _display_name(label):
         br_marker = "_br_for_"
-        if br_marker in label:
-            return label[:label.index(br_marker)]
-        return label
+        agent = label[:label.index(br_marker)] if br_marker in label else label
+        return _DISPLAY_NAMES.get(agent, agent)
 
     offset = 0
     plotted_count = 0

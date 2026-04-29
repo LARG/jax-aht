@@ -29,8 +29,17 @@ def _is_specific_best_response(agent_name, br_name):
     """Return true if br_name is the specific BR for agent_name."""
     if not br_name.startswith("br_for_"):
         return False
-    suffix = br_name[len("br_for_") :]
-    return suffix == agent_name or suffix.startswith(agent_name + "_")
+    suffix = br_name[len("br_for_"):]
+    norm_agent = agent_name.replace("-", "_")
+    if suffix == norm_agent:
+        return True
+    prefix = norm_agent + "_"
+    if suffix.startswith(prefix):
+        # Only a numeric seed/index suffix (digits and underscores) is allowed,
+        # not another agent's name that shares the same prefix (e.g. ippo_mlp_s2c0).
+        rest = suffix[len(prefix):]
+        return all(c.isdigit() or c == "_" for c in rest)
+    return False
 
 
 def _filter_agent_br_pairs(pairs):
@@ -40,12 +49,13 @@ def _filter_agent_br_pairs(pairs):
         if _is_specific_best_response(agent_name, br_name)
     ]
 
-# Config
-DEFAULT_DATA_DIR = "results/lbf/trajectory_data"
-DEFAULT_MODEL_DIR = "results/lbf/autoencoder_models"
+# Config — paths are relative to the repo root (two levels up from this script)
+_REPO_ROOT = Path(__file__).parent.parent.parent
+DEFAULT_DATA_DIR = str(_REPO_ROOT / "results/lbf/trajectory_data")
+DEFAULT_MODEL_DIR = str(_REPO_ROOT / "results/lbf/autoencoder_models")
 DEFAULT_MODEL_FILE = "autoencoder"
-DEFAULT_OUTPUT_FILE = "results/lbf/tsne_trajectory_visualization.png"
-DEFAULT_LATENTS_FILE = "results/lbf/latents.pkl"
+DEFAULT_OUTPUT_FILE = str(_REPO_ROOT / "results/lbf/tsne_trajectory_visualization.png")
+DEFAULT_LATENTS_FILE = str(_REPO_ROOT / "results/lbf/latents.pkl")
 
 
 def collect_latents(
@@ -102,7 +112,7 @@ def collect_latents(
         data = pickle.load(f)
     test_episodes = data["episodes"]
 
-    padded_episodes, masks, labels, _, _ = pad_labeled_episodes(test_episodes)
+    padded_episodes, masks, labels, _, ep_label_to_idx = pad_labeled_episodes(test_episodes)
 
     print("Evaluating classifier on test data...")
     all_logits = []
@@ -131,9 +141,11 @@ def collect_latents(
 
     predictions = np.argmax(all_logits, axis=1)
 
+    # Use ep_label_to_idx (from pad_labeled_episodes) to index all_true_labels —
+    # this is the mapping that was actually used to assign label ints to episodes.
     idx_to_label = {v: k for k, v in label_to_idx.items()}
     latents_dict = {}
-    for label_name, label_idx in label_to_idx.items():
+    for label_name, label_idx in ep_label_to_idx.items():
         br_marker = "_br_for_"
         if br_marker not in label_name:
             continue
@@ -146,6 +158,7 @@ def collect_latents(
                 print(f"ERROR: No trajectory data found for '{label_name}' — agent or its best response was not collected. Skipping from t-SNE.")
                 continue
             latents_dict[label_name] = latents
+    print(f"Collected latents for {len(latents_dict)} agent-BR pairs: {sorted(latents_dict.keys())}")
 
     save_data = {
         "latents_dict": latents_dict,
