@@ -74,28 +74,28 @@ JOB_CMDS=()
 # ── MARL ──────────────────────────────────────────────────────────────────────
 JOB_NAMES+=("ippo")
 JOB_CMDS+=("python marl/run.py \
-    algorithm=ippo/lbf task=lbf label=test_ippo \
+    algorithm=ippo/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_ippo \
     algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
 
 # ── Teammate generation ───────────────────────────────────────────────────────
 JOB_NAMES+=("brdiv")
 JOB_CMDS+=("python teammate_generation/run.py \
-    algorithm=brdiv/lbf task=lbf label=test_brdiv \
+    algorithm=brdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_brdiv \
     run_heldout_eval=false train_ego=false \
     algorithm.TOTAL_TIMESTEPS=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
 
 JOB_NAMES+=("lbrdiv")
 JOB_CMDS+=("python teammate_generation/run.py \
-    algorithm=lbrdiv/lbf task=lbf label=test_lbrdiv \
+    algorithm=lbrdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_lbrdiv \
     run_heldout_eval=false train_ego=false \
     algorithm.TOTAL_TIMESTEPS=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
 
 JOB_NAMES+=("comedi")
 JOB_CMDS+=("python teammate_generation/run.py \
-    algorithm=comedi/lbf task=lbf label=test_comedi \
+    algorithm=comedi/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_comedi \
     run_heldout_eval=false train_ego=false \
     algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     $COMMON_FLAGS")
@@ -103,7 +103,7 @@ JOB_CMDS+=("python teammate_generation/run.py \
 # test training ego agent
 JOB_NAMES+=("fcp")
 JOB_CMDS+=("python teammate_generation/run.py \
-    algorithm=fcp/lbf task=lbf label=test_fcp \
+    algorithm=fcp/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_fcp \
     run_heldout_eval=false train_ego=true \
     algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_CHECKPOINTS=2 \
     algorithm.ego_train_algorithm.TOTAL_TIMESTEPS=1e5 \
@@ -114,7 +114,7 @@ JOB_CMDS+=("python teammate_generation/run.py \
 # Run heldout eval for ppo ego only
 JOB_NAMES+=("ppo_ego")
 JOB_CMDS+=("python ego_agent_training/run.py \
-    algorithm=ppo_ego/lbf task=lbf label=test_ppo_ego \
+    algorithm=ppo_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_ppo_ego \
     algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_EGO_TRAIN_SEEDS=1 \
     algorithm.partner_agent.ippo.path=$PARTNER_PATH \
     run_heldout_eval=true \
@@ -122,7 +122,7 @@ JOB_CMDS+=("python ego_agent_training/run.py \
 
 JOB_NAMES+=("liam_ego")
 JOB_CMDS+=("python ego_agent_training/run.py \
-    algorithm=liam_ego/lbf task=lbf label=test_liam_ego \
+    algorithm=liam_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_liam_ego \
     algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_EGO_TRAIN_SEEDS=1 \
     algorithm.partner_agent.ippo.path=$PARTNER_PATH \
     run_heldout_eval=false \
@@ -130,7 +130,7 @@ JOB_CMDS+=("python ego_agent_training/run.py \
 
 JOB_NAMES+=("meliba_ego")
 JOB_CMDS+=("python ego_agent_training/run.py \
-    algorithm=meliba_ego/lbf task=lbf label=test_meliba_ego \
+    algorithm=meliba_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_meliba_ego \
     algorithm.TOTAL_TIMESTEPS=1e5 algorithm.NUM_EGO_TRAIN_SEEDS=1 \
     algorithm.partner_agent.ippo.path=$PARTNER_PATH \
     run_heldout_eval=false \
@@ -139,7 +139,7 @@ JOB_CMDS+=("python ego_agent_training/run.py \
 # ── Open-ended / unified training ─────────────────────────────────────────────
 JOB_NAMES+=("rotate")
 JOB_CMDS+=("python open_ended_training/run.py \
-    algorithm=rotate/lbf task=lbf label=test_rotate \
+    algorithm=rotate/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_rotate \
     algorithm.NUM_OPEN_ENDED_ITERS=1 \
     algorithm.TIMESTEPS_PER_ITER_PARTNER=1e5 algorithm.TIMESTEPS_PER_ITER_EGO=1e5 \
     algorithm.NUM_SEEDS=1 \
@@ -148,14 +148,14 @@ JOB_CMDS+=("python open_ended_training/run.py \
 
 JOB_NAMES+=("cole")
 JOB_CMDS+=("python open_ended_training/run.py \
-    algorithm=cole/lbf task=lbf label=test_cole \
+    algorithm=cole/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_cole \
     algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     run_heldout_eval=false \
     $COMMON_FLAGS")
 
 JOB_NAMES+=("trajedi")
 JOB_CMDS+=("python open_ended_training/run.py \
-    algorithm=trajedi/lbf task=lbf label=test_trajedi \
+    algorithm=trajedi/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_trajedi \
     algorithm.TOTAL_TIMESTEPS=2e5 algorithm.PARTNER_POP_SIZE=2 algorithm.NUM_SEEDS=1 \
     run_heldout_eval=false \
     $COMMON_FLAGS")

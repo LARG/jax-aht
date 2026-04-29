@@ -72,8 +72,8 @@ run_job() {
   log_msg "START $job_key on GPU $gpu_id"
 
   CUDA_VISIBLE_DEVICES="$gpu_id" python3 ego_agent_training/run.py \
-    task=lbf \
-    algorithm=ppo_br/lbf \
+    task=lbf/lbf_7x7_nolevels \
+    algorithm=ppo_br/lbf/lbf_7x7_nolevels \
     label="$label" \
     run_heldout_eval=false \
     algorithm.TOTAL_TIMESTEPS="$TOTAL_TIMESTEPS" \

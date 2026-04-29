@@ -38,8 +38,8 @@ command:
   - ${env}
   - python
   - ${program}
-  - task=lbf
-  - algorithm=ppo_ego/lbf
+  - task=lbf/lbf_7x7_nolevels
+  - algorithm=ppo_ego/lbf/lbf_7x7_nolevels
   - run_heldout_eval=true
   - logger.project=aht-parameter-sweep
   - logger.entity=aht-project
