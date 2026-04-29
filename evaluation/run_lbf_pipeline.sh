@@ -58,11 +58,11 @@ OUTPUT_FILE="results/${ENV_NAME}/tsne_trajectory_visualization.png"
 K=1  # Number of rollouts per agent pair
 NUM_ENVS=4096  # Number of parallel environments
 ROLLOUT_STEPS=128  # Steps per rollout
-HIDDEN_DIM=128  # Autoencoder hidden dimension
+HIDDEN_DIM=64  # Autoencoder hidden dimension
 LATENT_DIM=16  # Autoencoder latent dimension
 LEARNING_RATE=0.0003  # Learning rate
 NUM_EPOCHS=200  # Training epochs
-BATCH_SIZE=64  # Training batch size
+BATCH_SIZE=512  # Training batch size
 
 echo "Starting trajectory pipeline in tmux session: ${SESSION_NAME}"
 echo "Environment: ${ENV_NAME}"

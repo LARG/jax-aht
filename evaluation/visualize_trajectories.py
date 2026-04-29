@@ -21,7 +21,6 @@ from evaluation.trajectory_collection import (
     get_agent_pair_configs,
 )
 from evaluation.trajectory_plot import plot_tsne
-from common.agent_loader_from_config import initialize_rl_agent_from_config
 from envs import make_env
 
 

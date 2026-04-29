@@ -5,7 +5,11 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from common.agent_loader_from_config import initialize_rl_agent_from_config
+from common.agent_loader_from_config import (
+    initialize_rl_agent_from_config,
+    initialize_heuristic_agent_from_config,
+    HEURISTIC_ACTOR_TYPES,
+)
 
 IPPO_CONFIG = {
     "path": "eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run",
@@ -350,17 +354,16 @@ def collect_heldout_pairwise_trajectories(
     all_episodes = []  # Will store (trajectory, agent_pair_label) tuples
 
     def _load_agent(agent_cfg, agent_name, env, rng):
+        actor_type = agent_cfg.get("actor_type", "")
+        if actor_type in HEURISTIC_ACTOR_TYPES:
+            policy = initialize_heuristic_agent_from_config(agent_cfg, agent_name)
+            return policy, {}, {}
         policy, params, init_params, _ = initialize_rl_agent_from_config(agent_cfg, agent_name, env, rng)
-        if "path" in agent_cfg:
-            params = jax.tree_map(jnp.squeeze, params)
-            idx_list = agent_cfg.get("idx_list", None)
-            if idx_list is not None and len(idx_list) > 1:
-                params = jax.tree_map(lambda x: x[0], params)
-            params = jax.tree_map(lambda p, i: p.reshape(i.shape) if p.size == i.size else p, params, init_params)
-        else:
-            # Non-RL heuristic has no checkpoint params; keep empty dict for consistency.
-            params = {}
-            init_params = {}
+        params = jax.tree_map(jnp.squeeze, params)
+        idx_list = agent_cfg.get("idx_list", None)
+        if idx_list is not None and len(idx_list) > 1:
+            params = jax.tree_map(lambda x: x[0], params)
+        params = jax.tree_map(lambda p, i: p.reshape(i.shape) if p.size == i.size else p, params, init_params)
         return policy, params, init_params
 
     # Gather ordered unique names and their configs

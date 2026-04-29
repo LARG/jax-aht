@@ -79,84 +79,95 @@ def create_idx_labels(idx_list, checkpoint_shape):
     return idx_labels
 
 
-def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
-    '''Load an agent from checkpoint or heuristic config.
-    For RL agents, expects path+idx_list as before.
-    For non-RL heuristics (seq_agent, random_agent, etc.), path is optional.
+HEURISTIC_ACTOR_TYPES = frozenset({
+    "seq_agent", "random_agent",
+    "independent_agent", "onion_agent", "plate_agent", "static_agent",
+})
 
-    agent_config may include:
-    {
-        "path": str,  # optional for heuristics
-        "actor_type": str,
-        "ckpt_key": str, # key to load from checkpoint. Default is "checkpoints".
-        "custom_loader": dict, # custom loader for the checkpoint. Default is None.
-        "idx_list": list, # list of indices to load from checkpoint, optional for heuristics.
-    }
+
+def initialize_heuristic_agent_from_config(agent_config, agent_name):
+    '''Load a heuristic (non-RL) agent from config.
+
+    agent_config must include "actor_type", one of: seq_agent, random_agent,
+    independent_agent, onion_agent, plate_agent, static_agent.
 
     Returns:
-        policy: AgentPolicy object
-        agent_params: checkpoint parameters (or empty dict for heuristics)
-        init_params: params structure for one checkpoint (or empty dict for heuristics)
-        idx_labels: list of string labels corresponding to the indices (or None for heuristics)
+        policy: policy function (no checkpoint or params required)
     '''
     assert "actor_type" in agent_config, "Actor type must be provided."
     actor_type = agent_config["actor_type"]
 
-    # Heuristic policy wrappers (no checkpoint required)
     if actor_type == "seq_agent":
         grid_size = agent_config.get("grid_size", 7)
         num_fruits = agent_config.get("num_fruits", 3)
         ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
-        policy = LBFSequentialFruitPolicyWrapper(
+        return LBFSequentialFruitPolicyWrapper(
             grid_size=grid_size,
             num_fruits=num_fruits,
             ordering_strategy=ordering_strategy,
             using_log_wrapper=True,
         )
-        return policy, {}, {}, None
 
     if actor_type == "random_agent":
-        policy = LBFRandomPolicyWrapper()
-        return policy, {}, {}, None
+        return LBFRandomPolicyWrapper()
 
     if actor_type == "independent_agent":
-        # overcooked independent agent may need layout info outside this function
         layout = agent_config.get("layout", None)
-        policy = OvercookedIndependentPolicyWrapper(
+        return OvercookedIndependentPolicyWrapper(
             layout=layout,
             using_log_wrapper=True,
             p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0),
             p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
         )
-        return policy, {}, {}, None
 
     if actor_type == "onion_agent":
         layout = agent_config.get("layout", None)
-        policy = OvercookedOnionPolicyWrapper(
+        return OvercookedOnionPolicyWrapper(
             layout=layout,
             p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0),
             using_log_wrapper=True,
         )
-        return policy, {}, {}, None
 
     if actor_type == "plate_agent":
         layout = agent_config.get("layout", None)
-        policy = OvercookedPlatePolicyWrapper(
+        return OvercookedPlatePolicyWrapper(
             layout=layout,
             p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
             using_log_wrapper=True,
         )
-        return policy, {}, {}, None
 
     if actor_type == "static_agent":
         layout = agent_config.get("layout", None)
-        policy = OvercookedStaticPolicyWrapper(layout=layout, using_log_wrapper=True)
-        return policy, {}, {}, None
+        return OvercookedStaticPolicyWrapper(layout=layout, using_log_wrapper=True)
 
-    if "path" not in agent_config:
-        raise ValueError(f"RL agent config for {agent_name} must contain path when actor_type is {actor_type}.")
+    raise ValueError(
+        f"Unknown heuristic actor type '{actor_type}' for {agent_name}. "
+        f"Expected one of: {sorted(HEURISTIC_ACTOR_TYPES)}."
+    )
 
-    # RL checkpoint-based agent
+
+def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
+    '''Load RL agent from checkpoint and initialize from config.
+    The agent_config dictionary should have the following structure:
+
+    agent_config must include:
+    {
+        "path": str,
+        "actor_type": str,  # one of: s5, mlp, rnn, actor_with_double_critic, actor_with_conditional_critic
+        "ckpt_key": str, # key to load from checkpoint. Default is "checkpoints".
+        "custom_loader": dict, # custom loader for the checkpoint. Default is None.
+        "idx_list": list, # list of indices to load from checkpoint. If null, all checkpoints will be loaded.
+        # and any other parameters needed to initialize the agent policy
+    }
+
+    Returns:
+        policy: policy function
+        agent_params: agent parameters from checkpoint
+        init_params: initial agent parameters from initialization
+        idx_labels: list of string labels corresponding to the loaded checkpoint indices
+    '''
+    assert "path" in agent_config, "Path to agent checkpoint must be provided."
+    assert "actor_type" in agent_config, "Actor type must be provided."
     assert "idx_list" in agent_config, "Indices to load from checkpoint must be provided."
 
     agent_path = _validate_teammate_path(agent_config["path"])
@@ -172,11 +183,11 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         agent_params = agent_ckpt
     else: # load specific checkpoints
         # convert omegaconf list config to list recursively
-        idx_list_cfg = agent_config["idx_list"]
-        if OmegaConf.is_config(idx_list_cfg):
-            idx_list = OmegaConf.to_object(idx_list_cfg)
-        else:
-            idx_list = idx_list_cfg
+        try:
+            idx_list = OmegaConf.to_object(agent_config["idx_list"])
+        except Exception as e:
+            log.warning(f"Error interpreting agent_config['idx_list'] as OmegaConf object: {e}. Treating as list.")
+            idx_list = agent_config["idx_list"]
         idx_list = jax.tree.map(lambda x: int(x), idx_list)
         idxs = process_idx_list(idx_list)
                 

@@ -2,7 +2,6 @@
 TODO: clean up logic by vectorizing init_hstate. See HeuristicPolicyPopulation.
 '''
 import jax
-import jax.numpy as jnp
 from agents.agent_interface import AgentPolicy
 from agents.lbf.random_agent import RandomAgent
 from agents.lbf.sequential_fruit_agent import SequentialFruitAgent

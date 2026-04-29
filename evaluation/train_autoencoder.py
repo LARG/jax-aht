@@ -68,8 +68,6 @@ def main(
     )
     
     num_classes = len(label_to_idx)
-    print(f"Number of classes: {num_classes}")
-    print(f"Class mapping: {label_to_idx}")
 
     rng = jax.random.PRNGKey(42)
     rng, train_state, model = init_classifier(
