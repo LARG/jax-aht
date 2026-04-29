@@ -307,7 +307,11 @@ def make_train(config, env, logger, progress_callback=None):
                 _update_epoch, update_state, None, config["UPDATE_EPOCHS"]
             )
             train_state = update_state[0]
-            metric = traj_batch.info
+            def mask_and_mean(x, mask):
+                return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+            
+            mask = traj_batch.info.get("returned_episode", jnp.ones_like(traj_batch.reward))
+            metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
             metric["update_steps"] = update_steps
 
             def callback(metrics):
@@ -315,7 +319,7 @@ def make_train(config, env, logger, progress_callback=None):
                 if progress_callback is not None:
                     progress_callback()
 
-            # metrics: (ROLLOUT_LENGTH, NUM_ACTORS)
+            # metrics: scalars
             jax.experimental.io_callback(callback, None, metric)
 
             rng = update_state[-1]
@@ -458,19 +462,11 @@ def run_ippo(config, logger):
 def log_metrics_intermediate(train_stats, logger):
     # Log metrics for one update step
     step = int(np.array(train_stats.pop("update_steps")))
-    # remaining values have shape (ROLLOUT_LENGTH, NUM_ACTORS)
-    mask = np.array(train_stats.pop("returned_episode"))  # boolean mask for episode-ending steps
-    num_trajectories = mask.sum()
     
     metric_names = [k for k in train_stats if k != "returned_episode"]
     for stat_name in metric_names:        
-        if num_trajectories > 0:
-            # Only average over timesteps where an episode actually ended, matching get_stats logic
-            metric_sum = np.where(mask, np.array(train_stats[stat_name]), 0).sum()
-            stat_mean = metric_sum / num_trajectories
-        else:
-            stat_mean = 0.0
-        logger.log_item(f"Train/{stat_name}", float(stat_mean), train_step=step, commit=True)
+        stat_mean = float(np.array(train_stats[stat_name]))
+        logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
     logger.commit()
 
 def log_artifacts(config, out, logger):

@@ -385,9 +385,7 @@ heldout_set:
       greedy: true
       performance_bounds:
         returned_episode_returns: [0.0, 4.39]
-    # MLP IPPO self-play (1e9 steps, 3 seeds, FC_HIDDEN_DIM=64).
-    # Self-play: seed0 17.19, seed1 15.50, seed2 14.48. BR: 12.17, 10.36, 11.87.
-    # Trained before FC_HIDDEN_DIM plumbing fix, so actual hidden_dim=64.
+    # MLP IPPO self-play partners (FC_HIDDEN_DIM=64).
     ippo_mlp_seed0:
       path: "eval_teammates/hanabi/ippo_fullhanabi/mlp_1e9_3seeds/saved_train_run"
       actor_type: mlp
@@ -418,10 +416,7 @@ heldout_set:
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 11.87]]
-    # S5 recurrent IPPO self-play (1e9 steps, d_model=16, ssm=16, fc=64).
-    # S5 maintains hidden state across the episode, enabling card tracking.
-    # Self-play: seed42=17.95, seed123=18.05, seed31415=18.98.
-    # BR scores: 12.12, 12.16, 11.69.
+    # S5 recurrent IPPO self-play partners.
     ippo_s5_seed42:
       path: "eval_teammates/hanabi/ippo_s5/seed42/saved_train_run"
       actor_type: s5
@@ -458,10 +453,7 @@ heldout_set:
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 11.69]]
-    # S5 IPPO with Other-Play (1e9 steps, color permutation for agent 1).
-    # OtherPlay breaks convention fragility: agents learn to cooperate
-    # regardless of color mapping, improving cross-play generalization.
-    # BR scores: seed42=12.87, seed123=11.91.
+    # S5 IPPO with Other-Play (color permutation for agent 1 during training).
     ippo_s5_op_seed42:
       path: "eval_teammates/hanabi/ippo_s5_op/seed42/saved_train_run"
       actor_type: s5
@@ -486,6 +478,30 @@ heldout_set:
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 11.91]]
+    ippo_s5_op_seed31415:
+      path: "eval_teammates/hanabi/ippo_s5_op/seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 11.11]]
+    ippo_s5_seed99999:
+      path: "eval_teammates/hanabi/ippo_s5/seed99999/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      S5_D_MODEL: 16
+      S5_SSM_SIZE: 16
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      FC_N_LAYERS: 2
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 11.30]]
   mini-hanabi: # Mini-Hanabi (3 colors, 3 ranks) held-out partner set
     # OBL R2D2 is NOT included here because its architecture is hardcoded
     # for full Hanabi (out_dim=21, obs split at [125:]). Mini-Hanabi has
@@ -606,7 +622,7 @@ heldout_set:
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 6.25], [0.0, 5.77], [0.0, 6.45], [0.0, 6.52], [0.0, 6.52]]
-    # S5 recurrent IPPO self-play partners. BR scores: 7.56, 7.80, 7.88.
+    # S5 recurrent IPPO self-play partners.
     ippo_s5_seed42:
       path: "eval_teammates/hanabi/ippo_s5_mini/seed42/saved_train_run"
       actor_type: s5
@@ -643,7 +659,7 @@ heldout_set:
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 7.88]]
-    # S5 IPPO with Other-Play. BR scores: 7.59, 7.70, 7.92.
+    # S5 IPPO with Other-Play.
     ippo_s5_op_seed42:
       path: "eval_teammates/hanabi/ippo_s5_op_mini/seed42/saved_train_run"
       actor_type: s5

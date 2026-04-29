@@ -27,8 +27,8 @@ def get_stats(metrics, stats: tuple):
     stats is a tuple of strings, each corresponding to a metric of interest in metrics
     '''
     # Get mask for final steps of episodes
-    mask = metrics["returned_episode"]
-
+    mask = metrics.get("returned_episode", None)
+    
     # Initialize output dictionary
     all_stats = {}
     stats = list(stats) # convert to list to correctly iterate if the tuple only has a single element
@@ -39,21 +39,23 @@ def get_stats(metrics, stats: tuple):
 
     for stat_name in stats:
         # Get the metric array
-        metric_data = metrics[stat_name]
+        metric_data = metrics[stat_name]  # Shape: (..., rollout_length, num_envs) or (num_seeds, num_updates)
 
-        if condensed:
-            # Condensed metrics are already per-update scalar means.
-            # Return (mean, std=0) to match expected output format.
+        if metric_data.ndim == 2:
+            # Data is already pre-averaged over rollout and envs
             means = metric_data
-            stds = jnp.zeros_like(means)
+            stds = jnp.zeros_like(metric_data)
         else:
-            # Full metrics: shape (..., rollout_length, num_envs)
+            # Compute means and stds for each seed and update
             # Use masked operations to only consider final episode steps
-            means = jnp.where(mask, metric_data, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
+            mask_sum = jnp.maximum(1, mask.sum(axis=(-2, -1)))
+            means = jnp.where(mask, metric_data, 0).sum(axis=(-2, -1)) / mask_sum
+            # For std, first compute masked values
             masked_vals = jnp.where(mask, metric_data, 0)
             squared_diff = (masked_vals - means[..., None, None]) ** 2
-            variance = jnp.where(mask, squared_diff, 0).sum(axis=(-2, -1)) / mask.sum(axis=(-2, -1))
+            variance = jnp.where(mask, squared_diff, 0).sum(axis=(-2, -1)) / mask_sum
             stds = jnp.sqrt(variance)
+            
         # Stack means and stds
         all_stats[stat_name] = jnp.stack([means, stds], axis=-1)
     
