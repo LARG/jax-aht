@@ -1,5 +1,5 @@
 import os
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, snapshot_download
 import zipfile
 import shutil
 import tempfile
@@ -105,27 +105,71 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
             shutil.rmtree(temp_dir_for_extraction)
 
 
+def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
+    """
+    Downloads a directory from a Hugging Face dataset repository to a local directory,
+    preserving the remote directory structure under destination_dir.
+
+    Args:
+        repo_id (str): The Hugging Face repository ID (e.g., "jaxaht/eval-teammates").
+        remote_dir (str): The directory in the HF repo to download (e.g., "lbf").
+        destination_dir (str): Local directory to download into; remote_dir becomes a
+                               subdirectory of this (e.g., destination_dir/lbf/...).
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    print(f"Starting download: {repo_id}/{remote_dir} -> {destination_dir}/{remote_dir}")
+    os.makedirs(destination_dir, exist_ok=True)
+
+    try:
+        snapshot_download(
+            repo_id=repo_id,
+            repo_type="dataset",
+            local_dir=destination_dir,
+            allow_patterns=f"{remote_dir}/**",
+        )
+        print(f"Successfully downloaded {remote_dir} to {destination_dir}.")
+        return True
+    except Exception as e:
+        print(f"Error downloading {repo_id}/{remote_dir}: {e}")
+        return False
+
+
 if __name__ == "__main__":
-    # Hugging Face dataset path
     repo_id = "jaxaht/eval-teammates"
-    
+
+    # "zip" entries use download_and_unzip_hf_file; "dir" entries use download_hf_directory.
     data_files = {
         "best_returns_teammates": {
+            "type": "zip",
             "filename": "best_heldout_returns.zip",
-            "target_directory": "results/"
+            "target_directory": "results/",
         },
-        "eval_teammates": {
-            "filename": "eval_teammates.zip",
-            "target_directory": "eval_teammates/"
+        "lbf_teammates": {
+            "type": "dir",
+            "filename": "lbf",
+            "target_directory": "eval_teammates/",
+        },
+        "overcooked-v1_teammates": {
+            "type": "dir",
+            "filename": "overcooked-v1",
+            "target_directory": "eval_teammates/",
         },
     }
 
     for data_name, data_info in data_files.items():
-        success = download_and_unzip_hf_file(
-            repo_id=repo_id, 
-            filename=data_info["filename"], 
-            destination_dir=data_info["target_directory"]
-        )
+        if data_info["type"] == "zip":
+            success = download_and_unzip_hf_file(
+                repo_id=repo_id,
+                filename=data_info["filename"],
+                destination_dir=data_info["target_directory"],
+            )
+        else:
+            success = download_hf_directory(
+                repo_id=repo_id,
+                remote_dir=data_info["filename"],
+                destination_dir=data_info["target_directory"],
+            )
 
         if success:
             print(f"Download completed successfully for {data_name}.")
