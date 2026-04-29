@@ -85,10 +85,10 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
     if env_kwargs is None:
         env_kwargs = {}
 
-    if task_name == 'lbf':
+    if 'lbf' in task_name:
         # Grid dimensions: per-agent config > env_kwargs > defaults (7x7, 3 fruits).
         grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
-        num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_fruits", 3))
+        num_fruits = agent_config.get("num_food", env_kwargs.get("num_fruits", 3))
 
         if actor_type == "random_agent":
             return LBFRandomPolicyWrapper()
