@@ -9,13 +9,13 @@ Only supports a population of homogeneous RL partner agents.
 
 Command to run MeLIBA ego training:
 
-python ego_agent_training/run.py algorithm=meliba_ego/lbf task=lbf label=test_meliba_ego
+python ego_agent_training/run.py algorithm=meliba_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_meliba_ego
 
 
 
 Suggested debug command:
 
-python ego_agent_training/run.py algorithm=meliba_ego/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
+python ego_agent_training/run.py algorithm=meliba_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
 '''
 import shutil
 import time

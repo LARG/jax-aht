@@ -5,8 +5,8 @@ Code: https://github.com/liyang619/COLE-Platform/tree/COLE_training
 
 Suggested debug command:
 python open_ended_training/run.py /
-    algorithm=cole/lbf /
-    task=lbf /
+    algorithm=cole/lbf/lbf_7x7_nolevels /
+    task=lbf/lbf_7x7_nolevels /
     label=test_cole /
     run_heldout_eval=false /
     algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 /
