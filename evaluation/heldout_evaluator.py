@@ -9,7 +9,8 @@ import time
 import os
 import hydra
 
-from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper
+from agents.lbf.agent_policy_wrappers import (LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper,
+    LBFEntitledPolicyWrapper, LBFGreedyHeuristicPolicyWrapper)
 from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
     OvercookedOnionPolicyWrapper,
     OvercookedPlatePolicyWrapper,
@@ -116,12 +117,14 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
         # Load non-RL-based heuristic agents
         elif task_name == 'lbf':
             performance_bounds = agent_config.get("performance_bounds", None)
+            # Grid dimensions: per-agent config > env_kwargs > defaults (7x7, 3 fruits).
+            # Per-agent overrides allow entries in global_heldout_settings to be self-contained
+            # for tasks whose ENV_KWARGS does not explicitly set these fields.
+            grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
+            num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_fruits", 3))
             if agent_config["actor_type"] == 'random_agent':
-                policy = LBFRandomPolicyWrapper(using_log_wrapper=True)
+                policy = LBFRandomPolicyWrapper()
             elif agent_config["actor_type"] == 'seq_agent':
-                # Get grid size and num fruits from environment
-                grid_size = env_kwargs.get("grid_size", 7)
-                num_fruits = env_kwargs.get("num_fruits", 3)
                 ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
                 policy = LBFSequentialFruitPolicyWrapper(
                     grid_size=grid_size,
@@ -129,6 +132,22 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                     ordering_strategy=ordering_strategy,
                     using_log_wrapper=True
                 )
+            elif agent_config["actor_type"] == 'entitled_agent':
+                policy = LBFEntitledPolicyWrapper(
+                    grid_size=grid_size,
+                    num_fruits=num_fruits,
+                    using_log_wrapper=True
+                )
+            elif agent_config["actor_type"] == 'greedy_agent':
+                heuristic = agent_config.get("heuristic", "closest_self")
+                policy = LBFGreedyHeuristicPolicyWrapper(
+                    grid_size=grid_size,
+                    num_fruits=num_fruits,
+                    heuristic=heuristic,
+                    using_log_wrapper=True
+                )
+            else:
+                raise ValueError(f"Unrecognized actor type for {task_name}: {agent_config['actor_type']}")
 
         elif 'overcooked-v1' in task_name:
             performance_bounds = agent_config.get("performance_bounds", None)
@@ -150,6 +169,8 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                 policy = OvercookedPlatePolicyWrapper(
                     aug_layout_dict, using_log_wrapper=True, 
                     p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
+            else:
+                raise ValueError(f"Unrecognized actor type for {task_name}: {agent_config['actor_type']}")
         else:
             raise ValueError(f"Unknown task: {task_name}")
         
