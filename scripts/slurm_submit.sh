@@ -36,8 +36,8 @@ ALGO="${ALGO:-fcp}"                      # Algorithm (default: fcp)
 TASK="${TASK:-lbf}"                      # Task/environment (default: lbf)
 LABEL="${LABEL:-fcp_lbf_test}"           # Run label for logging
 NUM_SEEDS="${NUM_SEEDS:-5}"             # Number of random seeds
-LOG_TRAIN_OUT="${LOG_TRAIN_OUT:-false}"  # Whether to log training output to wandb
-LOG_LOCAL_OUT="${LOG_LOCAL_OUT:-false}"  # Whether to save output locally
+LOG_TRAIN_OUT="${LOG_TRAIN_OUT:-true}"  # Whether to log training output to wandb
+LOG_LOCAL_OUT="${LOG_LOCAL_OUT:-true}"  # Whether to save output locally
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 # ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"  # Repo root, resolved relative to this script
@@ -80,6 +80,7 @@ PYTHONPATH=. python "${MODULE}/run.py" \
     label="${LABEL}" \
     algorithm.NUM_SEEDS="${NUM_SEEDS}" \
     algorithm.NUM_CHECKPOINTS=1 \
+    logger.mode="online" \
     logger.log_train_out="${LOG_TRAIN_OUT}" \
     local_logger.save_train_out="${LOG_LOCAL_OUT}" \
     local_logger.save_eval_out="${LOG_LOCAL_OUT}"
