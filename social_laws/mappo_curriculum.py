@@ -125,7 +125,8 @@ def train_mappo_agent(config, env, no_law_env, train_rng,
         # Curriculum switch settings.
         convergence_tol = float(config.get("CURRICULUM_CONVERGENCE_TOL", 1e-4))
         convergence_patience = int(config.get("CURRICULUM_CONVERGENCE_PATIENCE", 5))
-        min_updates_before_switch = int(config.get("CURRICULUM_MIN_UPDATES_BEFORE_SWITCH", 25))
+        min_updates_before_switch = int(config.get("CURRICULUM_MIN_UPDATES_BEFORE_SWITCH", 30))
+        switch_on_min_updates = bool(config.get("CURRICULUM_SWITCH_ON_MIN_UPDATES", True))
         target_eval_return = float(config.get("CURRICULUM_TARGET_EVAL_RETURN", -jnp.inf))
         ema_alpha = float(config.get("CURRICULUM_EMA_ALPHA", 0.1))
         law_ent_coef = float(config["ENT_COEF"])
@@ -570,7 +571,10 @@ def train_mappo_agent(config, env, no_law_env, train_rng,
                 stable_update = jnp.logical_and(ema_delta <= convergence_tol, current_train_return >= target_eval_return)
                 stable_updates = jax.lax.select(stable_update, curriculum_state.stable_updates + 1, jnp.array(0, dtype=jnp.int32))
                 has_min_updates = update_steps >= min_updates_before_switch
-                converged = jnp.logical_and(has_min_updates, stable_updates >= convergence_patience)
+                if switch_on_min_updates:
+                    converged = has_min_updates
+                else:
+                    converged = jnp.logical_and(has_min_updates, stable_updates >= convergence_patience)
                 use_no_law_env = jnp.logical_or(curriculum_state.use_no_law_env, converged)
                 curriculum_state = CurriculumState(
                     use_no_law_env=use_no_law_env,

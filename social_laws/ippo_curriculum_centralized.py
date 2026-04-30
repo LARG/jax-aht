@@ -7,6 +7,7 @@ import shutil
 import time
 import logging
 from functools import partial
+from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
@@ -27,6 +28,12 @@ from marl.ppo_utils import Transition, batchify, unbatchify, _create_minibatches
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
+class CurriculumState(NamedTuple):
+    use_no_law_env: jnp.ndarray
+    ema_eval_return: jnp.ndarray
+    stable_updates: jnp.ndarray
+
 def initialize_agent(actor_type, algorithm_config, env, init_rng):
     if actor_type == "s5":
         policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng)
@@ -41,7 +48,7 @@ def initialize_agent(actor_type, algorithm_config, env, init_rng):
     return policy, init_params
 
 
-def train_ippo_agent(config, env, train_rng,
+def train_ippo_agent(config, env, no_law_env, train_rng,
                     policy, init_params):
     '''
     Train IPPO the given initial parameters.
@@ -65,6 +72,17 @@ def train_ippo_agent(config, env, train_rng,
         config["MINIBATCH_SIZE"] = (
             config["NUM_ACTORS"] * config["ROLLOUT_LENGTH"] // config["NUM_MINIBATCHES"]
         )
+
+        # Curriculum switch settings.
+        convergence_tol = float(config.get("CURRICULUM_CONVERGENCE_TOL", 1e-4))
+        convergence_patience = int(config.get("CURRICULUM_CONVERGENCE_PATIENCE", 5))
+        min_updates_before_switch = int(config.get("CURRICULUM_MIN_UPDATES_BEFORE_SWITCH", 30))
+        switch_on_min_updates = bool(config.get("CURRICULUM_SWITCH_ON_MIN_UPDATES", True))
+        target_eval_return = float(config.get("CURRICULUM_TARGET_EVAL_RETURN", -jnp.inf))
+        ema_alpha = float(config.get("CURRICULUM_EMA_ALPHA", 0.1))
+        law_ent_coef = float(config["ENT_COEF"])
+        no_law_ent_coef_cfg = config.get("NO_LAW_ENT_COEF", None)
+        no_law_ent_coef = law_ent_coef if no_law_ent_coef_cfg is None else float(no_law_ent_coef_cfg)
 
         def linear_schedule(count):
             frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
@@ -91,6 +109,13 @@ def train_ippo_agent(config, env, train_rng,
             #  Init hstates
             init_hstate = policy.init_hstate(config["NUM_ACTORS"])
 
+            def _select_env_data(use_no_law_env, law_value, no_law_value):
+                return jax.tree.map(
+                    lambda law_x, no_law_x: jax.lax.select(use_no_law_env, no_law_x, law_x),
+                    law_value,
+                    no_law_value,
+                )
+
             def _env_step(runner_state, unused):
                 """
                 One step of the environment:
@@ -98,11 +123,13 @@ def train_ippo_agent(config, env, train_rng,
                 2. Step environment using sampled actions
                 3. Return state, reward, ...
                 """
-                train_state, env_state, prev_obs, prev_done, hstate, rng = runner_state
+                train_state, env_state, prev_obs, prev_done, hstate, use_no_law_env, rng = runner_state
                 rng, actor_rng, step_rng = jax.random.split(rng, 3)
 
                  # Get available actions for the agent from environment state
-                avail_actions = env.get_avail_actions(env_state.env_state)
+                avail_actions_law = env.get_avail_actions(env_state.env_state)
+                avail_actions_no_law = no_law_env.get_avail_actions(env_state.env_state)
+                avail_actions = _select_env_data(use_no_law_env, avail_actions_law, avail_actions_no_law)
                 avail_actions = jax.lax.stop_gradient(batchify(avail_actions,
                     env.agents, config["NUM_ACTORS"]).astype(jnp.float32))
 
@@ -132,8 +159,16 @@ def train_ippo_agent(config, env, train_rng,
 
                 # Step env
                 step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
-                (obs_next, obs_full_next), env_state_next, reward, done_next, info = jax.vmap(env.step, in_axes=(0,0,0))(
+                law_step_out = jax.vmap(env.step, in_axes=(0,0,0))(
                     step_rngs, env_state, env_act
+                )
+                no_law_step_out = jax.vmap(no_law_env.step, in_axes=(0,0,0))(
+                    step_rngs, env_state, env_act
+                )
+                (obs_next, obs_full_next), env_state_next, reward, done_next, info = _select_env_data(
+                    use_no_law_env,
+                    law_step_out,
+                    no_law_step_out,
                 )
 
                 # Filter out rendering-only fields (pre_reset_state, pre_reset_obs) which
@@ -153,7 +188,7 @@ def train_ippo_agent(config, env, train_rng,
                     avail_actions=avail_actions # shape (num_envs, num_actions)
                 )
 
-                new_runner_state = (train_state, env_state_next, obs_next, done_next, new_hstate, rng)
+                new_runner_state = (train_state, env_state_next, obs_next, done_next, new_hstate, use_no_law_env, rng)
                 return new_runner_state, transition
 
             def _calculate_gae(traj_batch, last_val):
@@ -182,7 +217,7 @@ def train_ippo_agent(config, env, train_rng,
                 return advantages, advantages + traj_batch.value
 
             def _update_minbatch(train_state, batch_info):
-                init_hstate, traj_batch, advantages, returns = batch_info
+                init_hstate, traj_batch, advantages, returns, current_ent_coef = batch_info
                 def _loss_fn(params, init_hstate, traj_batch, gae, target_v):
                     _, value, pi, _ = policy.get_action_value_policy(
                         params=params,
@@ -218,7 +253,7 @@ def train_ippo_agent(config, env, train_rng,
                     # Entropy
                     entropy = jnp.mean(pi.entropy())
 
-                    total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy
+                    total_loss = pg_loss + config["VF_COEF"] * value_loss - current_ent_coef * entropy
                     return total_loss, (value_loss, pg_loss, entropy)
 
                 grad_fn = jax.value_and_grad(_loss_fn, has_aux=True)
@@ -235,13 +270,15 @@ def train_ippo_agent(config, env, train_rng,
                 return train_state, (loss_val, aux_vals, avg_grad_norm)
 
             def _update_epoch(update_state, unused):
-                train_state, init_hstate, traj_batch, advantages, targets, rng = update_state
+                train_state, init_hstate, traj_batch, advantages, targets, current_ent_coef, rng = update_state
                 rng, perm_rng = jax.random.split(rng)
                 minibatches = _create_minibatches(traj_batch, advantages, targets, init_hstate, config["NUM_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
+                ent_coef_minibatches = jnp.broadcast_to(current_ent_coef, (config["NUM_MINIBATCHES"],))
+                minibatches = (*minibatches, ent_coef_minibatches)
                 train_state, losses_and_grads = jax.lax.scan(
                     _update_minbatch, train_state, minibatches
                 )
-                update_state = (train_state, init_hstate, traj_batch, advantages, targets, rng)
+                update_state = (train_state, init_hstate, traj_batch, advantages, targets, current_ent_coef, rng)
                 return update_state, losses_and_grads
 
             def _update_step(update_runner_state, unused):
@@ -250,19 +287,25 @@ def train_ippo_agent(config, env, train_rng,
                 2. Compute advantage
                 3. PPO updates
                 """
-                (train_state, rng, rng_eval, update_steps) = update_runner_state
+                (train_state, rng, rng_eval, update_steps, curriculum_state) = update_runner_state
                 # Init envs & partner indices
                 rng, reset_rng = jax.random.split(rng, 2)
                 reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
-                (init_obs, init_full_obs), init_env_state = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
+                law_reset_out = jax.vmap(env.reset, in_axes=(0,))(reset_rngs)
+                no_law_reset_out = jax.vmap(no_law_env.reset, in_axes=(0,))(reset_rngs)
+                (init_obs, init_full_obs), init_env_state = _select_env_data(
+                    curriculum_state.use_no_law_env,
+                    law_reset_out,
+                    no_law_reset_out,
+                )
                 init_done = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
 
                 # 1) rollout
-                runner_state = (train_state, init_env_state, init_obs, init_done, init_hstate, rng)
+                runner_state = (train_state, init_env_state, init_obs, init_done, init_hstate, curriculum_state.use_no_law_env, rng)
 
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
-                (train_state, env_state, obs, done, hstate, rng) = runner_state
+                (train_state, env_state, obs, done, hstate, _, rng) = runner_state
 
                 # 2) advantage
                 # Get available actions for agent 0 from environment state
@@ -282,6 +325,12 @@ def train_ippo_agent(config, env, train_rng,
                 last_val = last_val.squeeze(axis=0)
                 advantages, targets = _calculate_gae(traj_batch, last_val)
 
+                current_ent_coef = jax.lax.select(
+                    curriculum_state.use_no_law_env,
+                    jnp.asarray(no_law_ent_coef, dtype=jnp.float32),
+                    jnp.asarray(law_ent_coef, dtype=jnp.float32),
+                )
+
                 # 3) PPO update
                 update_state = (
                     train_state,
@@ -289,6 +338,7 @@ def train_ippo_agent(config, env, train_rng,
                     traj_batch, # obs has shape (rollout_len, num_controlled_actors, -1)
                     advantages,
                     targets,
+                    current_ent_coef,
                     rng
                 )
                 update_state, losses_and_grads = jax.lax.scan(
@@ -302,7 +352,9 @@ def train_ippo_agent(config, env, train_rng,
                 metric["value_loss"] = loss_terms[0]
                 metric["entropy_loss"] = loss_terms[2]
                 metric["avg_grad_norm"] = avg_grad_norm
-                new_runner_state = (train_state, rng, rng_eval, update_steps + 1)
+                metric["curriculum_entropy_coef"] = current_ent_coef
+                metric["curriculum_use_no_law_env"] = curriculum_state.use_no_law_env.astype(jnp.float32)
+                new_runner_state = (train_state, rng, rng_eval, update_steps + 1, curriculum_state)
                 return (new_runner_state, metric)
 
             # IPPO Update and Checkpoint saving
@@ -325,7 +377,7 @@ def train_ippo_agent(config, env, train_rng,
                     update_state,
                     None
                 )
-                (train_state, rng, rng_eval, update_steps) = new_update_state
+                (train_state, rng, rng_eval, update_steps, curriculum_state) = new_update_state
 
                 # update steps is 1-indexed because it was incremented at the end of the update step
                 to_store = jnp.logical_or(jnp.equal(jnp.mod(update_steps-1, ckpt_and_eval_interval), 0),
@@ -343,10 +395,18 @@ def train_ippo_agent(config, env, train_rng,
                         eval_rng = rng_eval
                     else:
                         rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                    ckpt_eval_eps_last_infos = run_episodes_vmap(
-                        eval_rng, env, agent_param=train_state.params, agent_policy=policy,
-                        max_episode_steps=max_episode_steps,
-                        num_eps=config["NUM_EVAL_EPISODES"])
+                    ckpt_eval_eps_last_infos = jax.lax.cond(
+                        curriculum_state.use_no_law_env,
+                        lambda key: run_episodes_vmap(
+                            key, no_law_env, agent_param=train_state.params, agent_policy=policy,
+                            max_episode_steps=max_episode_steps,
+                            num_eps=config["NUM_EVAL_EPISODES"]),
+                        lambda key: run_episodes_vmap(
+                            key, env, agent_param=train_state.params, agent_policy=policy,
+                            max_episode_steps=max_episode_steps,
+                            num_eps=config["NUM_EVAL_EPISODES"]),
+                        eval_rng,
+                    )
                     return (new_ckpt_arr, cidx + 1, rng, rng_eval, ckpt_eval_eps_last_infos, ckpt_eval_eps_last_infos)
 
                 def skip_ckpt_and_eval(args):
@@ -356,10 +416,18 @@ def train_ippo_agent(config, env, train_rng,
                             eval_rng = rng_eval
                         else:
                             rng_eval, eval_rng = jax.random.split(rng_eval, 2)
-                        eval_eps_last_infos = run_episodes_vmap(
-                            eval_rng, env, agent_param=train_state.params, agent_policy=policy,
-                            max_episode_steps=max_episode_steps,
-                            num_eps=config["NUM_EVAL_EPISODES"])
+                        eval_eps_last_infos = jax.lax.cond(
+                            curriculum_state.use_no_law_env,
+                            lambda key: run_episodes_vmap(
+                                key, no_law_env, agent_param=train_state.params, agent_policy=policy,
+                                max_episode_steps=max_episode_steps,
+                                num_eps=config["NUM_EVAL_EPISODES"]),
+                            lambda key: run_episodes_vmap(
+                                key, env, agent_param=train_state.params, agent_policy=policy,
+                                max_episode_steps=max_episode_steps,
+                                num_eps=config["NUM_EVAL_EPISODES"]),
+                            eval_rng,
+                        )
                         return (ckpt_arr, cidx, rng, rng_eval, prev_ckpt_eval_ret_info, eval_eps_last_infos)
 
                     def skip_eval(eval_args):
@@ -378,9 +446,31 @@ def train_ippo_agent(config, env, train_rng,
                     to_store, store_and_eval_ckpt, skip_ckpt_and_eval, (checkpoint_array, ckpt_idx, rng, rng_eval, init_ckpt_eval_last_info, init_eval_last_info)
                 )
 
+                # Convergence check based on EMA of train rollout return from this update.
+                current_train_return = jnp.mean(metric["returned_episode_returns"])
+                new_ema_return = (1.0 - ema_alpha) * curriculum_state.ema_eval_return + ema_alpha * current_train_return
+                ema_delta = jnp.abs(new_ema_return - curriculum_state.ema_eval_return)
+                stable_update = jnp.logical_and(ema_delta <= convergence_tol, current_train_return >= target_eval_return)
+                stable_updates = jax.lax.select(stable_update, curriculum_state.stable_updates + 1, jnp.array(0, dtype=jnp.int32))
+                has_min_updates = update_steps >= min_updates_before_switch
+                if switch_on_min_updates:
+                    converged = has_min_updates
+                else:
+                    converged = jnp.logical_and(has_min_updates, stable_updates >= convergence_patience)
+                use_no_law_env = jnp.logical_or(curriculum_state.use_no_law_env, converged)
+                curriculum_state = CurriculumState(
+                    use_no_law_env=use_no_law_env,
+                    ema_eval_return=new_ema_return,
+                    stable_updates=stable_updates,
+                )
+
                 metric["ckpt_eval_ep_last_info"] = ckpt_eval_eps_last_infos
                 metric["eval_ep_last_info"] = eval_eps_last_infos
-                return ((train_state, rng, rng_eval, update_steps),
+                metric["curriculum_ema_train_return"] = new_ema_return
+                metric["curriculum_stable_updates"] = stable_updates.astype(jnp.float32)
+                metric["curriculum_converged"] = converged.astype(jnp.float32)
+                metric["curriculum_use_no_law_env"] = use_no_law_env.astype(jnp.float32)
+                return ((train_state, rng, rng_eval, update_steps, curriculum_state),
                          checkpoint_array, ckpt_idx, ckpt_eval_eps_last_infos, eval_eps_last_infos), metric
 
             checkpoint_array = init_ckpt_array(train_state.params)
@@ -402,7 +492,13 @@ def train_ippo_agent(config, env, train_rng,
             # initial runner state for scanning
             update_steps = 0
 
-            update_runner_state = (train_state, rng_train, rng_eval, update_steps)
+            curriculum_state = CurriculumState(
+                use_no_law_env=jnp.array(False),
+                ema_eval_return=jnp.array(0.0, dtype=jnp.float32),
+                stable_updates=jnp.array(0, dtype=jnp.int32),
+            )
+
+            update_runner_state = (train_state, rng_train, rng_eval, update_steps, curriculum_state)
             state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos, eval_eps_last_infos)
 
             state_with_ckpt, metrics = jax.lax.scan(
@@ -458,6 +554,10 @@ def run_training(config, wandb_logger):
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
+    no_law_env_kwargs = dict(config["task"]["NO_LAW_ENV_KWARGS"])
+    no_law_env = make_env(algorithm_config["ENV_NAME"], no_law_env_kwargs)
+    no_law_env = LogWrapper(no_law_env)
+
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     _, init_rng, train_rng = jax.random.split(rng, 3)
 
@@ -471,6 +571,7 @@ def run_training(config, wandb_logger):
     out = train_ippo_agent(
         config=algorithm_config,
         env=env,
+        no_law_env=no_law_env,
         train_rng=train_rng,
         policy=policy,
         init_params=init_params
