@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="cole"
+algo="rotate"
 label="neurips:benchmark"
 num_seeds=5
 num_checkpoints=1
@@ -15,12 +15,12 @@ log_file="results/oe_logs/${algo}/${label}/experiment_${timestamp}.log"
 
 # Tasks to run
 tasks=(
-    # "overcooked-v1/asymm_advantages"
-    # "overcooked-v1/coord_ring"
-    # "overcooked-v1/counter_circuit"
-    # "overcooked-v1/cramped_room"
-    # "overcooked-v1/forced_coord"
-    "lbf/lbf_7x7_nolevels"
+    "overcooked-v1/asymm_advantages"
+    "overcooked-v1/coord_ring"
+    "overcooked-v1/counter_circuit"
+    "overcooked-v1/cramped_room"
+    "overcooked-v1/forced_coord"
+    # "lbf/lbf_7x7_nolevels"
 )
 
 # Function to log messages
