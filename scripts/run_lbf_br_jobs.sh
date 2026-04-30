@@ -166,18 +166,18 @@ run_all_jobs() {
 }
 
 # lbf_7x7_nolevels BR jobs (13 jobs)
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_ippo_mlp_0" "ippo_mlp_0_serious" "{ippo_mlp:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,ckpt_key:final_params,idx_list:[0],test_mode:false}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_ippo_mlp_s2c0_2_0" "ippo_mlp_s2c0_serious" "{ippo_mlp_s2c0:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,idx_list:[[2,0]],test_mode:false}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_brdiv_conf1_0" "brdiv_conf1_0_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[0],test_mode:false}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_brdiv_conf1_1" "brdiv_conf1_1_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[1],test_mode:false}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_brdiv_conf1_2" "brdiv_conf1_2_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[2],test_mode:false}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_brdiv_conf2_0" "brdiv_conf2_0_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[0],test_mode:false}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_brdiv_conf2_1" "brdiv_conf2_1_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[1],test_mode:false}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_seq_agent_lexi" "seq_agent_lexi_serious" "{seq_agent_lexi:{actor_type:seq_agent,ordering_strategy:lexicographic}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_seq_agent_rlexi" "seq_agent_rlexi_serious" "{seq_agent_rlexi:{actor_type:seq_agent,ordering_strategy:reverse_lexicographic}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_seq_agent_col" "seq_agent_col_serious" "{seq_agent_col:{actor_type:seq_agent,ordering_strategy:column_major}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_seq_agent_rcol" "seq_agent_rcol_serious" "{seq_agent_rcol:{actor_type:seq_agent,ordering_strategy:reverse_column_major}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_seq_agent_nearest" "seq_agent_nearest_serious" "{seq_agent_nearest:{actor_type:seq_agent,ordering_strategy:nearest_agent}}"
-add_job "lbf_7x7_nolevels" "lbf_7x7_nolevels.br_for_seq_agent_farthest" "seq_agent_farthest_serious" "{seq_agent_farthest:{actor_type:seq_agent,ordering_strategy:farthest_agent}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_ippo_mlp_0" "ippo_mlp_0_serious" "{ippo_mlp:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,ckpt_key:final_params,idx_list:[0],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_ippo_mlp_s2c0_2_0" "ippo_mlp_s2c0_serious" "{ippo_mlp_s2c0:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,idx_list:[[2,0]],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf1_0" "brdiv_conf1_0_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[0],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf1_1" "brdiv_conf1_1_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[1],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf1_2" "brdiv_conf1_2_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[2],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf2_0" "brdiv_conf2_0_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[0],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf2_1" "brdiv_conf2_1_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[1],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_lexi" "seq_agent_lexi_serious" "{seq_agent_lexi:{actor_type:seq_agent,ordering_strategy:lexicographic}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_rlexi" "seq_agent_rlexi_serious" "{seq_agent_rlexi:{actor_type:seq_agent,ordering_strategy:reverse_lexicographic}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_col" "seq_agent_col_serious" "{seq_agent_col:{actor_type:seq_agent,ordering_strategy:column_major}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_rcol" "seq_agent_rcol_serious" "{seq_agent_rcol:{actor_type:seq_agent,ordering_strategy:reverse_column_major}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_nearest" "seq_agent_nearest_serious" "{seq_agent_nearest:{actor_type:seq_agent,ordering_strategy:nearest_agent}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_farthest" "seq_agent_farthest_serious" "{seq_agent_farthest:{actor_type:seq_agent,ordering_strategy:farthest_agent}}"
 
 run_all_jobs
