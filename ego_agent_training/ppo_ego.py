@@ -7,10 +7,10 @@ If running the script directly, please specify a partner agent config at
 `ego_agent_training/configs/algorithm/ppo_ego/_base_.yaml`.
 
 Command to run PPO ego training:
-python ego_agent_training/run.py algorithm=ppo_ego/lbf task=lbf label=test_ppo_ego
+python ego_agent_training/run.py algorithm=ppo_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_ppo_ego
 
 Suggested debug command:
-python ego_agent_training/run.py algorithm=ppo_ego/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
+python ego_agent_training/run.py algorithm=ppo_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
 '''
 import shutil
 import time

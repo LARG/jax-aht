@@ -49,7 +49,6 @@ def extract_params(params, init_params, idx_labels=None):
     flattened_idx_labels = []
     params_shape = jax.tree.leaves(params)[0].shape
     init_params_shape = jax.tree.leaves(init_params)[0].shape
-
     # already matches init_params_shape, no extraction needed
     if params_shape == init_params_shape:
         model_list = [params]
@@ -115,34 +114,34 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
             performance_bounds_list = extract_performance_bounds(agent_config, len(params_list))
 
         # Load non-RL-based heuristic agents
-        elif task_name == 'lbf':
+        elif 'lbf' in task_name:
             performance_bounds = agent_config.get("performance_bounds", None)
             # Grid dimensions: per-agent config > env_kwargs > defaults (7x7, 3 fruits).
             # Per-agent overrides allow entries in global_heldout_settings to be self-contained
             # for tasks whose ENV_KWARGS does not explicitly set these fields.
             grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
-            num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_fruits", 3))
+            num_food = agent_config.get("num_food", env_kwargs.get("num_food", 3))
             if agent_config["actor_type"] == 'random_agent':
                 policy = LBFRandomPolicyWrapper()
             elif agent_config["actor_type"] == 'seq_agent':
                 ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
                 policy = LBFSequentialFruitPolicyWrapper(
                     grid_size=grid_size,
-                    num_fruits=num_fruits,
+                    num_fruits=num_food,
                     ordering_strategy=ordering_strategy,
                     using_log_wrapper=True
                 )
             elif agent_config["actor_type"] == 'entitled_agent':
                 policy = LBFEntitledPolicyWrapper(
                     grid_size=grid_size,
-                    num_fruits=num_fruits,
+                    num_fruits=num_food,
                     using_log_wrapper=True
                 )
             elif agent_config["actor_type"] == 'greedy_agent':
                 heuristic = agent_config.get("heuristic", "closest_self")
                 policy = LBFGreedyHeuristicPolicyWrapper(
                     grid_size=grid_size,
-                    num_fruits=num_fruits,
+                    num_fruits=num_food,
                     heuristic=heuristic,
                     using_log_wrapper=True
                 )
@@ -195,8 +194,8 @@ def normalize_metrics(metrics, performance_bounds):
     return metrics
 
 
-def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params, 
-                          heldout_agent_list, ego_test_mode=False):
+def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params,
+                          heldout_agent_list, heldout_agent_names=None, ego_test_mode=False):
     '''Evaluate all ego agents against all heldout partners using vmap over egos.
     Ego_params must be a pytree of shape (num_ego_agents, ...)
     '''
@@ -243,7 +242,8 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
             if heldout_performance_bounds is not None:
                 results_for_this_partner = normalize_metrics(results_for_this_partner, heldout_performance_bounds)
             else:
-                print(f"Warning: no performance bounds provided for {heldout_agent_list[partner_idx]}. Skipping normalization.")
+                agent_name = heldout_agent_names[partner_idx] if heldout_agent_names is not None else f"partner_{partner_idx}"
+                print(f"Warning: no performance bounds provided for {agent_name}. Skipping normalization.")
         all_metrics_for_partners.append(results_for_this_partner)
 
     end_time = time.time()
@@ -276,12 +276,13 @@ def run_heldout_evaluation(config, print_metrics=False):
     # load heldout agents
     heldout_cfg = config["heldout_set"][config["TASK_NAME"]]
     heldout_agents = load_heldout_set(heldout_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], heldout_init_rng)
+    heldout_agent_names = list(heldout_agents.keys())
     heldout_agent_list = list(heldout_agents.values())
-    
+
     # run evaluation
     eval_metrics = eval_egos_vs_heldouts(
-        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"], 
-        ego_policy, flattened_ego_params, heldout_agent_list, ego_test_mode)
+        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"],
+        ego_policy, flattened_ego_params, heldout_agent_list, heldout_agent_names, ego_test_mode)
 
     if print_metrics:
         # each leaf of eval_metrics has shape (num_ego_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)

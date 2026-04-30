@@ -12,7 +12,7 @@ parameters:
   algorithm.TOTAL_TIMESTEPS:
     values: [1.5e7]
   algorithm.NUM_ENVS:
-    values: [128]
+    values: [80]
   algorithm.UPDATE_EPOCHS:
     values: [5, 10, 15, 20]
   algorithm.LR:
