@@ -88,20 +88,19 @@ def log_ego_metrics(config, out, logger, metric_names: tuple):
     # where the last dimension contains the mean and std of the metric
     train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
     
-    all_ego_value_losses = np.asarray(train_metrics["value_loss"]) # shape (num_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (num_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (num_seeds, num_updates, num_partners, num_minibatches)
+    all_ego_value_losses = np.asarray(train_metrics["value_loss"]) # shape (num_seeds, num_updates)
+    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (num_seeds, num_updates)
+    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (num_seeds, num_updates)
 
-    # Process eval return metrics - average across ego seeds, eval episodes,  training partners 
+    # Process eval return metrics - average across ego seeds, eval episodes,  training partners
     # and num_agents per game for each checkpoint
     all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (num_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
     average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
 
-    # Process loss metrics - average across ego seeds, partners and minibatches dims
-    # Loss metrics shape should be (num_seeds, num_updates, ...)
-    average_ego_value_losses = np.mean(all_ego_value_losses, axis=(0, 2, 3))
-    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=(0, 2, 3))
-    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=(0, 2, 3))
+    # Process loss metrics - average across ego seeds
+    average_ego_value_losses = np.mean(all_ego_value_losses, axis=0)
+    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=0)
+    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=0)
     
     # Log metrics for each update step
     num_updates = len(average_ego_value_losses)
