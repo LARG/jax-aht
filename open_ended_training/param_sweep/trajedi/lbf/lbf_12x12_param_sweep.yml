@@ -1,6 +1,6 @@
 program: open_ended_training/run.py
-name: trajedi-lbf
-method: bayes
+name: trajedi-lbf_12x12
+method: random
 entity: aht-project
 project: aht-parameter-sweep
 metric:
@@ -21,13 +21,12 @@ command:
   - ${env}
   - python
   - ${program}
-  - task=lbf/lbf_7x7_nolevels
-  - algorithm=trajedi/lbf/lbf_7x7_nolevels
+  - task=lbf/lbf_12x12
+  - algorithm=trajedi/lbf/lbf_12x12
   - run_heldout_eval=true
   - logger.mode=online
   - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - label="param_sweep"
-  - algorithm.TOTAL_TIMESTEPS=1e8
   - ${args_no_hyphens}
