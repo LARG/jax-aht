@@ -31,13 +31,13 @@ cd "$REPO_ROOT"
 mkdir -p "$DEST"
 
 # Map: HF subdirectory name → algo name in global_validation_settings.yaml.
-# ippo_mlp on HF maps to ippo in the yaml; the rest are 1:1.
+# All names match 1:1 between HF and the yaml.
 declare -A ALGOS=(
   [brdiv]=brdiv
   [comedi]=comedi
   [lbrdiv]=lbrdiv
   [trajedi]=trajedi
-  [ippo_mlp]=ippo
+  [ippo_mlp]=ippo_mlp
 )
 
 for hf_name in "${!ALGOS[@]}"; do
@@ -66,7 +66,7 @@ done
 
 echo
 echo "Done. Verifying layout:"
-for algo in brdiv comedi lbrdiv trajedi ippo; do
+for algo in brdiv comedi lbrdiv trajedi ippo_mlp; do
   if [ -f "$DEST/$algo/default_label/saved_train_run/_CHECKPOINT_METADATA" ]; then
     echo "  OK   $DEST/$algo/default_label/saved_train_run/"
   else

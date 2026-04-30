@@ -8,7 +8,7 @@
 # What this checks (in order):
 #   1. shellcheck on launch_ls6_sweep.sh (if shellcheck installed)
 #   2. bash -n syntax check
-#   3. Hydra config compose for hpo_teammate (no actual training)
+#   3. Hydra config compose for base_config_teammate (no actual training)
 #   4. Validation set yaml parses and lists the expected partners
 #   5. (optional) Single-config dry-run via wandb agent --count 1
 #      with TOTAL_TIMESTEPS=1e4 — only if RUN_AGENT=1 is set
@@ -51,14 +51,13 @@ fi
 
 # 3. Hydra config compose
 echo
-echo "=== 3. Hydra config compose for hpo_teammate ==="
+echo "=== 3. Hydra config compose for base_config_teammate (validation routing) ==="
 cd "$REPO_ROOT"
 if PYTHONPATH="$REPO_ROOT" python3 teammate_generation/run.py \
-        --config-name=hpo_teammate \
         task=mini-hanabi \
         algorithm=brdiv/mini-hanabi \
         --cfg job >/dev/null 2>&1; then
-    ok "hydra composes hpo_teammate + mini-hanabi + brdiv"
+    ok "hydra composes base_config_teammate + mini-hanabi + brdiv"
 else
     fail "hydra compose failed; re-run without --cfg=job to see the error"
 fi
