@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="lbrdiv"
+algo="comedi"
 label="neurips:benchmark"
 num_seeds=5
 num_checkpoints=1
@@ -19,8 +19,8 @@ tasks=(
     # "overcooked-v1/counter_circuit"
     # "overcooked-v1/cramped_room"
     # "overcooked-v1/forced_coord"
-    # "lbf/lbf_7x7_nolevels"
-    "lbf/lbf_12x12"
+    "lbf/lbf_7x7_nolevels"
+    # "lbf/lbf_12x12"
 )
 
 # Function to log messages
@@ -41,6 +41,7 @@ for task in "${tasks[@]}"; do
     if PYTHONPATH=. python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
         algorithm.NUM_SEEDS="${num_seeds}" \
         algorithm.NUM_CHECKPOINTS="${num_checkpoints}" \
+        logger.mode="online" \
         2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
         ((success_count++))

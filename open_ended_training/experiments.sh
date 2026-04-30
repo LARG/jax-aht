@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="rotate"
+algo="cole"
 label="neurips:benchmark"
 num_seeds=5
+num_checkpoints=1
 
 # Create log directory if it doesn't exist
 mkdir -p results/oe_logs/${algo}/${label}
@@ -14,11 +15,11 @@ log_file="results/oe_logs/${algo}/${label}/experiment_${timestamp}.log"
 
 # Tasks to run
 tasks=(
-    "overcooked-v1/asymm_advantages"
-    "overcooked-v1/coord_ring"
-    "overcooked-v1/counter_circuit"
-    "overcooked-v1/cramped_room"
-    "overcooked-v1/forced_coord"
+    # "overcooked-v1/asymm_advantages"
+    # "overcooked-v1/coord_ring"
+    # "overcooked-v1/counter_circuit"
+    # "overcooked-v1/cramped_room"
+    # "overcooked-v1/forced_coord"
     "lbf/lbf_7x7_nolevels"
 )
 
@@ -39,6 +40,8 @@ for task in "${tasks[@]}"; do
     
     if PYTHONPATH=. python open_ended_training/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
         algorithm.NUM_SEEDS="${num_seeds}" \
+        algorithm.NUM_CHECKPOINTS="${num_checkpoints}" \
+        logger.mode="online" \
         2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
         ((success_count++))
