@@ -90,6 +90,43 @@ heldout_set:
         base_return: [[0.0, 185.00], [0.0, 84.06], [0.0, 65.31], [0.0, 61.25], [0.0, 61.25]]
         returned_episode_returns: [[0.0, 196.77], [0.0, 89.07], [0.0, 69.19], [0.0, 64.59], [0.0, 64.78]]
 
+  mini-hanabi:
+    ippo-mlp:
+      path: "val_teammates/hanabi/ippo_mlp/default_label/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 8.63]]
+    lbrdiv-conf:
+      path: "val_teammates/hanabi/lbrdiv/default_label/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 5.59]]
+    comedi:
+      path: "val_teammates/hanabi/comedi/default_label/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 5
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 5.29], [0.0, 3.08], [0.0, 3.21], [0.0, 3.57], [0.0, 3.42]]
+    trajedi:
+      path: "val_teammates/hanabi/trajedi/default_label/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [[0, 0], [0, 1], [0, 2]]
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        returned_episode_returns: [[0.0, 7.44], [0.0, 7.35], [0.0, 7.39]]
+
 # Set best response set to heldout set
 best_response_set:
   lbf/lbf_7x7_nolevels:
