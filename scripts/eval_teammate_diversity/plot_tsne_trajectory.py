@@ -46,14 +46,6 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30, ti
     fig, ax = plt.subplots(figsize=(6, 5))
     unique_labels = list(latents_dict.keys())
 
-    _TYPE_CMAPS = {
-        "ippo":   plt.cm.Greens,
-        "brdiv":  plt.cm.Blues,
-        "comedi": plt.cm.Purples,
-        "lbrdiv": plt.cm.Oranges,
-        "seq":    plt.cm.Reds,
-    }
-
     _DISPLAY_NAMES = {
         "brdiv-conf1_0": "brdiv1-0",
         "brdiv-conf1_1": "brdiv1-1",
@@ -95,21 +87,6 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30, ti
         atype = _agent_type(agent)
         return _AGENT_MARKERS.get(atype, "o")
 
-    # Group labels by agent type, then assign shades within each type's colormap.
-    from collections import defaultdict
-    type_to_labels = defaultdict(list)
-    for label in unique_labels:
-        br_marker = "_br_for_"
-        agent = label[:label.index(br_marker)] if br_marker in label else label
-        type_to_labels[_agent_type(agent)].append(label)
-
-    label_colors = {}
-    for atype, type_labels in type_to_labels.items():
-        cmap = _TYPE_CMAPS.get(atype, plt.cm.Greys)
-        shades = np.linspace(0.4, 0.85, max(len(type_labels), 1))
-        for label, shade in zip(type_labels, shades):
-            label_colors[label] = cmap(shade)
-
     offset = 0
     plotted_count = 0
     for i, label in enumerate(unique_labels):
@@ -119,7 +96,6 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30, ti
             ax.scatter(
                 embedding_slice[:, 0],
                 embedding_slice[:, 1],
-                color=label_colors[label],
                 label=_display_name(label),
                 marker=_marker(label),
                 alpha=0.6,
