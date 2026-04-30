@@ -19,7 +19,7 @@ tasks=(
     "overcooked-v1/counter_circuit"
     "overcooked-v1/cramped_room"
     "overcooked-v1/forced_coord"
-    "lbf"
+    "lbf/lbf_7x7_nolevels"
 )
 
 # Function to log messages

@@ -46,7 +46,6 @@ class GreedyHeuristicAgent(BaseAgent):
              raise ValueError(f"Invalid heuristic: '{heuristic}'. Must be one of {self.VALID_HEURISTICS_LEVELS}")
         
         self.heuristic_name = heuristic
-        print(f"Initialized GreedyHeuristicAgent with heuristic: {heuristic}")
 
         if heuristic == 'closest_self':
             self.heuristic = self.closest_self

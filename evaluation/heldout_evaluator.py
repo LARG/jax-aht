@@ -43,7 +43,6 @@ def extract_params(params, init_params, idx_labels=None):
     flattened_idx_labels = []
     params_shape = jax.tree.leaves(params)[0].shape
     init_params_shape = jax.tree.leaves(init_params)[0].shape
-
     # already matches init_params_shape, no extraction needed
     if params_shape == init_params_shape:
         model_list = [params]
@@ -136,8 +135,8 @@ def normalize_metrics(metrics, performance_bounds):
     return metrics
 
 
-def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params, 
-                          heldout_agent_list, ego_test_mode=False):
+def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params,
+                          heldout_agent_list, heldout_agent_names=None, ego_test_mode=False):
     '''Evaluate all ego agents against all heldout partners using vmap over egos.
     Ego_params must be a pytree of shape (num_ego_agents, ...)
     '''
@@ -184,7 +183,8 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
             if heldout_performance_bounds is not None:
                 results_for_this_partner = normalize_metrics(results_for_this_partner, heldout_performance_bounds)
             else:
-                print(f"Warning: no performance bounds provided for {heldout_agent_list[partner_idx]}. Skipping normalization.")
+                agent_name = heldout_agent_names[partner_idx] if heldout_agent_names is not None else f"partner_{partner_idx}"
+                print(f"Warning: no performance bounds provided for {agent_name}. Skipping normalization.")
         all_metrics_for_partners.append(results_for_this_partner)
 
     end_time = time.time()
@@ -217,12 +217,13 @@ def run_heldout_evaluation(config, print_metrics=False):
     # load heldout agents
     heldout_cfg = config["heldout_set"][config["TASK_NAME"]]
     heldout_agents = load_heldout_set(heldout_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], heldout_init_rng)
+    heldout_agent_names = list(heldout_agents.keys())
     heldout_agent_list = list(heldout_agents.values())
-    
+
     # run evaluation
     eval_metrics = eval_egos_vs_heldouts(
-        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"], 
-        ego_policy, flattened_ego_params, heldout_agent_list, ego_test_mode)
+        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"],
+        ego_policy, flattened_ego_params, heldout_agent_list, heldout_agent_names, ego_test_mode)
 
     if print_metrics:
         # each leaf of eval_metrics has shape (num_ego_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)
