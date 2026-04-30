@@ -322,7 +322,7 @@ def collect_heldout_pairwise_trajectories(
     def _load_agent(agent_cfg, agent_name, env, rng):
         actor_type = agent_cfg.get("actor_type", "")
         if actor_type in HEURISTIC_ACTOR_TYPES:
-            policy = initialize_heuristic_agent_from_config(agent_cfg, agent_name)
+            policy = initialize_heuristic_agent_from_config(agent_cfg, agent_name, env_name)
             return policy, {}, {}
         policy, params, init_params, _ = initialize_rl_agent_from_config(agent_cfg, agent_name, env, rng)
         params = jax.tree_map(jnp.squeeze, params)
