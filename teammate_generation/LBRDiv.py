@@ -476,7 +476,8 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 """
                 1. Collect rollouts
                 2. Compute advantage
-                3. PPO updates
+                3. PPO updates (UPDATE_EPOCHS epochs)
+                4. Lagrange multiplier update (once, after all PPO epochs)
                 """
                 (
                     all_train_state_conf, all_train_state_br,
@@ -595,6 +596,23 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                         all_possible_value_xp_vary_conf + config["TOLERANCE_FACTOR"] * jnp.ones_like(offsetting_thresholds)
                     )
 
+                    ##### Compute grad_sp_vary_br
+                    # This code tries to measure the expected returns of the ego agent had the BR policy been
+                    # substituted by another BR policy
+
+                    # Lets say that R_{i,-j} is the ego agent's returns when following the BR policy of the i^th pair
+                    # againts the confederate policy of the j^th pair.
+
+                    # Then grad_sp_vary_conf computes R_{i,-i} - R_{i,-j} - tolerance factor
+                    # for all possible j (note for j=i, we sub in <repeated_value_sp + offsetting_thresholds above>
+                    # R_{i,-i} with the target returns + tolerance factor so that R_{i,-i} - R_{i,-j} = 0)
+
+                    # Meanwhile grad_sp_vary_br below computes R_{i,-i} - R_{j,-i} - tolerance factor
+                    # for all possible j.
+
+                    # Vary the BR policy parameters (j) used in value computation
+                    # Use the experience generating pop id (batch.self_onehot_id) <i> as the conf ID.
+
                     relevant_params = gather_params(params_br, jnp.arange(config["PARTNER_POP_SIZE"]))
                     def _get_value_xp_vary_br(param):
                         ts, bs = batch.obs.shape[:2]
@@ -606,7 +624,7 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                             done=batch.done,
                             avail_actions=batch.avail_actions,
                             hstate=init_br_hstate,
-                            rng=jax.random.PRNGKey(0),
+                            rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
                             aux_obs=conf_one_hot
                         )
                         return value_xp_vary_br.reshape(ts*bs)
@@ -641,6 +659,7 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                         axis=0
                     )
 
+                    # Compute vertical and horizontal gradient
                     vertical_grads = jnp.sum(grad_sp_vary_conf * repeated_loss_weights, axis=-1) / (jnp.sum(loss_weights) + 1e-8)
                     horizontal_grads = jnp.sum(grad_sp_vary_br * repeated_loss_weights, axis=-1) / (jnp.sum(loss_weights) + 1e-8)
 
@@ -665,6 +684,8 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     ).argmax(axis=-1)
                     all_target_returns = jnp.reshape(target_returns, (-1))
 
+                    # Compute data weights based on whether selected ID
+                    # is relevant for the gradient computation process
                     oppo_is_conf = jnp.equal(all_oppo_id_int, conf_id).astype(jnp.float32)
                     self_is_br = jnp.equal(all_self_id_int, br_id).astype(jnp.float32)
                     loss_weights = oppo_is_conf * self_is_br
