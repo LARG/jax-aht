@@ -6,8 +6,7 @@ results*/
 temp/
 eval_teammates/
 val_teammates/
-val_teammates_v2/
-wandb/
+wandb*/
 
 # Human data raw
 human_data_collecting/collected_data_prolific/
