@@ -6,7 +6,6 @@ results*/
 eval_teammates/
 val_teammates/
 wandb/
-.vscode/
 
 # Human data raw
 human_data_collecting/collected_data_prolific/
@@ -26,3 +25,8 @@ build/
 
 val_teammates_v2/*
 val_teammates/*
+
+# Coding editor things
+CLAUDE.md
+.claude/
+.vscode/
