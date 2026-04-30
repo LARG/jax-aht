@@ -25,6 +25,21 @@ SLURM_SCRIPT="$REPO_ROOT/scripts/launch_ls6_sweep.sh"
 PASS=0
 FAIL=0
 
+# Use venv python if available (system python3 typically lacks hydra/jax).
+# Override with PYTHON=/path/to/python if you have a non-default venv layout.
+if [ -z "${PYTHON:-}" ]; then
+    if [ -x "$REPO_ROOT/.venv/bin/python" ]; then
+        PYTHON="$REPO_ROOT/.venv/bin/python"
+    elif [ -x "$REPO_ROOT/venv/bin/python" ]; then
+        PYTHON="$REPO_ROOT/venv/bin/python"
+    else
+        PYTHON="python3"
+        echo "WARN: no .venv found; using system python3. Set PYTHON=... if hydra/jax aren't installed there."
+    fi
+fi
+echo "Using PYTHON=$PYTHON"
+echo
+
 ok() { echo "  PASS: $1"; PASS=$((PASS+1)); }
 fail() { echo "  FAIL: $1"; FAIL=$((FAIL+1)); }
 
@@ -53,7 +68,7 @@ fi
 echo
 echo "=== 3. Hydra config compose for base_config_teammate (validation routing) ==="
 cd "$REPO_ROOT"
-if PYTHONPATH="$REPO_ROOT" python3 teammate_generation/run.py \
+if PYTHONPATH="$REPO_ROOT" "$PYTHON" teammate_generation/run.py \
         task=mini-hanabi \
         algorithm=brdiv/mini-hanabi \
         --cfg job >/dev/null 2>&1; then
@@ -65,7 +80,7 @@ fi
 # 4. Validation set yaml has expected mini-hanabi partners
 echo
 echo "=== 4. Validation set contents ==="
-python3 - <<'PYEOF'
+"$PYTHON" - <<'PYEOF'
 import sys
 import yaml
 with open("evaluation/configs/global_validation_settings.yaml") as f:
