@@ -7,6 +7,7 @@ from pathlib import Path
 import jax
 import numpy as np
 import matplotlib.pyplot as plt
+import yaml
 
 from trajectory_classifier import (
     init_classifier,
@@ -16,9 +17,9 @@ from trajectory_classifier import (
 )
 from common.save_load_utils import save_train_run
 # Config
-DEFAULT_DATA_DIR = "results/overcooked-v1/coord_ring/trajectory_data"
-DEFAULT_MODEL_DIR = "results/overcooked-v1/coord_ring/models"
-DEFAULT_ENV_NAME = "overcooked-v1/coord_ring"
+DEFAULT_TASK_NAME = "lbf/lbf_7x7_nolevels"
+DEFAULT_DATA_DIR = None  # auto-derived from task_name when not provided
+DEFAULT_MODEL_DIR = None  # auto-derived from task_name when not provided
 DEFAULT_HIDDEN_DIM = 64
 DEFAULT_LATENT_DIM = 16
 DEFAULT_LEARNING_RATE = 3e-4
@@ -27,17 +28,23 @@ DEFAULT_BATCH_SIZE = 512
 DEFAULT_MAX_SAMPLES_PER_CLASS = 5000
 
 
-def get_obs_dim(env_name):
+def _load_task_config(task_name):
+    config_path = Path("evaluation/configs/task") / f"{task_name}.yaml"
+    with open(config_path) as f:
+        return yaml.safe_load(f)
+
+
+def get_obs_dim(env_name, env_kwargs=None):
     """Get observation dimension for an environment."""
     from envs import make_env
-    env = make_env(env_name)
+    env = make_env(env_name, env_kwargs or {})
     return env.observation_space("agent_0").shape[0]
 
 
 def main(
+    task_name=DEFAULT_TASK_NAME,
     data_dir=DEFAULT_DATA_DIR,
     model_dir=DEFAULT_MODEL_DIR,
-    env_name=DEFAULT_ENV_NAME,
     hidden_dim=DEFAULT_HIDDEN_DIM,
     latent_dim=DEFAULT_LATENT_DIM,
     learning_rate=DEFAULT_LEARNING_RATE,
@@ -46,6 +53,15 @@ def main(
     max_samples_per_class=DEFAULT_MAX_SAMPLES_PER_CLASS,
 ):
     """Train classifier on saved trajectories."""
+    cfg = _load_task_config(task_name)
+    env_name = cfg["ENV_NAME"]
+    env_kwargs = cfg.get("ENV_KWARGS") or {}
+
+    if data_dir is None:
+        data_dir = f"results/{task_name}/trajectory_data"
+    if model_dir is None:
+        model_dir = f"results/{task_name}/models"
+
     data_path = Path(data_dir)
     model_path = Path(model_dir)
     model_path.mkdir(parents=True, exist_ok=True)
@@ -62,7 +78,7 @@ def main(
     pair_labels = data["pair_labels"]
     print(f"Loaded {len(episodes_with_labels)} train pairwise episodes.")
 
-    obs_dim = get_obs_dim(env_name)
+    obs_dim = get_obs_dim(env_name, env_kwargs)
     padded_episodes, masks, labels, max_seq_len, label_to_idx = pad_labeled_episodes(
         episodes_with_labels, max_samples_per_class=max_samples_per_class
     )
@@ -168,9 +184,9 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train trajectory classifier on saved data.")
-    parser.add_argument("--data_dir", type=str, default=DEFAULT_DATA_DIR, help="Directory containing trajectory data")
-    parser.add_argument("--model_dir", type=str, default=DEFAULT_MODEL_DIR, help="Directory to save trained model")
-    parser.add_argument("--env_name", type=str, default=DEFAULT_ENV_NAME, help="Environment name")
+    parser.add_argument("--task_name", type=str, default=DEFAULT_TASK_NAME, help="Task name (e.g. lbf/lbf_7x7_nolevels)")
+    parser.add_argument("--data_dir", type=str, default=DEFAULT_DATA_DIR, help="Directory containing trajectory data (default: results/<task_name>/trajectory_data)")
+    parser.add_argument("--model_dir", type=str, default=DEFAULT_MODEL_DIR, help="Directory to save trained model (default: results/<task_name>/models)")
     parser.add_argument("--hidden_dim", type=int, default=DEFAULT_HIDDEN_DIM, help="Hidden dimension")
     parser.add_argument("--latent_dim", type=int, default=DEFAULT_LATENT_DIM, help="Latent dimension")
     parser.add_argument("--learning_rate", type=float, default=DEFAULT_LEARNING_RATE, help="Learning rate")
@@ -181,9 +197,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(
+        task_name=args.task_name,
         data_dir=args.data_dir,
         model_dir=args.model_dir,
-        env_name=args.env_name,
         hidden_dim=args.hidden_dim,
         latent_dim=args.latent_dim,
         learning_rate=args.learning_rate,

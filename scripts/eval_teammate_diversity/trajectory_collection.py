@@ -281,7 +281,7 @@ def _expand_multi_index_configs(agent_configs):
     return expanded
 
 
-def get_agent_pair_configs(env_name="lbf", settings_path=None, br_path=None):
+def get_agent_pair_configs(task_name="lbf/lbf_7x7_nolevels", settings_path=None, br_path=None):
     if settings_path is None:
         settings_path = "evaluation/configs/global_heldout_settings.yaml"
     if br_path is None:
@@ -293,13 +293,13 @@ def get_agent_pair_configs(env_name="lbf", settings_path=None, br_path=None):
     heldout_set = settings.get("heldout_set", {})
     best_response_set = br.get("best_response_set", {})
 
-    if env_name not in heldout_set:
-        raise ValueError(f"Env {env_name} not found in heldout settings")
-    if env_name not in best_response_set:
-        raise ValueError(f"Env {env_name} not found in best response set")
+    if task_name not in heldout_set:
+        raise ValueError(f"Task {task_name} not found in heldout settings")
+    if task_name not in best_response_set:
+        raise ValueError(f"Task {task_name} not found in best response set")
 
-    agent_configs = _expand_multi_index_configs(heldout_set[env_name])
-    br_configs = best_response_set[env_name]
+    agent_configs = _expand_multi_index_configs(heldout_set[task_name])
+    br_configs = best_response_set[task_name]
 
     pairs = []
     for br_name, br_cfg in br_configs.items():
@@ -315,18 +315,19 @@ def collect_heldout_pairwise_trajectories(
     num_points_per_pair=None,
     rollout_steps=128,
     num_envs=256,
-    env_name="lbf",
+    task_name="lbf/lbf_7x7_nolevels",
+    env_kwargs=None,
     settings_path=None,
     br_path=None,
 ):
-    pairs = get_agent_pair_configs(env_name, settings_path=settings_path, br_path=br_path)
+    pairs = get_agent_pair_configs(task_name, settings_path=settings_path, br_path=br_path)
     train_episodes = []  # (trajectory, agent_pair_label) tuples for training
     val_episodes = []    # (trajectory, agent_pair_label) tuples for validation (specific-BR pairs only)
 
     def _load_agent(agent_cfg, agent_name, env, rng):
         actor_type = agent_cfg.get("actor_type", "")
         if actor_type in HEURISTIC_ACTOR_TYPES:
-            policy = initialize_heuristic_agent_from_config(agent_cfg, agent_name, env_name)
+            policy = initialize_heuristic_agent_from_config(agent_cfg, agent_name, task_name, env_kwargs)
             return policy, {}, {}
         policy, params, init_params, _ = initialize_rl_agent_from_config(agent_cfg, agent_name, env, rng)
         params = jax.tree_map(jnp.squeeze, params)

@@ -16,7 +16,7 @@ from agents.overcooked.agent_policy_wrappers import (
     OvercookedOnionPolicyWrapper, OvercookedPlatePolicyWrapper,
     OvercookedStaticPolicyWrapper,
 )
-from common.save_load_utils import load_checkpoints
+from common.save_load_utils import load_checkpoints, REPO_PATH
 from envs.overcooked.augmented_layouts import augmented_layouts
 
 log = logging.getLogger(__name__)

@@ -54,7 +54,12 @@ fi
 # Configuration - adjust these as needed
 SESSION_NAME="lbf_pipeline"
 CONDA_ENV_NAME="jax-aht"
-ENV_NAME="lbf"
+TASK_NAME="lbf/lbf_7x7_nolevels"
+
+# Load ENV_NAME from task config using conda python
+CONDA_PYTHON="${CONDA_BASE}/envs/${CONDA_ENV_NAME}/bin/python"
+TASK_CONFIG="${PROJECT_ROOT}/evaluation/configs/task/${TASK_NAME}.yaml"
+ENV_NAME=$(${CONDA_PYTHON} -c "import yaml; c=yaml.safe_load(open('${TASK_CONFIG}')); print(c['ENV_NAME'])")
 
 # Check if session already exists
 if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
@@ -63,14 +68,13 @@ if tmux has-session -t "${SESSION_NAME}" 2>/dev/null; then
     echo "To kill and restart: tmux kill-session -t ${SESSION_NAME} && $0"
     exit 1
 fi
-DATA_DIR="results/${ENV_NAME}/trajectory_data"
-MODEL_DIR="results/${ENV_NAME}/models"
-OUTPUT_FILE="results/${ENV_NAME}/tsne_trajectory_visualization.png"
+DATA_DIR="results/${TASK_NAME}/trajectory_data"
+MODEL_DIR="results/${TASK_NAME}/models"
+OUTPUT_FILE="results/${TASK_NAME}/tsne_trajectory_visualization.png"
 
 # Default parameters for the scripts
 NUM_POINTS_PER_PAIR=100  # Episodes collected per specific-BR pair for the validation / t-SNE set
 NUM_ENVS=4096  # Number of parallel environments
-ROLLOUT_STEPS=128  # Steps per rollout
 HIDDEN_DIM=64  # Autoencoder hidden dimension
 LATENT_DIM=16  # Autoencoder latent dimension
 LEARNING_RATE=0.0005  # Learning rate
@@ -78,7 +82,7 @@ NUM_EPOCHS=200  # Training epochs
 BATCH_SIZE=512  # Training batch size
 
 echo "Starting trajectory pipeline in tmux session: ${SESSION_NAME}"
-echo "Environment: ${ENV_NAME}"
+echo "Task: ${TASK_NAME} (env: ${ENV_NAME})"
 echo "Data directory: ${DATA_DIR}"
 echo "Model directory: ${MODEL_DIR}"
 echo "Output file: ${OUTPUT_FILE}"
@@ -95,7 +99,7 @@ echo "Each step will wait for the previous one to complete before starting."
 tmux new-session -d -s "${SESSION_NAME}"
 
 # Send commands to activate conda environment and run the pipeline sequentially
-tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --env_name ${ENV_NAME} --num_points_per_pair ${NUM_POINTS_PER_PAIR} --num_envs ${NUM_ENVS} --rollout_steps ${ROLLOUT_STEPS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_classifier.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --env_name ${ENV_NAME} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --plot_title 'LBF (7x7)' && echo 'Pipeline complete!'" C-m
+tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --task_name ${TASK_NAME} --num_points_per_pair ${NUM_POINTS_PER_PAIR} --num_envs ${NUM_ENVS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting autoencoder training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_classifier.py --task_name ${TASK_NAME} --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Autoencoder training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --plot_title 'LBF (7x7)' && echo 'Pipeline complete!'" C-m
 
 echo "Pipeline started in tmux session '${SESSION_NAME}'"
 echo "The commands will execute sequentially - each step waits for the previous to complete."
