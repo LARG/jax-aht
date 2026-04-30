@@ -9,7 +9,7 @@ metric:
 
 parameters:
   algorithm.NUM_ENVS_CONFS:
-    values: [60, 80, 100]
+    values: [64, 80, 96]
   algorithm.NUM_ENVS_BR:
     values: [8, 16, 32]
   algorithm.PARTNER_POP_SIZE:
