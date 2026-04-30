@@ -301,9 +301,17 @@ def get_agent_pair_configs(task_name="lbf/lbf_7x7_nolevels", settings_path=None,
     agent_configs = _expand_multi_index_configs(heldout_set[task_name])
     br_configs = best_response_set[task_name]
 
+    br_names = list(br_configs.keys())
+    agents_with_br = {
+        ag_name for ag_name in agent_configs
+        if _find_specific_br(ag_name, br_names) is not None
+    }
+
     pairs = []
     for br_name, br_cfg in br_configs.items():
         for ag_name, ag_cfg in agent_configs.items():
+            if ag_name not in agents_with_br:
+                continue
             pairs.append((ag_name, ag_cfg, br_name, br_cfg))
 
     return pairs
