@@ -4,7 +4,8 @@ import zipfile
 import shutil
 import tempfile
 
-def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str):
+def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str,
+                               repo_type: str = "dataset"):
     """
     Downloads a file from a Hugging Face dataset repository, and moves its contents to the destination directory.
 
@@ -20,8 +21,7 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
     os.makedirs(destination_dir, exist_ok=True)
 
     try:
-        # Download the file from Hugging Face Hub (specify repo_type="dataset" for dataset repositories)
-        downloaded_file_path = hf_hub_download(repo_id=repo_id, filename=filename, repo_type="dataset")
+        downloaded_file_path = hf_hub_download(repo_id=repo_id, filename=filename, repo_type=repo_type)
         print(f"Downloaded {filename} to {downloaded_file_path}")
     except Exception as e:
         print(f"Error during hf_hub_download for {repo_id}/{filename}: {e}")
@@ -105,7 +105,8 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
             shutil.rmtree(temp_dir_for_extraction)
 
 
-def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
+def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str,
+                          repo_type: str = "dataset"):
     """
     Downloads a directory from a Hugging Face dataset repository to a local directory,
     preserving the remote directory structure under destination_dir.
@@ -124,7 +125,7 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
     try:
         snapshot_download(
             repo_id=repo_id,
-            repo_type="dataset",
+            repo_type=repo_type,
             local_dir=destination_dir,
             allow_patterns=f"{remote_dir}/**",
         )
@@ -136,44 +137,70 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
 
 
 if __name__ == "__main__":
-    repo_id = "jaxaht/eval-teammates"
+    # Each entry's `repo_id` controls which HF repo to pull from. LBF +
+    # Overcooked use the team-shared dataset; Hanabi val/eval partners
+    # come from the Hanabi-specific model repo.
+    DEFAULT_REPO = "jaxaht/eval-teammates"
+    HANABI_REPO = "lainwired/hanabi-aht-partners"
 
     # "zip" entries use download_and_unzip_hf_file; "dir" entries use download_hf_directory.
     data_files = {
         "best_returns_teammates": {
+            "repo_id": DEFAULT_REPO,
             "type": "zip",
             "filename": "best_heldout_returns.zip",
             "target_directory": "results/",
         },
         "lbf_teammates": {
+            "repo_id": DEFAULT_REPO,
             "type": "dir",
             "filename": "lbf",
             "target_directory": "eval_teammates/",
         },
         "lbf_12x12_teammates": {
+            "repo_id": DEFAULT_REPO,
             "type": "dir",
             "filename": "lbf_12x12",
             "target_directory": "eval_teammates/",
         },
         "overcooked-v1_teammates": {
+            "repo_id": DEFAULT_REPO,
             "type": "dir",
             "filename": "overcooked-v1",
             "target_directory": "eval_teammates/",
         },
+        "hanabi_val_teammates": {
+            "repo_id": HANABI_REPO,
+            "repo_type": "model",
+            "type": "dir",
+            "filename": "val_teammates/hanabi",
+            "target_directory": ".",
+        },
+        "hanabi_full_eval_teammates": {
+            "repo_id": HANABI_REPO,
+            "repo_type": "model",
+            "type": "dir",
+            "filename": "eval_teammates/hanabi_full",
+            "target_directory": ".",
+        },
     }
 
     for data_name, data_info in data_files.items():
+        repo_id = data_info["repo_id"]
+        repo_type = data_info.get("repo_type", "dataset")
         if data_info["type"] == "zip":
             success = download_and_unzip_hf_file(
                 repo_id=repo_id,
                 filename=data_info["filename"],
                 destination_dir=data_info["target_directory"],
+                repo_type=repo_type,
             )
         else:
             success = download_hf_directory(
                 repo_id=repo_id,
                 remote_dir=data_info["filename"],
                 destination_dir=data_info["target_directory"],
+                repo_type=repo_type,
             )
 
         if success:
