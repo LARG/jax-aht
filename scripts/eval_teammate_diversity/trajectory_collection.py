@@ -8,8 +8,12 @@ import numpy as np
 from common.agent_loader_from_config import (
     initialize_rl_agent_from_config,
     initialize_heuristic_agent_from_config,
-    HEURISTIC_ACTOR_TYPES,
 )
+
+HEURISTIC_ACTOR_TYPES = {
+    "random_agent", "seq_agent", "entitled_agent", "greedy_agent",
+    "static_agent", "independent_agent", "onion_agent", "plate_agent",
+}
 
 def _get_avail_actions(state, agent, env, num_envs):
     """Return avail_actions for a single agent from a batched state.
