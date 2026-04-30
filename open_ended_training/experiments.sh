@@ -37,7 +37,7 @@ failure_count=0
 for task in "${tasks[@]}"; do
     log "Starting task: ${algo}/${task}"
     
-    if python open_ended_training/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
+    if PYTHONPATH=. python open_ended_training/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
         algorithm.NUM_SEEDS="${num_seeds}" \
         2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
