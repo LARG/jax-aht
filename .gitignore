@@ -9,10 +9,6 @@ val_teammates/
 val_teammates_v2/
 wandb/
 
-# coding editors
-.vscode/
-.claude/
-
 # Human data raw
 human_data_collecting/collected_data_prolific/
 human_data_collecting/*.tar.gz
@@ -28,3 +24,8 @@ __pycache__/
 *.pyc
 dist/
 build/
+
+# Coding editor things
+CLAUDE.md
+.claude/
+.vscode/
