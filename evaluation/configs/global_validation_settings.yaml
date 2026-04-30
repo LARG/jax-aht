@@ -8,7 +8,7 @@ global_heldout_settings:
   NORMALIZE_RETURNS: true # if true, use performance bounds to normalize returns
 
 heldout_set:
-  lbf: # DONE - DO NOT MODIFY. In LBF, results are much better with test mode = false.
+  lbf/lbf_7x7_nolevels: # DONE - DO NOT MODIFY. In LBF, results are much better with test mode = false.
     ippo-mlp: 
       path: "eval_teammates/lbf/2026-03-01_22-16-22/saved_train_run"
       actor_type: mlp
@@ -92,7 +92,7 @@ heldout_set:
 
 # Set best response set to heldout set
 best_response_set:
-  lbf:
+  lbf/lbf_7x7_nolevels:
     ippo-mlp-br: # Use same policies for IPPO
       path: "eval_teammates/lbf/2026-03-01_22-16-22/saved_train_run"
       actor_type: mlp
