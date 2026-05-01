@@ -16,5 +16,6 @@ for SWEEP_ID in "$@"; do
         --job-name="wandb_sweep_$SWEEP_ID" \
         --output="results/slurm_logs/wandb_sweep_${SWEEP_ID}_%j.out" \
         --error="results/slurm_logs/wandb_sweep_${SWEEP_ID}_%j.err" \
-        "$SCRIPT_DIR/slurm_hparam_sweep.sh" "$SWEEP_ID"
+        --export=ALL,SWEEP_SHORT_ID="$SWEEP_ID" \
+        "$SCRIPT_DIR/slurm_hparam_sweep.sh"
 done
