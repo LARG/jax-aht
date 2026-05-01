@@ -104,9 +104,9 @@ heldout_set:
         returned_episode_returns: [[0.0, 0.50], [0.0, 0.32], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50]]
     entitled_agent:
       actor_type: entitled_agent
-      performance_bounds:
-        percent_eaten: [0.0, 98.77]
-        returned_episode_returns: [0.0, 0.49]
+      performance_bounds: # in practice, PPO BR gets ~98% 
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
     greedy_closest_teammate:
       actor_type: greedy_agent
       heuristic: closest_teammate
