@@ -9,7 +9,7 @@ import time
 import os
 import hydra
 
-from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper
+from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper, LBFEntitledPolicyWrapper
 from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
     OvercookedOnionPolicyWrapper,
     OvercookedPlatePolicyWrapper,
@@ -127,6 +127,14 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
                     grid_size=grid_size,
                     num_fruits=num_fruits,
                     ordering_strategy=ordering_strategy,
+                    using_log_wrapper=True
+                )
+            elif agent_config["actor_type"] == 'entitled_agent':
+                grid_size = env_kwargs.get("grid_size", 7)
+                num_fruits = env_kwargs.get("num_fruits", 3)
+                policy = LBFEntitledPolicyWrapper(
+                    grid_size=grid_size,
+                    num_fruits=num_fruits,
                     using_log_wrapper=True
                 )
 
