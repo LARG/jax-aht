@@ -105,24 +105,24 @@ heldout_set:
     entitled_agent:
       actor_type: entitled_agent
       performance_bounds:
-        percent_eaten: [0.0, 100.0]
-        returned_episode_returns: [0.0, 0.5]
+        percent_eaten: [0.0, 98.77]
+        returned_episode_returns: [0.0, 0.49]
     greedy_closest_teammate:
       actor_type: greedy_agent
       heuristic: closest_teammate
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
-  lbf/lbf_12x12: # TODO - update performance bounds when available
-    ippo_mlp: 
+  lbf/lbf_12x12:
+    ippo_mlp:
       path: "eval_teammates/lbf/ippo/ippo-lbf-12-levels/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
       idx_list: [0] # load in seed 0 only
       test_mode: false
-      performance_bounds: # TODO: placeholder bounds
-        percent_eaten: [[0.0, 100.0]]
-        returned_episode_returns: [[0.0, 0.5]]
+      performance_bounds:
+        percent_eaten: [[0.0, 96.53]]
+        returned_episode_returns: [[0.0, 0.48]]
     ippo_mlp_s2c1:
       path: "eval_teammates/lbf/ippo/ippo-lbf-12-levels/saved_train_run"
       actor_type: mlp
@@ -138,9 +138,9 @@ heldout_set:
       ckpt_key: final_params_conf
       POP_SIZE: 10
       test_mode: false
-      performance_bounds: # TODO: placeholder bounds
-        percent_eaten: [[0.0, 100.00], [0.0, 100.0], [0.0, 100.00], [0.0, 100.00], [0.0, 99.48]]
-        returned_episode_returns: [[0.0, 0.50], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50]]
+      performance_bounds:
+        percent_eaten: [[0.0, 76.39], [0.0, 86.11], [0.0, 81.94], [0.0, 83.00], [0.0, 80.00]]
+        returned_episode_returns: [[0.0, 0.36], [0.0, 0.43], [0.0, 0.41], [0.0, 0.42], [0.0, 0.39]]
     seq_agent_lexi:
       actor_type: seq_agent
       ordering_strategy: lexicographic
