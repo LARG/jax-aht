@@ -90,6 +90,68 @@ heldout_set:
         base_return: [[0.0, 185.00], [0.0, 84.06], [0.0, 65.31], [0.0, 61.25], [0.0, 61.25]]
         returned_episode_returns: [[0.0, 196.77], [0.0, 89.07], [0.0, 69.19], [0.0, 64.59], [0.0, 64.78]]
 
+  lbf/lbf_12x12:
+    ippo-mlp:
+      path: "results/lbf/lbf_12x12/ippo/val_teammates/2026-04-30_18-14-34/saved_train_run"
+      actor_type: mlp
+      ckpt_key: checkpoints
+      idx_list: [[0, -1], [1, -1], [2, -1], [3, -1], [4, -1]] # 5 seeds
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 86.98], [0.0, 85.68], [0.0, 87.24], [0.0, 83.33], [0.0, 79.95]]
+        returned_episode_returns: [[0.0, 0.43], [0.0, 0.42], [0.0, 0.43], [0.0, 0.41], [0.0, 0.40]]
+    comedi:
+      path: "results/lbf/lbf_12x12/comedi/val_teammates/2026-04-30_18-12-42/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8]] # 1 seed, pop size 16
+      ckpt_key: final_params_conf
+      POP_SIZE: 16
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 40.63], [0.0, 49.74], [0.0, 47.40], [0.0, 64.84], [0.0, 47.66]]
+        returned_episode_returns: [[0.0, 0.18], [0.0, 0.23], [0.0, 0.22], [0.0, 0.31], [0.0, 0.22]]
+    lbrdiv-conf:
+      path: "results/lbf/lbf_12x12/lbrdiv/val_teammates/2026-04-30_19-15-33/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 75.00], [0.0, 25.52], [0.0, 73.96]]
+        returned_episode_returns: [[0.0, 0.37], [0.0, 0.10], [0.0, 0.35]]
+
+  overcooked-v1/cramped_room:
+    ippo-mlp:
+      path: "results/overcooked-v1/cramped_room/ippo/val_teammates/2026-04-30_18-12-50/saved_train_run"
+      actor_type: mlp
+      ckpt_key: checkpoints
+      idx_list: [[0, -1], [1, -1], [2, -1], [3, -1], [4, -1]] # 5 seeds
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 241.56], [0.0, 240.94], [0.0, 250.00], [0.0, 243.44], [0.0, 244.38]]
+        returned_episode_returns: [[0.0, 258.33], [0.0, 257.76], [0.0, 267.31], [0.0, 260.21], [0.0, 261.28]]
+    comedi:
+      path: "results/overcooked-v1/cramped_room/comedi/val_teammates/2026-04-30_18-18-37/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8]] # 1 seed, pop size 10
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 227.81], [0.0, 163.44], [0.0, 182.50], [0.0, 94.38], [0.0, 66.88]]
+        returned_episode_returns: [[0.0, 243.87], [0.0, 174.50], [0.0, 194.68], [0.0, 101.17], [0.0, 71.00]]
+    lbrdiv-conf:
+      path: "results/overcooked-v1/cramped_room/lbrdiv/val_teammates/2026-04-30_18-07-53/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2]] # 1 seed
+      ckpt_key: final_params_conf
+      POP_SIZE: 3
+      test_mode: false
+      performance_bounds:
+        base_return: [[0.0, 204.38], [0.0, 208.75], [0.0, 204.69]]
+        returned_episode_returns: [[0.0, 218.65], [0.0, 223.21], [0.0, 218.78]]
+
 # Set best response set to heldout set
 best_response_set:
   lbf/lbf_7x7_nolevels:
@@ -141,10 +203,52 @@ best_response_set:
       ckpt_key: final_params_br
       POP_SIZE: 3
       test_mode: false
-    comedi-br: 
+    comedi-br:
       path: "eval_teammates/overcooked-v1/coord_ring/comedi/2026-03-01_22-32-32/saved_train_run/"
       actor_type: actor_with_conditional_critic
       idx_list:  [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
       ckpt_key: final_params_conf
       POP_SIZE: 10
+      test_mode: false
+  lbf/lbf_12x12:
+    ippo-mlp-br:
+      path: "results/lbf/lbf_12x12/ippo/val_teammates/2026-04-30_18-14-34/saved_train_run"
+      actor_type: mlp
+      ckpt_key: checkpoints
+      idx_list: [[0, -1], [1, -1], [2, -1], [3, -1], [4, -1]]
+      test_mode: false
+    comedi-br:
+      path: "results/lbf/lbf_12x12/comedi/val_teammates/2026-04-30_18-12-42/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 16
+      test_mode: false
+    lbrdiv-br:
+      path: "results/lbf/lbf_12x12/lbrdiv/val_teammates/2026-04-30_19-15-33/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2]]
+      ckpt_key: final_params_br
+      POP_SIZE: 3
+      test_mode: false
+  overcooked-v1/cramped_room:
+    ippo-mlp-br:
+      path: "results/overcooked-v1/cramped_room/ippo/val_teammates/2026-04-30_18-12-50/saved_train_run"
+      actor_type: mlp
+      ckpt_key: checkpoints
+      idx_list: [[0, -1], [1, -1], [2, -1], [3, -1], [4, -1]]
+      test_mode: true
+    comedi-br:
+      path: "results/overcooked-v1/cramped_room/comedi/val_teammates/2026-04-30_18-18-37/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+    lbrdiv-br:
+      path: "results/overcooked-v1/cramped_room/lbrdiv/val_teammates/2026-04-30_18-07-53/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2]]
+      ckpt_key: final_params_br
+      POP_SIZE: 3
       test_mode: false
