@@ -541,7 +541,7 @@ def run_ego_training(config, wandb_logger):
     rng, init_partner_rng, init_ego_rng, train_rng = jax.random.split(rng, 4)
 
 
-    partner_agent_config = dict(algorithm_config["partner_agent"])
+    partner_agent_config = {k: v for k, v in dict(algorithm_config["partner_agent"]).items() if v is not None}
     assert len(partner_agent_config) == 1, "Only supports training against one type of partner agent."
 
     partner0_name = list(partner_agent_config.keys())[0]

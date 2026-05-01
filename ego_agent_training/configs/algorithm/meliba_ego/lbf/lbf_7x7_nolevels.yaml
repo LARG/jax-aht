@@ -4,3 +4,14 @@ defaults:
 
 TOTAL_TIMESTEPS: 3e6
 UPDATE_EPOCHS: 5
+
+partner_agent:
+  ippo: null
+  rotate:
+    path: partner_teammates/lbf_7x7_nolevels/rotate/2026-04-29_21-35-47/saved_train_run
+    actor_type: actor_with_double_critic
+    custom_loader:
+      name: open_ended
+      type: ego
+    ckpt_key: final_buffer
+    idx_list: [[0, -1]]
