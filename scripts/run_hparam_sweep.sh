@@ -12,12 +12,31 @@ SWEEP_ID="aht-project/aht-parameter-sweep/$1"
 conda activate bench311
 cd $SCRATCH/jax-aht
 
-# Detect GPUs available on this node
-NUM_GPUS=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
-echo "Found $NUM_GPUS GPUs on node $(hostname)"
+# Detect GPUs available on this node and select ones with >50GB free VRAM
+MIN_FREE_MB=$((50 * 1024))
+mapfile -t FREE_MEM < <(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits)
+echo "Found ${#FREE_MEM[@]} GPUs on node $(hostname); requiring >${MIN_FREE_MB} MiB free"
 
-# Launch one agent per GPU
-for i in $(seq 0 $((NUM_GPUS - 1))); do
+ELIGIBLE_GPUS=()
+for i in "${!FREE_MEM[@]}"; do
+    free_mb=$(echo "${FREE_MEM[$i]}" | tr -d '[:space:]')
+    if [ "$free_mb" -gt "$MIN_FREE_MB" ]; then
+        ELIGIBLE_GPUS+=("$i")
+        echo "  GPU $i: ${free_mb} MiB free -> eligible"
+    else
+        echo "  GPU $i: ${free_mb} MiB free -> skipped"
+    fi
+done
+
+if [ "${#ELIGIBLE_GPUS[@]}" -eq 0 ]; then
+    echo "No GPUs with >${MIN_FREE_MB} MiB free VRAM. Exiting."
+    exit 1
+fi
+
+echo "Launching ${#ELIGIBLE_GPUS[@]} agent(s) on GPUs: ${ELIGIBLE_GPUS[*]}"
+
+# Launch one agent per eligible GPU
+for i in "${ELIGIBLE_GPUS[@]}"; do
     CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 30 &
 done
 
