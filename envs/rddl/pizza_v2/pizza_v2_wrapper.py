@@ -67,6 +67,27 @@ class PizzaWrapper(BaseEnv):
         self.step_penalty = self.env.model.non_fluents.get('STEP-PENALTY', -0.1)
         self.rddl_location_names = self.env.model.type_to_objects['location']
         self.locations_list = self.env.model.type_to_objects['location']
+        # Precompute CAN-DELIVER non-fluent as a (num_agents, num_locations) boolean matrix
+        try:
+            non_fluents = self.env.model.ground_vars_with_values(self.env.model.non_fluents)
+        except Exception:
+            # Fallback to raw non_fluents dict if grounding not available
+            non_fluents = self.env.model.non_fluents
+        num_locs = len(self.locations_list)
+        can_deliver_mat = np.zeros((self.num_agents, num_locs), dtype=np.bool_)
+        for k, v in non_fluents.items():
+            try:
+                var, objects = self.env.model.parse_grounded(k)
+            except Exception:
+                # If key is already grounded or parsing fails, skip
+                continue
+            if var == 'CAN-DELIVER':
+                truck, loc = objects
+                if truck in self.rddl_agent_names and loc in self.locations_list:
+                    t_idx = self.rddl_agent_names.index(truck)
+                    l_idx = self.locations_list.index(loc)
+                    can_deliver_mat[t_idx, l_idx] = bool(v)
+        self.can_deliver = jnp.asarray(can_deliver_mat)
         self._obs_keys = [
             'truckAt',
             'numShopPizzas',
@@ -97,31 +118,11 @@ class PizzaWrapper(BaseEnv):
             self.observation_spaces[agent] = agent_obs
             self.observation_full_spaces[agent] = full_obs
 
+        action_space = self.env.action_space[self.rddl_action_keys[0]]
         self.action_spaces = {
-            agent: self._convert_rddl_action_spec_to_jaxmarl_space(self.env.action_space)
+            agent: self._convert_rddl_action_spec_to_jaxmarl_space(action_space)
             for agent_idx, agent in enumerate(self.agents)
         }
-
-        # Precompute action structure for unbatchification (avoid JIT issues)
-        self._action_type_info = []
-        self._action_type_sizes = []
-        for action_name in self.rddl_action_keys:
-            action_space = self.env.action_space[action_name]
-            spec_shape = action_space.shape
-
-            if len(spec_shape) == 1:
-                param_shape = ()
-                size = 1
-            else:
-                param_shape = spec_shape[1:]
-                size = int(math.prod(param_shape))
-
-            output_shape = (self.num_agents,) + param_shape
-            self._action_type_info.append((action_name, param_shape, output_shape, size))
-            self._action_type_sizes.append(size)
-
-        # Precompute cumulative boundaries as static array
-        self._cumsum_sizes = jnp.array([0] + list(jnp.cumsum(jnp.array(self._action_type_sizes))))
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey):
@@ -156,6 +157,9 @@ class PizzaWrapper(BaseEnv):
             action_inputs = {}
             for idx, agent in enumerate(self.agents):
                 selected = actions[agent]
+                # Normalize to scalar where possible to avoid 1-element-array vs scalar
+                # inconsistencies between test and training code paths.
+                selected = jnp.squeeze(selected)
                 is_valid = state.avail_actions[agent][selected] > 0
                 safe_selected = jnp.where(is_valid, selected, jnp.array(0, dtype=selected.dtype))
                 action_inputs[agent] = safe_selected
@@ -165,6 +169,12 @@ class PizzaWrapper(BaseEnv):
                     "[PizzaWrapper.step] projected invalid actions to noop. original={orig}, projected={proj}",
                     orig=jnp.stack([actions[a] for a in self.agents]),
                     proj=jnp.stack([action_inputs[a] for a in self.agents]),
+                )
+
+                # Also print shapes to help diagnose scalar vs 1-element-array issues
+                jax.debug.print(
+                    "[PizzaWrapper.step] action shapes: {sh}",
+                    sh=jnp.stack([jnp.asarray(actions[a]).shape[0] if jnp.asarray(actions[a]).ndim>0 else 0 for a in self.agents])
                 )
 
         # Convert dict of actions to array
@@ -179,11 +189,8 @@ class PizzaWrapper(BaseEnv):
                             a0=action_inputs[self.agents[0]], a1=action_inputs[self.agents[1]])
             jax.debug.print("[PizzaWrapper.step] preconditions satisfied for submitted joint action: {ok}",
                             ok=precond_ok)
-            jax.debug.print("[PizzaWrapper.step] submitted noop={noop}, drive={drive}, deliver={deliver}, load={load}",
-                            noop=actions_rddl.get('noop', jnp.array([])),
-                            drive=actions_rddl.get('drive', jnp.array([])),
-                            deliver=actions_rddl.get('deliver', jnp.array([])),
-                            load=actions_rddl.get('load', jnp.array([])))
+            jax.debug.print("[PizzaWrapper.step] submitted action-num={act}",
+                            act=actions_rddl.get(self.rddl_action_keys[0], jnp.array([])))
 
         env_state, timestep = self.env.step(state.env_state, actions_rddl)
         if self._debug_rewards:
@@ -196,10 +203,10 @@ class PizzaWrapper(BaseEnv):
             )
         if self._debug_actions:
             raw_avail = self.env.get_available_actions(env_state)
-            jax.debug.print("[PizzaWrapper.step] raw available (unsanitized) noop={noop}", noop=raw_avail.get('noop', jnp.array([])))
-            jax.debug.print("[PizzaWrapper.step] raw available (unsanitized) drive={drive}", drive=raw_avail.get('drive', jnp.array([])))
-            jax.debug.print("[PizzaWrapper.step] raw available (unsanitized) deliver={deliver}", deliver=raw_avail.get('deliver', jnp.array([])))
-            jax.debug.print("[PizzaWrapper.step] raw available (unsanitized) load={load}", load=raw_avail.get('load', jnp.array([])))
+            jax.debug.print(
+                "[PizzaWrapper.step] raw available (unsanitized) action-num={act}",
+                act=raw_avail.get(self.rddl_action_keys[0], jnp.array([]))
+            )
         
         avail_actions = self._extract_avail_actions(env_state)
         done = self._extract_dones(timestep, timestep.observation)
@@ -285,12 +292,18 @@ class PizzaWrapper(BaseEnv):
                         jnp.atleast_1d(observation['doneDelivering']), agent_idx
                     ).flatten()
 
+                    # Include CAN-DELIVER non-fluents (per-truck x per-location)
+                    can_deliver_reordered = _ego_reorder_truck_axis(
+                        jnp.atleast_2d(self.can_deliver), agent_idx
+                    ).flatten()
+
                     obs_agent_values.append(truck_at_reordered)
                     obs_agent_values.append(shop_pizzas)
                     obs_agent_values.append(orders_remaining)
                     obs_agent_values.append(pizzas_in_truck_reordered)
                     obs_agent_values.append(collision_reordered)
                     obs_agent_values.append(done_delivering_reordered)
+                    obs_agent_values.append(can_deliver_reordered)
 
                     obs_full_values.append(truck_at_reordered)
                     obs_full_values.append(shop_pizzas)
@@ -298,6 +311,7 @@ class PizzaWrapper(BaseEnv):
                     obs_full_values.append(pizzas_in_truck_reordered)
                     obs_full_values.append(collision_reordered)
                     obs_full_values.append(done_delivering_reordered)
+                    obs_full_values.append(can_deliver_reordered)
 
                     obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
                     obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
@@ -308,12 +322,15 @@ class PizzaWrapper(BaseEnv):
                     collision = jnp.atleast_1d(observation['collision']).flatten()
                     done_delivering = jnp.atleast_1d(observation['doneDelivering']).flatten()
 
+                    can_deliver = jnp.atleast_2d(self.can_deliver).flatten()
+
                     obs_agent_values.append(truck_at)
                     obs_agent_values.append(shop_pizzas)
                     obs_agent_values.append(orders_remaining)
                     obs_agent_values.append(pizzas_in_truck)
                     obs_agent_values.append(collision)
                     obs_agent_values.append(done_delivering)
+                    obs_agent_values.append(can_deliver)
 
                     obs_full_values.append(truck_at)
                     obs_full_values.append(shop_pizzas)
@@ -321,6 +338,7 @@ class PizzaWrapper(BaseEnv):
                     obs_full_values.append(pizzas_in_truck)
                     obs_full_values.append(collision)
                     obs_full_values.append(done_delivering)
+                    obs_full_values.append(can_deliver)
 
                     obs_agent[agent] = jnp.concatenate(obs_agent_values, dtype=self.observation_spaces[agent].dtype)
                     obs_full[agent] = jnp.concatenate(obs_full_values, dtype=self.observation_spaces[agent].dtype)
@@ -330,89 +348,23 @@ class PizzaWrapper(BaseEnv):
 
     @partial(jax.jit, static_argnums=(0,))
     def _actions_to_rddl(self, actions: Dict[str, jnp.array]) -> Dict[str, jnp.array]:
-        """Convert agent actions (flat indices) to RDDL action dictionary.
+        """Convert agent actions (discrete indices) to RDDL action dictionary.
 
         Args:
-            actions: Dict {agent_id: flat_action_index} where flat_action_index
-                    is an integer indexing into the flattened action space
+            actions: Dict {agent_id: action_index} where action_index selects
+                    the integer-valued action-num for that agent.
 
         Returns:
-            Dictionary with action names as keys and boolean arrays indicating
-            which specific actions are taken (format expected by RDDL environment)
+            Dictionary with action-num array keyed by the action fluent name.
         """
-        # Stack all action indices into a single array
-        action_indices = jnp.stack([actions[agent] for agent in self.agents])
+        action_array = jnp.zeros((self.num_agents,), dtype=jnp.int32)
+        for agent_idx, agent in enumerate(self.agents):
+            action_array = action_array.at[agent_idx].set(actions[agent].squeeze())
 
         if self._debug_actions:
-            jax.debug.print("[PizzaWrapper._actions_to_rddl] flat action indices={idx}", idx=action_indices)
+            jax.debug.print("[PizzaWrapper._actions_to_rddl] action-num={idx}", idx=action_array)
 
-        # Unbatchify to get RDDL action dictionary
-        rddl_actions = self._unbatchify_actions(action_indices)
-
-        return rddl_actions
-
-    @partial(jax.jit, static_argnums=(0,))
-    def _unbatchify_actions(self, action_indices: jnp.array) -> Dict[str, jnp.array]:
-        """Convert flat action indices back to RDDL action dictionary format.
-
-        Args:
-            action_indices: Array of shape (num_agents,) with flat action indices
-                           Each element is a scalar integer representing which action
-                           that agent selected from the flattened action space.
-
-        Returns:
-            Dictionary with action names as keys and multi-dimensional boolean arrays
-            indicating which actions are selected. The format matches what the RDDL
-            environment expects (last dimension is [False, True] pair).
-        """
-        # Ensure action_indices is 1D array of shape (num_agents,)
-        action_indices = jnp.atleast_1d(action_indices).squeeze()
-
-        # Use precomputed action structure from __init__
-        rddl_actions = {}
-
-        for idx, (action_name, param_shape, output_shape, size) in enumerate(self._action_type_info):
-            start_idx = self._cumsum_sizes[idx]
-            end_idx = self._cumsum_sizes[idx + 1]
-
-            # For each agent, check if their action index falls in this action type's range
-            in_range = (action_indices >= start_idx) & (action_indices < end_idx)
-
-            # Get the relative index within this action type
-            relative_indices = action_indices - start_idx
-
-            # Create the action array with correct output shape
-            # Initialize with zeros (False/not selected)
-            action_array = jnp.zeros(output_shape, dtype=jnp.bool)
-
-            if len(param_shape) == 0:
-                # Simple action with no parameters (e.g., 'noop')
-                # Output shape: (num_agents,)
-                # Set to True for agents selecting this action, False otherwise
-                action_array = in_range
-            else:
-                # Action with parameters (e.g., 'drive' with 3 options)
-                # Output shape: (num_agents, *param_shape)
-
-                # Convert flat relative indices to multi-dimensional parameter indices for all agents
-                # Only matters for agents where in_range is True
-                multi_indices = jnp.unravel_index(relative_indices, param_shape)
-
-                # Create one-hot encoding for each agent's selected parameter
-                # For each agent, create a mask array with True at the selected index
-                for agent_idx in range(self.num_agents):
-                    # Only set if this agent is selecting this action type
-                    selected_param_indices = tuple(mi[agent_idx] for mi in multi_indices)
-                    full_indices = (agent_idx,) + selected_param_indices
-                    action_array = jnp.where(
-                        in_range[agent_idx],
-                        action_array.at[full_indices].set(True),
-                        action_array
-                    )
-
-            rddl_actions[action_name] = action_array
-
-        return rddl_actions
+        return {self.rddl_action_keys[0]: action_array}
 
     @partial(jax.jit, static_argnums=(0,))
     def _extract_rewards(self, reward: float) -> Dict[str, float]:
@@ -474,14 +426,8 @@ class PizzaWrapper(BaseEnv):
 
         Convert available actions dictionary to flat vector for each agent.
 
-        The input dictionary has actions with shapes like:
-        - 'noop': (num_agents, 2) - last dim is [False, True]
-        - 'drive': (num_agents, num_locations, 2)
-        - 'deliver': (num_agents, num_locations, 2)
-        - 'load': (num_agents, 2)
-
-        We extract the True values (index 1 of last dimension) and flatten all
-        action dimensions to create a flat mask for each agent.
+        The input dictionary has action masks with shape:
+        - 'action-num': (num_agents, num_actions)
 
         Returns:
             Dictionary {agent: flat_mask} where flat_mask is a 1D boolean array
@@ -496,34 +442,13 @@ class PizzaWrapper(BaseEnv):
             avail_action_mask = self.env.get_available_actions(sanitized_state)
 
             if self._debug_actions:
-                jax.debug.print("[PizzaWrapper._extract_avail_actions] sanitized noop={noop}", noop=avail_action_mask.get('noop', jnp.array([])))
-                jax.debug.print("[PizzaWrapper._extract_avail_actions] sanitized drive={drive}", drive=avail_action_mask.get('drive', jnp.array([])))
-                jax.debug.print("[PizzaWrapper._extract_avail_actions] sanitized deliver={deliver}", deliver=avail_action_mask.get('deliver', jnp.array([])))
-                jax.debug.print("[PizzaWrapper._extract_avail_actions] sanitized load={load}", load=avail_action_mask.get('load', jnp.array([])))
-            # Process all action types at once for all agents (vectorized)
-            action_masks_per_type = []
+                jax.debug.print(
+                    "[PizzaWrapper._extract_avail_actions] sanitized action-num={act}",
+                    act=avail_action_mask.get(self.rddl_action_keys[0], jnp.array([]))
+                )
 
-            for action_name in self.rddl_action_keys:
-                action_avail = avail_action_mask[action_name]
-
-                # Extract the True values (index 1 of last dimension) for all agents
-                # Shape: (num_agents, *action_dims)
-                true_values = action_avail[..., 1]
-
-                # Flatten action dimensions for each agent
-                # Shape: (num_agents, num_actions_of_this_type)
-                flattened = true_values.reshape(self.num_agents, -1)
-
-                action_masks_per_type.append(flattened)
-
-            # Concatenate all action types along the last dimension
-            # Shape: (num_agents, total_num_actions)
-            all_actions_batched = jnp.concatenate(action_masks_per_type, axis=1).astype(jnp.float32)
-
-            # Create dictionary mapping agent names to their action masks
-            batched_avail = {agent: all_actions_batched[i] for i, agent in enumerate(self.agents)}
-
-            return batched_avail
+            action_mask = avail_action_mask[self.rddl_action_keys[0]]
+            return {agent: action_mask[i] for i, agent in enumerate(self.agents)}
 
         else:
             raise NotImplementedError("Non-vectorized avail_actions not implemented yet.")
@@ -533,13 +458,7 @@ class PizzaWrapper(BaseEnv):
         Each agent has N possible actions indexed 0..N-1.
         """
         if self.vectorized:
-            num_actions = 0
-            for key, value in space.items():
-                if len(value.shape) == 1:
-                    num_actions += 1
-                else:
-                    num_actions += math.prod(value.shape[1:])
-            return jaxmarl_spaces.Discrete(num_categories=num_actions, dtype=jnp.int32)
+            return jaxmarl_spaces.Discrete(num_categories=int(space.high[0]) + 1, dtype=space.dtype)
         else:
             raise NotImplementedError("Non-vectorized action spaces not implemented yet.")
 
@@ -552,6 +471,12 @@ class PizzaWrapper(BaseEnv):
             for key in space.keys():
                 obs_size += math.prod(space[key].shape)
                 obs_full_size += math.prod(space[key].shape)
+
+            # Include CAN-DELIVER non-fluent: per-truck x per-location boolean matrix
+            # which we append to each agent's observation vector in _extract_observations.
+            num_locs = len(self.locations_list)
+            obs_size += (self.num_agents * num_locs)
+            obs_full_size += (self.num_agents * num_locs)
 
             # Create Box space
             observation_space = jaxmarl_spaces.Box(

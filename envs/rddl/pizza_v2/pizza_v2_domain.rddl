@@ -71,6 +71,8 @@ domain pizzav2 {
 		// interm fluent equivalent to the previous drive action
 		drive(?t, ?c) = exists_{?c2: location} [
 			truckAt(?t, ?c2)
+			// truck must be trying to drive
+			^ (action-num(?t) >= 3)
 			// action number corresponds to driving to location with that index in the location list
 			^ (action-num(?t) == (2 + CONNECTION-NUM(?c2, ?c)))
 		];
@@ -214,7 +216,7 @@ domain pizzav2 {
 		forall_{?t : truck} [
 			(action-num(?t) >= 0) ^ 
 			(action-num(?t) <= (2 + MAX-CONNECTIONS))
-		]
+		];
 
 		// actions can only be taken by controllable trucks
 		// that are not done delivering (if a truck is done delivering, it can't do anything else but noop)
