@@ -102,6 +102,31 @@ heldout_set:
       performance_bounds:
         percent_eaten: [[0.0, 100.00], [0.0, 51.56], [0.0, 100.00], [0.0, 100.00], [0.0, 99.48]]
         returned_episode_returns: [[0.0, 0.50], [0.0, 0.32], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50]]
+    entitled_agent:
+      actor_type: entitled_agent
+      performance_bounds:
+        percent_eaten: [0.0, 98.77]
+        returned_episode_returns: [0.0, 0.49]
+  lbf_12x12: # LBF 12x12 with different_levels=true. Requires ENV_KWARGS: {grid_size: 12, num_food: 6, different_levels: true}
+    ippo_mlp:
+      path: "eval_teammates/lbf/ippo/ippo-lbf-12-levels/saved_train_run"
+      actor_type: mlp
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 96.53]]
+        returned_episode_returns: [[0.0, 0.48]]
+    comedi:
+      path: "eval_teammates/lbf_12x12/comedi/2026-04-29_00-28-53/saved_train_run"
+      actor_type: actor_with_conditional_critic
+      idx_list: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8], [0, 9]]
+      ckpt_key: final_params_conf
+      POP_SIZE: 10
+      test_mode: false
+      performance_bounds:
+        percent_eaten: [[0.0, 76.39], [0.0, 87.19], [0.0, 86.11], [0.0, 91.67], [0.0, 81.94], [0.0, 72.22], [0.0, 83.00], [0.0, 83.00], [0.0, 80.00], [0.0, 80.00]]
+        returned_episode_returns: [[0.0, 0.36], [0.0, 0.43], [0.0, 0.43], [0.0, 0.45], [0.0, 0.41], [0.0, 0.35], [0.0, 0.42], [0.0, 0.40], [0.0, 0.39], [0.0, 0.40]]
   overcooked-v1/cramped_room: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/cramped_room/ippo/2025-04-21_22-53-04/saved_train_run"
