@@ -14,6 +14,8 @@ parameters:
     values: [1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
   algorithm.ENT_COEF:
     values: [0.1, 0.05, 0.03, 0.01, 0.005]
+  algorithm.CLIP_EPS:
+    values: [0.3, 0.2, 0.1, 0.05, 0.03, 0.01]
 
 command:
   - ${env}
