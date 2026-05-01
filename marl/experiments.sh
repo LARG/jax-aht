@@ -2,9 +2,9 @@
 
 # Algorithm to run
 algo="ippo"
-label="eval_teammates"
-num_seeds=3
-seed=39852
+label="val_teammates"
+num_seeds=5
+seed=39258
 wandb_mode="online"
 
 # Create log directory if it doesn't exist
@@ -16,12 +16,13 @@ log_file="results/marl_logs/${algo}/${label}/experiment_${timestamp}.log"
 
 # Tasks to run
 tasks=(
-    "overcooked-v1/asymm_advantages"
-    "overcooked-v1/coord_ring"
-    "overcooked-v1/counter_circuit"
+    # "overcooked-v1/asymm_advantages"
+    # "overcooked-v1/coord_ring"
+    # "overcooked-v1/counter_circuit"
     "overcooked-v1/cramped_room"
-    "overcooked-v1/forced_coord"
-    "lbf"
+    # "overcooked-v1/forced_coord"
+    # "lbf/lbf_7x7_nolevels"
+    "lbf/lbf_12x12"
 )
 
 # Function to log messages
