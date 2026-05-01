@@ -5,8 +5,7 @@ notebooks/
 results*/
 eval_teammates/
 val_teammates/
-wandb/
-.vscode/
+wandb*/
 
 # Human data raw
 human_data_collecting/collected_data_prolific/
@@ -24,5 +23,7 @@ __pycache__/
 dist/
 build/
 
-val_teammates_v2/*
-val_teammates/*
+# Coding editor things
+CLAUDE.md
+.claude/
+.vscode/
