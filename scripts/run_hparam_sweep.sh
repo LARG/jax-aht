@@ -1,4 +1,6 @@
 #!/bin/bash
+# usage: bash scripts/run_hparam_sweep.sh <sweep_id>
+# example: bash scripts/run_hparam_sweep.sh dqsezvy1
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <sweep_id>"
