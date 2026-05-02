@@ -22,11 +22,11 @@ from scipy.stats import gaussian_kde
 from vis.plot_globals import (
     SAVE_DIR,
     ENTITY,
+    ALGO_TO_ENTRY_POINT,
     METHOD_TO_DISPLAY_NAME, TASK_TO_DISPLAY_NAME,
     HYPERPARAM_PROJECT,
     HYPERPARAM_DEFAULT_METRIC,
-    EGO_HYPERPARAM_SWEEPS,
-    UNIFIED_HYPERPARAM_SWEEPS,
+    HYPERPARAM_SWEEPS,
 )
 from vis.wandb_cache import fetch_sweep_cached, extract_metric
 
@@ -161,8 +161,11 @@ if __name__ == "__main__":
     FORCE_RECOMPUTE = args.force_recompute
     MAX_NUM_TO_VISUALIZE = args.max_hparams
 
-    sweep_map = EGO_HYPERPARAM_SWEEPS if ALGO_TYPE == "ego" else UNIFIED_HYPERPARAM_SWEEPS
-    task_sweeps = sweep_map[TASK]
+    all_task_sweeps = HYPERPARAM_SWEEPS[TASK]
+    task_sweeps = {
+        algo: sid for algo, sid in all_task_sweeps.items()
+        if (ALGO_TO_ENTRY_POINT.get(algo) == "ego_agent_training") == (ALGO_TYPE == "ego")
+    }
 
     scores_by_algo: dict[str, np.ndarray] = {}
     for algo, sweep_id in task_sweeps.items():
