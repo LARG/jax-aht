@@ -1,7 +1,5 @@
 """Stores hard-coded variables for paper plots."""
 
-import os
-
 
 SAVE_DIR = "results/figures"
 HYPERPARAM_DEFAULT_METRIC = "HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean"
@@ -28,19 +26,6 @@ TASK_LEGACY_NAMES = {
 TASK_TO_DISPLAY_NAME = {
     "lbf/lbf_7x7_nolevels": "LBF 7x7 (No Levels)",
     "overcooked-v1/coord_ring": "Overcooked: Coordination Ring",
-}
-
-ALGO_TO_ENTRY_POINT = {
-    "fcp": "teammate_generation",
-    "brdiv": "teammate_generation",
-    "lbrdiv": "teammate_generation",
-    "comedi": "teammate_generation",
-    "rotate": "open_ended_training",
-    "cole": "open_ended_training",
-    "trajedi": "open_ended_training",
-    "ppo_ego": "ego_agent_training",
-    "liam": "ego_agent_training",
-    "meliba": "ego_agent_training",
 }
 
 HYPERPARAM_SWEEPS = {

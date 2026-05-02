@@ -29,4 +29,5 @@ command:
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - label="param_sweep"
+  - algorithm.TOTAL_TIMESTEPS=1e8
   - ${args_no_hyphens}

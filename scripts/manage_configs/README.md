@@ -1,48 +1,55 @@
-# `scripts/manage_configs/` — Benchmark Config Management Scripts
+# `scripts/manage_configs/` — Benchmark Config Management
 
-This directory contains utility scripts for standardising the benchmark configuration
-across algorithms and tasks. Run them in the order listed below.
-
----
-
-## Scripts
-
-### 1. `helpers.py`
-**Shared library** — not run directly. Imported by the other scripts.
-
-Provides:
-- **`EASY_TASKS` / `HARD_TASKS`** — canonical difficulty-tier classification:
-  - Easy: `lbf`, `overcooked-v1/cramped_room`, `overcooked-v1/asymm_advantages`
-  - Hard: `overcooked-v1/coord_ring`, `overcooked-v1/counter_circuit`, `overcooked-v1/forced_coord`
-- **`resolve_algo_config()`** — resolves Hydra `defaults:` chains to produce a merged config dict
-- **`format_value()` / `format_timesteps()`** — consistent numeric formatting for YAML/CLI output
-- **`format_human()`** / **`parse_human_timesteps()`** — K/M/B human-readable formatting and parsing
-- **`compute_total_timesteps()`** — computes total training timestep budget from a resolved config dict
-- **`compute_target_params()`** — computes which parameters to change to hit a target total timestep count
-- **`round_sig()`** — rounds a float to N significant figures (default 3)
+Scripts for setting up and auditing benchmark configurations across algorithms and tasks.
 
 ---
 
-### 2. `update_timesteps.py`
-Adjusts algorithm configs to achieve a **target total timestep budget** for each
-difficulty tier. For each algorithm × task the script resolves the config, computes the
-current total, and adjusts the minimal set of parameters to reach the target.
+## Benchmark Setup Workflow
 
-Parameter adjustment priorities (per algorithm family):
+### Step 1 — Bake timesteps into sweep YAMLs (`update_sweep_timesteps.py`)
 
-| Algorithm | Adjusted parameters |
-|-----------|---------------------|
-| ROTATE / open_ended_minimax | `TIMESTEPS_PER_ITER_PARTNER`, `TIMESTEPS_PER_ITER_EGO`, `NUM_OPEN_ENDED_ITERS` — scaled equally by √(target/current) |
-| FCP | `PARTNER_POP_SIZE` (integer) |
-| COLE | `TOTAL_TIMESTEPS_PER_ITERATION` |
-| CoMeDi | `TOTAL_TIMESTEPS_PER_ITERATION` and `PARTNER_POP_SIZE` — scaled equally by √(target/current) |
-| All others | `TOTAL_TIMESTEPS` |
+Reads the resolved timestep values from each algorithm's Hydra config and writes them as
+fixed CLI args into the corresponding W&B param-sweep YAML. This ensures sweeps run with
+the correct training budget and makes the budget explicit in the sweep file for reproducibility.
 
-`ego_train_algorithm.TOTAL_TIMESTEPS` is always kept fixed.
-Targets accept K / M / B suffixes (e.g. `130M`, `1.3B`, `500K`) or plain numbers.
-A summary table of updated totals is printed at the end (non-dry-run only).
+If a timestep key is already present in a sweep file with a **different** value, the script
+prints a warning and skips rather than overwriting — resolve the discrepancy manually.
 
 ```bash
+python scripts/manage_configs/update_sweep_timesteps.py trajedi
+python scripts/manage_configs/update_sweep_timesteps.py fcp --dry-run
+```
+
+---
+
+### Step 2 — Apply best hyperparameters (`apply_best_hparams.py`)
+
+Fetches the best hyperparameter combination from a completed W&B sweep and writes it to
+the corresponding algorithm config YAML. Sweep IDs must be registered in
+`scripts/paper_vis/plot_globals.py` before running.
+
+Always do a dry run first to confirm the reported heldout return matches expectations.
+
+```bash
+# Dry run — check best hparams and expected return without writing anything:
+python scripts/manage_configs/apply_best_hparams.py \
+    --task lbf/lbf_7x7_nolevels --algorithm trajedi --dry-run
+
+# Apply:
+python scripts/manage_configs/apply_best_hparams.py \
+    --task lbf/lbf_7x7_nolevels --algorithm trajedi
+```
+
+---
+
+### Step 3 — Standardize timesteps (`update_timesteps.py` + `report_timesteps.py`)
+
+`update_timesteps.py` adjusts algorithm configs to hit a target total training budget for
+each difficulty tier. `report_timesteps.py` prints a summary table so you can audit the
+result.
+
+```bash
+# Set target budgets:
 python scripts/manage_configs/update_timesteps.py teammate_generation/ \
     --easy-target 130M --hard-target 260M
 
@@ -52,77 +59,19 @@ python scripts/manage_configs/update_timesteps.py open_ended_training/ \
 python scripts/manage_configs/update_timesteps.py ego_agent_training/ \
     --easy-target 11M --hard-target 23M
 
-# Preview changes without writing:
-python scripts/manage_configs/update_timesteps.py teammate_generation/ \
-    --easy-target 130M --hard-target 260M --dry-run
+# Audit the results:
+python scripts/manage_configs/report_timesteps.py \
+    teammate_generation/ open_ended_training/ ego_agent_training/
 ```
 
 ---
 
-### 3. `update_sweep_timesteps.py`
-Copies the resolved `TOTAL_TIMESTEPS` (and related keys) from algorithm Hydra configs into
-the W&B param-sweep YAML files as fixed CLI args.
+## Other Scripts
 
-Run **once per entry point** after finalising the timestep budgets for each task.
+- **`helpers.py`** — shared library (not run directly). Task lists, config resolution,
+  value formatting, and timestep computation utilities used by the scripts above.
 
-```bash
-python scripts/manage_configs/update_sweep_timesteps.py teammate_generation/
-python scripts/manage_configs/update_sweep_timesteps.py ego_agent_training/
-python scripts/manage_configs/update_sweep_timesteps.py open_ended_training/
+- **`report_timesteps.py`** — standalone audit tool; prints total timestep budgets for
+  every algorithm × task combination. Useful at any point to verify configs are consistent.
 
-# Preview changes without writing:
-python scripts/manage_configs/update_sweep_timesteps.py teammate_generation/ --dry-run
-```
-
----
-
-### 4. `transfer_best_hparams.py`
-Transfers the **non-timestep** hyperparameters (those listed in the W&B sweep
-`parameters:` section) from the swept source task (`overcooked-v1/coord_ring`) to the
-other Overcooked layouts, once the sweep completes and best values have been chosen.
-
-Run **after** each algorithm's hyperparameter sweep finishes.
-
-```bash
-python scripts/manage_configs/transfer_best_hparams.py teammate_generation/
-
-# Skip algorithms whose sweep is still running:
-python scripts/manage_configs/transfer_best_hparams.py teammate_generation/ --skip-algos comedi
-
-# Preview changes without writing:
-python scripts/manage_configs/transfer_best_hparams.py teammate_generation/ --dry-run
-```
-
----
-
-### 5. `report_timesteps.py`
-Prints a table of total training timestep budgets (in K / M / B) for every
-algorithm × task combination across one or more entry points.
-
-Supports `--skip-algos` to exclude specific algorithms from the table.
-Useful for **auditing** that timestep budgets are consistent after running the
-scripts above.
-
-```bash
-python scripts/manage_configs/report_timesteps.py teammate_generation/
-python scripts/manage_configs/report_timesteps.py ego_agent_training/ teammate_generation/ open_ended_training/
-
-# Exclude specific algorithms:
-python scripts/manage_configs/report_timesteps.py open_ended_training/ --skip-algos open_ended_minimax paired
-```
-
----
-
-## Recommended Run Order
-
-```
-1.  update_timesteps.py       (set target timestep budgets for all algo × task combos)
-
-2.  report_timesteps.py       (audit: confirm budgets look correct)
-
-3.  update_sweep_timesteps.py (bake timesteps into W&B param-sweep YAMLs)
-
-4.  [Run W&B sweeps for hyperparameter tuning on coord_ring]
-
-5.  transfer_best_hparams.py  (after sweeps complete, propagate best hparams to other tasks)
-```
+- **`transfer_best_hparams.py`** — legacy script, no longer used.

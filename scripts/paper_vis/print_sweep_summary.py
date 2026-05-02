@@ -7,8 +7,8 @@ Reports:
   - Top-N combinations ranked by mean score
 
 Usage:
-    python vis/print_sweep_summary.py --task lbf/lbf_7x7_nolevels --algorithm ppo_ego
-    python vis/print_sweep_summary.py --task lbf/lbf_7x7_nolevels --algorithm brdiv --top-n 10
+    python scripts/paper_vis/print_sweep_summary.py --task lbf/lbf_7x7_nolevels --algorithm ppo_ego
+    python scripts/paper_vis/print_sweep_summary.py --task lbf/lbf_7x7_nolevels --algorithm brdiv --top-n 10
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import argparse
 
 import pandas as pd
 
-from vis.wandb_cache import load_sweep_df, build_hparam_df
+from scripts.wandb_utils.wandb_cache import load_sweep_df, build_hparam_df
 
 
 def summarize_sweep(sweep_df: pd.DataFrame, bare_keys: list[str], top_n: int) -> None:

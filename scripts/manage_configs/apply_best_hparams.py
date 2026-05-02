@@ -13,8 +13,8 @@ import re
 from pathlib import Path
 
 from scripts.manage_configs.helpers import format_value
-from vis.plot_globals import ALGO_TO_ENTRY_POINT
-from vis.wandb_cache import load_sweep_df, build_hparam_df
+from scripts.utils import ALGO_TO_ENTRY_POINT
+from scripts.wandb_utils.wandb_cache import load_sweep_df, build_hparam_df
 
 
 REPO_ROOT = Path(__file__).parent.parent.parent

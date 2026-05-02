@@ -5,7 +5,7 @@ one per algorithm — where each point is one sweep run. The y-axis shows perfor
 the x-axis is meaningless (points are spread with jitter for readability).
 
 To run: edit the config block at the bottom of this file, then:
-    python vis/plot_sweep_distribution.py
+    python scripts/paper_vis/plot_sweep_distribution.py
 """
 
 from __future__ import annotations
@@ -19,16 +19,16 @@ import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import gaussian_kde
 
-from vis.plot_globals import (
+from scripts.paper_vis.plot_globals import (
     SAVE_DIR,
     ENTITY,
-    ALGO_TO_ENTRY_POINT,
     METHOD_TO_DISPLAY_NAME, TASK_TO_DISPLAY_NAME,
     HYPERPARAM_PROJECT,
     HYPERPARAM_DEFAULT_METRIC,
     HYPERPARAM_SWEEPS,
 )
-from vis.wandb_cache import fetch_sweep_cached, extract_metric
+from scripts.utils import ALGO_TO_ENTRY_POINT
+from scripts.wandb_utils.wandb_cache import fetch_sweep_cached, extract_metric
 
 
 def _get_hparam_cols(df: pd.DataFrame) -> list[str]:
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--algo-type", choices=["ego", "unified"], required=True,
                         help="Which sweep family to visualize.")
     parser.add_argument("--task", required=True,
-                        help="Task name (e.g. lbf).")
+                        help="Task name (e.g. lbf/lbf_7x7_nolevels).")
     parser.add_argument("--force-recompute", action="store_true",
                         help="Re-fetch from wandb, ignoring the local cache.")
     parser.add_argument("--max-hparams", type=int, default=400,

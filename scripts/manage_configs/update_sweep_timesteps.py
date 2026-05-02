@@ -12,23 +12,24 @@ For each param_sweep YAML, this script:
 File content is manipulated as text so that comments and formatting are preserved.
 
 Usage:
-    python scripts/manage_configs/update_sweep_timesteps.py <entry_point_dir> [--dry-run]
-
-Examples:
-    python scripts/manage_configs/update_sweep_timesteps.py teammate_generation/
-    python scripts/manage_configs/update_sweep_timesteps.py ego_agent_training/
-    python scripts/manage_configs/update_sweep_timesteps.py open_ended_training/
+    python scripts/manage_configs/update_sweep_timesteps.py trajedi
+    python scripts/manage_configs/update_sweep_timesteps.py fcp --dry-run
 """
 
 import math
+import re
 import sys
 import yaml
 from pathlib import Path
 
+from scripts.utils import ALGO_TO_ENTRY_POINT
+
+REPO_ROOT = Path(__file__).parent.parent.parent
+
 TIMESTEP_KEYS = [
-        "TOTAL_TIMESTEPS", "TOTAL_TIMESTEPS_PER_ITERATION", 
+        "TOTAL_TIMESTEPS", "TOTAL_TIMESTEPS_PER_ITERATION",
         # ROTATE specific
-        "TIMESTEPS_PER_ITER_PARTNER", "TIMESTEPS_PER_ITER_EGO", 
+        "TIMESTEPS_PER_ITER_PARTNER", "TIMESTEPS_PER_ITER_EGO",
         "NUM_OPEN_ENDED_ITERS"
         ]
 
@@ -137,11 +138,11 @@ def get_timestep_args(sweep_file: Path, algo_configs_root: Path) -> list[str]:
 
 def update_sweep_file(sweep_file: Path, algo_configs_root: Path, dry_run: bool = False) -> None:
     """
-    Insert or update timestep CLI args in a param_sweep YAML command section.
+    Insert timestep CLI args into a param_sweep YAML command section.
 
     For each desired arg:
-      - If the exact "key=value" string is already present: skip (idempotent).
-      - If the key is present with a different value: replace the value in-place.
+      - If the exact "key=value" string is already present: skip silently (idempotent).
+      - If the key is present with a different value: skip and print a warning.
       - If the key is absent: insert before `${args_no_hyphens}`.
 
     File content is manipulated as text so that comments and formatting are preserved.
@@ -157,20 +158,12 @@ def update_sweep_file(sweep_file: Path, algo_configs_root: Path, dry_run: bool =
     for arg in ts_args:
         key, value = arg.split("=", 1)
         if arg in content:
-            # Exact match — already up to date.
-            print(f"  SKIP (up to date): {arg}  →  {rel_path}")
+            # Exact match — already up to date, nothing to do.
+            pass
         elif key in content:
-            # Key present but value differs — update in-place.
-            if dry_run:
-                print(f"  DRY RUN  update '{key}' to '{value}'  →  {rel_path}")
-            else:
-                import re
-                content = re.sub(
-                    rf"(- {re.escape(key)}=)\S+",
-                    rf"\g<1>{value}",
-                    content,
-                )
-                print(f"  Updated '{key}={value}'  →  {rel_path}")
+            # Key present but value differs — warn and skip rather than overwrite.
+            print(f"  WARNING: '{key}' already set with a different value in {rel_path} — skipping. "
+                  f"Expected '{value}' from the algorithm config. Update manually if needed.")
         else:
             to_insert.append(arg)
 
@@ -203,25 +196,8 @@ def update_sweep_file(sweep_file: Path, algo_configs_root: Path, dry_run: bool =
         sweep_file.write_text(content)
 
 
-def main() -> None:
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "entry_point_dir",
-        help="Root directory of the entry point, e.g. teammate_generation/",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print what would change without writing any files.",
-    )
-    args = parser.parse_args()
-
-    root = Path(args.entry_point_dir)
+def _process_entry_point(entry_point: str, algorithm: str, dry_run: bool) -> None:
+    root = REPO_ROOT / entry_point
     param_sweep_dir = root / "param_sweep"
     algo_configs_root = root / "configs" / "algorithm"
 
@@ -235,11 +211,44 @@ def main() -> None:
             print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    sweep_files = sorted(param_sweep_dir.rglob("*.yml")) + sorted(param_sweep_dir.rglob("*.yaml"))
-    print(f"Found {len(sweep_files)} sweep file(s) under {param_sweep_dir}\n")
+    sweep_files = sorted(param_sweep_dir.glob(f"{algorithm}/**/*.yml")) + \
+                  sorted(param_sweep_dir.glob(f"{algorithm}/**/*.yaml"))
+    if not sweep_files:
+        print(f"ERROR: no sweep files found for algorithm '{algorithm}' under {param_sweep_dir}", file=sys.stderr)
+        sys.exit(1)
 
+    print(f"Found {len(sweep_files)} sweep file(s) under {param_sweep_dir}\n")
     for sweep_file in sweep_files:
-        update_sweep_file(sweep_file, algo_configs_root, dry_run=args.dry_run)
+        update_sweep_file(sweep_file, algo_configs_root, dry_run=dry_run)
+
+
+def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "algorithm",
+        help="Algorithm name (e.g. trajedi, fcp). Entry point is derived automatically.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print what would change without writing any files.",
+    )
+    args = parser.parse_args()
+
+    if args.algorithm not in ALGO_TO_ENTRY_POINT:
+        print(
+            f"ERROR: unknown algorithm '{args.algorithm}'. "
+            f"Known: {list(ALGO_TO_ENTRY_POINT)}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    entry_point = ALGO_TO_ENTRY_POINT[args.algorithm]
+    _process_entry_point(entry_point, args.algorithm, args.dry_run)
 
     print("\nDone.")
 

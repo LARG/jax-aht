@@ -134,7 +134,7 @@ def load_sweep_df(
     and returns (DataFrame with '_score' column, swept bare parameter keys).
     Swept keys come from the wandb sweep config, not the local param_sweep YAML.
     """
-    from vis.plot_globals import (
+    from scripts.paper_vis.plot_globals import (
         ENTITY, HYPERPARAM_PROJECT, HYPERPARAM_DEFAULT_METRIC,
         HYPERPARAM_SWEEPS, TASK_LEGACY_NAMES,
     )
@@ -167,7 +167,7 @@ def build_hparam_df(
     and the nested 'algorithm' dict as a fallback), drops rows with missing values,
     and applies FILTERED_HYPERPARAMETER_KV.
     """
-    from vis.plot_globals import FILTERED_HYPERPARAMETER_KV
+    from scripts.paper_vis.plot_globals import FILTERED_HYPERPARAMETER_KV
 
     cols: dict[str, pd.Series] = {}
     for key in bare_keys:
