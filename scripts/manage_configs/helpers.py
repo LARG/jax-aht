@@ -20,7 +20,8 @@ import yaml
 
 # Easy tasks: faster to train, lower complexity.
 EASY_TASKS: list[str] = [
-    "lbf",
+    "lbf/lbf_7x7_nolevels",
+    "lbf/lbf_12x12",
     "overcooked-v1/cramped_room",
     "overcooked-v1/asymm_advantages",
 ]
@@ -287,7 +288,25 @@ def compute_target_params(config: dict, target_total: float) -> dict[str, float 
     ego_cfg = config.get("ego_train_algorithm", {}) or {}
     ego_ts = float(ego_cfg.get("TOTAL_TIMESTEPS", 0))
 
-    # ---- ROTATE / open_ended_minimax: scale both ts-per-iter and num-iters ----
+    # ---- ROTATE: keep ego ts-per-iter fixed, split increase between partner ts and num-iters ----
+    if config.get("ALG") == "rotate" and "TIMESTEPS_PER_ITER_PARTNER" in config and "TIMESTEPS_PER_ITER_EGO" in config:
+        partner_ts = float(config["TIMESTEPS_PER_ITER_PARTNER"])
+        ego_iter_ts = float(config["TIMESTEPS_PER_ITER_EGO"])
+        num_iters = float(config.get("NUM_OPEN_ENDED_ITERS", 1))
+        # Solve (partner_ts*t + ego_iter_ts) * num_iters*t = target_total for t=sqrt_s
+        # => partner_ts*num_iters * t^2 + ego_iter_ts*num_iters * t - target_total = 0
+        P = partner_ts * num_iters
+        E = ego_iter_ts * num_iters
+        sqrt_s = (-E + (E ** 2 + 4 * P * target_total) ** 0.5) / (2 * P) if P > 0 else 1.0
+        new_iters = max(1, round(num_iters * sqrt_s))
+        # back-solve: (new_partner_ts + ego_iter_ts) * new_iters = target_total
+        new_partner_ts = target_total / new_iters - ego_iter_ts
+        return {
+            "TIMESTEPS_PER_ITER_PARTNER": round_sig(new_partner_ts),
+            "NUM_OPEN_ENDED_ITERS": new_iters,
+        }
+
+    # ---- open_ended_minimax: scale both ts-per-iter and num-iters ----
     if "TIMESTEPS_PER_ITER_PARTNER" in config and "TIMESTEPS_PER_ITER_EGO" in config:
         partner_ts = float(config["TIMESTEPS_PER_ITER_PARTNER"])
         ego_iter_ts = float(config["TIMESTEPS_PER_ITER_EGO"])
@@ -317,18 +336,27 @@ def compute_target_params(config: dict, target_total: float) -> dict[str, float 
         scale = remaining / current_partner if current_partner > 0 else 1.0
         sqrt_s = scale ** 0.5
         new_pop = max(1, round(pop_size * sqrt_s))
+        # back-solve: new_ts_per_iter * new_pop = remaining
         return {
-            "TOTAL_TIMESTEPS_PER_ITERATION": round_sig(float(config["TOTAL_TIMESTEPS_PER_ITERATION"]) * sqrt_s),
+            "TOTAL_TIMESTEPS_PER_ITERATION": round_sig(remaining / new_pop),
             "PARTNER_POP_SIZE": new_pop,
         }
 
-    # ---- FCP: adjust PARTNER_POP_SIZE ----
+    # ---- FCP: scale both TOTAL_TIMESTEPS and PARTNER_POP_SIZE by sqrt(target/current) ----
     if config.get("ALG") == "fcp":
         ts_per_partner = float(config["TOTAL_TIMESTEPS"])
+        pop_size = float(config.get("PARTNER_POP_SIZE", 1))
         remaining = target_total - ego_ts
-        if remaining <= 0 or ts_per_partner <= 0:
+        current_partner = ts_per_partner * pop_size
+        if remaining <= 0 or current_partner <= 0:
             return {}
-        return {"PARTNER_POP_SIZE": max(1, round(remaining / ts_per_partner))}
+        sqrt_s = (remaining / current_partner) ** 0.5
+        new_pop = max(1, round(pop_size * sqrt_s))
+        # back-solve: new_ts_per_partner * new_pop = remaining
+        return {
+            "TOTAL_TIMESTEPS": round_sig(remaining / new_pop),
+            "PARTNER_POP_SIZE": new_pop,
+        }
 
     # ---- Default: adjust TOTAL_TIMESTEPS ----
     if "TOTAL_TIMESTEPS" in config:
