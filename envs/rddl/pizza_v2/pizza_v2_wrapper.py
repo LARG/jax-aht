@@ -23,23 +23,14 @@ class WrappedEnvState:
     base_return_so_far: jnp.ndarray
     avail_actions: jnp.ndarray
     step: jnp.array
-    collisions_so_far: jnp.ndarray  # accumulated collision count per truck, zeroed on reset
+    collisions_so_far: jnp.ndarray  # accumulated per-truck, zeroed on episode reset
 
 
 class PizzaWrapper(BaseEnv):
-    """RDDL pizza_v2 environment wrapped to the JaxMARL interface.
+    """RDDL pizza_v2 wrapper for the JaxMARL interface.
 
-    Expects a new-style domain where each truck has a single integer action
-    (like the grid/rover domains).  The action key is read from the RDDL action
-    space at init time so no hard-coded name is needed.
-
-    Args:
-        args[0]: JaxRDDLEnv instance.
-        kwargs:
-            share_rewards (bool): sum rewards across agents. Default False.
-            vectorized (bool): use vectorized obs/action format. Default True.
-            render (bool): enable visualizer. Default False.
-            ego_centric_obs (bool): reorder truck axis so own truck is first. Default True.
+    Expects the new integer-action domain (action-num per truck).
+    Merges fixes from both the marl-compare and social_laws branches.
     """
 
     def __init__(self, *args, **kwargs):
@@ -52,17 +43,19 @@ class PizzaWrapper(BaseEnv):
         self._render = kwargs.get('render', False)
         self._render_name = kwargs.get('render_name', "pizza_v2")
         self._render_dir = kwargs.get('render_dir', "pizza_v2")
+        self._debug_rewards = kwargs.get('debug_rewards', False)
+        self._debug_actions = kwargs.get('debug_actions', False)
+        self._enforce_action_constraints = kwargs.get('enforce_action_constraints', True)
         self._ego_centric_obs = kwargs.get('ego_centric_obs', True)
 
         self.horizon = self.env.horizon
         self.name = self.env.__class__.__name__
         self.rddl_agent_names = self.env.model.type_to_objects['truck']
-        # Single action key for new integer-action domain (sorted for determinism)
         self.rddl_action_keys = sorted(self.env.action_space.keys())
         self.num_agents = len(self.rddl_agent_names)
         self.agents = [f"agent_{i}" for i in range(self.num_agents)]
 
-        # --- SAP controllability detection (mirrors grid_10x10_wrapper) ---
+        # --- SAP controllability detection ---
         controllable = self.env.model.non_fluents['CONTROLLABLE']
         self.uncontrolled_agents_exist = not all(controllable)
         self.controllable = {}
@@ -75,18 +68,32 @@ class PizzaWrapper(BaseEnv):
             else:
                 self.controllable[agent] = False
                 self.uncontrolled_agents.append(agent_idx)
-        # True when exactly one truck is controllable — this is a SAP instance
         self.single_agent_projection = (
             len(self.controlled_agents) == 1 and self.uncontrolled_agents_exist
         )
 
         # --- Domain constants ---
+        self.reward_goal = self.env.model.non_fluents.get('DELIVERY-REWARD', 10.0)
         self.collision_penalty = self.env.model.non_fluents.get('COLLISION-PENALTY', -220.0)
         self.step_penalty = self.env.model.non_fluents.get('STEP-PENALTY', -1.0)
         self.rddl_location_names = self.env.model.type_to_objects['location']
+        self.locations_list = self.rddl_location_names
         # action-num encoding: 0=noop, 1=load, 2=deliver, 3..2+MAX-CONNECTIONS=drive
         self._max_connections = int(self.env.model.non_fluents.get('MAX-CONNECTIONS', 4))
         self._num_actions = 3 + self._max_connections
+
+        # --- CAN-DELIVER matrix (num_agents x num_locations) ---
+        # The JaxRDDLEnv stores non_fluents in vectorized format:
+        # non_fluents['CAN-DELIVER'] is a numpy array of shape (num_trucks, num_locations).
+        # The teammate's wrapper used parse_grounded() which only works for grounded dicts.
+        num_locs = len(self.locations_list)
+        raw_cd = self.env.model.non_fluents.get('CAN-DELIVER', None)
+        if raw_cd is not None:
+            # pyRDDLGym returns non_fluents in a flat vectorized format: shape (num_agents*num_locs,)
+            # Reshape to (num_agents, num_locs) for use in observations.
+            self.can_deliver = jnp.asarray(raw_cd, dtype=jnp.float32).reshape(self.num_agents, num_locs)
+        else:
+            self.can_deliver = jnp.zeros((self.num_agents, num_locs), dtype=jnp.float32)
 
         # --- Observation key validation ---
         self._obs_keys = [
@@ -155,14 +162,34 @@ class PizzaWrapper(BaseEnv):
         reset_state: Optional[WrappedEnvState] = None,
     ) -> Tuple[Dict[str, chex.Array], WrappedEnvState, Dict[str, float], Dict[str, bool], Dict]:
         key, key_reset = jax.random.split(key)
+        action_inputs = actions
 
-        actions_rddl = self._actions_to_rddl(actions)
+        # Project invalid actions to noop (action 0)
+        if self._enforce_action_constraints:
+            action_inputs = {}
+            for agent in self.agents:
+                selected = jnp.squeeze(actions[agent])
+                is_valid = state.avail_actions[agent][selected] > 0
+                safe_selected = jnp.where(is_valid, selected, jnp.array(0, dtype=selected.dtype))
+                action_inputs[agent] = safe_selected
+
+            if self._debug_actions:
+                jax.debug.print(
+                    "[PizzaWrapper] projected: orig={orig} proj={proj}",
+                    orig=jnp.stack([actions[a] for a in self.agents]),
+                    proj=jnp.stack([action_inputs[a] for a in self.agents]),
+                )
+
+        actions_rddl = self._actions_to_rddl(action_inputs)
         env_state, timestep = self.env.step(state.env_state, actions_rddl)
+
+        if self._debug_rewards:
+            jax.debug.print("[PizzaWrapper] reward={r}", r=jnp.asarray(timestep.reward))
 
         avail_actions = self._extract_avail_actions(env_state)
         done = self._extract_dones(timestep, timestep.observation)
 
-        # Accumulate collisions every step; auto-reset zeroes the counter on episode start.
+        # Accumulate collisions every step; auto-reset zeroes on episode start
         new_episode_collisions = (
             state.collisions_so_far
             + jnp.atleast_1d(timestep.observation['collision']).astype(jnp.int32)
@@ -183,17 +210,12 @@ class PizzaWrapper(BaseEnv):
         info['pre_reset_obs'] = obs_st
         info['returned_episode_collisions'] = state_st.collisions_so_far
 
-        # Auto-reset on episode end
         obs, state = jax.tree.map(
             lambda x, y: jax.lax.select(done["__all__"], x, y),
             self.reset(key_reset),
             (obs_st, state_st),
         )
         return obs, state, reward, done, info
-
-    # ------------------------------------------------------------------
-    # Space accessors
-    # ------------------------------------------------------------------
 
     def observation_space(self, agent: str, observation_type: str = "agent") -> jaxmarl_spaces.Space:
         if observation_type == "agent":
@@ -219,7 +241,6 @@ class PizzaWrapper(BaseEnv):
 
     @partial(jax.jit, static_argnums=(0,))
     def _actions_to_rddl(self, actions: Dict[str, jnp.array]) -> Dict[str, jnp.array]:
-        """Stack per-agent integer actions into a single (num_agents,) array."""
         action_array = jnp.zeros((self.num_agents,), dtype=jnp.int32)
         for agent_idx, agent in enumerate(self.agents):
             action_array = action_array.at[agent_idx].set(actions[agent].squeeze())
@@ -227,61 +248,54 @@ class PizzaWrapper(BaseEnv):
 
     @partial(jax.jit, static_argnums=(0,))
     def _extract_avail_actions(self, env_state: EnvState) -> Dict[str, jnp.ndarray]:
-        """Return per-agent available-action masks from the RDDL env."""
-        avail_action_mask = self.env.get_available_actions(env_state)
-        return {
-            agent: avail_action_mask[self.rddl_action_keys[0]][i]
-            for i, agent in enumerate(self.agents)
-        }
+        # Sanitize stale action-fluent values before querying to avoid contamination
+        noop_actions = self.env.noop_actions if hasattr(self.env, 'noop_actions') else {}
+        sanitized_subs = {**env_state.subs, **noop_actions}
+        sanitized_state = env_state.replace(subs=sanitized_subs)
+        avail_action_mask = self.env.get_available_actions(sanitized_state)
+        action_mask = avail_action_mask[self.rddl_action_keys[0]]
+        return {agent: action_mask[i] for i, agent in enumerate(self.agents)}
 
     @partial(jax.jit, static_argnums=(0,))
     def _extract_observations(self, observation) -> Tuple[Dict, Dict]:
-        """Flatten RDDL observations into per-agent float32 vectors."""
         obs_agent = {}
         obs_full = {}
 
         shop_pizzas = jnp.atleast_1d(observation['numShopPizzas']).flatten()
         orders_remaining = jnp.atleast_1d(observation['numOrdersRemaining']).flatten()
 
+        def _ego_reorder(arr, idx):
+            return jnp.concatenate([arr[idx:idx+1], arr[:idx], arr[idx+1:]], axis=0)
+
         for agent_idx, agent in enumerate(self.agents):
             if self._ego_centric_obs:
-                truck_at = jnp.concatenate([
-                    observation['truckAt'][agent_idx:agent_idx + 1],
-                    observation['truckAt'][:agent_idx],
-                    observation['truckAt'][agent_idx + 1:],
-                ], axis=0).flatten()
-                pizzas_in_truck = jnp.concatenate([
-                    jnp.atleast_1d(observation['numPizzasInTruck'])[agent_idx:agent_idx + 1],
-                    jnp.atleast_1d(observation['numPizzasInTruck'])[:agent_idx],
-                    jnp.atleast_1d(observation['numPizzasInTruck'])[agent_idx + 1:],
-                ]).flatten()
-                collision = jnp.concatenate([
-                    jnp.atleast_1d(observation['collision'])[agent_idx:agent_idx + 1],
-                    jnp.atleast_1d(observation['collision'])[:agent_idx],
-                    jnp.atleast_1d(observation['collision'])[agent_idx + 1:],
-                ]).flatten()
-                done_delivering = jnp.concatenate([
-                    jnp.atleast_1d(observation['doneDelivering'])[agent_idx:agent_idx + 1],
-                    jnp.atleast_1d(observation['doneDelivering'])[:agent_idx],
-                    jnp.atleast_1d(observation['doneDelivering'])[agent_idx + 1:],
-                ]).flatten()
+                truck_at = _ego_reorder(observation['truckAt'], agent_idx).flatten()
+                pizzas_in_truck = _ego_reorder(
+                    jnp.atleast_1d(observation['numPizzasInTruck']), agent_idx
+                ).flatten()
+                collision = _ego_reorder(
+                    jnp.atleast_1d(observation['collision']), agent_idx
+                ).flatten()
+                done_delivering = _ego_reorder(
+                    jnp.atleast_1d(observation['doneDelivering']), agent_idx
+                ).flatten()
+                can_deliver = _ego_reorder(
+                    jnp.atleast_2d(self.can_deliver), agent_idx
+                ).flatten()
             else:
                 truck_at = observation['truckAt'].flatten()
                 pizzas_in_truck = jnp.atleast_1d(observation['numPizzasInTruck']).flatten()
                 collision = jnp.atleast_1d(observation['collision']).flatten()
                 done_delivering = jnp.atleast_1d(observation['doneDelivering']).flatten()
+                can_deliver = jnp.atleast_2d(self.can_deliver).flatten()
 
             vec = jnp.concatenate([
-                truck_at,
-                shop_pizzas,
-                orders_remaining,
-                pizzas_in_truck,
-                collision,
-                done_delivering,
+                truck_at, shop_pizzas, orders_remaining,
+                pizzas_in_truck, collision, done_delivering, can_deliver,
             ]).astype(self.observation_spaces[agent].dtype)
 
             obs_agent[agent] = vec
-            obs_full[agent] = vec  # no partial observability in current setup
+            obs_full[agent] = vec
 
         return obs_agent, obs_full
 
@@ -313,10 +327,9 @@ class PizzaWrapper(BaseEnv):
         }
         dones["__all__"] = episode_done
 
-        # In a SAP instance end the episode as soon as the focal agent finishes
-        # its delivery zone, rather than waiting for RDDL termination (which
-        # requires ALL locations to empty — impossible when the partner's orders
-        # never decrease because that truck is uncontrolled).
+        # In SAP instances: end episode when the controlled truck finishes its zone.
+        # Without this, the RDDL termination (requires ALL locations empty) never fires
+        # because the inactive truck's zone orders never decrease.
         if self.single_agent_projection:
             dones["__all__"] = (
                 dones[self.agents[self.controlled_agents[0]]] | terminal | done
@@ -324,27 +337,18 @@ class PizzaWrapper(BaseEnv):
 
         return dones
 
-    def _convert_rddl_action_spec_to_jaxmarl_space(
-        self, space: Any
-    ) -> jaxmarl_spaces.Space:
-        """Discrete action space with 3 + MAX-CONNECTIONS categories.
-
-        action-num encoding: 0=noop, 1=load, 2=deliver, 3..2+MAX-CONNECTIONS=drive.
-        We compute num_categories from the MAX-CONNECTIONS non-fluent directly rather
-        than relying on space.high, because pyRDDLGym may not parse the compound
-        action-precondition bound (action-num <= 2 + MAX-CONNECTIONS) automatically.
-        """
+    def _convert_rddl_action_spec_to_jaxmarl_space(self, _space) -> jaxmarl_spaces.Space:
+        """Use MAX-CONNECTIONS directly — don't rely on space.high parsing compound preconditions."""
         return jaxmarl_spaces.Discrete(num_categories=self._num_actions, dtype=jnp.int32)
 
-    def _convert_rddl_obs_spec_to_jaxmarl_space(
-        self, space: Any
-    ) -> Tuple[jaxmarl_spaces.Space, jaxmarl_spaces.Space]:
-        """Compute flat obs size from the known observation keys only."""
+    def _convert_rddl_obs_spec_to_jaxmarl_space(self, space) -> Tuple[jaxmarl_spaces.Space, jaxmarl_spaces.Space]:
+        # Sum the 6 known obs keys, then add CAN-DELIVER (num_agents x num_locs)
         obs_size = sum(
             math.prod(space[k].shape) for k in self._obs_keys if k in space
         )
+        obs_size += self.num_agents * len(self.locations_list)
         box = jaxmarl_spaces.Box(low=0, high=jnp.inf, shape=(obs_size,), dtype=jnp.float32)
-        return box, box  # agent obs == full obs (no partial observability)
+        return box, box
 
     # ------------------------------------------------------------------
     # Render / animate
@@ -358,7 +362,7 @@ class PizzaWrapper(BaseEnv):
         elif hasattr(env_state, 'subs'):
             state = env_state.subs
         else:
-            raise AttributeError("Cannot extract render state from env_state")
+            raise AttributeError("Cannot extract render state")
         try:
             state = self.env.model.ground_vars_with_values(state)
         except Exception:
@@ -379,35 +383,24 @@ class PizzaWrapper(BaseEnv):
         if extra_dir is not None:
             base_dir = os.path.join(base_dir, extra_dir)
         os.makedirs(base_dir, exist_ok=True)
-
         for ep_idx in range(num_episodes):
             frames = []
             init_env_state = self.unbatch_init_envstate(init_state, idx1=0, idx2=ep_idx)
             env_states = self.unbatch_envstate(state, idx1=0, idx2=ep_idx)
-
             frame = self.render(init_env_state, save_frame=False)
             if frame is not None:
                 frames.append(frame)
-
             for step_idx in range(self.env.model.horizon):
                 frame = self.render(env_states[step_idx], save_frame=False)
                 if frame is not None:
                     frames.append(frame)
                 if bool(dones[0, ep_idx, step_idx]):
                     break
-
             if not frames:
                 continue
-
             gif_path = os.path.join(base_dir, f"{self._render_name}_ep_{ep_idx}.gif")
-            frames[0].save(
-                gif_path,
-                save_all=True,
-                append_images=frames[1:],
-                duration=1000 // max(1, fps),
-                loop=loop_count,
-            )
-
+            frames[0].save(gif_path, save_all=True, append_images=frames[1:],
+                           duration=1000 // max(1, fps), loop=loop_count)
             try:
                 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
                 mp4_path = os.path.join(base_dir, f"{self._render_name}_ep_{ep_idx}.mp4")
@@ -416,13 +409,11 @@ class PizzaWrapper(BaseEnv):
                 clip.close()
             except Exception:
                 pass
-
             if debug:
                 debug_dir = os.path.join(base_dir, f"{self._render_name}_ep_{ep_idx}_frames")
                 os.makedirs(debug_dir, exist_ok=True)
                 for i, f in enumerate(frames):
                     f.save(os.path.join(debug_dir, f"frame_{i:04d}.png"))
-
             self.reset_render()
 
     @staticmethod
