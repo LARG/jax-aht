@@ -163,25 +163,19 @@ if __name__ == "__main__":
             "type": "dir",
             "filename": "hanabi",
             "target_directory": "eval_teammates/",
-            "repo_id": "lainwired/hanabi-aht-partners",
-        },
-        "mini-hanabi_teammates": {
-            "type": "dir",
-            "filename": "mini-hanabi",
-            "target_directory": "eval_teammates/",
-            "repo_id": "lainwired/hanabi-aht-partners",
+            "repo_id": "lainwired/jaxaht-hanabi",
         },
         "hanabi_obl_weights": {
             "type": "dir",
             "filename": "obl-r2d2-flax",
             "target_directory": "agents/hanabi/",
-            "repo_id": "lainwired/hanabi-aht-partners",
+            "repo_id": "lainwired/jaxaht-hanabi",
         },
-        "hanabi_bc_lstm_weights": {
+        "hanabi_bc_weights": {
             "type": "dir",
-            "filename": "bc_lstm",
-            "target_directory": "agents/bc_weights/hanabi_full/",
-            "repo_id": "lainwired/hanabi-aht-partners",
+            "filename": "bc_weights",
+            "target_directory": "agents/",
+            "repo_id": "lainwired/jaxaht-hanabi",
         },
     }
 

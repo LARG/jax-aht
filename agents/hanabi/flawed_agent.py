@@ -6,7 +6,7 @@ from typing import Tuple
 
 
 class FlawedAgent(IGGIAgent):
-    def __init__(self, play_threshold: float = 0.25, **kwargs):
+    def __init__(self, play_threshold: float = 0.4, **kwargs):
         super().__init__(**kwargs)
         self.play_threshold = play_threshold
 

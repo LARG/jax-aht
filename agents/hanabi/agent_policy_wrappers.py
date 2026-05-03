@@ -117,7 +117,7 @@ class HanabiPiersPolicyWrapper(AgentPolicy):
 
 class HanabiFlawedPolicyWrapper(AgentPolicy):
 
-    def __init__(self, play_threshold: float = 0.25,
+    def __init__(self, play_threshold: float = 0.4,
                  hand_size: int = 5, num_colors: int = 5, num_ranks: int = 5,
                  num_actions: int = 21, using_log_wrapper: bool = False,
                  agent_names=None):

@@ -198,7 +198,7 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
             )
         if actor_type == "flawed":
             return HanabiFlawedPolicyWrapper(
-                play_threshold=agent_config.get("play_threshold", 0.25), **common
+                play_threshold=agent_config.get("play_threshold", 0.4), **common
             )
         if actor_type == "outer":
             return HanabiOuterPolicyWrapper(**common)

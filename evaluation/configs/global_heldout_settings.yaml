@@ -536,9 +536,9 @@ heldout_set:
       hint_threshold: 4
       performance_bounds:
         returned_episode_returns: [0.0, 10.69]
-    flawed_30:
+    flawed:
       actor_type: flawed
-      mistake_prob: 0.3
+      play_threshold: 0.4
       performance_bounds:
         returned_episode_returns: [0.0, 1.80]
     outer:
@@ -717,9 +717,9 @@ heldout_set:
       hint_threshold: 4
       performance_bounds:
         returned_episode_returns: [0.0, 7.25]
-    flawed_30:
+    flawed:
       actor_type: flawed
-      mistake_prob: 0.3
+      play_threshold: 0.4
       performance_bounds:
         returned_episode_returns: [0.0, 6.38]
     outer:
