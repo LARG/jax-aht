@@ -57,6 +57,7 @@ def train_ppo_ego_agent(config, env, train_rng,
     '''
     # Get partner parameters from the population
     num_total_partners = partner_population.pop_size
+    progress_interval = int(config.get("PROGRESS_LOG_INTERVAL", 0) or 0)
 
     # ------------------------------
     # Build the PPO training function
@@ -70,6 +71,7 @@ def train_ppo_ego_agent(config, env, train_rng,
         config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
         config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
+        local_progress_interval = progress_interval or max(1, int(config["NUM_UPDATES"] // 20))
 
         config["NUM_ACTIONS"] = env.action_space(env.agents[0]).n
         assert config["NUM_CONTROLLED_ACTORS"] % config["NUM_MINIBATCHES"] == 0, "NUM_CONTROLLED_ACTORS must be divisible by NUM_MINIBATCHES"
@@ -350,6 +352,12 @@ def train_ppo_ego_agent(config, env, train_rng,
                     params_pytree)
 
             max_episode_steps = config["ROLLOUT_LENGTH"]
+
+            def _emit_progress(step, ret):
+                print(
+                    f"[train] update {int(step)}/{int(config['NUM_UPDATES'])} "
+                    f"avg_eval_return={float(ret):.4f}"
+                )
             
             def _update_step_with_ckpt(state_with_ckpt, unused):
                 (update_state, checkpoint_array, ckpt_idx, init_eval_last_info) = state_with_ckpt
@@ -391,9 +399,47 @@ def train_ppo_ego_agent(config, env, train_rng,
                     to_store, store_and_eval_ckpt, skip_ckpt, (checkpoint_array, ckpt_idx, rng, init_eval_last_info)
                 )
 
-                metric["eval_ep_last_info"] = eval_last_infos
+                # Condense per-timestep metrics to per-update scalars.
+                # Full metrics are logged via io_callback in _update_step.
+                # Without this, storing (ROLLOUT_LENGTH, NUM_ACTORS) per key
+                # per update causes OOM for long runs (e.g. 1e9 steps).
+                mask = metric["returned_episode"]
+                n_episodes = mask.sum()
+                condensed_metric = {}
+                for key, val in metric.items():
+                    if key in ("update_steps", "actor_loss", "value_loss",
+                               "entropy_loss", "avg_grad_norm"):
+                        # Already scalar-ish from loss aggregation
+                        condensed_metric[key] = val.mean() if val.ndim > 0 else val
+                    elif key == "returned_episode":
+                        condensed_metric[key] = n_episodes.astype(jnp.float32)
+                    else:
+                        condensed_metric[key] = jnp.where(
+                            n_episodes > 0,
+                            jnp.where(mask, val, 0.0).sum() / jnp.maximum(n_episodes, 1),
+                            0.0,
+                        )
+                condensed_metric["eval_ep_last_info"] = eval_last_infos
+
+                avg_eval_return = eval_last_infos["returned_episode_returns"].mean()
+                should_log_progress = jnp.logical_or(
+                    jnp.equal(jnp.mod(update_steps, local_progress_interval), 0),
+                    jnp.equal(update_steps, config["NUM_UPDATES"])
+                )
+
+                def _log_progress(args):
+                    step, ret = args
+                    jax.debug.callback(_emit_progress, step, ret)
+                    return None
+
+                jax.lax.cond(
+                    should_log_progress,
+                    _log_progress,
+                    lambda _: None,
+                    (update_steps, avg_eval_return),
+                )
                 return ((train_state, rng, update_steps),
-                         checkpoint_array, ckpt_idx, eval_last_infos), metric
+                         checkpoint_array, ckpt_idx, eval_last_infos), condensed_metric
 
             checkpoint_array = init_ckpt_array(train_state.params)
             ckpt_idx = 0
@@ -474,8 +520,22 @@ def run_ego_training(config, wandb_logger):
     
     # Initialize ego agent
     ego_policy, init_ego_params = initialize_ego_agent(algorithm_config, env, init_ego_rng)
+
+    expected_updates = int(
+        algorithm_config["TOTAL_TIMESTEPS"] //
+        algorithm_config["ROLLOUT_LENGTH"] //
+        algorithm_config["NUM_ENVS"]
+    )
+    progress_interval = int(algorithm_config.get("PROGRESS_LOG_INTERVAL", 0) or max(1, expected_updates // 20))
     
-    log.info("Starting ego agent training...")
+    log.info(
+        "Starting ego agent training with %s updates, %s envs, %s partner(s). "
+        "Progress will be logged every ~%s updates.",
+        expected_updates,
+        algorithm_config["NUM_ENVS"],
+        pop_size,
+        progress_interval,
+    )
     start_time = time.time()
     
     # Run the training
@@ -514,14 +574,18 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     # where the last dimension contains the mean and std of the metric
     train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
     
-    all_ego_value_losses = np.asarray(train_metrics["value_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_grad_norms = np.asarray(train_metrics["avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    # Process eval return metrics - average across ego seeds, eval episodes,  training partners 
-    # and num_agents per game for each checkpoint
-    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
-    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
+    all_ego_value_losses = np.asarray(train_metrics["value_loss"])
+    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"])
+    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"])
+    all_ego_grad_norms = np.asarray(train_metrics["avg_grad_norm"])
+    # Process eval return metrics - average across ego seeds, eval episodes,
+    # training partners and num_agents per game for each checkpoint
+    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"])
+    # Handle both condensed (scalars per update) and full metric shapes.
+    # Condensed: (n_ego_train_seeds, num_updates)
+    # Full: (n_ego_train_seeds, num_updates, num_partners, ...)
+    extra_axes = tuple(range(2, all_ego_returns.ndim))
+    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0,) + extra_axes)
 
     # Process loss metrics - average across ego seeds, partners and minibatches dims
     # Loss metrics shape should be (n_ego_train_seeds, num_updates)

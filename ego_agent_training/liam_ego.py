@@ -289,6 +289,13 @@ def train_liam_ego_agent(config, env, train_rng,
                 grad_fn = jax.value_and_grad(_loss_fn, argnums=(0,1), has_aux=True)
                 (loss_val, aux_vals), (grads, encoder_decoder_grads) = grad_fn(
                     train_state.params, encoder_decoder_train_state.params, init_ego_hstate, traj_batch, advantages, returns)
+                # Phase A ablation knob. When FREEZE_ENCODER_DECODER=true the
+                # encoder-decoder weights stay at their random init and the
+                # policy keeps consuming that fixed embedding, which isolates
+                # encoder learning from the extra capacity / random-feature
+                # contribution of adding the encoder-decoder in the first place.
+                if config.get("FREEZE_ENCODER_DECODER", False):
+                    encoder_decoder_grads = jax.tree.map(jnp.zeros_like, encoder_decoder_grads)
                 train_state = train_state.apply_gradients(grads=grads)
                 encoder_decoder_train_state = encoder_decoder_train_state.apply_gradients(grads=encoder_decoder_grads)
 
@@ -451,9 +458,30 @@ def train_liam_ego_agent(config, env, train_rng,
                     to_store, store_and_eval_ckpt, skip_ckpt, (checkpoint_array, ckpt_idx, rng, init_eval_last_info)
                 )
 
-                metric["eval_ep_last_info"] = eval_last_infos
+                # Condense per-timestep metrics to per-update scalars.
+                # Full metrics are logged via io_callback in _update_step.
+                # Without this, storing (ROLLOUT_LENGTH, NUM_ACTORS) per key
+                # per update causes OOM for long runs (e.g. 1e9 steps).
+                mask = metric["returned_episode"]
+                n_episodes = mask.sum()
+                condensed_metric = {}
+                for key, val in metric.items():
+                    if key in ("update_steps", "actor_loss", "value_loss",
+                               "entropy_loss", "reconstruction_loss",
+                               "avg_grad_norm", "encoder_avg_grad_norm",
+                               "decoder_avg_grad_norm"):
+                        condensed_metric[key] = val.mean() if val.ndim > 0 else val
+                    elif key == "returned_episode":
+                        condensed_metric[key] = n_episodes.astype(jnp.float32)
+                    else:
+                        condensed_metric[key] = jnp.where(
+                            n_episodes > 0,
+                            jnp.where(mask, val, 0.0).sum() / jnp.maximum(n_episodes, 1),
+                            0.0,
+                        )
+                condensed_metric["eval_ep_last_info"] = eval_last_infos
                 return ((train_state, encoder_decoder_train_state, rng, update_steps),
-                         checkpoint_array, ckpt_idx, eval_last_infos), metric
+                         checkpoint_array, ckpt_idx, eval_last_infos), condensed_metric
 
             checkpoint_array = init_ckpt_array(
                 {"encoder": encoder_decoder_train_state.params["encoder"],
@@ -587,17 +615,21 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     # where the last dimension contains the mean and std of the metric
     train_stats = {k: np.mean(np.array(v), axis=0) for k, v in train_stats.items()}
 
-    all_ego_value_losses = np.asarray(train_metrics["value_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_reconstruction_losses = np.asarray(train_metrics["reconstruction_loss"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_grad_norms = np.asarray(train_metrics["avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_encoder_grad_norms = np.asarray(train_metrics["encoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    all_ego_decoder_grad_norms = np.asarray(train_metrics["decoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
-    # Process eval return metrics - average across ego seeds, eval episodes,  training partners
-    # and num_agents per game for each checkpoint
-    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
-    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
+    all_ego_value_losses = np.asarray(train_metrics["value_loss"])
+    all_ego_actor_losses = np.asarray(train_metrics["actor_loss"])
+    all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"])
+    all_ego_reconstruction_losses = np.asarray(train_metrics["reconstruction_loss"])
+    all_ego_grad_norms = np.asarray(train_metrics["avg_grad_norm"])
+    all_ego_encoder_grad_norms = np.asarray(train_metrics["encoder_avg_grad_norm"])
+    all_ego_decoder_grad_norms = np.asarray(train_metrics["decoder_avg_grad_norm"])
+    # Process eval return metrics - average across ego seeds, eval episodes,
+    # training partners and num_agents per game for each checkpoint
+    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"])
+    # Handle both condensed (scalars per update) and full metric shapes.
+    # Condensed: (n_ego_train_seeds, num_updates)
+    # Full: (n_ego_train_seeds, num_updates, num_partners, ...)
+    extra_axes = tuple(range(2, all_ego_returns.ndim))
+    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0,) + extra_axes)
 
     # Process loss metrics - average across ego seeds, partners and minibatches dims
     # Loss metrics shape should be (n_ego_train_seeds, num_updates)

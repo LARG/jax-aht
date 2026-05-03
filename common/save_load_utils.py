@@ -5,6 +5,7 @@ from flax.training import orbax_utils
 import jax
 import jax.numpy as jnp
 import numpy as np
+from orbax.checkpoint import ArrayRestoreArgs, RestoreArgs
 
 # suppress logging from orbax 
 import logging
@@ -48,6 +49,20 @@ def load_checkpoints(path, ckpt_key="checkpoints", custom_loader_cfg: dict=None)
             return out[ckpt_key]
     elif custom_loader_cfg["name"] == "partial_load":
         return _load_partial(path, ckpt_key)
+    elif custom_loader_cfg["name"] == "fcp":
+        # FCP saves checkpoints with shape
+        #   (NUM_SEEDS, PARTNER_POP_SIZE, NUM_CHECKPOINTS, ...)
+        # Reshape to the (NUM_SEEDS, FCP_POP_SIZE, ...) layout that
+        # AgentPopulation expects, where FCP_POP_SIZE = PARTNER_POP_SIZE *
+        # NUM_CHECKPOINTS. Mirrors get_fcp_population in
+        # teammate_generation/fcp.py so a saved FCP run can be reused as a
+        # partner pool by ego_agent_training/run.py.
+        restored = load_train_run(path)
+        ckpts = restored[ckpt_key]
+        return jax.tree.map(
+            lambda x: x.reshape(x.shape[0], x.shape[1] * x.shape[2], *x.shape[3:]),
+            ckpts,
+        )
     else:
         raise ValueError(f"Invalid custom loader name: {custom_loader_cfg['name']}")
 
@@ -86,7 +101,36 @@ def load_train_run(path):
         path = os.path.join(REPO_PATH, path)
     # load the checkpoint
     checkpointer = orbax.checkpoint.PyTreeCheckpointer()
-    restored = checkpointer.restore(path)
+    def _restore_with_numpy_args():
+        metadata = checkpointer.metadata(path)
+
+        def _mk_restore_args(leaf):
+            if hasattr(leaf, "shape") and hasattr(leaf, "dtype"):
+                return ArrayRestoreArgs(restore_type=np.ndarray)
+            return RestoreArgs()
+
+        restore_args = jax.tree_util.tree_map(_mk_restore_args, metadata.tree)
+        return checkpointer.restore(path, restore_args=restore_args)
+
+    force_cpu_restore = (
+        os.environ.get("JAX_AHT_FORCE_CPU_RESTORE", "0") == "1"
+        or os.environ.get("JAX_PLATFORMS", "").lower() == "cpu"
+    )
+
+    if force_cpu_restore:
+        restored = _restore_with_numpy_args()
+    else:
+        try:
+            restored = checkpointer.restore(path)
+        except Exception as exc:
+            msg = str(exc)
+            recoverable = (
+                "sharding passed to deserialization" in msg
+                or "Device cuda:0 was not found in jax.local_devices()" in msg
+            )
+            if not recoverable:
+                raise
+            restored = _restore_with_numpy_args()
     # convert pytree leaves from np arrays to jax arrays
     restored = jax.tree_util.tree_map(
         lambda x: jnp.array(x) if isinstance(x, np.ndarray) else x,

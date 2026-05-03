@@ -80,13 +80,16 @@ def run_fcp(config, wandb_logger):
 
     flattened_partner_params, partner_population = get_fcp_population(config, out, env)
 
-    # log metrics
-    log_metrics(config, out, wandb_logger)
+    # Save FIRST so the checkpoint survives even if metric logging OOMs
+    # on long runs. Same pattern as teammate_generation/train_ego.py.
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
+    log_metrics(config, out, wandb_logger, out_savepath)
 
     return flattened_partner_params, partner_population
 
-def log_metrics(config, out, logger):
-    '''Log statistics, save train run output and log to wandb as artifact.'''
+def log_metrics(config, out, logger, out_savepath):
+    '''Log statistics and log saved train run to wandb as artifact.'''
     metric_names = get_metric_names(config["ENV_NAME"])
     # After mask_and_mean in ippo, metrics have shape
     # (num_seeds, partner_pop_size, num_partner_updates)
@@ -106,9 +109,6 @@ def log_metrics(config, out, logger):
 
     logger.commit()
 
-    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    # save artifacts
-    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
         # Cleanup locally logged out file
