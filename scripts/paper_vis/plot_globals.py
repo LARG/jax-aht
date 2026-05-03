@@ -75,6 +75,30 @@ HYPERPARAM_SWEEPS = {
         "cole": "pr0fwbdp", 
         "trajedi": "dqsezvy1",
     },
+    "lbf/lbf_12x12": {
+        "ppo_ego": "k2giuu4l", 
+        "liam": "yibcruuz", 
+        "meliba": "6jdo5rjv",
+        "fcp": "nivg4xvf", 
+        # "brdiv": "fdg6dw1n", # running 
+        "lbrdiv": "y23unh8y",
+        # "comedi": "7e9yf5zg",  # running
+        # "rotate": "t4hufinh", # running
+        "cole": "kbvghubr", 
+        "trajedi": "mavnqv7e",
+    },
+    "overcooked-v1/cramped_room": {
+        "ppo_ego": "vexvuss8", 
+        "liam": "zz9lkwdz", 
+        "meliba": "dva0ffdq",
+        "fcp": "e23khyjt", 
+        "brdiv": "19gmzemf", 
+        # "lbrdiv": "w8abf056", # running
+        # "comedi": "vt0xnwxc",  # running
+        "rotate": "hrer8x3c",  # done but excluded
+        "cole": "jg6700d6", 
+        "trajedi": "dua855jm",
+    },
     "overcooked-v1/coord_ring": {
         "ppo_ego": "qeafl8r7", 
         "liam": "pbq863zp", 

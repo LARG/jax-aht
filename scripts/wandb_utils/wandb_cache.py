@@ -149,7 +149,9 @@ def load_sweep_df(
             f"Available: {list(HYPERPARAM_SWEEPS[task])}"
         )
     sweep_id = HYPERPARAM_SWEEPS[task][algorithm]
-    task_name_for_check = TASK_LEGACY_NAMES.get(task, task)
+    # Fall back to just the task name (after the family prefix) so that sweep
+    # names like 'ppo_ego-lbf_12x12' match task 'lbf/lbf_12x12'.
+    task_name_for_check = TASK_LEGACY_NAMES.get(task, task.split("/")[-1])
     bare_keys = fetch_sweep_bare_keys(sweep_id, ENTITY, HYPERPARAM_PROJECT)
     df = fetch_sweep_cached(
         sweep_id, ENTITY, HYPERPARAM_PROJECT,
