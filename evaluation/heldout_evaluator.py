@@ -9,27 +9,16 @@ import time
 import os
 import hydra
 
-from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper
-from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper,
-    OvercookedOnionPolicyWrapper,
-    OvercookedPlatePolicyWrapper,
-    OvercookedStaticPolicyWrapper,
-    OvercookedRandomPolicyWrapper)
-from agents.hanabi.agent_policy_wrappers import (HanabiRandomPolicyWrapper,
-    HanabiRuleBasedPolicyWrapper, HanabiIGGIPolicyWrapper,
-    HanabiPiersPolicyWrapper, HanabiFlawedPolicyWrapper,
-    HanabiOuterPolicyWrapper, HanabiVanDenBerghPolicyWrapper,
-    HanabiSmartBotPolicyWrapper, HanabiOBLPolicyWrapper,
-    HanabiBCLSTMPolicyWrapper)
-
-from common.agent_loader_from_config import initialize_rl_agent_from_config
+from common.agent_loader_from_config import (
+    initialize_rl_agent_from_config,
+    initialize_heuristic_agent_from_config,
+)
 from common.run_episodes import run_episodes
 from common.tree_utils import tree_stack
 from common.plot_utils import get_metric_names
 from common.stat_utils import compute_aggregate_stat_and_ci_per_task
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from envs.overcooked.augmented_layouts import augmented_layouts
 
 
 def extract_params(params, init_params, idx_labels=None):
@@ -54,7 +43,6 @@ def extract_params(params, init_params, idx_labels=None):
     flattened_idx_labels = []
     params_shape = jax.tree.leaves(params)[0].shape
     init_params_shape = jax.tree.leaves(init_params)[0].shape
-
     # already matches init_params_shape, no extraction needed
     if params_shape == init_params_shape:
         model_list = [params]
@@ -124,116 +112,11 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
             performance_bounds_list = extract_performance_bounds(agent_config, len(params_list))
 
         # Load non-RL-based heuristic agents
-        elif task_name == 'lbf':
-            performance_bounds = agent_config.get("performance_bounds", None)
-            if agent_config["actor_type"] == 'random_agent':
-                policy = LBFRandomPolicyWrapper(using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'seq_agent':
-                # Get grid size and num fruits from environment
-                grid_size = env_kwargs.get("grid_size", 7)
-                num_fruits = env_kwargs.get("num_fruits", 3)
-                ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
-                policy = LBFSequentialFruitPolicyWrapper(
-                    grid_size=grid_size,
-                    num_fruits=num_fruits,
-                    ordering_strategy=ordering_strategy,
-                    using_log_wrapper=True
-                )
-
-        elif 'overcooked-v1' in task_name:
-            performance_bounds = agent_config.get("performance_bounds", None)
-            aug_layout_dict = augmented_layouts[env_kwargs["layout"]]
-            if agent_config["actor_type"] == 'random_agent':
-                policy = OvercookedRandomPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'static_agent':
-                policy = OvercookedStaticPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'independent_agent':
-                policy = OvercookedIndependentPolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0), 
-                    p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
-            elif agent_config["actor_type"] == 'onion_agent':
-                policy = OvercookedOnionPolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0))
-            elif agent_config["actor_type"] == 'plate_agent':
-                policy = OvercookedPlatePolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True,
-                    p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
-
-        elif 'hanabi' in task_name:
-            performance_bounds = agent_config.get("performance_bounds", None)
-            # Hanabi game parameters for rule-based agents (derived from env_kwargs)
-            hand_size = env_kwargs.get("hand_size", 5)
-            num_colors = env_kwargs.get("num_colors", 5)
-            num_ranks = env_kwargs.get("num_ranks", 5)
-            num_actions = 2 * hand_size + num_colors + num_ranks + 1
-            # Mini-Hanabi uses [2,2,1] not a slice of the standard [3,2,2,2,1],
-            # so SmartBot's belief tracking needs the real counts.
-            num_cards_of_rank = env_kwargs.get("num_cards_of_rank", None)
-            if agent_config["actor_type"] == 'random_agent':
-                policy = HanabiRandomPolicyWrapper(num_actions=num_actions,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'obl_r2d2':
-                weight_file = agent_config.get("weight_file",
-                    "agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors")
-                policy = HanabiOBLPolicyWrapper(weight_file=weight_file,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'rule_based':
-                strategy = agent_config.get("strategy", "cautious")
-                policy = HanabiRuleBasedPolicyWrapper(
-                    strategy=strategy,
-                    hand_size=hand_size, num_colors=num_colors,
-                    num_ranks=num_ranks, num_actions=num_actions,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'iggi':
-                policy = HanabiIGGIPolicyWrapper(
-                    hand_size=hand_size, num_colors=num_colors,
-                    num_ranks=num_ranks, num_actions=num_actions,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'piers':
-                play_threshold = agent_config.get("play_threshold", 0.6)
-                hint_threshold = agent_config.get("hint_threshold", 4)
-                policy = HanabiPiersPolicyWrapper(
-                    play_threshold=play_threshold,
-                    hint_threshold=hint_threshold,
-                    hand_size=hand_size, num_colors=num_colors,
-                    num_ranks=num_ranks, num_actions=num_actions,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'flawed':
-                mistake_prob = agent_config.get("mistake_prob", 0.3)
-                policy = HanabiFlawedPolicyWrapper(
-                    mistake_prob=mistake_prob,
-                    hand_size=hand_size, num_colors=num_colors,
-                    num_ranks=num_ranks, num_actions=num_actions,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'smartbot':
-                policy = HanabiSmartBotPolicyWrapper(
-                    hand_size=hand_size, num_colors=num_colors,
-                    num_ranks=num_ranks, num_actions=num_actions,
-                    card_counts=num_cards_of_rank,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'outer':
-                policy = HanabiOuterPolicyWrapper(
-                    hand_size=hand_size, num_colors=num_colors,
-                    num_ranks=num_ranks, num_actions=num_actions,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'van_den_bergh':
-                policy = HanabiVanDenBerghPolicyWrapper(
-                    hand_size=hand_size, num_colors=num_colors,
-                    num_ranks=num_ranks, num_actions=num_actions,
-                    using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'bc_lstm':
-                weight_file = agent_config.get("weight_file",
-                    "agents/hanabi/bc_lstm_weights/bc_2p.safetensors")
-                greedy = agent_config.get("greedy", True)
-                policy = HanabiBCLSTMPolicyWrapper(
-                    weight_file=weight_file, using_log_wrapper=True,
-                    greedy=greedy)
-            else:
-                raise ValueError(f"Unknown Hanabi actor_type: {agent_config['actor_type']}")
         else:
-            raise ValueError(f"Unknown task: {task_name}")
+            performance_bounds = agent_config.get("performance_bounds", None)
+            policy = initialize_heuristic_agent_from_config(
+                agent_config, agent_name, task_name, env_kwargs
+            )
         
         # Generate agent labels
         if params_list is None: # heuristic agent
@@ -256,8 +139,8 @@ def normalize_metrics(metrics, performance_bounds):
     return metrics
 
 
-def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params, 
-                          heldout_agent_list, ego_test_mode=False):
+def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params,
+                          heldout_agent_list, heldout_agent_names=None, ego_test_mode=False):
     '''Evaluate all ego agents against all heldout partners using vmap over egos.
     Ego_params must be a pytree of shape (num_ego_agents, ...)
     '''
@@ -304,7 +187,8 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
             if heldout_performance_bounds is not None:
                 results_for_this_partner = normalize_metrics(results_for_this_partner, heldout_performance_bounds)
             else:
-                print(f"Warning: no performance bounds provided for {heldout_agent_list[partner_idx]}. Skipping normalization.")
+                agent_name = heldout_agent_names[partner_idx] if heldout_agent_names is not None else f"partner_{partner_idx}"
+                print(f"Warning: no performance bounds provided for {agent_name}. Skipping normalization.")
         all_metrics_for_partners.append(results_for_this_partner)
 
     end_time = time.time()
@@ -337,12 +221,13 @@ def run_heldout_evaluation(config, print_metrics=False):
     # load heldout agents
     heldout_cfg = config["heldout_set"][config["TASK_NAME"]]
     heldout_agents = load_heldout_set(heldout_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], heldout_init_rng)
+    heldout_agent_names = list(heldout_agents.keys())
     heldout_agent_list = list(heldout_agents.values())
-    
+
     # run evaluation
     eval_metrics = eval_egos_vs_heldouts(
-        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"], 
-        ego_policy, flattened_ego_params, heldout_agent_list, ego_test_mode)
+        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"],
+        ego_policy, flattened_ego_params, heldout_agent_list, heldout_agent_names, ego_test_mode)
 
     if print_metrics:
         # each leaf of eval_metrics has shape (num_ego_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)

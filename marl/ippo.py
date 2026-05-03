@@ -3,7 +3,7 @@ Based on the IPPO implementation from JaxMarl. Trains a parameter-shared IPPO ag
 fully cooperative multi-agent environment.
 
 Recommended run command:
-python marl/run.py task=lbf algorithm=ippo/lbf
+python marl/run.py task=lbf/lbf_7x7_nolevels algorithm=ippo/lbf/lbf_7x7_nolevels
 '''
 import shutil
 

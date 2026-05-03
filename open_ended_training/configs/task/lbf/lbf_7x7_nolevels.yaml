@@ -1,4 +1,4 @@
 ENV_NAME: lbf
 ROLLOUT_LENGTH: 128
 ENV_KWARGS: {}
-TASK_NAME: lbf
+TASK_NAME: lbf/lbf_7x7_nolevels
