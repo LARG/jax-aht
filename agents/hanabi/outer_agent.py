@@ -6,6 +6,43 @@ from typing import Tuple
 
 
 class OuterAgent(IGGIAgent):
+    def _find_outer_playable_hint_mask(self, partner_hand, partner_colors_revealed, partner_ranks_revealed, next_playable_rank, avail_mask):
+        partner_colors = jnp.argmax(partner_hand.sum(axis=2), axis=1)
+        partner_ranks = jnp.argmax(partner_hand.sum(axis=1), axis=1)
+        partner_playable = (partner_ranks == next_playable_rank[partner_colors])
+
+        rank_known = jnp.take_along_axis(
+            partner_ranks_revealed, partner_ranks[:, None], axis=1
+        ).squeeze(-1) > 0
+        color_known = jnp.take_along_axis(
+            partner_colors_revealed, partner_colors[:, None], axis=1
+        ).squeeze(-1) > 0
+
+        can_tell_rank = partner_playable & (~rank_known)
+        can_tell_color = partner_playable & rank_known & (~color_known)
+        can_hint = can_tell_rank | can_tell_color
+
+        slot_indices = jnp.arange(self.hand_size)
+        masked_indices = jnp.where(can_hint, slot_indices, self.hand_size)
+        first_slot = jnp.argmin(masked_indices)
+        has_outer_hint = jnp.any(can_hint)
+
+        fire_rank = can_tell_rank[first_slot] & has_outer_hint
+        fire_color = can_tell_color[first_slot] & has_outer_hint
+
+        chosen_color = partner_colors[first_slot]
+        chosen_rank = partner_ranks[first_slot]
+
+        color_mask = jnp.zeros(self.num_colors)
+        color_mask = color_mask.at[chosen_color].set(fire_color.astype(jnp.float32))
+        rank_mask = jnp.zeros(self.num_ranks)
+        rank_mask = rank_mask.at[chosen_rank].set(fire_rank.astype(jnp.float32))
+
+        hint_mask = jnp.zeros(self.num_actions)
+        hint_mask = hint_mask.at[self.hint_color_start:self.hint_color_end].set(color_mask)
+        hint_mask = hint_mask.at[self.hint_rank_start:self.hint_rank_end].set(rank_mask)
+        return hint_mask * avail_mask
+
     def _find_tell_unknown_mask(self, partner_hand, partner_knowledge_2d, avail_mask):
         partner_colors = jnp.argmax(partner_hand.sum(axis=2), axis=1)
         partner_ranks = jnp.argmax(partner_hand.sum(axis=1), axis=1)
@@ -83,8 +120,11 @@ class OuterAgent(IGGIAgent):
         useless_discard_mask = useless_discard_mask * avail_mask
         has_useless_discard = useless_discard_mask.sum() > 0
 
-        hint_playable_mask = self._find_playable_hint_mask(
-            partner_hand, next_playable_rank, avail_mask
+        partner_colors_revealed = env_state.colors_revealed[partner_id]
+        partner_ranks_revealed = env_state.ranks_revealed[partner_id]
+        hint_playable_mask = self._find_outer_playable_hint_mask(
+            partner_hand, partner_colors_revealed, partner_ranks_revealed,
+            next_playable_rank, avail_mask
         )
         can_hint_playable = (hint_playable_mask.sum() > 0) & (info_tokens > 0)
 
@@ -93,12 +133,16 @@ class OuterAgent(IGGIAgent):
         )
         can_tell_unknown = (tell_unknown_mask.sum() > 0) & (info_tokens > 0)
 
+        random_discard_mask = self._random_discard_mask(avail_mask)
+        has_random_discard = random_discard_mask.sum() > 0
+
         m2l = self._mask_to_logits
         rules = [
-            (has_safe_play,       m2l(safe_play_mask)),
-            (has_useless_discard, m2l(useless_discard_mask)),
-            (can_hint_playable,   m2l(hint_playable_mask)),
-            (can_tell_unknown,    m2l(tell_unknown_mask)),
+            (has_safe_play,        m2l(safe_play_mask)),
+            (has_useless_discard,  m2l(useless_discard_mask)),
+            (can_hint_playable,    m2l(hint_playable_mask)),
+            (can_tell_unknown,     m2l(tell_unknown_mask)),
+            (has_random_discard,   m2l(random_discard_mask)),
         ]
         action = self._select_priority_action(rules, avail_mask, rng)
         return action, agent_state

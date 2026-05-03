@@ -1077,7 +1077,10 @@ def run_comedi(config, wandb_logger):
 
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
 
-    log_metrics(config, out, wandb_logger, metric_names)
+    # Save FIRST so the checkpoint survives even if metric logging OOMs.
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
+    log_metrics(config, out, wandb_logger, metric_names, out_savepath)
     partner_params, partner_population = get_comedi_population(config, out, env)
     return partner_params, partner_population
 
@@ -1092,7 +1095,7 @@ def compute_sp_mask_and_ids(pop_size):
     sp_mask = (conf_ids == ego_ids)
     return sp_mask, agent_id_cartesian_product
 
-def log_metrics(config, outs, logger, metric_names: tuple):
+def log_metrics(config, outs, logger, metric_names: tuple, out_savepath):
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy
     num_seeds, pop_size, num_updates = metrics["pg_loss_conf_sp"].shape
@@ -1147,10 +1150,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
             title=loss_name, xname="train_step")
         )
 
-    ### Log artifacts
-    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    # Save train run output and log to wandb as artifact
-    out_savepath = save_train_run(outs, savedir, savename="saved_train_run")
+    ### Log artifacts (already saved by caller; just publish to wandb)
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
 

@@ -6,6 +6,8 @@ from agents.hanabi.piers_agent import PiersAgent
 from agents.hanabi.flawed_agent import FlawedAgent
 from agents.hanabi.outer_agent import OuterAgent
 from agents.hanabi.van_den_bergh_agent import VanDenBerghAgent
+from agents.hanabi.internal_agent import InternalAgent
+from agents.hanabi.cautious_agent import CautiousAgent
 from agents.hanabi.smartbot_agent import SmartBotAgent
 from agents.hanabi.obl_r2d2_agent import OBLAgentR2D2
 from agents.hanabi.agent_policy_wrappers import (
@@ -16,6 +18,8 @@ from agents.hanabi.agent_policy_wrappers import (
     HanabiFlawedPolicyWrapper,
     HanabiOuterPolicyWrapper,
     HanabiVanDenBerghPolicyWrapper,
+    HanabiInternalPolicyWrapper,
+    HanabiCautiousPolicyWrapper,
     HanabiSmartBotPolicyWrapper,
     HanabiOBLPolicyWrapper,
 )

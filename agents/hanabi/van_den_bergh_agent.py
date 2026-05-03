@@ -40,7 +40,7 @@ class VanDenBerghAgent(IGGIAgent):
         hint_mask = hint_mask.at[self.hint_rank_start:self.hint_rank_end].set(ranks_with_dispensable)
         return hint_mask * avail_mask
 
-    def _find_most_informative_hint_mask(self, partner_hand, partner_knowledge_2d, avail_mask):
+    def _find_most_informative_hint_mask(self, partner_hand, partner_knowledge_2d, avail_mask, partner_colors_revealed, partner_ranks_revealed):
         partner_colors = jnp.argmax(partner_hand.sum(axis=2), axis=1)
         partner_ranks = jnp.argmax(partner_hand.sum(axis=1), axis=1)
 
@@ -54,12 +54,16 @@ class VanDenBerghAgent(IGGIAgent):
 
         color_scores = jnp.zeros(self.num_colors)
         for c in range(self.num_colors):
-            count = ((partner_colors == c) & color_unknown).sum().astype(jnp.float32)
+            color_already_told = partner_colors_revealed[:, c] > 0
+            new_info = (~color_already_told) & color_unknown
+            count = ((partner_colors == c) & new_info).sum().astype(jnp.float32)
             color_scores = color_scores.at[c].set(count)
 
         rank_scores = jnp.zeros(self.num_ranks)
         for r in range(self.num_ranks):
-            count = ((partner_ranks == r) & rank_unknown).sum().astype(jnp.float32)
+            rank_already_told = partner_ranks_revealed[:, r] > 0
+            new_info = (~rank_already_told) & rank_unknown
+            count = ((partner_ranks == r) & new_info).sum().astype(jnp.float32)
             rank_scores = rank_scores.at[r].set(count)
 
         hint_mask = jnp.zeros(self.num_actions)
@@ -100,9 +104,12 @@ class VanDenBerghAgent(IGGIAgent):
         is_certainly_playable = self._is_certainly_playable(my_knowledge_2d, next_playable_rank)
 
         can_gamble = life_tokens > 1
+        masked_prob = jnp.where(prob_playable >= self.play_threshold, prob_playable, -1.0)
+        max_prob = jnp.max(masked_prob)
+        prob_safe_play = (masked_prob >= max_prob - 1e-6) & (masked_prob >= self.play_threshold)
         play_cond = jnp.where(
             can_gamble,
-            prob_playable >= self.play_threshold,
+            prob_safe_play,
             is_certainly_playable,
         )
         safe_play_mask = jnp.zeros(self.num_actions)
@@ -113,25 +120,23 @@ class VanDenBerghAgent(IGGIAgent):
         has_safe_play = safe_play_mask.sum() > 0
 
         is_useless = self._is_certainly_useless(my_knowledge_2d, next_playable_rank, env_state)
-        useless_discard_mask = jnp.zeros(self.num_actions)
-        useless_discard_mask = useless_discard_mask.at[self.discard_start:self.discard_end].set(
+        certain_useless_mask = jnp.zeros(self.num_actions)
+        certain_useless_mask = certain_useless_mask.at[self.discard_start:self.discard_end].set(
             is_useless.astype(jnp.float32)
         )
-        useless_discard_mask = useless_discard_mask * avail_mask
-        has_useless_discard = useless_discard_mask.sum() > 0
+        certain_useless_mask = certain_useless_mask * avail_mask
+        has_certain_useless = certain_useless_mask.sum() > 0
 
         hint_playable_mask = self._find_playable_hint_mask(
             partner_hand, next_playable_rank, avail_mask
         )
         can_hint_playable = (hint_playable_mask.sum() > 0) & (info_tokens > 0)
 
-        hint_dispensable_mask = self._find_dispensable_hint_mask(
-            partner_hand, next_playable_rank, avail_mask
-        )
-        can_hint_dispensable = (hint_dispensable_mask.sum() > 0) & (info_tokens > 0)
-
+        partner_colors_revealed = env_state.colors_revealed[partner_id]
+        partner_ranks_revealed = env_state.ranks_revealed[partner_id]
         most_info_mask = self._find_most_informative_hint_mask(
-            partner_hand, partner_knowledge_2d, avail_mask
+            partner_hand, partner_knowledge_2d, avail_mask,
+            partner_colors_revealed, partner_ranks_revealed,
         )
         most_info_best = (most_info_mask == jnp.max(most_info_mask)).astype(jnp.float32) * (most_info_mask > 0)
         can_tell_most_info = (most_info_mask.sum() > 0) & (info_tokens > 0)
@@ -150,9 +155,8 @@ class VanDenBerghAgent(IGGIAgent):
         m2l = self._mask_to_logits
         rules = [
             (has_safe_play,        m2l(safe_play_mask)),
-            (has_useless_discard,  m2l(useless_discard_mask)),
+            (has_certain_useless,  m2l(certain_useless_mask)),
             (can_hint_playable,    m2l(hint_playable_mask)),
-            (can_hint_dispensable, m2l(hint_dispensable_mask)),
             (can_tell_most_info,   m2l(most_info_best)),
             (has_prob_discard,     prob_discard_logits),
         ]

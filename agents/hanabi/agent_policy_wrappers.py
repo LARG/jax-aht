@@ -9,6 +9,8 @@ from agents.hanabi.piers_agent import PiersAgent
 from agents.hanabi.flawed_agent import FlawedAgent
 from agents.hanabi.outer_agent import OuterAgent
 from agents.hanabi.van_den_bergh_agent import VanDenBerghAgent
+from agents.hanabi.internal_agent import InternalAgent
+from agents.hanabi.cautious_agent import CautiousAgent
 from agents.hanabi.smartbot_agent import SmartBotAgent
 from agents.hanabi.obl_r2d2_agent import OBLAgentR2D2
 from agents.hanabi.bc_lstm_agent import BCLSTMAgent as LegacyBCLSTMAgent
@@ -94,7 +96,7 @@ class HanabiPiersPolicyWrapper(AgentPolicy):
                  num_actions: int = 21, using_log_wrapper: bool = False,
                  agent_names=None):
         self.policy = PiersAgent(
-            play_threshold=play_threshold, hint_threshold=hint_threshold,
+            play_threshold=play_threshold, info_threshold=hint_threshold,
             hand_size=hand_size, num_colors=num_colors,
             num_ranks=num_ranks, num_actions=num_actions,
             agent_names=agent_names,
@@ -115,12 +117,60 @@ class HanabiPiersPolicyWrapper(AgentPolicy):
 
 class HanabiFlawedPolicyWrapper(AgentPolicy):
 
-    def __init__(self, mistake_prob: float = 0.3,
+    def __init__(self, play_threshold: float = 0.25,
                  hand_size: int = 5, num_colors: int = 5, num_ranks: int = 5,
                  num_actions: int = 21, using_log_wrapper: bool = False,
                  agent_names=None):
         self.policy = FlawedAgent(
-            mistake_prob=mistake_prob,
+            play_threshold=play_threshold,
+            hand_size=hand_size, num_colors=num_colors,
+            num_ranks=num_ranks, num_actions=num_actions,
+            agent_names=agent_names,
+        )
+        self.using_log_wrapper = using_log_wrapper
+
+    def get_action(self, params, obs, done, avail_actions, hstate, rng,
+                   env_state, aux_obs=None, test_mode=False):
+        if self.using_log_wrapper:
+            env_state = env_state.env_state
+        obs = obs.reshape(-1)
+        action, new_hstate = self.policy.get_action(obs, env_state, hstate, rng)
+        return action, new_hstate
+
+    def init_hstate(self, batch_size: int, aux_info=None):
+        return self.policy.init_agent_state(aux_info["agent_id"])
+
+
+class HanabiInternalPolicyWrapper(AgentPolicy):
+
+    def __init__(self, hand_size: int = 5, num_colors: int = 5, num_ranks: int = 5,
+                 num_actions: int = 21, using_log_wrapper: bool = False,
+                 agent_names=None):
+        self.policy = InternalAgent(
+            hand_size=hand_size, num_colors=num_colors,
+            num_ranks=num_ranks, num_actions=num_actions,
+            agent_names=agent_names,
+        )
+        self.using_log_wrapper = using_log_wrapper
+
+    def get_action(self, params, obs, done, avail_actions, hstate, rng,
+                   env_state, aux_obs=None, test_mode=False):
+        if self.using_log_wrapper:
+            env_state = env_state.env_state
+        obs = obs.reshape(-1)
+        action, new_hstate = self.policy.get_action(obs, env_state, hstate, rng)
+        return action, new_hstate
+
+    def init_hstate(self, batch_size: int, aux_info=None):
+        return self.policy.init_agent_state(aux_info["agent_id"])
+
+
+class HanabiCautiousPolicyWrapper(AgentPolicy):
+
+    def __init__(self, hand_size: int = 5, num_colors: int = 5, num_ranks: int = 5,
+                 num_actions: int = 21, using_log_wrapper: bool = False,
+                 agent_names=None):
+        self.policy = CautiousAgent(
             hand_size=hand_size, num_colors=num_colors,
             num_ranks=num_ranks, num_actions=num_actions,
             agent_names=agent_names,
@@ -273,10 +323,15 @@ class HanabiBCLSTMPolicyWrapper(AgentPolicy):
         from common.save_load_utils import REPO_PATH
         abs_yaml = yaml_path if os.path.isabs(yaml_path) else os.path.join(REPO_PATH, yaml_path)
 
+        is_new_format = False
         if os.path.exists(abs_yaml):
-            from agents.bc import BCLSTMAgent, BCLSTMConfig
             with open(abs_yaml) as f:
                 cfg = yaml.safe_load(f)
+
+            is_new_format = 'preprocess_dim' in cfg or 'data_dir' in cfg
+
+        if is_new_format:
+            from agents.bc import BCLSTMAgent, BCLSTMConfig
             config = BCLSTMConfig(
                 obs_dim=cfg['obs_dim'], action_dim=cfg['action_dim'],
                 preprocess_dim=cfg.get('preprocess_dim', 1024),

@@ -2,7 +2,6 @@ defaults:
   - ppo_br/_base_
   - _self_
 
-# Mini-Hanabi (3c/3r/hand3) PPO best-response.
 TOTAL_TIMESTEPS: 100000000
 NUM_ENVS: 128
 NUM_EGO_TRAIN_SEEDS: 3
@@ -16,5 +15,5 @@ GAE_LAMBDA: 0.95
 MAX_GRAD_NORM: 0.5
 partner_agent:
   independent_agent_0.6: null
-  random_agent:
-    actor_type: random_agent
+  iggi:
+    actor_type: iggi

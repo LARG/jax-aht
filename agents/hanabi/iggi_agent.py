@@ -91,6 +91,28 @@ class IGGIAgent(BaseAgent):
         hint_mask = hint_mask.at[self.hint_rank_start:self.hint_rank_end].set(ranks_with_playable)
         return hint_mask * avail_mask
 
+    def _random_discard_mask(self, avail_mask):
+        mask = jnp.zeros(self.num_actions)
+        mask = mask.at[self.discard_start:self.discard_end].set(1.0)
+        return mask * avail_mask
+
+    def _oldest_unhinted_discard_mask(self, env_state, my_id, avail_mask):
+        colors_rev = env_state.colors_revealed[my_id]
+        ranks_rev = env_state.ranks_revealed[my_id]
+        has_hint = (colors_rev.sum(axis=1) > 0) | (ranks_rev.sum(axis=1) > 0)
+        unhinted = (~has_hint).astype(jnp.float32)
+
+        unhinted_avail = unhinted * avail_mask[self.discard_start:self.discard_end]
+        has_unhinted = unhinted_avail.sum() > 0
+        slot_indices = jnp.arange(self.hand_size).astype(jnp.float32)
+        unhinted_priority = jnp.where(unhinted_avail > 0, slot_indices, 1e9)
+        oldest_unhinted_slot = jnp.argmin(unhinted_priority)
+
+        oldest_discard_mask = jnp.zeros(self.num_actions)
+        chosen_slot = jnp.where(has_unhinted, oldest_unhinted_slot, 0)
+        oldest_discard_mask = oldest_discard_mask.at[self.discard_start + chosen_slot].set(1.0)
+        return oldest_discard_mask * avail_mask
+
     def _get_action(
         self,
         obs: jnp.ndarray,
@@ -135,23 +157,7 @@ class IGGIAgent(BaseAgent):
         useless_discard_mask = useless_discard_mask * avail_mask
         has_useless_discard = useless_discard_mask.sum() > 0
 
-        # Discard the oldest unhinted card, else oldest overall
-        colors_rev = env_state.colors_revealed[my_id]
-        ranks_rev = env_state.ranks_revealed[my_id]
-        has_hint = (colors_rev.sum(axis=1) > 0) | (ranks_rev.sum(axis=1) > 0)
-        unhinted = (~has_hint).astype(jnp.float32)
-
-        unhinted_avail = unhinted * avail_mask[self.discard_start:self.discard_end]
-        has_unhinted = unhinted_avail.sum() > 0
-
-        slot_indices = jnp.arange(self.hand_size).astype(jnp.float32)
-        unhinted_priority = jnp.where(unhinted_avail > 0, slot_indices, 1e9)
-        oldest_unhinted_slot = jnp.argmin(unhinted_priority)
-
-        oldest_discard_mask = jnp.zeros(self.num_actions)
-        chosen_slot = jnp.where(has_unhinted, oldest_unhinted_slot, 0)
-        oldest_discard_mask = oldest_discard_mask.at[self.discard_start + chosen_slot].set(1.0)
-        oldest_discard_mask = oldest_discard_mask * avail_mask
+        oldest_discard_mask = self._oldest_unhinted_discard_mask(env_state, my_id, avail_mask)
         has_oldest_discard = oldest_discard_mask.sum() > 0
 
         random_hint_mask = jnp.zeros(self.num_actions)

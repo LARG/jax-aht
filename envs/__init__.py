@@ -145,6 +145,5 @@ if __name__ == "__main__":
     print(env)
     env = make_env('overcooked-v1', {'layout': 'cramped_room'})
     print(env)
-    print(env)
     env = make_env('hanabi', {'num_agents': 2})
     print(env)

@@ -22,10 +22,6 @@ from common.save_load_utils import save_train_run
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from marl.ppo_utils import Transition, batchify, unbatchify, _create_minibatches
-from agents.hanabi.other_play import (
-    sample_color_permutation, permute_observation, permute_action,
-    inverse_permutation
-)
 
 
 def initialize_agent(actor_type, algorithm_config, env, init_rng):
@@ -86,56 +82,17 @@ def make_train(config, env, logger, progress_callback=None):
             def _env_step(runner_state, unused):
                 train_state, env_state, last_obs, last_done, last_hstate, rng = runner_state
 
-                rng, act_rng, op_rng = jax.random.split(rng, 3)
+                rng, act_rng = jax.random.split(rng, 2)
 
                 last_obs_batch = batchify(last_obs, env.agents, config["NUM_ACTORS"])
                 last_done_batch = batchify(last_done, env.agents, config["NUM_ACTORS"])
 
-                # Other-Play augmentation (Hu et al. 2020): randomly permute
-                # colors for agent 1's observations. Only active for Hanabi
-                # when USE_OTHER_PLAY=True in the config.
-                if config.get("USE_OTHER_PLAY", False):
-                    ekw = config["ENV_KWARGS"]
-                    nc = ekw.get("num_colors", 5)
-                    nr = ekw.get("num_ranks", 5)
-                    hs = ekw.get("hand_size", 5)
-                    na = ekw.get("num_agents", 2)
-                    mit = ekw.get("max_info_tokens", 8)
-                    mlt = ekw.get("max_life_tokens", 3)
-                    ncr = ekw.get("num_cards_of_rank", [3, 2, 2, 2, 1])
-                    deck_sz = nc * sum(ncr)
-                    disc_per_color = sum(ncr)
-                    perm = sample_color_permutation(op_rng, nc)
-                    inv_perm = inverse_permutation(perm)
-                    # last_obs_batch: (num_actors,) = (num_envs * num_agents,)
-                    # Agent 1's obs are at indices [num_envs:2*num_envs]
-                    n_envs = config["NUM_ENVS"]
-                    agent1_obs = last_obs_batch[n_envs:]  # (num_envs, obs_dim)
-                    # Apply permutation to each env's agent1 obs
-                    agent1_obs_perm = jax.vmap(
-                        lambda obs: permute_observation(
-                            obs, perm, nc, nr, hs, na, mit, mlt,
-                            deck_sz, disc_per_color)
-                    )(agent1_obs)
-                    last_obs_batch = last_obs_batch.at[n_envs:].set(agent1_obs_perm)
-
+                # Other-Play color permutation, when active, is applied by
+                # SymmetryAugmentationWrapper inside env.reset/step/get_avail_actions.
+                # See envs/common/symmetry_wrapper.py and envs/hanabi/other_play.py.
                 avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)
                 avail_actions = jax.lax.stop_gradient(batchify(avail_actions,
                     env.agents, config["NUM_ACTORS"]).astype(jnp.float32))
-
-                # Other-Play: also permute avail_actions for agent 1
-                # Color-hint action legality depends on the color mapping
-                if config.get("USE_OTHER_PLAY", False):
-                    # avail_actions shape: (num_actors, num_actions)
-                    # Agent 1's avail at [n_envs:2*n_envs]
-                    a1_avail = avail_actions[n_envs:]  # (n_envs, num_actions)
-                    hint_start = 2 * hs
-                    hint_end = hint_start + nc
-                    # Permute the color-hint portion of avail_actions
-                    color_avail = a1_avail[:, hint_start:hint_end]  # (n_envs, nc)
-                    color_avail_perm = color_avail[:, perm]  # rearrange by permutation
-                    a1_avail = a1_avail.at[:, hint_start:hint_end].set(color_avail_perm)
-                    avail_actions = avail_actions.at[n_envs:].set(a1_avail)
 
                 action, value, pi, new_hstate = policy.get_action_value_policy(
                     params=train_state.params,
@@ -153,15 +110,6 @@ def make_train(config, env, logger, progress_callback=None):
 
                 env_act = unbatchify(action, env.agents, config["NUM_ENVS"], env.num_agents)
                 env_act = {k:v.flatten() for k,v in env_act.items()}
-
-                # Other-Play: inverse-permute agent 1's color-hint actions
-                if config.get("USE_OTHER_PLAY", False):
-                    nc = config["ENV_KWARGS"].get("num_colors", 5)
-                    hs = config["ENV_KWARGS"].get("hand_size", 5)
-                    agent1_key = env.agents[1]
-                    env_act[agent1_key] = jax.vmap(
-                        lambda a: permute_action(a, perm, inv_perm, hs, nc)
-                    )(env_act[agent1_key])
 
                 rng, _rng = jax.random.split(rng)
                 rng_step = jax.random.split(_rng, config["NUM_ENVS"])
@@ -430,6 +378,21 @@ def make_train(config, env, logger, progress_callback=None):
 def run_ippo(config, logger):
     algorithm_config = dict(config.algorithm)
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
+
+    # Other-Play (Hu et al. 2020): wrap env so one agent sees a permuted
+    # color view. Hanabi-only: the symmetry depends on the color/rank obs
+    # layout. Generalizable to other envs by adding new EnvSymmetry impls.
+    if algorithm_config.get("USE_OTHER_PLAY", False):
+        if algorithm_config["ENV_NAME"] != "hanabi":
+            raise ValueError(
+                "USE_OTHER_PLAY currently only supports env_name='hanabi'. "
+                "Add a new EnvSymmetry subclass to use this on other envs."
+            )
+        from envs.hanabi.other_play import HanabiColorSymmetry
+        from envs.common.symmetry_wrapper import SymmetryAugmentationWrapper
+        sym = HanabiColorSymmetry(**algorithm_config["ENV_KWARGS"])
+        env = SymmetryAugmentationWrapper(env, sym)
+
     env = LogWrapper(env)
 
     num_updates = (
