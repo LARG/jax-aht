@@ -136,9 +136,8 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
 
 
 if __name__ == "__main__":
-    repo_id = "jaxaht/eval-teammates"
+    default_repo_id = "jaxaht/eval-teammates"
 
-    # "zip" entries use download_and_unzip_hf_file; "dir" entries use download_hf_directory.
     data_files = {
         "best_returns_teammates": {
             "type": "zip",
@@ -160,9 +159,34 @@ if __name__ == "__main__":
             "filename": "overcooked-v1",
             "target_directory": "eval_teammates/",
         },
+        "hanabi_teammates": {
+            "type": "dir",
+            "filename": "hanabi",
+            "target_directory": "eval_teammates/",
+            "repo_id": "lainwired/hanabi-aht-partners",
+        },
+        "mini-hanabi_teammates": {
+            "type": "dir",
+            "filename": "mini-hanabi",
+            "target_directory": "eval_teammates/",
+            "repo_id": "lainwired/hanabi-aht-partners",
+        },
+        "hanabi_obl_weights": {
+            "type": "dir",
+            "filename": "obl-r2d2-flax",
+            "target_directory": "agents/hanabi/",
+            "repo_id": "lainwired/hanabi-aht-partners",
+        },
+        "hanabi_bc_lstm_weights": {
+            "type": "dir",
+            "filename": "bc_lstm",
+            "target_directory": "agents/bc_weights/hanabi_full/",
+            "repo_id": "lainwired/hanabi-aht-partners",
+        },
     }
 
     for data_name, data_info in data_files.items():
+        repo_id = data_info.get("repo_id", default_repo_id)
         if data_info["type"] == "zip":
             success = download_and_unzip_hf_file(
                 repo_id=repo_id,

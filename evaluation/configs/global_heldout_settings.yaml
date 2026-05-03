@@ -444,8 +444,6 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 250.62], [0.0, 67.19], [0.0, 48.12], [0.0, 51.25], [0.0, 101.56]]
   hanabi: # Full 2-player Hanabi (5 colors, 5 ranks) held-out partner set
-    # obl_r2d2 requires downloading pretrained weights:
-    #   bash agents/hanabi/download_obl_r2d2.sh
     iggi:
       actor_type: iggi
       performance_bounds:
