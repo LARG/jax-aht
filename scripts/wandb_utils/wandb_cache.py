@@ -10,9 +10,12 @@ Summary metric values are stored as '_summary.<name>' columns.
 from __future__ import annotations
 
 import json
+import pickle
 import re
+import tempfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import wandb
 
@@ -185,6 +188,84 @@ def build_hparam_df(
     sweep_df["_score"] = raw_df["_score"].values
     sweep_df = sweep_df.dropna()
     return filter_hparams(sweep_df, algorithm, FILTERED_HYPERPARAMETER_KV)
+
+
+def fetch_run_eval_metrics_cached(
+    run_id: str,
+    entity: str,
+    project: str,
+    cache_dir: Path = DEFAULT_CACHE_DIR,
+    force_recompute: bool = False,
+) -> dict:
+    """Download and cache the heldout_eval_metrics artifact for a wandb run.
+
+    Stores the loaded arrays as a pickle so subsequent calls skip the network
+    round-trip and the orbax restore overhead.
+
+    Returns:
+        dict mapping metric name -> np.ndarray
+    """
+    cache_path = Path(cache_dir) / "eval_metrics" / f"{entity}__{project}__{run_id}.pkl"
+
+    if not force_recompute and cache_path.exists():
+        print(f"Loading eval metrics from cache: {cache_path}")
+        with open(cache_path, "rb") as f:
+            return pickle.load(f)
+
+    print(f"Fetching heldout_eval_metrics artifact for run {entity}/{project}/{run_id} ...")
+    api = wandb.Api()
+    run = api.run(f"{entity}/{project}/{run_id}")
+
+    heldout_artifact = None
+    for artifact in run.logged_artifacts():
+        if "heldout_eval_metrics" in artifact.name:
+            heldout_artifact = artifact
+            break
+
+    if heldout_artifact is None:
+        raise ValueError(f"No heldout_eval_metrics artifact found for run {run_id}.")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        artifact_dir = heldout_artifact.download(root=tmp)
+        from common.save_load_utils import load_train_run
+        import jax
+        eval_metrics = load_train_run(artifact_dir)
+
+    # Convert all leaves to plain numpy arrays for pickling
+    eval_metrics = jax.tree_util.tree_map(
+        lambda x: np.array(x) if hasattr(x, "__array__") else x,
+        eval_metrics,
+    )
+
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(cache_path, "wb") as f:
+        pickle.dump(eval_metrics, f)
+    print(f"Cached eval metrics: {cache_path}")
+    return eval_metrics
+
+
+def fetch_run_config_cached(
+    run_id: str,
+    entity: str,
+    project: str,
+    cache_dir: Path = DEFAULT_CACHE_DIR,
+) -> dict:
+    """Fetch and cache a wandb run's config dict."""
+    cache_path = Path(cache_dir) / "run_configs" / f"{entity}__{project}__{run_id}.json"
+
+    if cache_path.exists():
+        with open(cache_path, "r") as f:
+            return json.load(f)
+
+    print(f"Fetching config for run {entity}/{project}/{run_id} ...")
+    api = wandb.Api()
+    run = api.run(f"{entity}/{project}/{run_id}")
+    config = run.config
+
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(cache_path, "w") as f:
+        json.dump(config, f, indent=2)
+    return config
 
 
 def extract_metric(df: pd.DataFrame, metric: str) -> pd.DataFrame:

@@ -1,0 +1,239 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import argparse
+
+from scripts.paper_vis.process_data import load_results_for_task
+from scripts.paper_vis.plot_globals import (
+    TITLE_FONTSIZE, AXIS_LABEL_FONTSIZE, LEGEND_FONTSIZE,
+    TASK_TO_AXIS_DISPLAY_NAME, TASK_TO_METRIC_NAME,
+)
+
+plt.rcParams['xtick.labelsize'] = AXIS_LABEL_FONTSIZE
+plt.rcParams['ytick.labelsize'] = AXIS_LABEL_FONTSIZE
+
+def plot_single_bar_chart(results, metric_name: str, aggregate_stat_name: str,
+                          task_display_name: str, plot_title: str,
+                          save: bool, savedir: str, show_plot: bool, savename: str):
+    """Bar chart for a single task.
+
+    Each algorithm is a differently-colored bar. Algorithm names appear in a
+    legend to the right of the axes; the x-axis is labelled by the task name.
+    """
+    method_display_names = list(results.keys())
+    num_methods = len(method_display_names)
+    bar_width = min(0.8 / num_methods, 0.25)
+
+    fig, ax = plt.subplots(figsize=(max(4, num_methods * bar_width * 2 + 4), 5))
+    colors = plt.cm.tab10(np.linspace(0, 1, int(num_methods * 1.5)))
+
+    for i, display_name in enumerate(method_display_names):
+        stat_key = f"overall_{aggregate_stat_name}"
+        point_estimate = results[display_name][metric_name][stat_key]
+        lower_ci = results[display_name][metric_name]["overall_lower_ci"]
+        upper_ci = results[display_name][metric_name]["overall_upper_ci"]
+        yerr = [[point_estimate - lower_ci], [upper_ci - point_estimate]]
+        x = (i - num_methods / 2 + 0.5) * bar_width
+        ax.bar([x], [point_estimate], width=bar_width, label=display_name,
+               yerr=yerr, alpha=0.7, color=colors[i], ecolor='black', capsize=5, zorder=10)
+
+    ax.set_xticks([0])
+    ax.set_xticklabels([task_display_name], fontsize=AXIS_LABEL_FONTSIZE)
+    ax.set_xlim(-num_methods * bar_width / 2 - bar_width, num_methods * bar_width / 2 + bar_width)
+    ax.set_ylabel(f'{aggregate_stat_name.capitalize()} Normalized Return', fontsize=AXIS_LABEL_FONTSIZE)
+    if plot_title:
+        ax.set_title(plot_title, fontsize=TITLE_FONTSIZE)
+    ax.legend(fontsize=LEGEND_FONTSIZE, loc='center left', bbox_to_anchor=(1.01, 0.5), framealpha=0.8)
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+
+    plt.tight_layout()
+    if save:
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        plt.savefig(os.path.join(savedir, f"{savename}.pdf"), bbox_inches='tight')
+        print(f"Saved figure to {os.path.join(savedir, f'{savename}.pdf')}")
+    if show_plot:
+        plt.show()
+
+def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_name: str,
+                   plot_type: str, plot_title: str, save: bool, savedir: str, show_plot: bool, savename: str):
+    '''Plots a bar chart where all tasks are plotted as groups on the same bar chart.'''
+    tasks = list(all_task_results.keys())
+    num_tasks = len(tasks)
+    
+    # Get method names from the first task (assuming all tasks have the same methods)
+    first_task = tasks[0]
+    method_display_names = list(all_task_results[first_task].keys())
+    num_methods = len(method_display_names)
+    
+    # Width of each bar
+    bar_width = min(0.8 / num_methods, 0.35)
+    
+    # Set up the figure
+    if num_methods > 2:
+        fig, ax = plt.subplots(figsize=(int(num_tasks * 1.8), 6))
+    else:
+        fig, ax = plt.subplots(figsize=(num_tasks * 1.3, 6))
+    # previously was int(num_tasks * 1.8) = 6*1.8 = 10.8
+    # now is int(num_tasks * (num_methods+2) * bar_width) = 6* (6+3) * 0.2 = 10.8
+    # previous for ablationsi was 6*1.8 = 10.8
+    # now for ablations is 6*4*0.2 = 4.8
+
+    # Set up x positions for tasks and bars within each task group
+    task_positions = np.arange(num_tasks)
+    
+    # Colors for each method
+    colors = plt.cm.tab10(np.linspace(0, 1, int(num_methods*1.5)))
+    
+    # Plot bars for each method across all tasks
+    for i, method_name in enumerate(method_display_names):
+        y_values = []
+        y_errors = []
+
+        for task in tasks:
+            method_results = all_task_results[task][method_name]
+            task_metric_name = TASK_TO_METRIC_NAME.get(task, metric_name) if metric_name == "task_specific" else metric_name
+            
+            stat_key = f"overall_{aggregate_stat_name}"
+            point_estimate = method_results[task_metric_name][stat_key]
+            lower_ci = method_results[task_metric_name]["overall_lower_ci"]
+            upper_ci = method_results[task_metric_name]["overall_upper_ci"]
+            
+            y_values.append(point_estimate)
+            y_errors.append([point_estimate - lower_ci, upper_ci - point_estimate])
+        
+        # Position bars for this method within each task group
+        x_positions = task_positions + (i - num_methods/2 + 0.5) * bar_width
+        
+        # Transpose y_errors to match expected format for yerr
+        y_errors_transposed = np.array(y_errors).T
+        
+        # Plot bars for this method
+        ax.bar(x_positions, y_values, width=bar_width, label=method_name, 
+               yerr=y_errors_transposed, alpha=0.7, color=colors[i], 
+               ecolor='black', capsize=5, zorder=10)
+    
+    # Set x-axis tick labels to task names
+    task_display_names = [TASK_TO_AXIS_DISPLAY_NAME[task] for task in tasks]
+    ax.set_xticks(task_positions)
+    ax.set_xticklabels(task_display_names, rotation=0, ha="center", fontsize=AXIS_LABEL_FONTSIZE)
+
+    # Set labels and title
+    ax.set_ylabel(f'{aggregate_stat_name.capitalize()} {metric_name.replace("_", " ").title() if metric_name != "task_specific" else "Normalized Return"}', 
+                  fontsize=AXIS_LABEL_FONTSIZE)
+    ax.set_title(plot_title, fontsize=TITLE_FONTSIZE)
+    
+    ax.legend(fontsize=LEGEND_FONTSIZE, loc='center', 
+              ncols=1 if plot_type != "core" else 2,
+              bbox_to_anchor=(0.80, 0.9), # legend loc if under plot: (0.5, -0.25)
+              framealpha=0.8)
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    
+    if save:
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        plt.savefig(os.path.join(savedir, f"{savename}.pdf"))
+        print(f"Saved figure to {os.path.join(savedir, f'{savename}.pdf')}")
+    if show_plot:
+        plt.show()
+
+
+if __name__ == "__main__":
+    from scripts.paper_vis.plot_globals import (
+        GLOBAL_HELDOUT_CONFIG, SAVE_DIR,
+        EGO_BENCHMARK_RUNS, UNIFIED_BENCHMARK_RUNS,
+        METHOD_TO_DISPLAY_NAME, OEL_METHODS,
+    )
+
+    parser = argparse.ArgumentParser(description="Generate benchmark bar charts")
+    parser.add_argument("--plot_type", type=str, default="unified",
+                        choices=["unified", "ego"],
+                        help="unified: teammate-generation methods; ego: ego-training methods")
+    parser.add_argument("--use_best_returns_normalization", action="store_true",
+                        help="Renormalize using best observed returns across all methods")
+    parser.add_argument("--show_plots", action="store_true",
+                        help="Show plots in addition to saving them")
+    parser.add_argument("--save_dir", type=str, default=SAVE_DIR,
+                        help="Directory to save figures")
+    parser.add_argument("--tasks", nargs="+",
+                        help="Tasks to plot. Defaults to all tasks with benchmark runs.")
+    parser.add_argument("--force_recompute", action="store_true",
+                        help="Re-fetch artifacts and recompute summary stats")
+    args = parser.parse_args()
+
+    # Collect tasks that have at least one benchmark run defined
+    all_tasks = sorted(
+        set(EGO_BENCHMARK_RUNS.keys()) | set(UNIFIED_BENCHMARK_RUNS.keys())
+    )
+    task_list = args.tasks if args.tasks else all_tasks
+
+    norm_suffix = "br_normalization" if args.use_best_returns_normalization else "original_normalization"
+
+    all_task_results = {}
+    for task_name in task_list:
+        run_specs = []
+
+        if args.plot_type == "unified":
+            for method_name, run_id in UNIFIED_BENCHMARK_RUNS.get(task_name, {}).items():
+                if not run_id:
+                    continue
+                display_name = METHOD_TO_DISPLAY_NAME.get(method_name, method_name)
+                is_oel = method_name in OEL_METHODS
+                run_specs.append((display_name, run_id, is_oel))
+
+        elif args.plot_type == "ego":
+            for method_name, teammate_runs in EGO_BENCHMARK_RUNS.get(task_name, {}).items():
+                for teammate_type, run_id in teammate_runs.items():
+                    if not run_id:
+                        continue
+                    base_name = METHOD_TO_DISPLAY_NAME.get(method_name, method_name)
+                    display_name = f"{base_name} ({teammate_type})"
+                    is_oel = method_name in OEL_METHODS
+                    run_specs.append((display_name, run_id, is_oel))
+
+        if not run_specs:
+            print(f"No benchmark runs configured for {task_name}, skipping.")
+            continue
+
+        all_task_results[task_name] = load_results_for_task(
+            task_name,
+            run_specs,
+            force_recompute=args.force_recompute,
+            renormalize_metrics=args.use_best_returns_normalization,
+        )
+
+    if not all_task_results:
+        print("No results to plot.")
+        raise SystemExit(1)
+
+    agg_stat = GLOBAL_HELDOUT_CONFIG["global_heldout_settings"]["AGGREGATE_STAT"]
+
+    if len(all_task_results) == 1:
+        task_name = next(iter(all_task_results))
+        metric_name = TASK_TO_METRIC_NAME.get(task_name, "returned_episode_returns")
+        from scripts.paper_vis.plot_globals import TASK_TO_PLOT_TITLE
+        safe_task = task_name.replace("/", "_").replace("-", "_")
+        plot_single_bar_chart(
+            all_task_results[task_name],
+            metric_name=metric_name,
+            aggregate_stat_name=agg_stat,
+            task_display_name=TASK_TO_AXIS_DISPLAY_NAME.get(task_name, task_name),
+            plot_title=TASK_TO_PLOT_TITLE.get(task_name, task_name),
+            save=True,
+            savedir=args.save_dir,
+            savename=f"{safe_task}_{args.plot_type}_{norm_suffix}",
+            show_plot=args.show_plots,
+        )
+    else:
+        plot_all_tasks_bar_chart(
+            all_task_results,
+            metric_name="task_specific",
+            aggregate_stat_name=agg_stat,
+            plot_type="core",
+            save=True,
+            savedir=args.save_dir,
+            savename=f"all_tasks_{args.plot_type}_{norm_suffix}",
+            plot_title="",
+            show_plot=args.show_plots,
+        )

@@ -1,10 +1,120 @@
 """Stores hard-coded variables for paper plots."""
-
+import omegaconf
 
 SAVE_DIR = "results/figures"
+ENTITY = "aht-project"
+
+####### BENCHMARK RUNS #######
+BENCHMARK_PROJECT = "aht-benchmark"
+EGO_BENCHMARK_RUNS = {
+    "lbf/lbf_7x7_nolevels": {
+        "ppo_ego": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+        "liam": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+        "meliba": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+    },
+    "overcooked-v1/coord_ring": {
+        "ppo_ego": {
+            "fcp_teammates": "0wzr6nbv",
+            "rotate_teammates": "7mrfwnra"
+        }, 
+        "liam": {
+            "fcp_teammates": "e8y4gy49",
+            "rotate_teammates": "4vdq0mjv"
+        }, 
+        "meliba": {
+            "fcp_teammates": "x6gmp9uc",
+            "rotate_teammates": "c9o32dg3"
+        },
+    },
+}
+
+UNIFIED_BENCHMARK_RUNS = {
+    "lbf/lbf_7x7_nolevels": {
+        # "fcp": "", 
+        # "brdiv": "", 
+        # "lbrdiv": "",
+        # "comedi": "", 
+        # "rotate": "", 
+        # "cole": "", 
+        # "trajedi": "",
+    },
+    "overcooked-v1/coord_ring": {
+        "fcp": "ikrlj1qe", 
+        "brdiv": "r4a3ncl2", 
+        "lbrdiv": "x012q7qc",
+        "comedi": "apud5hnw", 
+        # "rotate": "24titmb6", # TODO: rerun ecause log_eval_out was off 
+        # "cole": "jjwgq8c2",  # TODO: rerun because log_eval_out was off
+        # "trajedi": "",
+    }
+}
+
+####### HYPERPARAMETER SWEEPS #######
 HYPERPARAM_DEFAULT_METRIC = "HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean"
 HYPERPARAM_PROJECT = "aht-parameter-sweep"
-ENTITY = "aht-project"
+
+HYPERPARAM_SWEEPS = {
+    "lbf/lbf_7x7_nolevels": {
+        "ppo_ego": "yje7een6", 
+        "liam": "xqiaed80", 
+        "meliba": "y4ddadn8",
+        "fcp": "22cojezv", 
+        "brdiv": "d3e7c0fx", 
+        "lbrdiv": "rni853js",
+        "comedi": "d1dt0arj", 
+        "rotate": "slpf9grh", 
+        "cole": "pr0fwbdp", 
+        "trajedi": "dqsezvy1",
+    },
+    "overcooked-v1/coord_ring": {
+        "ppo_ego": "qeafl8r7", 
+        "liam": "pbq863zp", 
+        "meliba": "i532vemb",
+        "fcp": "fubwmomo", 
+        "brdiv": "wgapxysb", 
+        "lbrdiv": "eu0g1orm",
+        "comedi": "xeikmue5", 
+        "rotate": "lgqrnsmt", 
+        "cole": "irstlaiv", 
+        "trajedi": "j26xa39y",
+    },
+}
+
+# values that were mistakenly included in the
+# hyperparameter sweep that now need to be excluded
+FILTERED_HYPERPARAMETER_KV = {
+    "trajedi": {
+        "TRAJEDI_COEF": [0.0]
+    }
+}
+
+####### PLOTTING SETTINGS #######
+TASK_TO_PLOT_TITLE = {
+    "lbf/lbf_7x7_nolevels": "LBF 7x7",
+    "overcooked-v1/cramped_room": "Cramped Room (Overcooked)",
+    "overcooked-v1/asymm_advantages": "Asymmetric Advantages (Overcooked)",
+    "overcooked-v1/forced_coord": "Forced Coordination (Overcooked)",
+    "overcooked-v1/counter_circuit": "Counter Circuit (Overcooked)",
+    "overcooked-v1/coord_ring": "Coordination Ring (Overcooked)",
+}
+
+TASK_TO_AXIS_DISPLAY_NAME = {
+    "lbf/lbf_7x7_nolevels": "LBF 7x7",
+    "overcooked-v1/cramped_room": "CR",
+    "overcooked-v1/asymm_advantages": "AA",
+    "overcooked-v1/forced_coord": "FC",
+    "overcooked-v1/counter_circuit": "CC",
+    "overcooked-v1/coord_ring": "CoR",
+}
 
 METHOD_TO_DISPLAY_NAME = {
     "ppo_ego": "PPO",
@@ -28,23 +138,43 @@ TASK_TO_DISPLAY_NAME = {
     "overcooked-v1/coord_ring": "Overcooked: Coordination Ring",
 }
 
-HYPERPARAM_SWEEPS = {
-    "lbf/lbf_7x7_nolevels": {
-        "ppo_ego": "yje7een6", "liam": "xqiaed80", "meliba": "y4ddadn8",
-        "fcp": "22cojezv", "brdiv": "d3e7c0fx", "lbrdiv": "rni853js",
-        "comedi": "d1dt0arj", "rotate": "slpf9grh", "cole": "pr0fwbdp", "trajedi": "dqsezvy1",
-    },
-    "overcooked-v1/coord_ring": {
-        "ppo_ego": "qeafl8r7", "liam": "pbq863zp", "meliba": "i532vemb",
-        "fcp": "fubwmomo", "brdiv": "wgapxysb", "lbrdiv": "eu0g1orm",
-        "comedi": "xeikmue5", "rotate": "lgqrnsmt", "cole": "irstlaiv", "trajedi": "j26xa39y",
-    },
+TASK_TO_ENV_NAME = {
+    "lbf/lbf_7x7_nolevels": "lbf",
+    "overcooked-v1/cramped_room": "overcooked-v1",
+    "overcooked-v1/asymm_advantages": "overcooked-v1",
+    "overcooked-v1/forced_coord": "overcooked-v1",
+    "overcooked-v1/counter_circuit": "overcooked-v1",
+    "overcooked-v1/coord_ring": "overcooked-v1",
 }
 
-# values that were mistakenly included in the
-# hyperparameter sweep that now need to be excluded
-FILTERED_HYPERPARAMETER_KV = {
-    "trajedi": {
-        "TRAJEDI_COEF": [0.0]
-    }
+TASK_TO_METRIC_NAME = {
+    "lbf/lbf_7x7_nolevels": "returned_episode_returns",
+    "overcooked-v1/cramped_room": "returned_episode_returns",
+    "overcooked-v1/asymm_advantages": "returned_episode_returns",
+    "overcooked-v1/forced_coord": "returned_episode_returns",
+    "overcooked-v1/counter_circuit": "returned_episode_returns",
+    "overcooked-v1/coord_ring": "returned_episode_returns",
 }
+
+# Methods that use open-ended learning (OEL); these have 5D eval metrics
+# shape (num_seeds, num_oel_iter, num_heldout_agents, num_eval_episodes, num_agents_per_game)
+OEL_METHODS = ["rotate"]
+
+GLOBAL_HELDOUT_CONFIG = omegaconf.OmegaConf.load("evaluation/configs/global_heldout_settings.yaml")
+CACHE_FILENAME = "cached_summary_metrics.pkl"
+HELDOUT_CURVES_CACHE_FILENAME = "cached_heldout_curves.pkl"
+TITLE_FONTSIZE = 20
+AXIS_LABEL_FONTSIZE = 18
+LEGEND_FONTSIZE = 14
+
+# def get_heldout_agents(task_name, task_config_path):
+    # rng = jax.random.PRNGKey(0)
+    # heldout_cfg = GLOBAL_HELDOUT_CONFIG["heldout_set"][task_name]
+    # env_config = omegaconf.OmegaConf.load(task_config_path)
+    # env_name = env_config["ENV_NAME"]
+    # env_kwargs = env_config["ENV_KWARGS"]
+
+    # env = make_env(env_name, env_kwargs)
+    # heldout_agents = load_heldout_set(heldout_cfg, env, task_name, env_kwargs, rng)
+
+    # return heldout_agents
