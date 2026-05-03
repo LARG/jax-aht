@@ -2,9 +2,9 @@ defaults:
   - fcp/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 3.3e6
+TOTAL_TIMESTEPS: 4.23e6
 NUM_ENVS: 96
-PARTNER_POP_SIZE: 50
+PARTNER_POP_SIZE: 39
 LR: 1e-3
 UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 4

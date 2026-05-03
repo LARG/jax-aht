@@ -80,9 +80,9 @@ HYPERPARAM_SWEEPS = {
         "liam": "yibcruuz", 
         "meliba": "6jdo5rjv",
         "fcp": "nivg4xvf", 
-        # "brdiv": "fdg6dw1n", # running 
+        "brdiv": "fdg6dw1n", 
         "lbrdiv": "y23unh8y",
-        # "comedi": "7e9yf5zg",  # running
+        "comedi": "7e9yf5zg",
         # "rotate": "t4hufinh", # running
         "cole": "kbvghubr", 
         "trajedi": "mavnqv7e",
@@ -93,7 +93,7 @@ HYPERPARAM_SWEEPS = {
         "meliba": "dva0ffdq",
         "fcp": "e23khyjt", 
         "brdiv": "19gmzemf", 
-        # "lbrdiv": "w8abf056", # running
+        "lbrdiv": "w8abf056",
         # "comedi": "vt0xnwxc",  # running
         "rotate": "hrer8x3c",  # done but excluded
         "cole": "jg6700d6", 

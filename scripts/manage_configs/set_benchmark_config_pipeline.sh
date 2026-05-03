@@ -6,7 +6,7 @@
 # Use --force-recompute flag to force recomputation of best hparams 
 # (instead of using locally cached values from wandb)
 python scripts/manage_configs/apply_best_hparams.py \
-    --task "lbf/lbf_7x7_nolevels" --force-recompute --dry-run
+    --task "lbf/lbf_7x7_nolevels" --dry-run
 
 # 2. Set benchmark timesteps
 python scripts/manage_configs/update_timesteps.py teammate_generation/ \
