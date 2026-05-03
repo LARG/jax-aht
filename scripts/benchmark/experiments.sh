@@ -10,7 +10,7 @@
 # Configure the algorithms, tasks, and label in the section below.
 
 # === Configuration ===
-algos=("comedi")
+algos=("brdiv" "lbrdiv" "comedi")
 label="neurips:benchmark"
 num_seeds=5
 num_checkpoints=1   # used for all algorithms except FCP (see below)
@@ -30,9 +30,9 @@ skip_algos_ego="ppo_br"
 skip_algos_teammate=""
 
 tasks=(
-    "lbf/lbf_7x7_nolevels"
-    # "lbf/lbf_12x12"
-    "overcooked-v1/coord_ring"
+    # "lbf/lbf_7x7_nolevels"
+    "lbf/lbf_12x12"
+    # "overcooked-v1/coord_ring"
     # "overcooked-v1/asymm_advantages"
     # "overcooked-v1/counter_circuit"
     # "overcooked-v1/cramped_room"
@@ -142,7 +142,7 @@ for algo in "${algos[@]}"; do
             checkpoint_arg="algorithm.NUM_CHECKPOINTS=${num_checkpoints}"
         fi
 
-        if PYTHONPATH=. python "${entry_point}/run.py" \
+        if XLA_FLAGS=--xla_disable_hlo_passes=fusion XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${entry_point}/run.py" \
             algorithm="${algo}/${task}" \
             task="${task}" \
             label="${label}" \
