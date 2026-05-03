@@ -26,6 +26,7 @@ domain pizzav2 {
 
 		COLLISION-PENALTY : {non-fluent, real, default = -130.0};     // Penalty for collisions
 		STEP-PENALTY : {non-fluent, real, default = -1};          // Penalty for each step taken per pizza undelivered (to encourage faster deliveries)
+		DELIVERY-REWARD : {non-fluent, real, default = 10.0};     // Reward for each successful pizza delivery
 		MAX-CONNECTIONS : {non-fluent, int, default = 4}; // maximum number of connections any location has (used for the new drive action)
 
     	CAPACITY(truck) : { non-fluent, int, default = 1 };		  // Capacity of each truck (number of pizzas it can hold at once)
@@ -194,15 +195,15 @@ domain pizzav2 {
 
 	reward = [
 		sum_{?t : truck} [
-			// penalty for collisions
 			if (collision'(?t))
 				then COLLISION-PENALTY + (STEP-PENALTY * deliveryCreditRemaining(?t))
 			else if (doneDelivering'(?t))
-				then 0.0 // no penalty if truck is done delivering
-			// penalty for each step taken
-			// size of penalty depends on how many deliveries this truck is still responsible for that could be rewarded (to encourage faster deliveries)
+				// truck just finished: credit any final deliveries made this step
+				then DELIVERY-REWARD * sum_{?l : location} [deliveryRewarded(?t, ?l)]
 			else
+				// step penalty plus reward for any deliveries made this step
 				(STEP-PENALTY * deliveryCreditRemaining(?t))
+				+ DELIVERY-REWARD * sum_{?l : location} [deliveryRewarded(?t, ?l)]
 		]
 	];
 

@@ -13,17 +13,16 @@ GAMMA: 0.99
 # SAP value bounds.
 # Observed SAP episode return: -200 (40 steps x -1 x 5 orders, no collision possible).
 # Buffer added for safety.
-VMIN: -20000
-VMAX: 0
+# With DELIVERY-REWARD=10, each truck earns up to +50 for delivering 5 orders.
+# SAP optimal: +50 delivery - ~20 step penalty ≈ +30 net. Random: ~-200.
+# The zero_dist init at VMAX=50 is now only 20 units from the optimal return,
+# so the C51 prior fights training far less than with VMAX=0.
+VMIN: -250
+VMAX: 50
 
-# Joint value bounds.
-JOINT_VMIN: -25000
-JOINT_VMAX: 0
-
-# Increase bins so bin_width = 20000/499 ≈ 40 units — enough to distinguish
-# -200 from -400 (5 bins apart) without triggering the mysterious -14800 issue
-# that appears when VMIN is set tight (-250/-500).
-NUM_BINS: 500
+# Joint: combined delivery reward up to +100, collision worst case ~-450.
+JOINT_VMIN: -500
+JOINT_VMAX: 100
 
 ANNEAL_LR: false
 NUM_EPOCHS: 4

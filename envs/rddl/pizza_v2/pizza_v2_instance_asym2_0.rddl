@@ -14,6 +14,7 @@ non-fluents pizza_v2_asym2_0 {
 	non-fluents {
 		COLLISION-PENALTY = -220;
 		STEP-PENALTY = -1;
+		DELIVERY-REWARD = 10;
 
 		CAPACITY(t1) = 2;
 		CAPACITY(t2) = 2;
