@@ -113,7 +113,7 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "d3e7c0fx", 
         "lbrdiv": "rni853js",
         "comedi": "d1dt0arj", 
-        "rotate": "slpf9grh", 
+        # "rotate": "slpf9grh", # done but excluded
         "cole": "pr0fwbdp", 
         "trajedi": "dqsezvy1",
     },

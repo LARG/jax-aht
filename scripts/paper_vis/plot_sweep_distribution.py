@@ -152,7 +152,7 @@ if __name__ == "__main__":
                         help="Task name (e.g. lbf/lbf_7x7_nolevels).")
     parser.add_argument("--force-recompute", action="store_true",
                         help="Re-fetch from wandb, ignoring the local cache.")
-    parser.add_argument("--max-hparams", type=int, default=130,
+    parser.add_argument("--max-hparams", type=int, default=200,
                         help="Max unique hyperparam combinations to visualize per algorithm. "
                              "If exceeded, randomly sample down to this limit.")
     args = parser.parse_args()
@@ -180,5 +180,5 @@ if __name__ == "__main__":
         print(f"  {algo}: {len(df)} unique hparam combos")
 
     out_path = Path(SAVE_DIR) / f"sweep_distribution_{ALGO_TYPE}_{TASK.replace('/', '_')}.pdf"
-    title = f"{TASK_TO_DISPLAY_NAME[TASK]}, {ALGO_TYPE.capitalize()} Algorithms"
+    title = f"{TASK_TO_DISPLAY_NAME[TASK]}"
     plot_distribution(scores_by_algo, title, out_path)

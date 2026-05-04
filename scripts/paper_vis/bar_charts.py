@@ -25,7 +25,7 @@ def plot_single_bar_chart(results, metric_name: str, aggregate_stat_name: str,
     bar_width = min(0.8 / num_methods, 0.25)
 
     fig, ax = plt.subplots(figsize=(max(4, num_methods * bar_width * 2 + 4), 5))
-    colors = plt.cm.tab10(np.linspace(0, 1, int(num_methods * 1.5)))
+    colors = plt.cm.tab10(np.arange(num_methods) / 10)
 
     for i, display_name in enumerate(method_display_names):
         stat_key = f"overall_{aggregate_stat_name}"
@@ -61,12 +61,14 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
     tasks = list(all_task_results.keys())
     num_tasks = len(tasks)
     
-    # Get method names present in every task (order preserved from first task)
-    first_task = tasks[0]
-    method_display_names = [
-        m for m in all_task_results[first_task]
-        if all(m in all_task_results[t] for t in tasks)
-    ]
+    # Collect all method names from any task, order preserved (first task first)
+    seen: set[str] = set()
+    method_display_names: list[str] = []
+    for t in tasks:
+        for m in all_task_results[t]:
+            if m not in seen:
+                method_display_names.append(m)
+                seen.add(m)
     num_methods = len(method_display_names)
     
     # Width of each bar
@@ -86,34 +88,35 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
     task_positions = np.arange(num_tasks)
     
     # Colors for each method
-    colors = plt.cm.tab10(np.linspace(0, 1, int(num_methods*1.5)))
+    colors = plt.cm.tab10(np.arange(num_methods) / 10)
     
-    # Plot bars for each method across all tasks
+    # Plot bars for each method across all tasks (skip tasks where method is absent)
     for i, method_name in enumerate(method_display_names):
+        x_positions = []
         y_values = []
         y_errors = []
 
-        for task in tasks:
+        for j, task in enumerate(tasks):
+            if method_name not in all_task_results[task]:
+                continue
             method_results = all_task_results[task][method_name]
             task_metric_name = TASK_TO_METRIC_NAME.get(task, metric_name) if metric_name == "task_specific" else metric_name
-            
+
             stat_key = f"overall_{aggregate_stat_name}"
             point_estimate = method_results[task_metric_name][stat_key]
             lower_ci = method_results[task_metric_name]["overall_lower_ci"]
             upper_ci = method_results[task_metric_name]["overall_upper_ci"]
-            
+
+            x_positions.append(task_positions[j] + (i - num_methods / 2 + 0.5) * bar_width)
             y_values.append(point_estimate)
             y_errors.append([point_estimate - lower_ci, upper_ci - point_estimate])
-        
-        # Position bars for this method within each task group
-        x_positions = task_positions + (i - num_methods/2 + 0.5) * bar_width
-        
-        # Transpose y_errors to match expected format for yerr
+
+        if not y_values:
+            continue
+
         y_errors_transposed = np.array(y_errors).T
-        
-        # Plot bars for this method
-        ax.bar(x_positions, y_values, width=bar_width, label=method_name, 
-               yerr=y_errors_transposed, alpha=0.7, color=colors[i], 
+        ax.bar(x_positions, y_values, width=bar_width, label=method_name,
+               yerr=y_errors_transposed, alpha=0.7, color=colors[i],
                ecolor='black', capsize=5, zorder=10)
     
     # Set x-axis tick labels to task names
@@ -128,7 +131,7 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
     
     ax.legend(fontsize=LEGEND_FONTSIZE, loc='center', 
               ncols=1 if plot_type != "core" else 2,
-              bbox_to_anchor=(0.80, 0.9), # legend loc if under plot: (0.5, -0.25)
+              bbox_to_anchor=(0.73, 0.9), # legend loc if under plot: (0.5, -0.25)
               framealpha=0.8)
     ax.yaxis.grid(True, linestyle='--', alpha=0.7)
     plt.tight_layout()
