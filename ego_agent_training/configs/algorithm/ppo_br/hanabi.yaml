@@ -1,0 +1,16 @@
+defaults:
+  - ppo_br/_base_
+  - _self_
+
+TOTAL_TIMESTEPS: 10000000
+NUM_ENVS: 32
+NUM_EGO_TRAIN_SEEDS: 1
+LR: 3e-4
+ENT_COEF: 0.01
+CLIP_EPS: 0.2
+ANNEAL_LR: false
+UPDATE_EPOCHS: 10
+partner_agent:
+  independent_agent_0.6: null
+  iggi:
+    actor_type: iggi

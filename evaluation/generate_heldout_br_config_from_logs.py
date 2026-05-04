@@ -32,20 +32,6 @@ class LogRecord:
     source_file: str
 
 
-def _task_prefix_to_task_name(prefix: str) -> str:
-    if prefix == "lbf":
-        return "lbf"
-    return f"overcooked-v1/{prefix}"
-
-
-def _task_name_to_prefix(task_name: str) -> str:
-    if task_name == "lbf":
-        return "lbf"
-    if task_name.startswith("overcooked-v1/"):
-        return task_name.split("/", 1)[1]
-    return task_name
-
-
 def parse_checkpoint_logs(log_files: list[Path]) -> dict[str, LogRecord]:
     records: dict[str, LogRecord] = {}
     for log_file in sorted(log_files):
@@ -70,9 +56,8 @@ def parse_checkpoint_logs(log_files: list[Path]) -> dict[str, LogRecord]:
 def _expected_job_keys(best_response_set: DictConfig) -> set[str]:
     keys: set[str] = set()
     for task_name, agents in best_response_set.items():
-        prefix = _task_name_to_prefix(str(task_name))
         for agent_name in agents.keys():
-            keys.add(f"{prefix}.{agent_name}")
+            keys.add(f"{task_name}.{agent_name}")
     return keys
 
 
@@ -98,8 +83,7 @@ def generate_config_from_logs(
             unknown_job_keys.append(job_key)
             continue
 
-        prefix, agent_name = job_key.split(".", 1)
-        task_name = _task_prefix_to_task_name(prefix)
+        task_name, agent_name = job_key.split(".", 1)
 
         if task_name not in best_response_set or agent_name not in best_response_set[task_name]:
             unknown_job_keys.append(job_key)

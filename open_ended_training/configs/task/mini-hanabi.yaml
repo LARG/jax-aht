@@ -1,0 +1,13 @@
+# Mini-Hanabi: open-ended training task config.
+# Mirrors ego_agent_training/configs/task/mini-hanabi.yaml.
+ENV_NAME: hanabi
+ROLLOUT_LENGTH: 128
+ENV_KWARGS:
+  num_agents: 2
+  num_colors: 3
+  num_ranks: 3
+  hand_size: 3
+  max_info_tokens: 5
+  max_life_tokens: 3
+  num_cards_of_rank: [2, 2, 1]
+TASK_NAME: mini-hanabi

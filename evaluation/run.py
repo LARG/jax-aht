@@ -17,13 +17,13 @@ def run_evaluation(cfg):
     '''
     print(OmegaConf.to_yaml(cfg, resolve=True))
 
-    if "heldout_ego" in cfg["name"]:
+    if "heldout_ego" in cfg["name"] or "validation_ego" in cfg["name"]:
         run_heldout_evaluation(cfg, print_metrics=True)
 
     elif "heldout_xp" in cfg["name"]:
         run_heldout_xp_evaluation(cfg, print_metrics=True)
 
-    else: 
+    else:
         raise ValueError(f"Evaluator {cfg['name']} not found.")
 
 if __name__ == '__main__':

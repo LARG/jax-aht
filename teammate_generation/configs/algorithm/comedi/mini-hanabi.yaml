@@ -1,0 +1,27 @@
+defaults:
+  - comedi/_base_
+  - _self_
+
+# Mini-Hanabi (3c/3r/hand3) CoMeDi config.
+TOTAL_TIMESTEPS_PER_ITERATION: 2e6
+PARTNER_POP_SIZE: 5
+LR: 5e-4
+UPDATE_EPOCHS: 4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+ANNEAL_LR: true
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+MAX_GRAD_NORM: 0.5
+COMEDI_ALPHA: 0.2
+COMEDI_BETA: 0.4
+ego_train_algorithm:
+  TOTAL_TIMESTEPS: 1e8
+  LR: 5e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: true
+  UPDATE_EPOCHS: 4
+  GAMMA: 0.999
+  GAE_LAMBDA: 0.95
+  MAX_GRAD_NORM: 0.5
