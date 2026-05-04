@@ -1,6 +1,7 @@
 program: teammate_generation/run.py
 name: fcp-mini-hanabi
 method: random
+run_cap: 150
 entity: aht-project
 project: aht-parameter-sweep
 metric:

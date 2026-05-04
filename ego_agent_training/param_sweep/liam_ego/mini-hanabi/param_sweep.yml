@@ -1,6 +1,7 @@
 program: ego_agent_training/run.py
 name: liam_ego-mini-hanabi
 method: random
+run_cap: 150
 entity: aht-project
 project: aht-parameter-sweep
 metric:
