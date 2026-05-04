@@ -95,6 +95,10 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
     '''
     heldout_agents = {}
     for agent_name, agent_config in heldout_config.items():
+        # Allow env-specific configs to null out entries inherited from a
+        # base config (skip entries set to null in the task-specific block).
+        if agent_config is None:
+            continue
         params_list = None
         idx_labels = None
         test_mode = agent_config.get("test_mode", False)

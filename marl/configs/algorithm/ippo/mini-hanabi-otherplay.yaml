@@ -1,0 +1,25 @@
+defaults:
+  - ippo/_base_
+  - _self_
+
+# Mini-Hanabi IPPO with Other-Play augmentation (Hu et al. 2020).
+# Same hyperparameters as mini-hanabi.yaml but with color permutation enabled.
+TOTAL_TIMESTEPS: 1e8
+
+SEED: 1234567
+LR: .0005
+NUM_ENVS: 128
+UPDATE_EPOCHS: 15
+NUM_MINIBATCHES: 4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+
+ANNEAL_LR: False
+MAX_GRAD_NORM: 0.5
+
+ACTOR_TYPE: mlp
+FC_HIDDEN_DIM: 256
+ACTIVATION: 'relu'
+
+# Other-Play specific
+USE_OTHER_PLAY: true
