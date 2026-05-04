@@ -94,7 +94,7 @@ HYPERPARAM_SWEEPS = {
         "fcp": "e23khyjt", 
         "brdiv": "19gmzemf", 
         "lbrdiv": "w8abf056",
-        # "comedi": "vt0xnwxc",  # running
+        "comedi": "vt0xnwxc",
         "rotate": "hrer8x3c",  # done but excluded
         "cole": "jg6700d6", 
         "trajedi": "dua855jm",
