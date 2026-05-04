@@ -176,6 +176,16 @@ class JaxRDDLEnv:
             value, key, _error, mp = expr(fls, nfls, mp, key)
             fls[cpf] = value.astype(dtype)
 
+        # Propagate next-state values: pyRDDLGym stores state-fluent CPF results
+        # under primed keys (e.g. "numPizzasInTruck'") but the next step reads
+        # from the unprimed keys ("numPizzasInTruck"). Copy x' -> x so the state
+        # actually advances each step.
+        for k in list(fls.keys()):
+            if k.endswith("'"):
+                base = k[:-1]
+                if base in fls:
+                    fls[base] = fls[k]
+
         # Reward
         reward, key, _, mp = self._reward_fn(fls, nfls, mp, key)
 
