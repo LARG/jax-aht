@@ -75,7 +75,7 @@ UNIFIED_BENCHMARK_RUNS = {
         "trajedi": "ilklfw2f",
     },
     "lbf/lbf_12x12": {
-        "fcp": "zz7f0x27", 
+        # "fcp": "zz7f0x27", # NOT DONE 
         "brdiv": "b3xozodw", 
         "lbrdiv": "dft2f0do",
         "comedi": "7qizaam5", 
@@ -137,7 +137,7 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "19gmzemf", 
         "lbrdiv": "w8abf056",
         "comedi": "vt0xnwxc",
-        "rotate": "hrer8x3c",  # done but excluded
+        # "rotate": "hrer8x3c",  # done but excluded
         "cole": "jg6700d6", 
         "trajedi": "dua855jm",
     },
@@ -149,7 +149,7 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "wgapxysb", 
         "lbrdiv": "eu0g1orm",
         "comedi": "xeikmue5", 
-        "rotate": "lgqrnsmt", 
+        # "rotate": "lgqrnsmt", 
         "cole": "irstlaiv", 
         "trajedi": "j26xa39y",
     },
@@ -175,6 +175,7 @@ TASK_TO_PLOT_TITLE = {
 
 TASK_TO_AXIS_DISPLAY_NAME = {
     "lbf/lbf_7x7_nolevels": "LBF 7x7",
+    "lbf/lbf_12x12": "LBF 12x12",
     "overcooked-v1/cramped_room": "CR",
     "overcooked-v1/asymm_advantages": "AA",
     "overcooked-v1/forced_coord": "FC",
@@ -200,12 +201,18 @@ TASK_LEGACY_NAMES = {
 }
 
 TASK_TO_DISPLAY_NAME = {
-    "lbf/lbf_7x7_nolevels": "LBF 7x7 (No Levels)",
-    "overcooked-v1/coord_ring": "Overcooked: Coordination Ring",
+    "lbf/lbf_7x7_nolevels": "LBF 7x7",
+    "lbf/lbf_12x12": "LBF 12x12",
+    "overcooked-v1/cramped_room": "Cramped Room (Overcooked)",
+    "overcooked-v1/coord_ring": "Coordination Ring (Overcooked)",
+    "overcooked-v1/asymm_advantages": "Asymmetric Advantages (Overcooked)",
+    "overcooked-v1/forced_coord": "Forced Coordination (Overcooked)",
+    "overcooked-v1/counter_circuit": "Counter Circuit (Overcooked)",
 }
 
 TASK_TO_ENV_NAME = {
     "lbf/lbf_7x7_nolevels": "lbf",
+    "lbf/lbf_12x12": "lbf",
     "overcooked-v1/cramped_room": "overcooked-v1",
     "overcooked-v1/asymm_advantages": "overcooked-v1",
     "overcooked-v1/forced_coord": "overcooked-v1",
@@ -215,6 +222,7 @@ TASK_TO_ENV_NAME = {
 
 TASK_TO_METRIC_NAME = {
     "lbf/lbf_7x7_nolevels": "returned_episode_returns",
+    "lbf/lbf_12x12": "returned_episode_returns",
     "overcooked-v1/cramped_room": "returned_episode_returns",
     "overcooked-v1/asymm_advantages": "returned_episode_returns",
     "overcooked-v1/forced_coord": "returned_episode_returns",

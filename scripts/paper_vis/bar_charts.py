@@ -61,9 +61,12 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
     tasks = list(all_task_results.keys())
     num_tasks = len(tasks)
     
-    # Get method names from the first task (assuming all tasks have the same methods)
+    # Get method names present in every task (order preserved from first task)
     first_task = tasks[0]
-    method_display_names = list(all_task_results[first_task].keys())
+    method_display_names = [
+        m for m in all_task_results[first_task]
+        if all(m in all_task_results[t] for t in tasks)
+    ]
     num_methods = len(method_display_names)
     
     # Width of each bar

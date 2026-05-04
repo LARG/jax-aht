@@ -26,6 +26,7 @@ from scripts.paper_vis.plot_globals import (
     HYPERPARAM_PROJECT,
     HYPERPARAM_DEFAULT_METRIC,
     HYPERPARAM_SWEEPS,
+    TASK_LEGACY_NAMES,
 )
 from scripts.utils import ALGO_TO_ENTRY_POINT
 from scripts.wandb_utils.wandb_cache import fetch_sweep_cached, extract_metric
@@ -133,7 +134,7 @@ def plot_distribution(
     for idx in range(n, nrows * ncols):
         axes[idx // ncols][idx % ncols].set_visible(False)
 
-    fig.suptitle(title, fontsize=12, y=0.95)
+    fig.suptitle(title, fontsize=12, y=0.97)
     plt.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path, bbox_inches="tight")
@@ -151,7 +152,7 @@ if __name__ == "__main__":
                         help="Task name (e.g. lbf/lbf_7x7_nolevels).")
     parser.add_argument("--force-recompute", action="store_true",
                         help="Re-fetch from wandb, ignoring the local cache.")
-    parser.add_argument("--max-hparams", type=int, default=400,
+    parser.add_argument("--max-hparams", type=int, default=130,
                         help="Max unique hyperparam combinations to visualize per algorithm. "
                              "If exceeded, randomly sample down to this limit.")
     args = parser.parse_args()
@@ -169,14 +170,15 @@ if __name__ == "__main__":
 
     scores_by_algo: dict[str, np.ndarray] = {}
     for algo, sweep_id in task_sweeps.items():
+        task_leaf = TASK_LEGACY_NAMES.get(TASK, TASK.split("/")[-1])
         df = fetch_sweep_cached(sweep_id, ENTITY, HYPERPARAM_PROJECT,
                                 force_recompute=FORCE_RECOMPUTE,
-                                expected_name_parts=[algo, TASK])
+                                expected_name_parts=[algo, task_leaf])
         df = extract_metric(df, HYPERPARAM_DEFAULT_METRIC)
         df = deduplicate_and_sample(df, MAX_NUM_TO_VISUALIZE)
         scores_by_algo[algo] = df["_score"].values
         print(f"  {algo}: {len(df)} unique hparam combos")
 
     out_path = Path(SAVE_DIR) / f"sweep_distribution_{ALGO_TYPE}_{TASK.replace('/', '_')}.pdf"
-    title = f"{TASK_TO_DISPLAY_NAME[TASK]}: Hyperparameter Performance Distribution ({ALGO_TYPE.capitalize()} Algorithms)"
+    title = f"{TASK_TO_DISPLAY_NAME[TASK]}, {ALGO_TYPE.capitalize()} Algorithms"
     plot_distribution(scores_by_algo, title, out_path)
