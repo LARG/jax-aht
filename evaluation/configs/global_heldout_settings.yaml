@@ -93,19 +93,6 @@ heldout_set:
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
-    # TODO: incorporate for LBF variation with levels
-    # greedy_lowest_level:
-    #   actor_type: greedy_agent
-    #   heuristic: lowest_level
-    #   performance_bounds:
-    #     percent_eaten: [0.0, 100.0]
-    #     returned_episode_returns: [0.0, 0.5]
-    # greedy_highest_level:
-    #   actor_type: greedy_agent
-    #   heuristic: highest_level
-    #   performance_bounds:
-    #     percent_eaten: [0.0, 100.0]
-    #     returned_episode_returns: [0.0, 0.5]
     lbrdiv-conf:
       path: "eval_teammates/lbf/lbrdiv/2026-03-02_13-01-20/saved_train_run/"
       actor_type: actor_with_conditional_critic
