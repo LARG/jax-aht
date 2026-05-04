@@ -21,6 +21,34 @@ EGO_BENCHMARK_RUNS = {
             "rotate_teammates": ""
         }, 
     },
+    "lbf/lbf_12x12": {
+        "ppo_ego": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+        "liam": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+        "meliba": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+    },
+    "overcooked-v1/cramped_room": {
+        "ppo_ego": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+        "liam": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+        "meliba": {
+            "fcp_teammates": "",
+            "rotate_teammates": ""
+        }, 
+    },
     "overcooked-v1/coord_ring": {
         "ppo_ego": {
             "fcp_teammates": "0wzr6nbv",
@@ -39,22 +67,36 @@ EGO_BENCHMARK_RUNS = {
 
 UNIFIED_BENCHMARK_RUNS = {
     "lbf/lbf_7x7_nolevels": {
-        # "fcp": "", 
-        # "brdiv": "", 
-        # "lbrdiv": "",
-        # "comedi": "", 
-        # "rotate": "", 
-        # "cole": "", 
-        # "trajedi": "",
+        "fcp": "1bhjc1ri", 
+        "brdiv": "3i68f80z", 
+        "lbrdiv": "jj2ycq8o",
+        "comedi": "us4jl8ch", 
+        "cole": "9mmd6r45", 
+        "trajedi": "ilklfw2f",
+    },
+    "lbf/lbf_12x12": {
+        "fcp": "zz7f0x27", 
+        "brdiv": "b3xozodw", 
+        "lbrdiv": "dft2f0do",
+        "comedi": "7qizaam5", 
+        "cole": "wom49daz", 
+        "trajedi": "ipsuzp4z",
+    },
+    "overcooked-v1/cramped_room": {
+        "fcp": "n1mplxeg", 
+        "brdiv": "0ruf65cb", 
+        "lbrdiv": "kfiwwxbu",
+        # "comedi": "", # TODO: run!
+        "cole": "ga4gg8bs", 
+        "trajedi": "2xtvi3x6",
     },
     "overcooked-v1/coord_ring": {
         "fcp": "ikrlj1qe", 
         "brdiv": "r4a3ncl2", 
         "lbrdiv": "x012q7qc",
-        "comedi": "apud5hnw", 
-        # "rotate": "24titmb6", # TODO: rerun ecause log_eval_out was off 
-        # "cole": "jjwgq8c2",  # TODO: rerun because log_eval_out was off
-        # "trajedi": "",
+        "comedi": "ehz0njkk", 
+        "cole": "gcfkxqas",
+        "trajedi": "bkuq6gvy",
     }
 }
 
