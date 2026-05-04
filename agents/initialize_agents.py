@@ -79,6 +79,7 @@ def initialize_mlp_agent(config, env, rng):
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
+        fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)
@@ -91,6 +92,7 @@ def initialize_actor_with_double_critic(config, env, rng):
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
+        fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)
@@ -103,6 +105,7 @@ def initialize_pseudo_actor_with_double_critic(config, env, rng):
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
+        fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)
@@ -116,6 +119,7 @@ def initialize_actor_with_conditional_critic(config, env, rng):
         obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         pop_size=config["POP_SIZE"],
         activation=config.get("ACTIVATION", "tanh"),
+        fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)
@@ -129,6 +133,7 @@ def initialize_pseudo_actor_with_conditional_critic(config, env, rng):
         obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         pop_size=config["POP_SIZE"],
         activation=config.get("ACTIVATION", "tanh"),
+        fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)

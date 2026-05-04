@@ -65,21 +65,34 @@ def train_ego_agent(config, logger, partner_params, partner_population):
                               out["final_params"])
     ego_policy, init_ego_params = initialize_ego_agent(algorithm_config, env, init_rng)
 
-    # Log metrics
+    # Save checkpoint BEFORE logging metrics. Metrics logging reshapes
+    # large tensors that can OOM on long runs (e.g. 1e9 steps produces
+    # ~7 GB eval_ep_last_info). Saving first ensures the checkpoint
+    # survives even if metrics logging fails.
+    # Hit this the hard way: lost ~20h of FCP 1e9 ego training to an OOM
+    # in log_ego_metrics AFTER training finished, before the save. Order
+    # matters here: save, then log. And always .device_get() before big
+    # reshapes.
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    out_savepath = save_train_run(out, savedir, savename="ego_train_run")
+    log.info(f"Saved ego checkpoint to {out_savepath}")
+
+    # Log metrics (transfer to CPU to avoid GPU OOM on reshape)
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
-    log_ego_metrics(config, out, logger, metric_names)
+    log_ego_metrics(config, out, logger, metric_names, out_savepath)
 
     return ego_params, ego_policy, init_ego_params
 
-def log_ego_metrics(config, out, logger, metric_names: tuple):
+def log_ego_metrics(config, out, logger, metric_names: tuple, out_savepath: str):
     '''Log metrics for the ego agent returned by the above train_ego_agent function.
     '''
-    train_metrics = out["metrics"]
+    # Transfer metrics to CPU before reshaping to avoid GPU OOM on long runs.
+    train_metrics = jax.device_get(out["metrics"])
 
     # each leaf of out["metrics"] has shape (num_seeds, num_ego_train_seeds, num_updates, ...)
-    # we combine the first two dimensions together to get a single seeds dimension, 
+    # we combine the first two dimensions together to get a single seeds dimension,
     num_seeds, num_ego_train_seeds = train_metrics["returned_episode_returns"].shape[:2]
-    train_metrics = jax.tree.map(lambda x: x.reshape(num_seeds * num_ego_train_seeds, *x.shape[2:]), 
+    train_metrics = jax.tree.map(lambda x: x.reshape(num_seeds * num_ego_train_seeds, *x.shape[2:]),
                                  train_metrics)
 
     #### Extract train metrics ####
@@ -114,15 +127,10 @@ def log_ego_metrics(config, out, logger, metric_names: tuple):
         logger.log_item("Train/EgoValueLoss", average_ego_value_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoActorLoss", average_ego_actor_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
-        
+
         logger.commit()
-    
-    # Saving artifacts
-    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    # TODO: in the future, add video logging feature
-    out_savepath = save_train_run(out, savedir, savename="ego_train_run")
+
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="ego_train_run", path=out_savepath, type_name="train_run")
-        # Cleanup locally logged out file
     if not config["local_logger"]["save_train_out"]:
         shutil.rmtree(out_savepath)

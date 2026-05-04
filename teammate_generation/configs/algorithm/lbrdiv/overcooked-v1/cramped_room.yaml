@@ -11,8 +11,9 @@ UPDATE_EPOCHS: 15
 NUM_MINIBATCHES: 16
 CLIP_EPS: 0.05
 ENT_COEF: 0.01
-ego_train_algorithm: 
+ego_train_algorithm:
   TOTAL_TIMESTEPS: 3e7
+  NUM_ENVS: 256
   LR: 1e-4
   ENT_COEF: 0.01
   CLIP_EPS: 0.05

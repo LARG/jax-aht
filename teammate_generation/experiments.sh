@@ -1,12 +1,16 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="comedi"
-label="heldout_teammates"
-num_seeds=1
+algo="lbrdiv"
+label="val_teammates"
+num_seeds=3
+num_checkpoints=3
+seed=217389
 save_local_outs=true
 save_online_outs=false
 wandb_mode=online
+train_ego=false
+run_heldout_eval=false
 
 # Create log directory if it doesn't exist
 mkdir -p results/teammate_generation_logs/${algo}/${label}
@@ -44,6 +48,10 @@ for task in "${tasks[@]}"; do
     if python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" \
     label="${label}" \
     algorithm.NUM_SEEDS="${num_seeds}" \
+    algorithm.NUM_CHECKPOINTS="${num_checkpoints}" \
+    algorithm.TRAIN_SEED="${seed}" \
+    train_ego="${train_ego}" \
+    run_heldout_eval="${run_heldout_eval}" \
     logger.mode="${wandb_mode}" \
     logger.log_train_out="${save_online_outs}" \
     logger.log_eval_out="${save_online_outs}" \

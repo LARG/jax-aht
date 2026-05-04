@@ -27,6 +27,15 @@ class LogWrapper(JaxMARLWrapper):
         self.replace_info = replace_info
 
     @partial(jax.jit, static_argnums=(0,))
+    def get_avail_actions(self, state):
+        # Handle both LogEnvState (from run_episodes passing full state)
+        # and already-unwrapped WrappedEnvState (from training code that
+        # manually does env_state.env_state before calling).
+        if isinstance(state, LogEnvState):
+            return self._env.get_avail_actions(state.env_state)
+        return self._env.get_avail_actions(state)
+
+    @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey) -> Tuple[chex.Array, State]:
         obs, env_state = self._env.reset(key)
         state = LogEnvState(

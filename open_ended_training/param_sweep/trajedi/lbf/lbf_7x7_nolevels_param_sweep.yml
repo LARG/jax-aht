@@ -1,6 +1,6 @@
 program: open_ended_training/run.py
 name: trajedi-lbf
-method: random
+method: bayes
 entity: aht-project
 project: aht-parameter-sweep
 metric:
@@ -8,19 +8,14 @@ metric:
   name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
 
 parameters:
-  algorithm.NUM_ENVS_CONFS:
-    values: [60, 80, 100]
-  algorithm.NUM_ENVS_BR:
-    values: [8, 16, 32]
-  algorithm.PARTNER_POP_SIZE:
-    values: [3, 5, 10]
   algorithm.TRAJEDI_COEF:
-    values: [0.0001, 0.001, 0.01, 0.1, 0.0]
+    values: [0.0001, 0.001, 0.01, 0.1]
   algorithm.LR:
     values: [1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
   algorithm.ENT_COEF:
     values: [0.1, 0.05, 0.03, 0.01, 0.005]
-
+  algorithm.CLIP_EPS:
+    values: [0.5, 0.3, 0.1, 0.03, 0.05]
 
 command:
   - ${env}
@@ -28,11 +23,11 @@ command:
   - ${program}
   - task=lbf/lbf_7x7_nolevels
   - algorithm=trajedi/lbf/lbf_7x7_nolevels
-  - algorithm.TOTAL_TIMESTEPS=1e8
   - run_heldout_eval=true
   - logger.mode=online
   - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - label="param_sweep"
+  - algorithm.TOTAL_TIMESTEPS=1e8
   - ${args_no_hyphens}
