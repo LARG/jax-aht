@@ -336,6 +336,10 @@ def collect_heldout_pairwise_trajectories(
         actor_type = agent_cfg.get("actor_type", "")
         if actor_type in HEURISTIC_ACTOR_TYPES:
             policy = initialize_heuristic_agent_from_config(agent_cfg, agent_name, task_name, env_kwargs)
+            # Trajectory collection doesn't use a log wrapper (env state is WrappedEnvState,
+            # not LogWrapper(WrappedEnvState)), so base_agent does the single unwrap itself.
+            if hasattr(policy, 'using_log_wrapper'):
+                policy.using_log_wrapper = False
             return policy, {}, {}
         policy, params, init_params, _ = initialize_rl_agent_from_config(agent_cfg, agent_name, env, rng)
         params = jax.tree_map(jnp.squeeze, params)
