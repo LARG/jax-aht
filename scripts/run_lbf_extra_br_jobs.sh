@@ -28,7 +28,7 @@ log_msg() {
 
 record_checkpoint() {
   local checkpoint_log="$1"
-  local task_variant="$2"
+  local task_name="$2"
   local job_key="$3"
   local label="$4"
   local checkpoint_path="$5"
@@ -38,7 +38,7 @@ record_checkpoint() {
   fi
 
   {
-    echo "[$(timestamp)] task_variant=$task_variant job_key=$job_key label=$label"
+    echo "[$(timestamp)] task_name=$task_name job_key=$job_key label=$label"
     echo "checkpoint_path=$checkpoint_path"
     echo
   } >> "$checkpoint_log"
@@ -58,7 +58,7 @@ already_logged() {
 }
 
 run_job() {
-  local task_variant="$1"
+  local task_name="$1"
   local job_key="$2"
   local label="$3"
   local partner_override="$4"
@@ -68,8 +68,8 @@ run_job() {
   log_msg "START $job_key on GPU $gpu_id"
 
   CUDA_VISIBLE_DEVICES="$gpu_id" XLA_PYTHON_CLIENT_PREALLOCATE=false python3 ego_agent_training/run.py \
-    task="lbf/$task_variant" \
-    algorithm="ppo_br/lbf/$task_variant" \
+    task="$task_name" \
+    algorithm="ppo_br/$task_name" \
     label="$label" \
     run_heldout_eval=false \
     algorithm.TOTAL_TIMESTEPS="$TOTAL_TIMESTEPS" \
@@ -81,16 +81,16 @@ run_job() {
   ckpt_path="$(find results -path "*${label}*ego_train_run" | sort | tail -n 1 || true)"
 
   log_msg "DONE $job_key on GPU $gpu_id"
-  record_checkpoint "$checkpoint_log" "$task_variant" "$job_key" "$label" "$ckpt_path"
+  record_checkpoint "$checkpoint_log" "$task_name" "$job_key" "$label" "$ckpt_path"
 }
 
 declare -a JOBS
 add_job() {
-  local task_variant="$1"
+  local task_name="$1"
   local job_key="$2"
   local label="$3"
   local partner_override="$4"
-  JOBS+=("$task_variant|$job_key|$label|$partner_override")
+  JOBS+=("$task_name|$job_key|$label|$partner_override")
 }
 
 parse_gpu_list() {
@@ -135,10 +135,10 @@ run_all_jobs() {
 
   local running=0
   local idx=0
-  local spec task_variant job_key label partner_override gpu_id
+  local spec task_name job_key label partner_override gpu_id
 
   for spec in "${JOBS[@]}"; do
-    IFS='|' read -r task_variant job_key label partner_override <<< "$spec"
+    IFS='|' read -r task_name job_key label partner_override <<< "$spec"
 
     if already_logged "$job_key"; then
       log_msg "SKIP $job_key (already present in ${CHECKPOINT_LOG_PREFIX}_*.txt)"
@@ -152,7 +152,7 @@ run_all_jobs() {
 
     gpu_id="${GPU_IDS[$((idx % num_gpus))]}"
 
-    run_job "$task_variant" "$job_key" "$label" "$partner_override" "$gpu_id" &
+    run_job "$task_name" "$job_key" "$label" "$partner_override" "$gpu_id" &
     running=$((running + 1))
     idx=$((idx + 1))
   done
