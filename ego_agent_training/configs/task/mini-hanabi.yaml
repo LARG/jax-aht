@@ -1,8 +1,3 @@
-# Mini-Hanabi: ego agent training task config.
-# Simplified 2-player Hanabi (3 colors, 3 ranks, hand size 3).
-# Faster iteration and lower memory than full Hanabi.
-#
-# Max score: 9 (3 colors x 3 ranks). Observation dim: 191. Action space: 13.
 ENV_NAME: hanabi
 ROLLOUT_LENGTH: 128
 ENV_KWARGS:

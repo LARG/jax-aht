@@ -1,5 +1,3 @@
-# Mini-Hanabi: teammate generation task config.
-# Mirrors ego_agent_training/configs/task/mini-hanabi.yaml.
 ENV_NAME: hanabi
 ROLLOUT_LENGTH: 128
 ENV_KWARGS:

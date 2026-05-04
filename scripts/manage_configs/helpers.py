@@ -24,6 +24,7 @@ EASY_TASKS: list[str] = [
     "lbf/lbf_12x12",
     "overcooked-v1/cramped_room",
     "overcooked-v1/asymm_advantages",
+    "mini-hanabi",
 ]
 
 # Hard tasks: slower to train, higher complexity.

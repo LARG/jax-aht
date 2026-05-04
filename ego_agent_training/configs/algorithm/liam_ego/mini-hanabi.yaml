@@ -1,21 +1,15 @@
 defaults:
   - liam_ego/_base_
-  - _self_
+  - _self_ # values from this file override the values from the base file
 
-# Mini-Hanabi (3c/3r/hand3) LIAM ego.
-TOTAL_TIMESTEPS: 100000000
-NUM_ENVS: 128
-NUM_EGO_TRAIN_SEEDS: 3
+TOTAL_TIMESTEPS: 7e6
 LR: 3e-4
 ENCODER_DECODER_LR: 7e-4
 ENT_COEF: 0.001
 CLIP_EPS: 0.1
-ANNEAL_LR: true
-UPDATE_EPOCHS: 4
-GAMMA: 0.999
-GAE_LAMBDA: 0.95
-MAX_GRAD_NORM: 0.5
+ANNEAL_LR: false
+UPDATE_EPOCHS: 5
 ENCODER_HIDDEN_DIM: 128
-ENCODER_OUTPUT_DIM: 20
+ENCODER_OUTPUT_DIM: 20 # Embedding dimension
 DECODER_HIDDEN_DIM: 128
-POLICY_INPUT_DIM: 20
+POLICY_INPUT_DIM: 20 # Embedding dimension + observation dimension (obs dim added in the run script)
