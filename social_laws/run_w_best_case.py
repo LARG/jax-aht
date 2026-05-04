@@ -277,29 +277,28 @@ def run_training(cfg):
     # conditioned on their single agent projections
     cfg["algorithm"]["WORST_CASE"] = False  # Set to False to train best case policies
     if cfg["algorithm"]["ALG"] == "ppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
-        pass
-        # if cfg["algorithm"]["JOINT_CENTRALIZED"]:
-        #     for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-        #         joint_param, joint_policy, joint_init_param = run_ppo_joint_centralized_training(cfg, wandb_logger,
-        #                                                                                     agent_params,
-        #                                                                                     agent_policies,
-        #                                                                                     agent_vf_params,
-        #                                                                                     agent_vf_policies,
-        #                                                                                     agent_idx=agent_idx)
-        #         best_joint_policies.append(joint_policy)
-        #         best_joint_init_params.append(joint_init_param)
-        #         best_joint_params.append(joint_param)
-        # else:
-        #     for agent_idx in range(cfg.NUM_EXPT_AGENTS):
-        #         joint_param, joint_policy, joint_init_param = run_ppo_joint_training(cfg, wandb_logger,
-        #                                                                             agent_params,
-        #                                                                             agent_policies,
-        #                                                                             agent_vf_params,
-        #                                                                             agent_vf_policies,
-        #                                                                             agent_idx=agent_idx)
-        #         best_joint_policies.append(joint_policy)
-        #         best_joint_init_params.append(joint_init_param)
-        #         best_joint_params.append(joint_param)
+        if cfg["algorithm"]["JOINT_CENTRALIZED"]:
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_ppo_joint_centralized_training(cfg, wandb_logger,
+                                                                                            agent_params,
+                                                                                            agent_policies,
+                                                                                            agent_vf_params,
+                                                                                            agent_vf_policies,
+                                                                                            agent_idx=agent_idx)
+                best_joint_policies.append(joint_policy)
+                best_joint_init_params.append(joint_init_param)
+                best_joint_params.append(joint_param)
+        else:
+            for agent_idx in range(cfg.NUM_EXPT_AGENTS):
+                joint_param, joint_policy, joint_init_param = run_ppo_joint_training(cfg, wandb_logger,
+                                                                                    agent_params,
+                                                                                    agent_policies,
+                                                                                    agent_vf_params,
+                                                                                    agent_vf_policies,
+                                                                                    agent_idx=agent_idx)
+                best_joint_policies.append(joint_policy)
+                best_joint_init_params.append(joint_init_param)
+                best_joint_params.append(joint_param)
 
     elif cfg["algorithm"]["ALG"] == "reppo" and cfg["algorithm"]["ALPHA_VERIFICATION"]:
         pass
@@ -358,7 +357,7 @@ if __name__ == '__main__':
 # WANDB_NOTES="4 agents, multi task, creppo, different train and eval seed" PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run_w_best_case.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_4_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions_4_agents algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=72128 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=4 label="social_law_generalization" logger.project=NEURIPS-2026-UPDATED
 # WANDB_NOTES="5 agents, multi task, creppo, different train and eval seed" PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run_w_best_case.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_5_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions_5_agents algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=72128 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=5 label="social_law_generalization" logger.project=NEURIPS-2026-UPDATED
 # WANDB_NOTES="6 agents, multi task, creppo, different train and eval seed" PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run_w_best_case.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_6_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions_6_agents algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=72128 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=6 label="social_law_generalization" logger.project=NEURIPS-2026-UPDATED
-# WANDB_NOTES="10 agents, multi task, creppo, different train and eval seed" PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run_w_best_case.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_10_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions_10_agents algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=72128 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=１０ label="social_law_generalization" logger.project=NEURIPS-２０２６-UPDATED
+# WANDB_NOTES="10 agents, multi task, creppo, different train and eval seed" PYTHONPATH=/work/05187/rfern/stampede3/GitHub/jax-aht JAX_TRACEBACK_FILTERING=off XLA_PYTHON_CLIENT_PREALLOCATE=false python social_laws/run_w_best_case.py task=rddl/grid_10x10_alternating/toroidal_no_restrictions_10_agents algorithm=creppo/rddl/grid_10x10_alternating/toroidal_full_restrictions_10_agents algorithm.TRAIN_SEED=174464134 algorithm.EVAL_SEED=72128 algorithm.FIXED_EVAL=true NUM_EXPT_AGENTS=10 label="social_law_generalization" logger.project=NEURIPS-2026-UPDATED
 
 
 # CREPPO social laws (full restrictions)
