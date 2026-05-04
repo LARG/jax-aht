@@ -24,8 +24,10 @@ domains:
       - scripts/run_lbf_br_jobs.sh
       - scripts/run_lbf_extra_br_jobs.sh
     tasks:
-      - task: lbf
-        title: LBF
+      - task: lbf/lbf_7x7_nolevels
+        title: lbf_7x7_nolevels
+      - task: lbf/lbf_12x12
+        title: lbf_12x12
 
   overcooked-v1:
     br_scripts:
