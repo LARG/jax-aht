@@ -50,9 +50,11 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
     def build_nonfluents_layout(self) -> Dict[str, Any]:
         shops = set()
         connected = []
+        connection_num = {}
         controllable = {}
         can_deliver = {truck: set() for truck in self._trucks}
         capacities = {}
+        max_connections = 0
 
         non_fluents = self._model.ground_vars_with_values(self._model.non_fluents)
 
@@ -63,6 +65,12 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
                 shops.add(objects[0])
             elif var == "CONNECTED" and bool(v):
                 connected.append((objects[0], objects[1]))
+            elif var == "CONNECTION-NUM":
+                src, dst = objects
+                idx = int(v)
+                if idx > 0:
+                    connected.append((src, dst))
+                    connection_num[(src, idx)] = dst
             elif var == "CONTROLLABLE":
                 controllable[objects[0]] = bool(v)
             elif var == "CAN-DELIVER" and bool(v):
@@ -70,13 +78,17 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
                 can_deliver[truck].add(loc)
             elif var == "CAPACITY":
                 capacities[objects[0]] = int(v)
+            elif var == "MAX-CONNECTIONS":
+                max_connections = int(v)
 
         return {
             "shops": shops,
             "connected": connected,
+            "connection_num": connection_num,
             "controllable": controllable,
             "can_deliver": can_deliver,
             "capacities": capacities,
+            "max_connections": max_connections,
         }
 
     def build_states_layout(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -138,17 +150,14 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
 
         return positions
 
-    def _extract_actions_layout(self, subs: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_actions_layout(self, subs: Dict[str, Any], state_layout: Dict[str, Any]) -> Dict[str, Any]:
         actions = {truck: "none" for truck in self._trucks}
         action_meta = {truck: "" for truck in self._trucks}
 
         if not isinstance(subs, dict):
             return {"actions": actions, "meta": action_meta}
 
-        noop_vals = subs.get("noop")
-        load_vals = subs.get("load")
-        drive_vals = subs.get("drive")
-        deliver_vals = subs.get("deliver")
+        action_num_vals = subs.get("action-num")
         picked_vals = subs.get("pizzaPickedUp")
         reward_vals = subs.get("deliveryRewarded")
 
@@ -168,34 +177,32 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
                 return arr[..., 1]
             return arr
 
-        noop_vals = _normalize_bool_action_tensor(noop_vals)
-        load_vals = _normalize_bool_action_tensor(load_vals)
-        drive_vals = _normalize_bool_action_tensor(drive_vals)
-        deliver_vals = _normalize_bool_action_tensor(deliver_vals)
+        action_num_vals = _as_array(action_num_vals)
         picked_vals = _normalize_bool_action_tensor(picked_vals)
         reward_vals = _normalize_bool_action_tensor(reward_vals)
 
         for t_idx, truck in enumerate(self._trucks):
-            if drive_vals is not None and drive_vals.ndim >= 2:
-                dest_idxs = np.where(drive_vals[t_idx])[0]
-                if dest_idxs.size > 0:
-                    d = self._locations[int(dest_idxs[0])]
-                    actions[truck] = f"drive->{d}"
-                    continue
-
-            if deliver_vals is not None and deliver_vals.ndim >= 2:
-                dest_idxs = np.where(deliver_vals[t_idx])[0]
-                if dest_idxs.size > 0:
-                    d = self._locations[int(dest_idxs[0])]
-                    actions[truck] = f"deliver@{d}"
-                    continue
-
-            if load_vals is not None and load_vals.ndim >= 1 and bool(load_vals[t_idx]):
-                actions[truck] = "load"
+            if action_num_vals is None or action_num_vals.ndim < 1:
                 continue
 
-            if noop_vals is not None and noop_vals.ndim >= 1 and bool(noop_vals[t_idx]):
+            action_num = int(action_num_vals[t_idx])
+            if action_num == 0:
                 actions[truck] = "noop"
+            elif action_num == 1:
+                actions[truck] = "load"
+            elif action_num == 2:
+                actions[truck] = "deliver"
+            elif action_num >= 3:
+                conn_idx = action_num - 2
+                # Resolve drive destination based on current truck location.
+                src = state_layout.get("truck_at", {}).get(truck)
+                dest = None
+                if src is not None:
+                    dest = self._nonfluents_layout["connection_num"].get((src, conn_idx))
+                if dest is not None:
+                    actions[truck] = f"drive->{dest}"
+                else:
+                    actions[truck] = f"drive#{conn_idx}"
 
         if picked_vals is not None and picked_vals.ndim >= 1:
             for t_idx, truck in enumerate(self._trucks):
@@ -465,7 +472,7 @@ class PizzaV2MultiAgentVisualizer(BaseViz):
 
     def render(self, state: Dict[str, Any], subs: Dict[str, Any]):
         state_layout = self.build_states_layout(state)
-        action_layout = self._extract_actions_layout(subs)
+        action_layout = self._extract_actions_layout(subs, state_layout)
 
         self._fig, self._ax = self.init_canvas((11.0, 6.0), self._dpi)
 
