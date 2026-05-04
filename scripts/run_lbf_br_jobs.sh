@@ -29,16 +29,17 @@ log_msg() {
 
 record_checkpoint() {
   local checkpoint_log="$1"
-  local job_key="$2"
-  local label="$3"
-  local checkpoint_path="$4"
+  local task_name="$2"
+  local job_key="$3"
+  local label="$4"
+  local checkpoint_path="$5"
 
   if [[ -z "$checkpoint_path" ]]; then
     checkpoint_path="NOT_FOUND"
   fi
 
   {
-    echo "[$(timestamp)] job_key=$job_key label=$label"
+    echo "[$(timestamp)] task_name=$task_name job_key=$job_key label=$label"
     echo "checkpoint_path=$checkpoint_path"
     echo
   } >> "$checkpoint_log"
@@ -58,10 +59,11 @@ already_logged() {
 }
 
 run_job() {
-  local job_key="$1"
-  local label="$2"
-  local partner_override="$3"
-  local gpu_id="$4"
+  local task_name="$1"
+  local job_key="$2"
+  local label="$3"
+  local partner_override="$4"
+  local gpu_id="$5"
   local checkpoint_log="${CHECKPOINT_LOG_PREFIX}_gpu${gpu_id}.txt"
 
   if already_logged "$job_key"; then
@@ -72,8 +74,8 @@ run_job() {
   log_msg "START $job_key on GPU $gpu_id"
 
   CUDA_VISIBLE_DEVICES="$gpu_id" python3 ego_agent_training/run.py \
-    task=lbf/lbf_7x7_nolevels \
-    algorithm=ppo_br/lbf/lbf_7x7_nolevels \
+    task="$task_name" \
+    algorithm="ppo_br/$task_name" \
     label="$label" \
     run_heldout_eval=false \
     algorithm.TOTAL_TIMESTEPS="$TOTAL_TIMESTEPS" \
@@ -85,15 +87,16 @@ run_job() {
   ckpt_path="$(find results -path "*${label}*ego_train_run" | sort | tail -n 1 || true)"
 
   log_msg "DONE $job_key on GPU $gpu_id"
-  record_checkpoint "$checkpoint_log" "$job_key" "$label" "$ckpt_path"
+  record_checkpoint "$checkpoint_log" "$task_name" "$job_key" "$label" "$ckpt_path"
 }
 
 declare -a JOBS
 add_job() {
-  local job_key="$1"
-  local label="$2"
-  local partner_override="$3"
-  JOBS+=("$job_key|$label|$partner_override")
+  local task_name="$1"
+  local job_key="$2"
+  local label="$3"
+  local partner_override="$4"
+  JOBS+=("$task_name|$job_key|$label|$partner_override")
 }
 
 parse_gpu_list() {
@@ -138,7 +141,7 @@ run_all_jobs() {
 
   local running=0
   local idx=0
-  local spec job_key label partner_override gpu_id
+  local spec task_name job_key label partner_override gpu_id
 
   for spec in "${JOBS[@]}"; do
     while [[ "$running" -ge "$max_parallel" ]]; do
@@ -146,10 +149,10 @@ run_all_jobs() {
       running=$((running - 1))
     done
 
-    IFS='|' read -r job_key label partner_override <<< "$spec"
+    IFS='|' read -r task_name job_key label partner_override <<< "$spec"
     gpu_id="${GPU_IDS[$((idx % num_gpus))]}"
 
-    run_job "$job_key" "$label" "$partner_override" "$gpu_id" &
+    run_job "$task_name" "$job_key" "$label" "$partner_override" "$gpu_id" &
     running=$((running + 1))
     idx=$((idx + 1))
   done
@@ -162,19 +165,19 @@ run_all_jobs() {
   log_msg "LBF BR batch completed"
 }
 
-# LBF BR jobs (13 jobs)
-add_job "lbf.br_for_ippo_mlp_0" "ippo_mlp_0_serious" "{ippo_mlp:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,ckpt_key:final_params,idx_list:[0],test_mode:false}}"
-add_job "lbf.br_for_ippo_mlp_s2c0_2_0" "ippo_mlp_s2c0_serious" "{ippo_mlp_s2c0:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,idx_list:[[2,0]],test_mode:false}}"
-add_job "lbf.br_for_brdiv_conf1_0" "brdiv_conf1_0_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[0],test_mode:false}}"
-add_job "lbf.br_for_brdiv_conf1_1" "brdiv_conf1_1_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[1],test_mode:false}}"
-add_job "lbf.br_for_brdiv_conf1_2" "brdiv_conf1_2_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[2],test_mode:false}}"
-add_job "lbf.br_for_brdiv_conf2_0" "brdiv_conf2_0_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[0],test_mode:false}}"
-add_job "lbf.br_for_brdiv_conf2_1" "brdiv_conf2_1_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[1],test_mode:false}}"
-add_job "lbf.br_for_seq_agent_lexi" "seq_agent_lexi_serious" "{seq_agent_lexi:{actor_type:seq_agent,ordering_strategy:lexicographic}}"
-add_job "lbf.br_for_seq_agent_rlexi" "seq_agent_rlexi_serious" "{seq_agent_rlexi:{actor_type:seq_agent,ordering_strategy:reverse_lexicographic}}"
-add_job "lbf.br_for_seq_agent_col" "seq_agent_col_serious" "{seq_agent_col:{actor_type:seq_agent,ordering_strategy:column_major}}"
-add_job "lbf.br_for_seq_agent_rcol" "seq_agent_rcol_serious" "{seq_agent_rcol:{actor_type:seq_agent,ordering_strategy:reverse_column_major}}"
-add_job "lbf.br_for_seq_agent_nearest" "seq_agent_nearest_serious" "{seq_agent_nearest:{actor_type:seq_agent,ordering_strategy:nearest_agent}}"
-add_job "lbf.br_for_seq_agent_farthest" "seq_agent_farthest_serious" "{seq_agent_farthest:{actor_type:seq_agent,ordering_strategy:farthest_agent}}"
+# lbf_7x7_nolevels BR jobs (13 jobs)
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_ippo_mlp_0" "ippo_mlp_0_serious" "{ippo_mlp:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,ckpt_key:final_params,idx_list:[0],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_ippo_mlp_s2c0_2_0" "ippo_mlp_s2c0_serious" "{ippo_mlp_s2c0:{path:eval_teammates/lbf/ippo/2025-04-21_23-41-17/saved_train_run,actor_type:mlp,idx_list:[[2,0]],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf1_0" "brdiv_conf1_0_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[0],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf1_1" "brdiv_conf1_1_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[1],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf1_2" "brdiv_conf1_2_serious" "{brdiv-conf1:{path:eval_teammates/lbf/brdiv/2025-04-16/11-32-07/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:5,idx_list:[2],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf2_0" "brdiv_conf2_0_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[0],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_brdiv_conf2_1" "brdiv_conf2_1_serious" "{brdiv-conf2:{path:eval_teammates/lbf/brdiv/2025-04-23/13-48-47/saved_train_run,actor_type:actor_with_conditional_critic,ckpt_key:final_params_conf,POP_SIZE:3,idx_list:[1],test_mode:false}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_lexi" "seq_agent_lexi_serious" "{seq_agent_lexi:{actor_type:seq_agent,ordering_strategy:lexicographic}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_rlexi" "seq_agent_rlexi_serious" "{seq_agent_rlexi:{actor_type:seq_agent,ordering_strategy:reverse_lexicographic}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_col" "seq_agent_col_serious" "{seq_agent_col:{actor_type:seq_agent,ordering_strategy:column_major}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_rcol" "seq_agent_rcol_serious" "{seq_agent_rcol:{actor_type:seq_agent,ordering_strategy:reverse_column_major}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_nearest" "seq_agent_nearest_serious" "{seq_agent_nearest:{actor_type:seq_agent,ordering_strategy:nearest_agent}}"
+add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_seq_agent_farthest" "seq_agent_farthest_serious" "{seq_agent_farthest:{actor_type:seq_agent,ordering_strategy:farthest_agent}}"
 
 run_all_jobs
