@@ -7,6 +7,10 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import seaborn as sns
 from flax.training.train_state import TrainState
 import optax
 from sklearn.metrics import classification_report
@@ -49,13 +53,62 @@ def _filter_agent_br_pairs(pairs):
         if _is_specific_best_response(agent_name, br_name)
     ]
 
+def plot_pair_confusion_matrix(predictions, all_true_labels, label_to_idx, idx_to_label, output_file):
+    """Plot and save a column-normalized 169×169 confusion matrix heatmap.
+
+    Entry (i, j) = P(classifier predicts pair i | true label is pair j).
+    """
+    pair_labels = {k: v for k, v in label_to_idx.items() if "_br_for_" in k}
+    sorted_names = sorted(pair_labels.keys())
+    sorted_indices = [pair_labels[n] for n in sorted_names]
+    n = len(sorted_names)
+
+    idx_map = {orig: new for new, orig in enumerate(sorted_indices)}
+
+    cm = np.zeros((n, n), dtype=float)
+    for true_lbl, pred_lbl in zip(all_true_labels, predictions):
+        if true_lbl in idx_map and pred_lbl in idx_map:
+            cm[idx_map[pred_lbl], idx_map[true_lbl]] += 1
+
+    col_sums = cm.sum(axis=0, keepdims=True)
+    col_sums[col_sums == 0] = 1
+    cm_norm = cm / col_sums
+
+    fig, ax = plt.subplots(figsize=(32, 30))
+    sns.heatmap(
+        cm_norm,
+        ax=ax,
+        cmap="Blues",
+        vmin=0,
+        vmax=1,
+        xticklabels=sorted_names,
+        yticklabels=sorted_names,
+        annot=False,
+        cbar_kws={"label": "P(predicted | true)", "shrink": 0.6},
+    )
+    ax.set_xlabel("True label", fontsize=12)
+    ax.set_ylabel("Predicted label", fontsize=12)
+    ax.set_title(f"Pair confusion matrix ({n}×{n})", fontsize=14)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90, fontsize=3)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=3)
+
+    plt.tight_layout()
+
+    output_path = Path(output_file)
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    pdf_path = output_path.with_suffix(".pdf")
+    plt.savefig(pdf_path, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Pair confusion matrix saved to {output_path} and {pdf_path}")
+
+
 # Config — paths are relative to the repo root (two levels up from this script)
 _REPO_ROOT = Path(__file__).parent.parent.parent
-DEFAULT_DATA_DIR = str(_REPO_ROOT / "results/lbf/trajectory_data")
-DEFAULT_MODEL_DIR = str(_REPO_ROOT / "results/lbf/models")
+DEFAULT_DATA_DIR = str(_REPO_ROOT / "results/lbf_7x7_nolevels/trajectory_data")
+DEFAULT_MODEL_DIR = str(_REPO_ROOT / "results/lbf_7x7_nolevels/models")
 DEFAULT_MODEL_FILE = "trajectory_classifier"
-DEFAULT_OUTPUT_FILE = str(_REPO_ROOT / "results/lbf/tsne_trajectory_visualization.png")
-DEFAULT_LATENTS_FILE = str(_REPO_ROOT / "results/lbf/latents.pkl")
+DEFAULT_OUTPUT_FILE = str(_REPO_ROOT / "results/lbf_7x7_nolevels/tsne_trajectory_visualization.png")
+DEFAULT_LATENTS_FILE = str(_REPO_ROOT / "results/lbf_7x7_nolevles/latents.pkl")
 
 
 def collect_latents(
@@ -209,6 +262,10 @@ def plot(
 
     print(f"Creating t-SNE visualization from latent encodings...")
     plot_tsne(latents_dict, save_path=output_file, title=plot_title)
+
+    cm_output = Path(output_file).with_name("pair_confusion_matrix.png")
+    print(f"Creating pair confusion matrix heatmap...")
+    plot_pair_confusion_matrix(predictions, all_true_labels, label_to_idx, idx_to_label, cm_output)
 
     print("\nClassification Report:")
     print(classification_report(all_true_labels, predictions, labels=unique_labels, target_names=label_names))
