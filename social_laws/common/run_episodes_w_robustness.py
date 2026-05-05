@@ -140,7 +140,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
 
     env_act = {k: acts[i] for i, k in enumerate(env.agents)}
     env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-    obs, env_state, reward, done, info = env.step(step_rng, init_env_state, env_act)
+    (obs, obs_full), env_state, reward, done, info = env.step(step_rng, init_env_state, env_act)
 
     ###########################################
     #               Optimal Case              #
@@ -179,7 +179,7 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
     #          Worst Case Scan                #
     ###########################################
     worst_ep_ts = 1
-    worst_init_carry = (worst_ep_ts, env_state, obs, rng, done, reward, env_act_onehot, hstates, vf_hstates, info)
+    worst_init_carry = (worst_ep_ts, env_state, (obs, obs_full), rng, done, reward, env_act_onehot, hstates, vf_hstates, info)
 
     def worst_scan_step(carry, _):
         def take_worst_step(carry_step):
@@ -232,11 +232,11 @@ def run_single_episode(rng, env, optimal_env, agent_idx, agent_params, agent_pol
 
             env_act = {k: acts[i] for i, k in enumerate(env.agents)}
             env_act_onehot = {k: jax.nn.one_hot(env_act[env.agents[i]], env.action_space(env.agents[i]).n) for i, k in enumerate(env.agents)}
-            obs_next, env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
+            (obs_next, obs_full_next), env_state_next, reward, done_next, info_next = env.step(step_rng, env_state, env_act)
 
-            return (ep_ts + 1, env_state_next, obs_next, rng, done_next, reward, env_act_onehot, next_hstates, vf_hstates_next, info_next)
+            return (ep_ts + 1, env_state_next, (obs_next, obs_full_next), rng, done_next, reward, env_act_onehot, next_hstates, vf_hstates_next, info_next)
 
-        ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate, vf_hstates, last_info = carry
+        ep_ts, env_state, obs_tuple, rng, done, reward, act_onehot, hstate, vf_hstates, last_info = carry
         output = carry
         new_carry = jax.lax.cond(
             done["__all__"],

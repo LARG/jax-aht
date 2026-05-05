@@ -15,11 +15,11 @@ def get_metric_names(env_name):
         if "rddl/grid_10x10_alternating" in env_name:
             return ("returned_episode_collisions", "returned_episode_minimized_returns", "returned_episode_returns")
         else:
-            return ("returned_episode_minimized_returns", "returned_episode_returns")
+            return ("returned_episode_collisions", "returned_episode_minimized_returns", "returned_episode_returns")
     elif env_name == "rddl/grid_10x10_alternating":
         return ("returned_episode_collisions", "returned_episode_returns")
     else:
-        return ("returned_episode_returns",)
+        return ("returned_episode_collisions", "returned_episode_returns")
 
 @partial(jax.jit, static_argnames=['stats'])
 def get_stats(metrics, stats: tuple):

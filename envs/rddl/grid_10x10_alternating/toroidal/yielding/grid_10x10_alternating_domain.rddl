@@ -387,6 +387,7 @@ domain grid_10x10_alternating {
 			((move(?a) == 1)) =>
 			~exists_{?a2 : agent, ?x : xpos, ?y : ypos} [
 				(?a ~= ?a2) ^
+				CONTROLLABLE(?a2) ^
 				~goal-reached(?a2) ^
 				agent-at(?a, ?x, ?y) ^
 				(
@@ -408,6 +409,7 @@ domain grid_10x10_alternating {
 			((move(?a) == 2)) =>
 			~exists_{?a2 : agent, ?x : xpos, ?y : ypos} [
 				(?a ~= ?a2) ^
+				CONTROLLABLE(?a2) ^
 				~goal-reached(?a2) ^
 				agent-at(?a, ?x, ?y) ^
 				(

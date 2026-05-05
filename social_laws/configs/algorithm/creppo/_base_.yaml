@@ -3,6 +3,8 @@
 ALG: creppo
 ACTOR_TYPE: mlp
 NUM_TRAIN_SEEDS: 1
+TRAIN_SEED: null
+USE_SAME_SEED: false
 NUM_CHECKPOINTS: 5
 TOTAL_TIMESTEPS: 5e7 # with 4 frame skip correpsnds to 200M frames
 TOTAL_TIMESTEPS_DECAY: 5e7 # will be used for decay functions (epsilon and lr)
@@ -30,6 +32,10 @@ ANNEAL_LR: false # LR_LINEAR_DECAY
 
 FIXED_EVAL: false
 TRAIN_EVAL: true
+
+CENTRALIZED: false
+
+WORST_CASE: true
 
 JOINT_USE_FULL_OBS: true
 SINGLE_AGENT_CENTRALIZED: false

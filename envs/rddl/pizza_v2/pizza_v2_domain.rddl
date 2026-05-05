@@ -24,13 +24,14 @@ domain pizzav2 {
 
 	pvariables {
 
-		DELIVERY-REWARD : {non-fluent, real, default = 10.0};      // Reward for delivery
-		COLLISION-PENALTY : {non-fluent, real, default = -20.0};     // Penalty for collisions
-		STEP-PENALTY : {non-fluent, real, default = -0.1};          // Penalty for each step taken (to encourage shorter plans)
+		COLLISION-PENALTY : {non-fluent, real, default = -130.0};     // Penalty for collisions
+		STEP-PENALTY : {non-fluent, real, default = -1};          // Penalty for each step taken per pizza undelivered (to encourage faster deliveries)
+		DELIVERY-REWARD : {non-fluent, real, default = 10.0};     // Reward for each successful pizza delivery
+		MAX-CONNECTIONS : {non-fluent, int, default = 4}; // maximum number of connections any location has (used for the new drive action)
 
-    	CAPACITY(truck) : { non-fluent, int, default = 3 };		  // Capacity of each truck (number of pizzas it can hold at once)
-		CONNECTED(location, location) : { non-fluent, bool, default = false }; // like a one-way road connection
-		DRIVEPROB(truck) : { non-fluent, real, default = 1.0 }; //probability truck succeeds in driving (if not blocked)
+    	CAPACITY(truck) : { non-fluent, int, default = 1 };		  // Capacity of each truck (number of pizzas it can hold at once)
+		CONNECTION-NUM(location, location) : { non-fluent, int, default = 0 }; // like a one-way road connection - numbered with positive int if there is a connection from the first location to the second, 0 otherwise
+		DRIVEPROB(truck) : { non-fluent, real, default = 0.9 }; //probability truck succeeds in driving (if failure, it drives to a random connected location instead of the intended one)
 		SHOP(location) : { non-fluent, bool, default = false };  // whether this location is a shop (where pizzas start and can be picked up)
 		CONTROLLABLE(truck) : { non-fluent, bool, default = false }; // whether this truck is controllable by the agent
 		CAN-DELIVER(truck, location) : { non-fluent, bool, default = false }; // whether this truck can deliver to this location
@@ -44,85 +45,135 @@ domain pizzav2 {
 		doneDelivering(truck) : { state-fluent, bool, default = false }; // true if this truck has no more possible deliveries it can make (there are no orders remaining at locations it can deliver to)
 
 		// Intemediate fluents
-		makesNext(truck, location) : { interm-fluent, bool, level = 1 };
+		drive(truck, location) : { interm-fluent, bool, level = 1 }; // whether this truck is trying to drive to this location this turn (interm fluent for the new action format)
+		randomDriveScore(truck, location) : { interm-fluent, real, level = 2 }; // random score for determining where a truck ends up if it fails a direct drive
+		driveSuccess(truck) : { interm-fluent, bool, level = 3 }; // whether this truck successfully drives to its intended location this turn (does not fail and end up somewhere else)
+		effectiveDrive(truck, location) : { interm-fluent, bool, level = 4 }; // whether the truck effectively drives to this location this turn (either by successfully driving here, or by failing to drive somewhere else but ending up here anyway)
 
 		// Random number for determining priority if there are pickup/delivery conflicts
-		randomPriority(truck) : { interm-fluent, real, level = 2 };
+		randomPriority(truck) : { interm-fluent, real, level = 3 };
 
-		deliveryPriorityRank(truck, location) : { interm-fluent, int, level = 3 };
-		pickupPriorityRank(truck) : { interm-fluent, int, level = 3 };
+		deliveryPriorityRank(truck, location) : { interm-fluent, int, level = 4 };
+		pickupPriorityRank(truck) : { interm-fluent, int, level = 4 };
 
-		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 4 }; // whether this truck's delivery to this location is rewarded
-		pizzaPickedUp(truck) : { interm-fluent, bool, level = 4 }; // whether this truck successfully picked up a pizza this turn
+		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 5 }; // whether this truck's delivery to this location is rewarded
+		pizzaPickedUp(truck) : { interm-fluent, bool, level = 5 }; // whether this truck successfully picked up a pizza this turn
 
-		numDeliveriesMadeThisStep(truck) : { interm-fluent, int, level = 5 }; // how many deliveries this truck made this step
+		// This value will determine the penalty for each truck for this step, based on how many deliveries
+		deliveryCreditRemaining(truck) : { interm-fluent, real, level = 6 };
 
 		// Action variables
-		noop(truck) : { action-fluent, bool, default = false };
-		drive(truck, location) : { action-fluent, bool, default = false };
-      	deliver(truck, location) : { action-fluent, bool, default = false };
-		load(truck)  : { action-fluent, bool, default = false };
+		// for each truck, which action it is taking this turn
+		// (0 = noop, 1 = load, 2 = deliver, 3+ = drive to location with that index in the location list)
+		action-num(truck) : { action-fluent, int, default = 0 };
 	};
 
 	cpfs {
+		// interm fluent equivalent to the previous drive action
+		// Guard (CONNECTION-NUM > 0) is essential: default CONNECTION-NUM is 0 for
+		// non-connections, so without it action-num=2 (deliver) would match every
+		// non-connected pair and put the truck in multiple locations simultaneously.
+		drive(?t, ?c) = exists_{?c2: location} [
+			truckAt(?t, ?c2)
+			^ (CONNECTION-NUM(?c2, ?c) > 0)
+			^ (action-num(?t) == (2 + CONNECTION-NUM(?c2, ?c)))
+		];
+
+		// assume all drive actions input are legal
+		// assign random score for each location for each truck
+		randomDriveScore(?t, ?c) = 
+			if (drive(?t, ?c))
+				// if the truck is trying to drive here, give this location 
+				// a score of -1.0 so that it will be chosen last if the truck fails
+				then -1.0
+			// if the truck is not trying to drive here but could drive here from its current location, 
+			// assign a random positive score for this location to determine where the truck ends up if it fails to drive to its intended location
+			else if (exists_{?c2: location} [truckAt(?t, ?c2) ^ (CONNECTION-NUM(?c2, ?c) > 0)])
+				then Uniform(0.0, 1.0)
+			// if the truck can't drive here from its current location, give this location a score that will not be chosen
+			else
+				-1000.0;
+		
+		// determine success of each truck's drive this turn
+		driveSuccess(?t) = Bernoulli(DRIVEPROB(?t));
+
+		effectiveDrive(?t, ?c) =
+			// if the truck is not driving at all, it will not move at all
+			if (~exists_{?c2: location} [drive(?t, ?c2)])
+				then false
+			// if the truck is trying to drive here and succeeds, then effectively drives here
+			else if (driveSuccess(?t) ^ drive(?t, ?c))
+				then true
+			// if the truck fails to drive to its intended location, it drives to a random connected location instead
+			// so effectively drives to this location if this location has the highest ranking among all locations
+			else if (~driveSuccess(?t))
+				then (randomDriveScore(?t, ?c) >= max_{?c2: location} [randomDriveScore(?t, ?c2)])
+			// the truck tries to drive somewhere else and succeeds, so does not effectively drive here
+			else 
+				false;
+
 		collision'(?t) = 
 			if (~CONTROLLABLE(?t)) // uncontrollable trucks never cause collisions
 				then false
 			else (exists_{?l : location, ?t2 : truck}[(?t ~= ?t2) ^ truckAt(?t, ?l) ^ truckAt(?t2, ?l) ^
-				(exists_{?l2: location}[drive(?t, ?l2) ^ drive(?t2, ?l2)])]);
+				(exists_{?l2: location}[effectiveDrive(?t, ?l2) ^ effectiveDrive(?t2, ?l2)])]);
 
+		truckAt'(?t, ?c) =
+			if (effectiveDrive(?t, ?c))
+				then true
+			// if the truck doesn't effectively drive to a new location, it stays where it is
+			else (truckAt(?t, ?c) ^ ~exists_{?c2: location} [effectiveDrive(?t, ?c2)]);
 
-		makesNext(?t, ?c) = if(~drive(?t, ?c)) then false
-				    else if(collision(?t)) then false
-				    else Bernoulli(DRIVEPROB(?t));
-
-		truckAt'(?t, ?c) = (truckAt(?t, ?c) ^ (forall_{?l: location}[~drive(?t, ?l)]))
-			| makesNext(?t, ?c) | (truckAt(?t, ?c) ^ (forall_{?l: location}[~makesNext(?t, ?l)]));
-
-		randomPriority(?t) = if (load(?t) | exists_{?l : location} [deliver(?t, ?l)])
-			then Uniform(0.0, 1.0) // assign random priority if truck is trying to pick up or deliver a pizza
-			else -100.0; // other trucks get a very low priority
+		randomPriority(?t) = 
+			if ((action-num(?t) == 1) | (action-num(?t) == 2))
+				then Uniform(0.0, 1.0) // assign random priority if truck is trying to load or deliver a pizza
+			else 
+				-100.0; // other trucks get a very low priority
 
 		// Determine the priority rank of each truck delivering to the same location (for random selection in conflicts)
 		// How many other trucks at this location are also delivering and
 		// have a lower random priority (higher random number) than this truck?
 		deliveryPriorityRank(?t, ?l) = sum_{?t2 : truck} [ 
 			( ?t ~= ?t2 )
-			^ (deliver(?t, ?l)) // this truck is delivering to this location
-			^ (deliver(?t2, ?l)) // other truck is also delivering to this location
+			^ (truckAt(?t, ?l)) // this truck is at the location it is delivering to
+			^ (truckAt(?t2, ?l)) // other truck is also at the location this truck is delivering to
+			^ (action-num(?t) == 2) // this truck is delivering
+			^ (action-num(?t2) == 2) // other truck is also delivering
 			^ (randomPriority(?t2) > randomPriority(?t)) // other truck has lower priority (higher random number) than this truck
 		];
 
 		// Similarly, determine pickup priority ranks for trucks trying to pick up pizzas at the same shop
 		pickupPriorityRank(?t) = sum_{?t2 : truck} [ 
 			( ?t ~= ?t2 )
-			^ load(?t) // this truck is trying to pick up
-			^ load(?t2) // other truck is also trying to pick up
+			^ (action-num(?t) == 1) // this truck is trying to pick up
+			^ (action-num(?t2) == 1) // other truck is also trying to pick up
 			^ (randomPriority(?t2) > randomPriority(?t)) // other truck has lower priority (higher random number) than this truck
 		];
 
 		// Determine if this truck's delivery is rewarded (when there are conflicts)
 		// Reward given if the truck's rank is lower than the number of orders remaining to be rewarded
 		deliveryRewarded(?t, ?l) =
-			if (deliver(?t, ?l)) // if this truck is delivering to this location
-			then (deliveryPriorityRank(?t, ?l) < (numOrdersRemaining(?l))) // check priority rank against remaining orders to reward
-			else false; // if not delivering, then not rewarded
+			if ((action-num(?t) == 2) ^ truckAt(?t, ?l)) // if this truck is delivering to this location
+				then (deliveryPriorityRank(?t, ?l) < (numOrdersRemaining(?l))) // check priority rank against remaining orders to reward
+			else 
+				false; // if not delivering, then not rewarded
 
 		// Determine if this truck successfully picked up a pizza (when there are conflicts)
 		// Pickup succeeds if the truck is trying to pick up and its priority rank is lower than the number of pizzas available at the shop
 		pizzaPickedUp(?t) =
-			if (load(?t)) // if this truck is trying to pick up
-			then (pickupPriorityRank(?t) < numShopPizzas) // check priority rank against pizzas available at the shop
-			else false; // if not trying to pick up, then not successful
+			if (action-num(?t) == 1) // if this truck is trying to pick up
+				then (pickupPriorityRank(?t) < numShopPizzas) // check priority rank against pizzas available at the shop
+			else
+				false; // if not trying to pick up, then not successful
 
-		// Count how many deliveries this truck made this step (for reward calculation)
-		numDeliveriesMadeThisStep(?t) = sum_{?l : location} [deliveryRewarded(?t, ?l)];
 
 		// Dynamics for state fluents
 		// shops lose pizzas when trucks successfully pick them up
 		numShopPizzas' = numShopPizzas - sum_{?t : truck} [pizzaPickedUp(?t)];
+
 		// orders remaining to be rewarded decreases when trucks successfully deliver pizzas
 		numOrdersRemaining'(?l) = numOrdersRemaining(?l) - sum_{?t : truck} [deliveryRewarded(?t, ?l)];
+
 		// trucks gain pizzas when they successfully pick them up, and lose pizzas when they successfully deliver them
 		numPizzasInTruck'(?t) = numPizzasInTruck(?t) +  pizzaPickedUp(?t) - (exists_{?l : location} [deliveryRewarded(?t, ?l)]);
 
@@ -130,22 +181,29 @@ domain pizzav2 {
 			if (doneDelivering(?t))
 				then true // once done delivering, always done delivering
 			// else if there are no orders remaining at locations this truck can deliver to, then done delivering
-			else (forall_{?l : location} [ (numOrdersRemaining(?l) == 0) | ~CAN-DELIVER(?t, ?l) ]); 
+			else (forall_{?l : location} [ (numOrdersRemaining'(?l) == 0) | ~CAN-DELIVER(?t, ?l) ]); 
+		
+		// Count how many deliveries this truck is still responsible for that could be rewarded, split among trucks with the same responsibility
+		deliveryCreditRemaining(?t) = sum_{?l : location} [
+			// can't use next state fluent here, so reuse calculation for numOrdersRemaining'(?l)
+			(numOrdersRemaining(?l) - sum_{?t2 : truck} [deliveryRewarded(?t2, ?l)])
+			* CAN-DELIVER(?t, ?l)
+			// divide responsibility for deliveries to this location among all trucks that can deliver there
+			/ (1 + sum_{?t2 : truck} [ ( ?t ~= ?t2 ) ^ CAN-DELIVER(?t2, ?l) ])
+		];
 	};
 
 	reward = [
 		sum_{?t : truck} [
-			// reward for deliveries
-			if (numDeliveriesMadeThisStep(?t) > 0)
-				then numDeliveriesMadeThisStep(?t) * DELIVERY-REWARD + STEP-PENALTY
-			// penalty for collisions
-			else if (collision'(?t))
-				then COLLISION-PENALTY + STEP-PENALTY
-			else if (doneDelivering(?t))
-				then 0.0 // no penalty if truck is done delivering
-			// penalty for each step taken
+			if (collision'(?t))
+				then COLLISION-PENALTY + (STEP-PENALTY * deliveryCreditRemaining(?t))
+			else if (doneDelivering'(?t))
+				// truck just finished: credit any final deliveries made this step
+				then DELIVERY-REWARD * sum_{?l : location} [deliveryRewarded(?t, ?l)]
 			else
-				STEP-PENALTY
+				// step penalty plus reward for any deliveries made this step
+				(STEP-PENALTY * deliveryCreditRemaining(?t))
+				+ DELIVERY-REWARD * sum_{?l : location} [deliveryRewarded(?t, ?l)]
 		]
 	];
 
@@ -156,18 +214,21 @@ domain pizzav2 {
 	};
 
 	action-preconditions {
+		// valid actions now numbered 0 = noop, 1 = load, 2 = deliver, 3+ = drive to location with that index in the location list
+		forall_{?t : truck} [
+			(action-num(?t) >= 0) ^
+			(action-num(?t) <= (2 + MAX-CONNECTIONS))
+		];
 
 		// actions can only be taken by controllable trucks
 		// that are not done delivering (if a truck is done delivering, it can't do anything else but noop)
-		forall_{?t : truck, ?l : location} [drive(?t, ?l) => (CONTROLLABLE(?t) ^ ~doneDelivering(?t))];
-		forall_{?t : truck, ?l : location} [deliver(?t, ?l) => (CONTROLLABLE(?t) ^ ~doneDelivering(?t))];
-		forall_{?t : truck} [load(?t) => (CONTROLLABLE(?t) ^ ~doneDelivering(?t))];
+		forall_{?t : truck} [(action-num(?t) >= 1) => (CONTROLLABLE(?t) ^ ~doneDelivering(?t))];
 
 		// can only load a truck up to its capacity
-		forall_{?t : truck} [(numPizzasInTruck(?t) + load(?t)) <= CAPACITY(?t)];
+		forall_{?t : truck} [(numPizzasInTruck(?t) + (if (action-num(?t) == 1) then 1 else 0)) <= CAPACITY(?t)];
 
 		//pickup needs to happen at the shop when there are pizzas available
-		forall_{?t: truck}[load(?t) => (
+		forall_{?t: truck}[(action-num(?t) == 1) => (
 			// need to be at a shop to pick up
 			exists_{?l: location}[truckAt(?t, ?l) ^ SHOP(?l) ^ (numShopPizzas > 0)]
 			// only pick up if this truck does not have enough pizzas to deliver all remaining orders it could deliver to
@@ -175,20 +236,18 @@ domain pizzav2 {
 			)
 		];
 
-		//can only drive one place per turn
- 		forall_{?t : truck} [(sum_{?c : location} drive(?t, ?c)) <= 1];
-
-		//if you drive, can't do other actions
-		forall_{?t : truck, ?l : location}[drive(?t, ?l) =>
-			(noop(?t) + load(?t) + sum_{?l2: location}[deliver(?t, ?l2)]) == 0];
-
 		// truck can only drive to connected locations
-		forall_{?t : truck, ?l : location}[drive(?t, ?l) =>
-			(exists_{?l2: location}[truckAt(?t, ?l2) ^ CONNECTED(?l2, ?l)])];
+		forall_{?t : truck}[(action-num(?t) >= 3) => (
+			(exists_{?l1: location, ?l2: location}[
+				truckAt(?t, ?l1)
+				// action number corresponds to driving to location with that index in the location list
+				^ (action-num(?t) == (2 + CONNECTION-NUM(?l1, ?l2)))
+			])
+		)];
 		
 		// can only deliver if truck is at the delivery location, has pizzas in the truck, and there are orders remaining to be delivered
 		// + SOCIAL LAW: Truck can only deliver to locations it is allowed to deliver to
-		forall_{?t : truck, ?l : location} [deliver(?t, ?l) => (truckAt(?t, ?l) ^ CAN-DELIVER(?t, ?l) ^ (numPizzasInTruck(?t) > 0) ^ (numOrdersRemaining(?l) > 0))];
+		forall_{?t : truck} [(action-num(?t) == 2) => (exists_{?l : location}[truckAt(?t, ?l) ^ CAN-DELIVER(?t, ?l) ^ (numPizzasInTruck(?t) > 0) ^ (numOrdersRemaining(?l) > 0)])];
 	};
 
 	termination {

@@ -562,13 +562,13 @@ def run_training(config, wandb_logger, ppo_params, ppo_policies,
     algorithm_config = dict(config["algorithm"])
 
     # Create only one environment instance
-    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs = dict(algorithm_config["ENV_KWARGS"])
     env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
 
     env = make_env(algorithm_config["ENV_NAME"], env_kwargs)
     env = LogWrapper(env)
 
-    env_kwargs = algorithm_config["ENV_KWARGS"].copy()
+    env_kwargs = dict(algorithm_config["ENV_KWARGS"])
     env_kwargs["render_dir"] = os.path.join("render", "joint", f"agent_{agent_idx + 1}_optimize")
     env_kwargs["instance"] = config['task'][f"SINGLE_AGENT_{agent_idx + 1}_PROJECTION"]
     optimal_env = make_env(algorithm_config["ENV_NAME"], env_kwargs)

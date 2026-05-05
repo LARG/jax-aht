@@ -110,6 +110,8 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
         self.agents = [f"agent_{i}" for i in range(N)]
         self.name = f"CoopReconContinuous{N}Agent"
 
+        self._world_state = kwargs.get('world_state', False)
+
         # Obs dims:
         # Ego: 2*(N-1) rel_pos + 2*N vel + 2*N goal_vec + 3*N task = 7N + 2(N-1) = 9N - 2
         # Non-ego: 2*N pos + 2*N vel + 2*N goal + 3*N task = 9N
@@ -262,7 +264,12 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             law_activations_so_far=jnp.zeros(N, dtype=jnp.int32),
         )
 
-        return obs, state
+        obs_dict, obs_full_dict = self._get_obs(env_state)
+
+        if self._world_state:
+            return (obs_dict, obs_full_dict), obs_full_dict, state
+        else:
+            return (obs_dict, obs_full_dict), state
 
     # -------------------------------------------------------------------------
     # STEP
@@ -338,7 +345,7 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             collision_happened=new_collision_happened,
         )
 
-        obs_st = self._get_obs(env_state_next)
+        obs_st, obs_full_st = self._get_obs(env_state_next)
         avail_actions = self._get_avail_actions(env_state_next)
         dones = self._get_dones(env_state_next)
 
@@ -365,13 +372,20 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             'returned_episode_law_activations': state_st.law_activations_so_far,
         }
 
-        obs, state = jax.tree.map(
-            lambda x, y: jax.lax.select(dones["__all__"], x, y),
-            self.reset(key_reset),
-            (obs_st, state_st)
-        )
-
-        return obs, state, rewards, dones, info
+        if self._world_state:
+            obs, world_state, state = jax.tree.map(
+                lambda x, y: jax.lax.select(dones["__all__"], x, y),
+                self.reset(key_reset),
+                ((obs_st, obs_full_st), obs_full_st, state_st)
+            )
+            return obs, world_state, state, rewards, dones, info
+        else:
+            obs, state = jax.tree.map(
+                lambda x, y: jax.lax.select(dones["__all__"], x, y),
+                self.reset(key_reset),
+                ((obs_st, obs_full_st), state_st)
+            )
+            return obs, state, rewards, dones, info
 
     # -------------------------------------------------------------------------
     # VELOCITY UPDATE
@@ -708,6 +722,10 @@ class CoopReconContinuousNAgentWrapper(BaseEnv):
             return self.observation_full_spaces[agent]
         else:
             raise ValueError(f"Unknown observation_type: {observation_type}")
+
+    def state_space(self):
+        # MAPPO critic expects continuous vector
+        return self.observation_full_spaces[self.agents[0]]
 
     def action_space(self, agent: str):
         return self.action_spaces[agent]

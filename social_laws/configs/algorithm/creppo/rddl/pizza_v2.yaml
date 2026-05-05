@@ -8,10 +8,21 @@ LR: 0.0003
 
 NUM_MINIBATCHES: 160
 
-TARGET_ENTROPY_MULT: 0.01
+TARGET_ENTROPY_MULT: 0.5  # base config default — 0.01 was 50x too low, caused policy collapse
 GAMMA: 0.99
-VMIN: 0 # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * min_reward
-VMAX: 2  # Not configured properly yet, Env dependent, (1 / (1 - gamma)) * max_reward
+# SAP value bounds.
+# Observed SAP episode return: -200 (40 steps x -1 x 5 orders, no collision possible).
+# Buffer added for safety.
+# With DELIVERY-REWARD=10, each truck earns up to +50 for delivering 5 orders.
+# SAP optimal: +50 delivery - ~20 step penalty ≈ +30 net. Random: ~-200.
+# The zero_dist init at VMAX=50 is now only 20 units from the optimal return,
+# so the C51 prior fights training far less than with VMAX=0.
+VMIN: -250
+VMAX: 50
+
+# Joint: combined delivery reward up to +100, collision worst case ~-450.
+JOINT_VMIN: -500
+JOINT_VMAX: 100
 
 ANNEAL_LR: false
 NUM_EPOCHS: 4

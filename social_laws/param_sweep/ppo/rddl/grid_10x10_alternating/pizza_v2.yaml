@@ -1,0 +1,43 @@
+program: social_laws/run_single_agent.py
+name: ppo-rddl-pizza_v2
+method: grid # bayes
+entity: social-laws-project
+project: social-laws-param-sweep
+metric:
+  goal: maximize
+  name: Eval/Agent_1_Proj/Return
+
+# 450 Combinations: grid search possible instead of bayes
+parameters:
+  # algorithm.TOTAL_TIMESTEPS:
+  #   values: []
+  # algorithm.NUM_ENVS:
+  #   values: []
+  algorithm.ACTIVATION:
+    values: ["tanh", "relu"]
+  algorithm.LR:
+    values: [5e-5, 1e-5, 1e-4, 1e-3, 1e-2]
+  algorithm.ENT_COEF:
+    values: [0.1, 0.05, 0.01, 0.001, 0.0001]
+  algorithm.CLIP_EPS:
+    values: [0.5, 0.3, 0.2, 0.1, 0.01, 0.02, 0.03, 0.04, 0.05]
+
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=rddl/pizza_v2
+  - algorithm=ppo/rddl/pizza_v2
+  - algorithm.TRAIN_SEED=714212835
+  - algorithm.EVAL_SEED=212835427
+  - algorithm.FIXED_EVAL=true
+  - task.NUM_EVAL_EPISODES=200
+  - logger.project=social-laws-param-sweep
+  - logger.entity=social-laws-project
+  - logger.mode=online
+  - logger.log_train_out=false
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - label="param_sweep"
+  - ${args_no_hyphens}

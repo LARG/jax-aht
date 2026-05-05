@@ -26,7 +26,7 @@ dependencies = [
     "chex==0.1.88",
     "flax==0.10.2",
     "flashbax==0.1.3",
-    "ml_dtypes==0.4.0",
+    "ml_dtypes>=0.4.0",
     "optax==0.2.4",
     "orbax-checkpoint==0.11.1",
     "orbax-export==0.0.6",
@@ -47,6 +47,13 @@ dependencies = [
     # Environment dependencies
     "jumanji==1.1.0",
     "jaxmarl==0.0.7",
+    # RDDL environments (pizza_v2, grid)
+    "pyRDDLGym>=2.6",
+    "pyRDDLGym_jax==0.5",
+    "softjax",
+    "pygame-ce",
+    "ply",
+    "termcolor",
 ]
 
 [project.urls]

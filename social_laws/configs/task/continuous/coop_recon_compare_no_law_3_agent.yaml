@@ -1,0 +1,23 @@
+ENV_NAME: continuous/coop_recon_n_agent
+TASK_NAME: CoopRecon_Compare_No_law_3Agent
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 50
+
+SINGLE_AGENT_1_PROJECTION: continuous/coop_recon_compare_no_law_3_agent_single_task
+SINGLE_AGENT_2_PROJECTION: continuous/coop_recon_compare_no_law_3_agent_single_task
+SINGLE_AGENT_3_PROJECTION: continuous/coop_recon_compare_no_law_3_agent_single_task
+
+ENV_KWARGS:
+  num_agents: 3
+  grid_size: 1.5
+  ego_centric_obs: true
+  movement_noise_std: 0.1
+  done_condition: "all"
+  horizon: 150
+  render: false
+  render_name: "cooprecon_compare_no_law_3agent"
+  social_min_dist: 0.0
+  min_sep_goal: 0.0
+  collision_radius: 0.05
+
+ALPHA_COST: false

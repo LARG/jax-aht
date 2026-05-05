@@ -1,0 +1,6 @@
+#!/bin/bash
+# Calls the venv python via a symlink named "marl_train".
+# nvidia-smi shows the symlink name, not the full path.
+# NOTE: exec -a breaks Python's pyvenv.cfg detection, so we use a symlink instead.
+# Run once to create: ln -sf python /scratch/.../venv/bin/marl_train
+exec /scratch/cluster/jeffrey9/jax-aht/venv/bin/marl_train "$@"
