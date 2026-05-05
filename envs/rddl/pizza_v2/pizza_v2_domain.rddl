@@ -26,7 +26,6 @@ domain pizzav2 {
 
 		COLLISION-PENALTY : {non-fluent, real, default = -130.0};     // Penalty for collisions
 		STEP-PENALTY : {non-fluent, real, default = -1};          // Penalty for each step taken per pizza undelivered (to encourage faster deliveries)
-		DELIVERY-REWARD : {non-fluent, real, default = 10.0};     // Reward for each successful pizza delivery
 		MAX-CONNECTIONS : {non-fluent, int, default = 4}; // maximum number of connections any location has (used for the new drive action)
 
     	CAPACITY(truck) : { non-fluent, int, default = 1 };		  // Capacity of each truck (number of pizzas it can hold at once)
@@ -45,22 +44,22 @@ domain pizzav2 {
 		doneDelivering(truck) : { state-fluent, bool, default = false }; // true if this truck has no more possible deliveries it can make (there are no orders remaining at locations it can deliver to)
 
 		// Intemediate fluents
-		drive(truck, location) : { interm-fluent, bool, level = 1 }; // whether this truck is trying to drive to this location this turn (interm fluent for the new action format)
-		randomDriveScore(truck, location) : { interm-fluent, real, level = 2 }; // random score for determining where a truck ends up if it fails a direct drive
-		driveSuccess(truck) : { interm-fluent, bool, level = 3 }; // whether this truck successfully drives to its intended location this turn (does not fail and end up somewhere else)
-		effectiveDrive(truck, location) : { interm-fluent, bool, level = 4 }; // whether the truck effectively drives to this location this turn (either by successfully driving here, or by failing to drive somewhere else but ending up here anyway)
+		drive(truck, location) : { interm-fluent, bool, level = 0 }; // whether this truck is trying to drive to this location this turn (interm fluent for the new action format)
+		randomDriveScore(truck, location) : { interm-fluent, real, level = 1 }; // random score for determining where a truck ends up if it fails a direct drive
+		driveSuccess(truck) : { interm-fluent, bool, level = 2 }; // whether this truck successfully drives to its intended location this turn (does not fail and end up somewhere else)
+		effectiveDrive(truck, location) : { interm-fluent, bool, level = 3 }; // whether the truck effectively drives to this location this turn (either by successfully driving here, or by failing to drive somewhere else but ending up here anyway)
 
 		// Random number for determining priority if there are pickup/delivery conflicts
-		randomPriority(truck) : { interm-fluent, real, level = 3 };
+		randomPriority(truck) : { interm-fluent, real, level = 2 };
 
-		deliveryPriorityRank(truck, location) : { interm-fluent, int, level = 4 };
-		pickupPriorityRank(truck) : { interm-fluent, int, level = 4 };
+		deliveryPriorityRank(truck, location) : { interm-fluent, int, level = 3 };
+		pickupPriorityRank(truck) : { interm-fluent, int, level = 3 };
 
-		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 5 }; // whether this truck's delivery to this location is rewarded
-		pizzaPickedUp(truck) : { interm-fluent, bool, level = 5 }; // whether this truck successfully picked up a pizza this turn
+		deliveryRewarded(truck, location) : { interm-fluent, bool, level = 4 }; // whether this truck's delivery to this location is rewarded
+		pizzaPickedUp(truck) : { interm-fluent, bool, level = 4 }; // whether this truck successfully picked up a pizza this turn
 
 		// This value will determine the penalty for each truck for this step, based on how many deliveries
-		deliveryCreditRemaining(truck) : { interm-fluent, real, level = 6 };
+		deliveryCreditRemaining(truck) : { interm-fluent, real, level = 5 };
 
 		// Action variables
 		// for each truck, which action it is taking this turn
@@ -70,12 +69,11 @@ domain pizzav2 {
 
 	cpfs {
 		// interm fluent equivalent to the previous drive action
-		// Guard (CONNECTION-NUM > 0) is essential: default CONNECTION-NUM is 0 for
-		// non-connections, so without it action-num=2 (deliver) would match every
-		// non-connected pair and put the truck in multiple locations simultaneously.
 		drive(?t, ?c) = exists_{?c2: location} [
 			truckAt(?t, ?c2)
-			^ (CONNECTION-NUM(?c2, ?c) > 0)
+			// truck must be trying to drive
+			^ (action-num(?t) >= 3)
+			// action number corresponds to driving to location with that index in the location list
 			^ (action-num(?t) == (2 + CONNECTION-NUM(?c2, ?c)))
 		];
 
@@ -88,7 +86,7 @@ domain pizzav2 {
 				then -1.0
 			// if the truck is not trying to drive here but could drive here from its current location, 
 			// assign a random positive score for this location to determine where the truck ends up if it fails to drive to its intended location
-			else if (exists_{?c2: location} [truckAt(?t, ?c2) ^ (CONNECTION-NUM(?c2, ?c) > 0)])
+			else if (exists_{?c2: location} [truckAt(?t, ?c2) ^ CONNECTION-NUM(?c2, ?c)])
 				then Uniform(0.0, 1.0)
 			// if the truck can't drive here from its current location, give this location a score that will not be chosen
 			else
@@ -195,15 +193,15 @@ domain pizzav2 {
 
 	reward = [
 		sum_{?t : truck} [
+			// penalty for collisions
 			if (collision'(?t))
 				then COLLISION-PENALTY + (STEP-PENALTY * deliveryCreditRemaining(?t))
 			else if (doneDelivering'(?t))
-				// truck just finished: credit any final deliveries made this step
-				then DELIVERY-REWARD * sum_{?l : location} [deliveryRewarded(?t, ?l)]
+				then 0.0 // no penalty if truck is done delivering
+			// penalty for each step taken
+			// size of penalty depends on how many deliveries this truck is still responsible for that could be rewarded (to encourage faster deliveries)
 			else
-				// step penalty plus reward for any deliveries made this step
 				(STEP-PENALTY * deliveryCreditRemaining(?t))
-				+ DELIVERY-REWARD * sum_{?l : location} [deliveryRewarded(?t, ?l)]
 		]
 	];
 
@@ -216,7 +214,7 @@ domain pizzav2 {
 	action-preconditions {
 		// valid actions now numbered 0 = noop, 1 = load, 2 = deliver, 3+ = drive to location with that index in the location list
 		forall_{?t : truck} [
-			(action-num(?t) >= 0) ^
+			(action-num(?t) >= 0) ^ 
 			(action-num(?t) <= (2 + MAX-CONNECTIONS))
 		];
 

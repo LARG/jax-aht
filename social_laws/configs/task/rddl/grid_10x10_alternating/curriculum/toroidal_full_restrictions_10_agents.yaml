@@ -1,0 +1,33 @@
+ENV_NAME: rddl/grid_10x10_alternating
+ROLLOUT_LENGTH: 128
+NUM_EVAL_EPISODES: 10
+ENV_KWARGS: {domain: "toroidal/grid_10x10_alternating_domain.rddl",
+             instance: "toroidal/10_agents/grid_10x10_alternating_instance10.rddl",
+             render: true,
+             render_name: "grid_10x10_alternating_toroidal_full_restrictions",
+             render_dir: "render",
+             stochastic_movement_prob: 0.1,
+             enforce_action_constraints: true,
+             vectorized: true,
+             ego_centric_obs: true}
+NO_LAW_ENV_KWARGS: {domain: "toroidal/no_restrictions/grid_10x10_alternating_domain.rddl",
+                    instance: "toroidal/10_agents/grid_10x10_alternating_instance10.rddl",
+                    render: true,
+                    render_name: "grid_10x10_alternating_toroidal_no_restrictions",
+                    render_dir: "render",
+                    stochastic_movement_prob: 0.1,
+                    enforce_action_constraints: true,
+                    vectorized: true,
+                    ego_centric_obs: true}
+TASK_NAME: rddl/grid_10x10_alternating/10_agents/toroidal_curriculum
+SINGLE_AGENT_1_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance0.rddl"
+SINGLE_AGENT_2_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance1.rddl"
+SINGLE_AGENT_3_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance2.rddl"
+SINGLE_AGENT_4_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance3.rddl"
+SINGLE_AGENT_5_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance4.rddl"
+SINGLE_AGENT_6_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance5.rddl"
+SINGLE_AGENT_7_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance6.rddl"
+SINGLE_AGENT_8_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance7.rddl"
+SINGLE_AGENT_9_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance8.rddl"
+SINGLE_AGENT_10_PROJECTION: "toroidal/10_agents/grid_10x10_alternating_instance9.rddl"
+ALPHA_COST: true

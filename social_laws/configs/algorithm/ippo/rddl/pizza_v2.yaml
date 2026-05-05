@@ -1,17 +1,15 @@
 defaults:
-  - mappo/_base_
+  - ippo/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 6e7
-NUM_ENVS: 1000
-NUM_MINIBATCHES: 125
-LR: 0.001
-ENT_COEF: 0.05
-CLIP_EPS: 0.5
+TOTAL_TIMESTEPS: 3e6
+LR: 5e-5
+ENT_COEF: 1e-4
+CLIP_EPS: 0.1
 ANNEAL_LR: false
-UPDATE_EPOCHS: 4
+UPDATE_EPOCHS: 10
 S5_D_MODEL: 128
 S5_SSM_SIZE: 128
 S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
 FC_N_LAYERS: 3
-ACTIVATION: "tanh"
+ACTIVATION: "relu"

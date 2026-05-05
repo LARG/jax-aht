@@ -49,7 +49,6 @@ class PreconditionDebugger:
         self.num_agents = env.num_agents
         self.agents = env.agents
         self.rddl_action_keys = env.rddl_action_keys
-        self.action_type_info = env._action_type_info
         self.model = self.underlying_env.model
         self.locations = self.model.type_to_objects.get('location', [])
         self.trucks = self.model.type_to_objects.get('truck', [])
@@ -88,8 +87,8 @@ class PreconditionDebugger:
         action_indices = jnp.zeros(self.num_agents, dtype=jnp.int32)
         action_indices = action_indices.at[agent_idx].set(action_flat_idx)
         
-        # Use wrapper's unbatchify to get RDDL action dict
-        action_dict = self.env._unbatchify_actions(action_indices)
+        # Action-num is the single action fluent
+        action_dict = {self.rddl_action_keys[0]: action_indices}
         
         # Create test subs with this action
         test_subs = {**base_subs, **action_dict}
@@ -148,24 +147,16 @@ class PreconditionDebugger:
         Returns:
             Dict with 'name' and 'params' keys
         """
-        cumsum = self.env._cumsum_sizes
-        
-        for type_idx, (action_name, param_shape, output_shape, size) in enumerate(self.action_type_info):
-            start_idx = int(np.asarray(cumsum[type_idx]))
-            end_idx = int(np.asarray(cumsum[type_idx + 1]))
-            
-            if start_idx <= flat_idx < end_idx:
-                relative_idx = flat_idx - start_idx
-                
-                if len(param_shape) == 0:
-                    # No parameters
-                    return {'name': action_name, 'params': None}
-                else:
-                    # Has parameters
-                    params = np.unravel_index(relative_idx, param_shape)
-                    return {'name': action_name, 'params': params}
-        
-        return {'name': 'unknown', 'params': None}
+        if flat_idx == 0:
+            return {'name': 'noop', 'params': None}
+        if flat_idx == 1:
+            return {'name': 'load', 'params': None}
+        if flat_idx == 2:
+            return {'name': 'deliver', 'params': None}
+        if flat_idx >= 3:
+            return {'name': 'drive', 'params': (flat_idx - 2,)}
+
+        return {'name': 'unknown', 'params': (flat_idx,)}
     
     def analyze_all_actions(self, env_state) -> Dict[str, Any]:
         """Analyze all actions for all agents.
@@ -206,10 +197,8 @@ class ReportFormatter:
         
         param_strs = []
         for i, p in enumerate(params):
-            if i == 0 and action_name in ['drive', 'deliver']:
-                # First param is location index
-                loc_name = self.locations[p] if p < len(self.locations) else f"loc_{p}"
-                param_strs.append(loc_name)
+            if i == 0 and action_name == 'drive':
+                param_strs.append(f"conn_{p}")
             else:
                 param_strs.append(str(p))
         
@@ -337,36 +326,15 @@ def show_available_actions(env, agent_idx: int, debugger: Optional[PreconditionD
     
     print(f"\n  Actions for {agent_name} (0 to {n_actions - 1}):")
     
-    # Decode and show actions
-    action_type_info = env._action_type_info
-    cumsum = env._cumsum_sizes
-    
     for flat_idx in range(n_actions):
-        # Decode action
-        action_name = None
-        params = None
-        
-        for type_idx, (aname, param_shape, output_shape, size) in enumerate(action_type_info):
-            start_idx = int(np.asarray(cumsum[type_idx]))
-            end_idx = int(np.asarray(cumsum[type_idx + 1]))
-            
-            if start_idx <= flat_idx < end_idx:
-                action_name = aname
-                relative_idx = flat_idx - start_idx
-                
-                if len(param_shape) > 0:
-                    params = np.unravel_index(relative_idx, param_shape)
-                break
-        
-        # Format action string
-        if params:
-            formatter = ReportFormatter(debugger) if debugger else None
-            if formatter:
-                action_str = formatter.format_action_name(action_name, params)
-            else:
-                action_str = f"{action_name}{params}"
+        if flat_idx == 0:
+            action_str = "noop(...)"
+        elif flat_idx == 1:
+            action_str = "load(...)"
+        elif flat_idx == 2:
+            action_str = "deliver(...)"
         else:
-            action_str = f"{action_name}(...)"
+            action_str = f"drive(conn_{flat_idx - 2})"
         
         # Show validity if available
         validity_str = ""
