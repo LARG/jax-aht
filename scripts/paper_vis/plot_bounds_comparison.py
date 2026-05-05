@@ -156,7 +156,8 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
         ax.tick_params(axis="y", labelsize=AXIS_LABEL_FONTSIZE - 8)
         ax.yaxis.grid(True, linestyle="--", alpha=0.5, zorder=0)
         ax.set_axisbelow(True)
-        ax.legend(fontsize=LEGEND_FONTSIZE, loc="lower right")
+        if idx == 0:
+            ax.legend(fontsize=LEGEND_FONTSIZE, loc="lower right")
 
     # Hide any unused subplot panels
     for idx in range(len(tasks_with_cache), nrows * ncols):
