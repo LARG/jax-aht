@@ -187,9 +187,17 @@ def compute_best_returns(
         if not run_id:
             continue
 
-        print(f"\nProcessing {display_name} (run {run_id}) ...")
-        eval_metrics = fetch_run_eval_metrics_cached(run_id, entity, project, cache_dir)
-        run_config = fetch_run_config_cached(run_id, entity, project, cache_dir)
+        run_ids = run_id if isinstance(run_id, list) else [run_id]
+        print(f"\nProcessing {display_name} (run {'+'.join(run_ids)}) ...")
+        parts = [fetch_run_eval_metrics_cached(rid, entity, project, cache_dir) for rid in run_ids]
+        if len(parts) == 1:
+            eval_metrics = parts[0]
+        else:
+            eval_metrics = {
+                k: np.concatenate([p[k] for p in parts], axis=0)
+                for k in parts[0]
+            }
+        run_config = fetch_run_config_cached(run_ids[0], entity, project, cache_dir)
         perf_bounds = get_performance_bounds_from_run_config(run_config, task_name)
 
         # Record original upper bounds (from first run that has them)
@@ -202,6 +210,20 @@ def compute_best_returns(
                         original_upper_bounds[metric_name].append(hi)
 
         returns_data = extract_returns_for_run(eval_metrics, perf_bounds, is_oel)
+
+        # Determine reference heldout count from the first metric of this run
+        if returns_data:
+            sample_metric = next(iter(returns_data))
+            run_n_heldout = len(returns_data[sample_metric][0])
+            if best_returns:
+                ref_n_heldout = len(next(iter(best_returns.values())))
+                if run_n_heldout != ref_n_heldout:
+                    print(
+                        f"  WARNING: skipping {display_name} — heldout agent count "
+                        f"{run_n_heldout} != expected {ref_n_heldout} "
+                        f"(run was evaluated against a different heldout set)"
+                    )
+                    continue
 
         for metric_name, (cur_returns, _, _) in returns_data.items():
             if metric_name not in best_returns:

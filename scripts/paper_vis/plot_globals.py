@@ -3,64 +3,79 @@ import omegaconf
 
 SAVE_DIR = "results/figures"
 ENTITY = "aht-project"
-
+####### AGENT TYPE SUBSTRINGS #### 
+HEURISTIC_AGENTS = [
+    # LBF
+    "seq_agent*", "entitled_agent", "greedy_",
+    # Overcooked
+    "independent", "onion", "plate", 
+    # Hanabi
+    "iggi", "piers", "flawed", "outer", "van_den_bergh", 
+    "smartbot", "cautious", "internal"
+]
+RL_AGENTS = [
+    "comedi", "lbrdiv", "ippo", "brdiv", "obl"
+]
+HUMAN_PROXY_AGENTS = [
+    "human_proxy"
+]
 ####### BENCHMARK RUNS #######
 BENCHMARK_PROJECT = "aht-benchmark"
 EGO_BENCHMARK_RUNS = {
     "lbf/lbf_7x7_nolevels": {
         "ppo_ego": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "d411alba",
+            "comedi_teammates": "2e5x3uko"
         }, 
         "liam": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "zq6yx6kf",
+            "comedi_teammates": "0kh751xl"
         }, 
         "meliba": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "47gw238c",
+            "comedi_teammates": "bc1legak"
         }, 
     },
     "lbf/lbf_12x12": {
         "ppo_ego": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "otxy993u",
+            "comedi_teammates": "jna0irje"
         }, 
         "liam": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "j9adbki8",
+            "comedi_teammates": "3h6fcrni"
         }, 
         "meliba": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "pifmvl5o",
+            "comedi_teammates": "pwvgckir"
         }, 
     },
     "overcooked-v1/cramped_room": {
         "ppo_ego": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "rm5bx4ui",
+            "comedi_teammates": "7jhrdpxc"
         }, 
         "liam": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": "xuvmlpmi",
+            "comedi_teammates": "8486vdnp"
         }, 
         "meliba": {
-            "fcp_teammates": "",
-            "rotate_teammates": ""
+            "fcp_teammates": ["lghgomp3", "v5ey4lkt"],
+            "comedi_teammates": ["en1wbqt4", "3e6wffoi"]
         }, 
     },
     "overcooked-v1/coord_ring": {
         "ppo_ego": {
             "fcp_teammates": "0wzr6nbv",
-            "rotate_teammates": "7mrfwnra"
+            "comedi_teammates": "5njknt2q"
         }, 
         "liam": {
             "fcp_teammates": "e8y4gy49",
-            "rotate_teammates": "4vdq0mjv"
+            "comedi_teammates": "pmm9u33p"
         }, 
         "meliba": {
             "fcp_teammates": "x6gmp9uc",
-            "rotate_teammates": "c9o32dg3"
+            "comedi_teammates": ["7a19mtio", "bd6w70tr"]
         },
     },
 }
@@ -75,7 +90,7 @@ UNIFIED_BENCHMARK_RUNS = {
         "trajedi": "ilklfw2f",
     },
     "lbf/lbf_12x12": {
-        # "fcp": "zz7f0x27", # NOT DONE 
+        "fcp": ["1c0um2ls", "52wp5amm"],
         "brdiv": "b3xozodw", 
         "lbrdiv": "dft2f0do",
         "comedi": "7qizaam5", 
@@ -86,7 +101,7 @@ UNIFIED_BENCHMARK_RUNS = {
         "fcp": "n1mplxeg", 
         "brdiv": "0ruf65cb", 
         "lbrdiv": "kfiwwxbu",
-        # "comedi": "", # TODO: run!
+        "comedi": ["8k97saxv", "fqw407x0"],
         "cole": "ga4gg8bs", 
         "trajedi": "2xtvi3x6",
     },
