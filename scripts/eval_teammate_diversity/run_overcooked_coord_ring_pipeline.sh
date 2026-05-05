@@ -74,7 +74,7 @@ MODEL_DIR="results/${TASK_NAME}/models"
 OUTPUT_FILE="results/${TASK_NAME}/tsne_trajectory_visualization.png"
 
 # Default parameters for the scripts
-NUM_POINTS_PER_PAIR=100  # Episodes collected per specific-BR pair for the validation / t-SNE set
+NUM_POINTS_PER_PAIR=20  # Episodes collected per specific-BR pair for the validation / t-SNE set
 NUM_ENVS=48  # Number of parallel environments (keeps trajectory pkl under 15 GB: 48 envs × 289 pairs × 400 steps × 650 floats × 4 bytes ≈ 14.4 GB)
 HIDDEN_DIM=64  # Autoencoder hidden dimension
 LATENT_DIM=16  # Autoencoder latent dimension
