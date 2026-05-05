@@ -53,6 +53,9 @@ class PizzaWrapper(BaseEnv):
         self._enforce_action_constraints = kwargs.get('enforce_action_constraints', True)
 
         self._ego_centric_obs = kwargs.get('ego_centric_obs', False)
+        # Expose world_state by default so higher-level wrappers (LogWrapper)
+        # and evaluation code that expect a 3-tuple reset return will work.
+        self._world_state = kwargs.get('world_state', False)
 
         self.horizon = self.env.horizon
         self.name = self.env.__class__.__name__
@@ -63,8 +66,8 @@ class PizzaWrapper(BaseEnv):
 
         # Domain-specific non-fluents
         self.reward_goal = self.env.model.non_fluents.get('DELIVERY-REWARD', 10.0)
-        self.collision_penalty = self.env.model.non_fluents.get('COLLISION-PENALTY', -20.0)
-        self.step_penalty = self.env.model.non_fluents.get('STEP-PENALTY', -0.1)
+        self.collision_penalty = self.env.model.non_fluents.get('COLLISION-PENALTY', -220.0)
+        self.step_penalty = self.env.model.non_fluents.get('STEP-PENALTY', -1.0)
         self.rddl_location_names = self.env.model.type_to_objects['location']
         self.locations_list = self.env.model.type_to_objects['location']
         # Precompute CAN-DELIVER non-fluent as a (num_agents, num_locations) boolean matrix
@@ -123,19 +126,29 @@ class PizzaWrapper(BaseEnv):
             agent: self._convert_rddl_action_spec_to_jaxmarl_space(action_space)
             for agent_idx, agent in enumerate(self.agents)
         }
+        # Use a converted state space (per-agent full observation) so external
+        # callers (agents/algorithms) can query `env.state_space()` just like
+        # the Grid wrapper. Compute via dedicated converter for consistency.
+        self.state_spaces = self._convert_rddl_state_spec_to_jaxmarl_space(self.env.observation_space)
+
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(self, key: chex.PRNGKey):
         reset_key, randomize_key = jax.random.split(key)
         env_state, timestep = self.env.reset(reset_key)
         env_state, timestep = self._randomize_initial_positions(randomize_key, env_state, timestep)
-        obs = self._extract_observations(timestep.observation)
+        obs_agent, obs_full = self._extract_observations(timestep.observation)
+        # Build per-agent world_state from the full observations (compatible with Grid wrapper)
+        world_state = obs_full
         state = WrappedEnvState(env_state,
                                 jnp.zeros(self.num_agents),
                                 self._extract_avail_actions(env_state),
                                 env_state.timestep,
                                 jnp.zeros(self.num_agents, dtype=jnp.int32))
-        return obs, state
+        if self._world_state:
+            return (obs_agent, obs_full), world_state, state
+        else:
+            return (obs_agent, obs_full), state
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
@@ -220,20 +233,29 @@ class PizzaWrapper(BaseEnv):
             env_state.timestep,
             state.collisions_so_far * (1 - done["__all__"]) + new_episode_collisions * done["__all__"]
         )
-        obs_st = self._extract_observations(timestep.observation)
+        obs_st_agent, obs_st_full = self._extract_observations(timestep.observation)
         reward = self._extract_rewards(timestep.reward)
         info = self._extract_infos(timestep)
         # Save the state before reset to info dict for rendering purposes
         info['pre_reset_state'] = state_st
-        info['pre_reset_obs'] = obs_st
+        info['pre_reset_obs'] = obs_st_agent
         info['returned_episode_collisions'] = state_st.collisions_so_far
         # Auto-reset environment based on termination
-        obs, state = jax.tree.map(
-            lambda x, y: jax.lax.select(done["__all__"], x, y),
-            self.reset(key_reset),
-            (obs_st, state_st)
-        )
-        return obs, state, reward, done, info
+        if self._world_state:
+            world_state_st = obs_st_full
+            obs, world_state, state = jax.tree.map(
+                lambda x, y: jax.lax.select(done["__all__"], x, y),
+                self.reset(key_reset),
+                ((obs_st_agent, obs_st_full), world_state_st, state_st)
+            )
+            return obs, world_state, state, reward, done, info
+        else:
+            obs, state = jax.tree.map(
+                lambda x, y: jax.lax.select(done["__all__"], x, y),
+                self.reset(key_reset),
+                ((obs_st_agent, obs_st_full), state_st)
+            )
+            return obs, state, reward, done, info
 
     def observation_space(self, agent: str, observation_type: str = "agent") -> jaxmarl_spaces.Space:
         if observation_type == "agent":
@@ -245,6 +267,39 @@ class PizzaWrapper(BaseEnv):
 
     def action_space(self, agent: str):
         return self.action_spaces[agent]
+
+    def state_space(self):
+        """Return the per-agent state space (Box)."""
+        return self.state_spaces
+
+    def _convert_rddl_state_spec_to_jaxmarl_space(self, space: pyRDDLGym_jax.core.spaces.Dict):
+        """Converts the observation spec into a per-agent state Box space.
+
+        Mirrors the logic used in the grid wrapper: sum sizes of observation
+        fluents and append domain-specific non-fluents (e.g., CAN-DELIVER).
+        """
+        if self.vectorized:
+            obs_full_size = 0
+            for key in space.keys():
+                obs_full_size += math.prod(space[key].shape)
+
+            # Include CAN-DELIVER non-fluent (per-truck x per-location)
+            try:
+                num_locs = len(self.locations_list)
+            except Exception:
+                num_locs = 0
+            obs_full_size += (self.num_agents * num_locs)
+
+            state_space = jaxmarl_spaces.Box(
+                low=0,
+                high=jnp.inf,
+                shape=(obs_full_size,),
+                dtype=jnp.float32,
+            )
+        else:
+            raise NotImplementedError("Non-vectorized state space not implemented yet.")
+
+        return state_space
 
     @partial(jax.jit, static_argnums=(0,))
     def get_avail_actions(self, state: WrappedEnvState) -> Dict[str, jnp.ndarray]:
@@ -650,7 +705,12 @@ if __name__ == "__main__":
 
     # Test reset and step
     key = jax.random.PRNGKey(0)
-    obs, state = wrapper.reset(key)
+    res = wrapper.reset(key)
+    # Support both 2-tuple (obs, state) and 3-tuple (obs, world_state, state)
+    if isinstance(res, tuple) and len(res) == 3:
+        obs, _world_state, state = res
+    else:
+        obs, state = res
     obs_agent, obs_full = obs
 
     print(f"Number of agents: {wrapper.num_agents}")
