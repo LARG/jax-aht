@@ -21,12 +21,28 @@ import numpy as np
 from scripts.paper_vis.plot_globals import (
     AXIS_LABEL_FONTSIZE,
     GLOBAL_HELDOUT_CONFIG,
+    HEURISTIC_AGENTS,
+    HUMAN_PROXY_AGENTS,
     LEGEND_FONTSIZE,
+    RL_AGENTS,
     SAVE_DIR,
     TASK_TO_PLOT_TITLE,
     TITLE_FONTSIZE,
 )
-from scripts.paper_vis.plot_bounds_comparison import COLOR_ORIGINAL
+from scripts.paper_vis.plot_bounds_comparison import COLOR_ORIGINAL, COLOR_DELTA
+
+COLOR_HUMAN_PROXY = "#9467BD"
+
+
+def _agent_color(name: str) -> str:
+    def _matches(name, patterns):
+        return any(p.strip("*") in name for p in patterns)
+
+    if _matches(name, RL_AGENTS):
+        return COLOR_ORIGINAL
+    if _matches(name, HUMAN_PROXY_AGENTS):
+        return COLOR_HUMAN_PROXY
+    return COLOR_DELTA
 
 plt.rcParams["xtick.labelsize"] = AXIS_LABEL_FONTSIZE
 plt.rcParams["ytick.labelsize"] = AXIS_LABEL_FONTSIZE
@@ -98,7 +114,8 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
 
         x = np.arange(len(names))
 
-        ax.bar(x, values, color=COLOR_ORIGINAL, alpha=0.85, zorder=10)
+        colors = [_agent_color(n) for n in names]
+        ax.bar(x, values, color=colors, alpha=0.85, zorder=10)
 
         ax.set_xticks(x)
         ax.set_xticklabels(names, rotation=45, ha="right", fontsize=LEGEND_FONTSIZE)
