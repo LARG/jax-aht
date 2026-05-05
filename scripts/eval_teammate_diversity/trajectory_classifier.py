@@ -209,8 +209,17 @@ def train_classifier(
     test_labels=None,
 ):
     N = padded_episodes.shape[0]
+    # Drop the last partial batch so every batch has the same shape for lax.scan.
     num_batches = max(1, N // batch_size)
     apply_fn = train_state.apply_fn
+
+    # Move all data to device once to avoid per-batch host-to-device transfers.
+    padded_jax = jnp.array(padded_episodes)
+    masks_jax = jnp.array(masks)
+    labels_jax = jnp.array(labels)
+    test_padded_jax = jnp.array(test_padded) if test_padded is not None else None
+    test_masks_jax = jnp.array(test_masks) if test_masks is not None else None
+    test_labels_jax = jnp.array(test_labels) if test_labels is not None else None
 
     @jax.jit
     def _logits_batch(params, x, mask):
@@ -225,33 +234,41 @@ def train_classifier(
             correct += (preds == np.array(data_labels[i:i+batch_size])).sum()
         return correct / n
 
+    # JIT-compile the full epoch: shuffle + scan over all batches in one XLA call.
+    @jax.jit
+    def run_epoch(train_state, rng):
+        rng, rng_perm = jax.random.split(rng)
+        # Shape: (num_batches, batch_size) — indices for each batch.
+        perm = jax.random.permutation(rng_perm, N)[:num_batches * batch_size]
+        batch_indices = perm.reshape(num_batches, batch_size)
+
+        def scan_body(state, idx):
+            batch_x = padded_jax[idx]
+            batch_mask = masks_jax[idx]
+            batch_y = labels_jax[idx]
+            new_state, loss = train_step_fn(state, batch_x, batch_mask, batch_y)
+            return new_state, loss
+
+        train_state, batch_losses = jax.lax.scan(scan_body, train_state, batch_indices)
+        return train_state, batch_losses.mean(), rng
+
     losses = []
     train_accs = []
     test_accs = []
     for epoch in range(num_epochs):
-        rng, rng_perm = jax.random.split(rng)
-        perm = np.array(jax.random.permutation(rng_perm, N))
-        epoch_losses = []
-        for batch_idx in range(num_batches):
-            idx = perm[batch_idx * batch_size : (batch_idx + 1) * batch_size]
-            batch_x = padded_episodes[idx]
-            batch_mask = masks[idx]
-            batch_y = labels[idx]
-            train_state, loss = train_step_fn(train_state, batch_x, batch_mask, batch_y)
-            epoch_losses.append(float(loss))
-        avg_loss = np.mean(epoch_losses)
-        losses.append(avg_loss)
+        train_state, avg_loss, rng = run_epoch(train_state, rng)
+        losses.append(float(avg_loss))
 
-        train_acc = float(_accuracy(train_state.params, padded_episodes, masks, labels))
+        train_acc = float(_accuracy(train_state.params, padded_jax, masks_jax, labels_jax))
         train_accs.append(train_acc)
 
-        if test_padded is not None:
-            test_acc = float(_accuracy(train_state.params, test_padded, test_masks, test_labels))
+        if test_padded_jax is not None:
+            test_acc = float(_accuracy(train_state.params, test_padded_jax, test_masks_jax, test_labels_jax))
             test_accs.append(test_acc)
 
         if epoch % 10 == 0 or epoch == num_epochs - 1:
             acc_str = f", Train Acc: {train_acc:.4f}"
-            if test_padded is not None:
+            if test_padded_jax is not None:
                 acc_str += f", Test Acc: {test_accs[-1]:.4f}"
             print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.6f}{acc_str}")
     return rng, train_state, losses, train_accs, test_accs
