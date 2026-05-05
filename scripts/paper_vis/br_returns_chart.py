@@ -133,7 +133,17 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
     fig.text(0.0, 0.5, "Max Returned Episode Return", va="center", rotation="vertical",
              fontsize=AXIS_LABEL_FONTSIZE)
 
+    # Figure-level legend explaining the color scheme
+    legend_handles = [
+        plt.Rectangle((0, 0), 1, 1, color=COLOR_DELTA, alpha=0.85, label="Heuristic"),
+        plt.Rectangle((0, 0), 1, 1, color=COLOR_ORIGINAL, alpha=0.85, label="RL-Based"),
+        plt.Rectangle((0, 0), 1, 1, color=COLOR_HUMAN_PROXY, alpha=0.85, label="Human Data"),
+    ]
+    fig.legend(handles=legend_handles, loc="center right", fontsize=LEGEND_FONTSIZE,
+               title="Agent Type", title_fontsize=LEGEND_FONTSIZE)
+
     plt.tight_layout()
+    fig.subplots_adjust(right=0.88)
 
     if save:
         os.makedirs(savedir, exist_ok=True)
