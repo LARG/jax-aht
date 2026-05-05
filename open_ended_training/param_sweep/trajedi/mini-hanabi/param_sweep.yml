@@ -26,8 +26,8 @@ command:
   - ${program}
   - task=mini-hanabi
   - algorithm=trajedi/mini-hanabi
-  - train_ego=true
   - run_heldout_eval=true
+  - logger.mode=online
   - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
