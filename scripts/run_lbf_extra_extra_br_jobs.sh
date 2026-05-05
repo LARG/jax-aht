@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Runs BR jobs for the 2 new LBF heldout teammates (greedy_closest_teammates and entitled).
+# Runs BR jobs for the 1 new LBF heldout teammate (entitled).
 # Example:
 #   GPU_LIST=1,2 PARALLEL_JOBS=2 TOTAL_TIMESTEPS=10000000 bash scripts/run_lbf_extra_br_jobs.sh
 
@@ -165,8 +165,7 @@ run_all_jobs() {
   log_msg "LBF extra BR batch completed"
 }
 
-# lbf_7x7_nolevels extra BR jobs (2 jobs)
+# lbf_7x7_nolevels extra BR jobs (1 job)
 add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_entitled_agent" "entitled_agent_serious" "{entitled_agent:{actor_type:entitled_agent}}"
-add_job "lbf/lbf_7x7_nolevels" "lbf/lbf_7x7_nolevels.br_for_greedy_closest_teammate" "greedy_closest_teammate_serious" "{greedy_closest_teammate:{actor_type:greedy_agent,heuristic:closest_teammate}}"
 
 run_all_jobs
