@@ -165,6 +165,12 @@ if __name__ == "__main__":
             "target_directory": "eval_teammates/",
             "repo_id": "lainwired/jaxaht-hanabi",
         },
+        "hanabi_val_teammates": {
+            "type": "dir",
+            "filename": "val_teammates/hanabi",
+            "target_directory": ".",
+            "repo_id": "lainwired/jaxaht-hanabi",
+        },
         "hanabi_obl_weights": {
             "type": "dir",
             "filename": "obl-r2d2-flax",
