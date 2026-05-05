@@ -145,6 +145,97 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
         plt.show()
 
 
+TEAMMATE_HATCH = {
+    "fcp_teammates": "",
+    "comedi_teammates": "///",
+}
+TEAMMATE_TYPE_DISPLAY = {
+    "fcp_teammates": "FCP",
+    "comedi_teammates": "CoMeDi",
+}
+
+
+def plot_all_tasks_ego_bar_chart(
+    all_task_results, metric_name: str, aggregate_stat_name: str,
+    plot_title: str, save: bool, savedir: str, show_plot: bool, savename: str,
+    run_info,
+):
+    """Bar chart for ego agents across all tasks with per-teammate hatching.
+
+    run_info: ordered list of (display_name, base_method_name, hatch_pattern).
+    Bars sharing the same base_method_name get the same color; hatch_pattern
+    distinguishes teammate types within each method.
+    """
+    tasks = list(all_task_results.keys())
+    num_tasks = len(tasks)
+
+    seen_base: dict[str, int] = {}
+    base_methods: list[str] = []
+    for _, base_method, _ in run_info:
+        if base_method not in seen_base:
+            seen_base[base_method] = len(base_methods)
+            base_methods.append(base_method)
+    num_base = len(base_methods)
+    colors = plt.cm.tab10(np.arange(num_base) / 10)
+
+    num_bars = len(run_info)
+    bar_width = min(0.8 / num_bars, 0.25)
+
+    fig, ax = plt.subplots(figsize=(max(4, num_tasks * (num_bars * bar_width * 2 + 1)), 6))
+    task_positions = np.arange(num_tasks)
+
+    for i, (display_name, base_method, hatch) in enumerate(run_info):
+        color = colors[seen_base[base_method]]
+        x_positions, y_values, y_errors = [], [], []
+
+        for j, task in enumerate(tasks):
+            if display_name not in all_task_results[task]:
+                continue
+            method_results = all_task_results[task][display_name]
+            task_metric_name = (
+                TASK_TO_METRIC_NAME.get(task, metric_name)
+                if metric_name == "task_specific"
+                else metric_name
+            )
+            stat_key = f"overall_{aggregate_stat_name}"
+            point_estimate = method_results[task_metric_name][stat_key]
+            lower_ci = method_results[task_metric_name]["overall_lower_ci"]
+            upper_ci = method_results[task_metric_name]["overall_upper_ci"]
+
+            x_positions.append(task_positions[j] + (i - num_bars / 2 + 0.5) * bar_width)
+            y_values.append(point_estimate)
+            y_errors.append([point_estimate - lower_ci, upper_ci - point_estimate])
+
+        if not y_values:
+            continue
+
+        ax.bar(x_positions, y_values, width=bar_width, label=display_name,
+               yerr=np.array(y_errors).T, alpha=0.7, color=color, hatch=hatch,
+               ecolor='black', capsize=5, zorder=10)
+
+    task_display_names = [TASK_TO_AXIS_DISPLAY_NAME[task] for task in tasks]
+    ax.set_xticks(task_positions)
+    ax.set_xticklabels(task_display_names, rotation=0, ha="center", fontsize=AXIS_LABEL_FONTSIZE)
+    ax.set_ylabel(
+        f'{aggregate_stat_name.capitalize()} '
+        f'{"Normalized Return" if metric_name == "task_specific" else metric_name.replace("_", " ").title()}',
+        fontsize=AXIS_LABEL_FONTSIZE,
+    )
+    ax.set_title(plot_title, fontsize=TITLE_FONTSIZE)
+    ax.legend(fontsize=LEGEND_FONTSIZE, loc='center', ncols=num_base,
+              bbox_to_anchor=(0.5, -0.15), framealpha=0.8)
+    ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+    plt.tight_layout()
+
+    if save:
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        plt.savefig(os.path.join(savedir, f"{savename}.pdf"), bbox_inches='tight')
+        print(f"Saved figure to {os.path.join(savedir, f'{savename}.pdf')}")
+    if show_plot:
+        plt.show()
+
+
 if __name__ == "__main__":
     from scripts.paper_vis.plot_globals import (
         GLOBAL_HELDOUT_CONFIG, SAVE_DIR,
@@ -177,6 +268,9 @@ if __name__ == "__main__":
     norm_suffix = "br_normalization" if args.use_best_returns_normalization else "original_normalization"
 
     all_task_results = {}
+    ego_run_info: list[tuple[str, str, str]] = []  # (display_name, base_name, hatch)
+    ego_seen: set[str] = set()
+
     for task_name in task_list:
         run_specs = []
 
@@ -194,9 +288,14 @@ if __name__ == "__main__":
                     if not run_id:
                         continue
                     base_name = METHOD_TO_DISPLAY_NAME.get(method_name, method_name)
-                    display_name = f"{base_name} ({teammate_type})"
+                    teammate_display = TEAMMATE_TYPE_DISPLAY.get(teammate_type, teammate_type)
+                    display_name = f"{base_name} ({teammate_display})"
                     is_oel = method_name in OEL_METHODS
                     run_specs.append((display_name, run_id, is_oel))
+                    if display_name not in ego_seen:
+                        ego_seen.add(display_name)
+                        hatch = TEAMMATE_HATCH.get(teammate_type, "")
+                        ego_run_info.append((display_name, base_name, hatch))
 
         if not run_specs:
             print(f"No benchmark runs configured for {task_name}, skipping.")
@@ -215,7 +314,19 @@ if __name__ == "__main__":
 
     agg_stat = GLOBAL_HELDOUT_CONFIG["global_heldout_settings"]["AGGREGATE_STAT"]
 
-    if len(all_task_results) == 1:
+    if args.plot_type == "ego":
+        plot_all_tasks_ego_bar_chart(
+            all_task_results,
+            metric_name="task_specific",
+            aggregate_stat_name=agg_stat,
+            plot_title="",
+            save=True,
+            savedir=args.save_dir,
+            savename=f"all_tasks_{args.plot_type}_{norm_suffix}",
+            show_plot=args.show_plots,
+            run_info=ego_run_info,
+        )
+    elif len(all_task_results) == 1:
         task_name = next(iter(all_task_results))
         metric_name = TASK_TO_METRIC_NAME.get(task_name, "returned_episode_returns")
         from scripts.paper_vis.plot_globals import TASK_TO_PLOT_TITLE

@@ -44,10 +44,13 @@ def load_results_for_task(
 
     results = {}
     for display_name, run_id, is_oel in run_specs:
+        run_ids = run_id if isinstance(run_id, list) else [run_id]
+        run_id_str = "+".join(run_ids)
+
         safe_name = display_name.replace("/", "_").replace(" ", "_")
         suffix = "_renorm" if renormalize_metrics else ""
         summary_cache = (
-            cache_dir / "summary_stats" / task_name / f"{safe_name}__{run_id}{suffix}.pkl"
+            cache_dir / "summary_stats" / task_name / f"{safe_name}__{run_id_str}{suffix}.pkl"
         )
 
         if not force_recompute and summary_cache.exists():
@@ -56,9 +59,17 @@ def load_results_for_task(
             print(f"Loaded cached summary for {display_name}")
             continue
 
-        eval_metrics = fetch_run_eval_metrics_cached(
-            run_id, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute
-        )
+        parts = [
+            fetch_run_eval_metrics_cached(rid, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute)
+            for rid in run_ids
+        ]
+        if len(parts) == 1:
+            eval_metrics = parts[0]
+        else:
+            eval_metrics = {
+                k: np.concatenate([p[k] for p in parts], axis=0)
+                for k in parts[0]
+            }
 
         if renormalize_metrics and best_returns is not None:
             from scripts.paper_vis.compute_best_returns import (
@@ -66,7 +77,7 @@ def load_results_for_task(
                 get_performance_bounds_from_run_config,
             )
             from scripts.wandb_utils.wandb_cache import fetch_run_config_cached
-            run_config = fetch_run_config_cached(run_id, ENTITY, BENCHMARK_PROJECT, cache_dir)
+            run_config = fetch_run_config_cached(run_ids[0], ENTITY, BENCHMARK_PROJECT, cache_dir)
             perf_bounds = get_performance_bounds_from_run_config(run_config, task_name)
             eval_metrics = renormalize_eval_metrics(eval_metrics, perf_bounds, best_returns)
 
