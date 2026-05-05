@@ -1,0 +1,20 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "eval-teammates",
+  "description": "jaxaht/eval-teammates dataset hosted on Hugging Face and contributed by the HF Datasets community",
+  "alternateName": [
+    "jaxaht/eval-teammates"
+  ],
+  "creator": {
+    "@type": "Organization",
+    "name": "JaxAHT",
+    "url": "https://huggingface.co/jaxaht"
+  },
+  "keywords": [
+    "mit",
+    "\ud83c\uddfa\ud83c\uddf8 Region: US"
+  ],
+  "license": "https://choosealicense.com/licenses/mit/",
+  "url": "https://huggingface.co/datasets/jaxaht/eval-teammates"
+}
