@@ -9,6 +9,11 @@ etc.
 """
 import argparse
 import os
+import sys
+from pathlib import Path
+
+# Ensure repo root is on sys.path when running as a script directly
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,6 +26,7 @@ from scripts.paper_vis.plot_globals import (
     TASK_TO_PLOT_TITLE,
     TITLE_FONTSIZE,
 )
+from scripts.paper_vis.plot_bounds_comparison import COLOR_ORIGINAL
 
 plt.rcParams["xtick.labelsize"] = AXIS_LABEL_FONTSIZE
 plt.rcParams["ytick.labelsize"] = AXIS_LABEL_FONTSIZE
@@ -90,11 +96,9 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
             ax.set_visible(False)
             continue
 
-        n_bars = len(names)
-        colors = plt.cm.tab10(np.arange(n_bars) / 10)
-        x = np.arange(n_bars)
+        x = np.arange(len(names))
 
-        ax.bar(x, values, color=colors, alpha=0.7, zorder=10)
+        ax.bar(x, values, color=COLOR_ORIGINAL, alpha=0.85, zorder=10)
 
         ax.set_xticks(x)
         ax.set_xticklabels(names, rotation=45, ha="right", fontsize=LEGEND_FONTSIZE)
@@ -103,11 +107,14 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
 
         display_name = TASK_TO_PLOT_TITLE.get(task_name, task_name)
         ax.set_title(display_name, fontsize=TITLE_FONTSIZE)
-        ax.set_ylabel("Max Returned Episode Return", fontsize=AXIS_LABEL_FONTSIZE)
 
     # Hide any unused subplots
     for ax_idx in range(n_tasks, len(axes)):
         axes[ax_idx].set_visible(False)
+
+    # Single shared y-axis label on the left side of the figure
+    fig.text(0.0, 0.5, "Max Returned Episode Return", va="center", rotation="vertical",
+             fontsize=AXIS_LABEL_FONTSIZE)
 
     plt.tight_layout()
 
