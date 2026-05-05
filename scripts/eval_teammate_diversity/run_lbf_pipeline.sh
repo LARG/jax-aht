@@ -74,7 +74,7 @@ OUTPUT_FILE="results/${TASK_NAME}/tsne_trajectory_visualization.png"
 
 # Default parameters for the scripts
 NUM_POINTS_PER_PAIR=100  # Episodes collected per specific-BR pair for the validation / t-SNE set
-NUM_ENVS=4096  # Number of parallel environments
+NUM_ENVS=1024  # Number of parallel environments
 HIDDEN_DIM=64  # Autoencoder hidden dimension
 LATENT_DIM=16  # Autoencoder latent dimension
 LEARNING_RATE=0.0005  # Learning rate
