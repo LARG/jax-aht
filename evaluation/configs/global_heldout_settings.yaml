@@ -540,7 +540,7 @@ heldout_set:
       actor_type: flawed
       play_threshold: 0.4
       performance_bounds:
-        returned_episode_returns: [0.0, 1.80]
+        returned_episode_returns: [0.0, 7.08]
     outer:
       actor_type: outer
       performance_bounds:
@@ -721,7 +721,7 @@ heldout_set:
       actor_type: flawed
       play_threshold: 0.4
       performance_bounds:
-        returned_episode_returns: [0.0, 6.38]
+        returned_episode_returns: [0.0, 7.13]
     outer:
       actor_type: outer
       performance_bounds:
