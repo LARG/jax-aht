@@ -1,6 +1,52 @@
 {
-  "@context": "https://schema.org",
-  "@type": "Dataset",
+  "@context": {
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "rai": "http://mlcommons.org/croissant/RAI/",
+    "data": {
+      "@id": "cr:data",
+      "@type": "@json"
+    },
+    "dataType": {
+      "@id": "cr:dataType",
+      "@type": "@vocab"
+    },
+    "dct": "http://purl.org/dc/terms/",
+    "examples": {
+      "@id": "cr:examples",
+      "@type": "@json"
+    },
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "sc": "https://schema.org/",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform",
+    "prov": "http://www.w3.org/ns/prov#"
+  },
+  "@type": "sc:Dataset",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
   "name": "eval-teammates",
   "description": "jaxaht/eval-teammates dataset hosted on Hugging Face and contributed by the HF Datasets community",
   "alternateName": [
@@ -13,7 +59,7 @@
   },
   "keywords": [
     "mit",
-    "\ud83c\uddfa\ud83c\uddf8 Region: US"
+    "🇺🇸 Region: US"
   ],
   "license": "https://choosealicense.com/licenses/mit/",
   "url": "https://huggingface.co/datasets/jaxaht/eval-teammates",
@@ -23,6 +69,107 @@
   "rai:dataUseCases": "This dataset is intended to serve as a held-out evaluation set for benchmarking ad hoc teamwork (AHT) ego agents across LBF, Overcooked-v1, and Mini-Hanabi tasks. Validity has been established for: (1) zero-shot cross-play evaluation of ego agents against held-out teammates, and (2) computing cross-play matrices. This dataset is not intended for use as training partners (use training-time teammate generation methods instead), as a human behavior model, or for deployment in real human-AI interaction without further validation.",
   "rai:dataSocialImpact": "This dataset is a research benchmark artifact enabling standardized, reproducible evaluation of ad hoc teamwork methods in cooperative multi-agent settings. Positive impacts include lowering barriers to fair comparison across AHT research and supporting progress toward robust human-AI collaboration. Potential negative impacts include over-reliance on these specific environments as proxies for human-AI cooperation, and the risk that methods optimized for this benchmark may not transfer to real human partners.",
   "rai:hasSyntheticData": true,
+  "distribution": [
+    {
+      "@type": "cr:FileObject",
+      "@id": "repo",
+      "name": "repo",
+      "description": "The Hugging Face git repository containing evaluation teammate agent checkpoints.",
+      "contentUrl": "https://huggingface.co/datasets/jaxaht/eval-teammates/tree/main",
+      "encodingFormat": "git+https",
+      "sha256": "https://github.com/mlcommons/croissant/issues/80"
+    },
+    {
+      "@type": "cr:FileSet",
+      "@id": "checkpoint-metadata-files",
+      "name": "checkpoint-metadata-files",
+      "description": "Sentinel _CHECKPOINT_METADATA files marking each evaluation teammate checkpoint, organized by environment and agent.",
+      "containedIn": {
+        "@id": "repo"
+      },
+      "encodingFormat": "application/octet-stream",
+      "includes": "*/*/*/ego_train_run/_CHECKPOINT_METADATA"
+    }
+  ],
+  "recordSet": [
+    {
+      "@type": "cr:RecordSet",
+      "@id": "checkpoints",
+      "name": "checkpoints",
+      "description": "One record per evaluation teammate checkpoint. Environment, agent, and training timestamp are extracted from the checkpoint file path.",
+      "field": [
+        {
+          "@type": "cr:Field",
+          "@id": "checkpoints/environment",
+          "name": "checkpoints/environment",
+          "description": "The cooperative environment for which this teammate was trained (e.g. lbf_7x7_nolevels, overcooked_v1_coord_ring).",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "checkpoint-metadata-files"
+            },
+            "extract": {
+              "fileProperty": "fullpath"
+            },
+            "transform": {
+              "regex": "^([^/]+)/[^/]+/[^/]+/ego_train_run/_CHECKPOINT_METADATA$"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "checkpoints/agent",
+          "name": "checkpoints/agent",
+          "description": "The evaluation teammate identifier (e.g. fcp_s0, brdiv_conf1_m0, ippo_mlp_s2c0).",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "checkpoint-metadata-files"
+            },
+            "extract": {
+              "fileProperty": "fullpath"
+            },
+            "transform": {
+              "regex": "^[^/]+/([^/]+)/[^/]+/ego_train_run/_CHECKPOINT_METADATA$"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "checkpoints/timestamp",
+          "name": "checkpoints/timestamp",
+          "description": "Training run timestamp directory name (e.g. 2026-03-16_13-22-19).",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "checkpoint-metadata-files"
+            },
+            "extract": {
+              "fileProperty": "fullpath"
+            },
+            "transform": {
+              "regex": "^[^/]+/[^/]+/([^/]+)/ego_train_run/_CHECKPOINT_METADATA$"
+            }
+          }
+        },
+        {
+          "@type": "cr:Field",
+          "@id": "checkpoints/checkpoint_path",
+          "name": "checkpoints/checkpoint_path",
+          "description": "Full relative path to the _CHECKPOINT_METADATA file within the repository.",
+          "dataType": "sc:Text",
+          "source": {
+            "fileSet": {
+              "@id": "checkpoint-metadata-files"
+            },
+            "extract": {
+              "fileProperty": "fullpath"
+            }
+          }
+        }
+      ]
+    }
+  ],
   "prov:wasDerivedFrom": [
     {
       "@type": "Dataset",
