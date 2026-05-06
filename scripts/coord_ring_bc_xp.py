@@ -1,22 +1,25 @@
 """Cross-play matrix: BC human-proxy × {ppo_ego, liam_ego, meliba_ego} on coord_ring.
 
 Evaluates BOTH agent positions (ego at slot 0 vs BC at slot 0).
+Sweeps over all 5 BC checkpoints (run_id 0..4) per ego variant.
 
 Vmap layout:
-- Per (algo, position): one vmapped call over (run × seed) variants × episode rngs.
-  All variants of the same algo share the actor architecture, so params are
-  concatenated along the leading (seed) axis across runs and become a flat
-  variant batch.
+- Per (algo, position, bc_run_id): one vmapped call over (run × seed) variants ×
+  episode rngs. All variants of the same algo share the actor architecture, so
+  params are concatenated along the leading (seed) axis across runs and become
+  a flat variant batch.
 
 Usage:
   /scratch/cluster/jyliu/conda_envs/HANABI/bin/python scripts/coord_ring_bc_xp.py
 """
+import csv
 import json
 import time
 from pathlib import Path
 
 import jax
 import jax.numpy as jnp
+import matplotlib.pyplot as plt
 import numpy as np
 
 from agents.initialize_agents import (
@@ -30,9 +33,11 @@ from envs import make_env
 from envs.log_wrapper import LogWrapper
 
 LAYOUT = "coord_ring"
-NUM_EPS = 30
+NUM_EPS = 10
 EVAL_SEED = 34957
 ROLLOUT_LEN = 400
+BC_RUN_IDS = (0, 1, 2, 3, 4)
+BC_SELFPLAY_REF = 268.481  # measured BC×BC self-play (run_id=0) baseline
 
 ENV_KWARGS = {
     "layout": LAYOUT,
@@ -204,13 +209,17 @@ def rollout_single_ep(
     return final[-1]
 
 
-def run_for_algo(algo, env, ego_policy, bc_policy, run_specs, rng_master):
-    """Run all (run, seed, position, episode) for one algorithm in one vmapped pass per position.
+def run_for_algo(algo, env, ego_policy, bc_policies, run_specs, rng_master):
+    """Run all (run, seed, position, bc_run_id, episode) for one algorithm.
+
+    One vmapped pass per (position, bc_run_id) — variant batch is (V × NUM_EPS).
 
     Args:
+        bc_policies: dict mapping bc_run_id -> BCPolicy instance.
         run_specs: list of (run_id, teammate_set) for this algo.
     Returns:
-        list of dicts: {run_id, teammate_set, position, seed_idx, shaped_per_ep, base_per_ep}
+        list of dicts: {run_id, teammate_set, position, bc_run_id, seed_idx,
+                        shaped_per_ep, base_per_ep}
     """
     # Load all runs' params and stack to a flat variant batch.
     per_run_meta = []
@@ -237,64 +246,79 @@ def run_for_algo(algo, env, ego_policy, bc_policy, run_specs, rng_master):
 
     results = []
     for position in ("ego_first", "bc_first"):
-        rng_master, rng_pos = jax.random.split(rng_master)
-        # Per-variant rng → V×NUM_EPS rngs after inner split.
-        per_variant_rngs = jax.random.split(rng_pos, V)
+        for bc_run_id in BC_RUN_IDS:
+            bc_policy = bc_policies[bc_run_id]
+            rng_master, rng_pos = jax.random.split(rng_master)
+            per_variant_rngs = jax.random.split(rng_pos, V)
 
-        if position == "ego_first":
-            p0_pol, p1_pol = ego_policy, bc_policy
-            p0_test, p1_test = False, True
+            if position == "ego_first":
+                p0_pol, p1_pol = ego_policy, bc_policy
+                p0_test, p1_test = False, True
 
-            def per_variant(rng, ego_p):
-                rngs = jax.random.split(rng, NUM_EPS)
-                return jax.vmap(
-                    lambda r: rollout_single_ep(
-                        r, env, p0_pol, ego_p, p0_test,
-                        p1_pol, None, p1_test, ROLLOUT_LEN,
-                    )
-                )(rngs)
-        else:
-            p0_pol, p1_pol = bc_policy, ego_policy
-            p0_test, p1_test = True, False
+                def per_variant(rng, ego_p):
+                    rngs = jax.random.split(rng, NUM_EPS)
+                    return jax.vmap(
+                        lambda r: rollout_single_ep(
+                            r, env, p0_pol, ego_p, p0_test,
+                            p1_pol, None, p1_test, ROLLOUT_LEN,
+                        )
+                    )(rngs)
+            else:
+                p0_pol, p1_pol = bc_policy, ego_policy
+                p0_test, p1_test = True, False
 
-            def per_variant(rng, ego_p):
-                rngs = jax.random.split(rng, NUM_EPS)
-                return jax.vmap(
-                    lambda r: rollout_single_ep(
-                        r, env, p0_pol, None, p0_test,
-                        p1_pol, ego_p, p1_test, ROLLOUT_LEN,
-                    )
-                )(rngs)
+                def per_variant(rng, ego_p):
+                    rngs = jax.random.split(rng, NUM_EPS)
+                    return jax.vmap(
+                        lambda r: rollout_single_ep(
+                            r, env, p0_pol, None, p0_test,
+                            p1_pol, ego_p, p1_test, ROLLOUT_LEN,
+                        )
+                    )(rngs)
 
-        t0 = time.time()
-        info = jax.jit(jax.vmap(per_variant))(per_variant_rngs, flat_params)
-        # info leaves shape (V, NUM_EPS, ...).
-        shaped = np.asarray(info["returned_episode_returns"])  # (V, NUM_EPS, n_agents)
-        base = np.asarray(info["base_return"])
-        # mean over agents (coop env: same return on both)
-        shaped_pe = shaped.mean(axis=-1)  # (V, NUM_EPS)
-        base_pe = base.mean(axis=-1)
-        dt = time.time() - t0
-        print(f"  [{position:9}] V={V} × NUM_EPS={NUM_EPS} = {V*NUM_EPS} rollouts in {dt:.1f}s "
-              f"(mean shaped per-variant: {shaped_pe.mean(axis=1).mean():.2f})", flush=True)
+            t0 = time.time()
+            info = jax.jit(jax.vmap(per_variant))(per_variant_rngs, flat_params)
+            shaped = np.asarray(info["returned_episode_returns"])  # (V, NUM_EPS, n_agents)
+            base = np.asarray(info["base_return"])
+            shaped_pe = shaped.mean(axis=-1)  # (V, NUM_EPS)
+            base_pe = base.mean(axis=-1)
+            dt = time.time() - t0
+            print(f"  [{position:9} bc={bc_run_id}] V={V} × NUM_EPS={NUM_EPS} = "
+                  f"{V*NUM_EPS} rollouts in {dt:.1f}s "
+                  f"(mean shaped: {shaped_pe.mean():.2f})", flush=True)
 
-        for v in range(V):
-            rid, tt, s = labels[v]
-            results.append({
-                "run_id": rid, "teammate_set": tt, "position": position,
-                "seed_idx": s,
-                "shaped_per_ep": shaped_pe[v].tolist(),
-                "base_per_ep":   base_pe[v].tolist(),
-            })
+            for v in range(V):
+                rid, tt, s = labels[v]
+                results.append({
+                    "run_id": rid, "teammate_set": tt, "position": position,
+                    "bc_run_id": bc_run_id,
+                    "seed_idx": s,
+                    "shaped_per_ep": shaped_pe[v].tolist(),
+                    "base_per_ep":   base_pe[v].tolist(),
+                })
 
     return results, rng_master
+
+
+def bootstrap_ci(values, n_resamples=10000, alpha=0.05, rng=None):
+    """Percentile bootstrap CI of the mean."""
+    if rng is None:
+        rng = np.random.default_rng(0)
+    values = np.asarray(values)
+    n = len(values)
+    idx = rng.integers(0, n, size=(n_resamples, n))
+    means = values[idx].mean(axis=1)
+    lo = float(np.quantile(means, alpha / 2))
+    hi = float(np.quantile(means, 1 - alpha / 2))
+    return lo, hi
 
 
 def main():
     print("Building env...", flush=True)
     env = build_env()
-    print("Loading BC policy...", flush=True)
-    bc_policy = BCPolicy(LAYOUT, using_log_wrapper=True)
+    print(f"Loading {len(BC_RUN_IDS)} BC policies (run_ids={list(BC_RUN_IDS)})...", flush=True)
+    bc_policies = {rid: BCPolicy(LAYOUT, using_log_wrapper=True, run_id=rid)
+                   for rid in BC_RUN_IDS}
 
     rng_master = jax.random.PRNGKey(EVAL_SEED)
 
@@ -303,7 +327,7 @@ def main():
         print(f"\n{'='*60}\nAlgo: {algo}\n{'='*60}", flush=True)
         rng_master, init_rng = jax.random.split(rng_master)
         ego_policy, _ = build_ego_policy(algo, env, init_rng)
-        rows, rng_master = run_for_algo(algo, env, ego_policy, bc_policy, run_specs, rng_master)
+        rows, rng_master = run_for_algo(algo, env, ego_policy, bc_policies, run_specs, rng_master)
         summary[algo] = rows
 
     # Save raw per-episode JSON.
@@ -314,31 +338,42 @@ def main():
         json.dump(summary, f, indent=2)
     print(f"\nSaved per-episode JSON -> {json_path}")
 
-    # Per-row CSV (each row = one (algo, teammate_set, run_id, position, seed_idx, episode_idx) cell).
-    import csv
+    # Per-row CSV (each row = one (algo, teammate_set, run_id, bc_run_id, position, seed_idx,
+    # episode_idx) cell).
     per_ep_csv = out_dir / "bc_xp_results.csv"
+    total_rows = 0
     with open(per_ep_csv, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["algo","teammate_set","run_id","position","seed_idx","episode_idx",
-                    "shaped_return","base_return"])
+        w.writerow(["algo","teammate_set","run_id","bc_run_id","position","seed_idx",
+                    "episode_idx","shaped_return","base_return"])
         for algo, rows in summary.items():
             for r in rows:
                 for ep_idx, (sh, bs) in enumerate(zip(r["shaped_per_ep"], r["base_per_ep"])):
-                    w.writerow([algo, r["teammate_set"], r["run_id"], r["position"],
-                                r["seed_idx"], ep_idx, round(sh, 4), round(bs, 4)])
-    print(f"Saved per-episode CSV   -> {per_ep_csv}")
+                    w.writerow([algo, r["teammate_set"], r["run_id"], r["bc_run_id"],
+                                r["position"], r["seed_idx"], ep_idx,
+                                round(sh, 4), round(bs, 4)])
+                    total_rows += 1
+    print(f"Saved per-episode CSV   -> {per_ep_csv} ({total_rows} rows)")
 
-    # Aggregated CSV: mean ± std over (positions × seeds × episodes) per (algo, teammate_set).
+    # Aggregated CSV: mean ± std over (positions × bc_run_ids × seeds × episodes) per (algo, teammate_set).
     agg_csv = out_dir / "bc_xp_agg.csv"
+    agg_ci_csv = out_dir / "bc_xp_agg_with_ci.csv"
     order_a = ["liam_ego", "ppo_ego", "meliba_ego"]
     order_t = ["fcp", "rotate", "comedi"]
-    rows_for_agg = []
-    print(f"\n{'algorithm':<11} {'teammate_set':<13} {'n':>5} {'shaped (mean ± std)':<22} {'base (mean ± std)':<22}")
-    print("-" * 80)
-    with open(agg_csv, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["algorithm","teammate_set","n_obs","shaped_mean","shaped_std",
-                    "base_mean","base_std"])
+    agg_table = []
+    rng_boot = np.random.default_rng(20260504)
+
+    print(f"\n{'algorithm':<11} {'teammate_set':<13} {'n':>5} "
+          f"{'shaped (mean ± std)':<22} {'base (mean ± std)':<22} {'CI95':<22}")
+    print("-" * 100)
+    with open(agg_csv, "w", newline="") as f_agg, \
+         open(agg_ci_csv, "w", newline="") as f_ci:
+        w_agg = csv.writer(f_agg)
+        w_ci = csv.writer(f_ci)
+        w_agg.writerow(["algorithm","teammate_set","n_obs","shaped_mean","shaped_std",
+                        "base_mean","base_std"])
+        w_ci.writerow(["algorithm","teammate_set","n_obs","shaped_mean","shaped_std",
+                       "shaped_se","shaped_ci_lo_boot","shaped_ci_hi_boot"])
         for tt in order_t:
             for algo in order_a:
                 shaped = []
@@ -349,13 +384,67 @@ def main():
                     shaped.extend(r["shaped_per_ep"])
                     base.extend(r["base_per_ep"])
                 shaped = np.array(shaped); base = np.array(base)
-                w.writerow([algo, tt, len(shaped),
-                            round(float(shaped.mean()), 3), round(float(shaped.std()), 3),
-                            round(float(base.mean()), 3), round(float(base.std()), 3)])
-                print(f"{algo:<11} {tt:<13} {len(shaped):>5} "
-                      f"{shaped.mean():7.2f} ± {shaped.std():5.2f}      "
-                      f"{base.mean():7.2f} ± {base.std():5.2f}")
+                n = len(shaped)
+                mean_s, std_s = float(shaped.mean()), float(shaped.std())
+                mean_b, std_b = float(base.mean()),   float(base.std())
+                se = std_s / np.sqrt(n) if n > 0 else 0.0
+                ci_lo, ci_hi = bootstrap_ci(shaped, n_resamples=10000, rng=rng_boot)
+
+                w_agg.writerow([algo, tt, n,
+                                round(mean_s, 3), round(std_s, 3),
+                                round(mean_b, 3), round(std_b, 3)])
+                w_ci.writerow([algo, tt, n,
+                               round(mean_s, 3), round(std_s, 3),
+                               round(se, 3),
+                               round(ci_lo, 3), round(ci_hi, 3)])
+                agg_table.append({
+                    "algorithm": algo, "teammate_set": tt, "n": n,
+                    "shaped_mean": mean_s, "shaped_std": std_s,
+                    "shaped_se": se, "ci_lo": ci_lo, "ci_hi": ci_hi,
+                    "base_mean": mean_b, "base_std": std_b,
+                })
+                print(f"{algo:<11} {tt:<13} {n:>5} "
+                      f"{mean_s:7.2f} ± {std_s:5.2f}      "
+                      f"{mean_b:7.2f} ± {std_b:5.2f}      "
+                      f"[{ci_lo:6.2f}, {ci_hi:6.2f}]")
+
     print(f"\nSaved aggregate CSV     -> {agg_csv}")
+    print(f"Saved aggregate+CI CSV  -> {agg_ci_csv}")
+
+    # ---- Bar chart: 2 groups (fcp, comedi); 3 bars per group (liam, ppo, meliba) ----
+    bar_path = out_dir / "bc_xp_bar.png"
+    plot_groups = ["fcp", "comedi"]
+    plot_algos = [("liam_ego", "LIAM", "tab:blue"),
+                  ("ppo_ego",  "PPO",  "tab:green"),
+                  ("meliba_ego","MELIBA","tab:red")]
+
+    # Lookup: (algo, teammate_set) -> row dict
+    by_key = {(r["algorithm"], r["teammate_set"]): r for r in agg_table}
+
+    fig, ax = plt.subplots(figsize=(6.4, 4.4))
+    x = np.arange(len(plot_groups))
+    bar_w = 0.25
+    for i, (algo, label, color) in enumerate(plot_algos):
+        means = [by_key[(algo, tt)]["shaped_mean"] for tt in plot_groups]
+        ci_lo = [by_key[(algo, tt)]["ci_lo"] for tt in plot_groups]
+        ci_hi = [by_key[(algo, tt)]["ci_hi"] for tt in plot_groups]
+        err_lo = [m - lo for m, lo in zip(means, ci_lo)]
+        err_hi = [hi - m for m, hi in zip(means, ci_hi)]
+        ax.bar(x + (i - 1) * bar_w, means, bar_w, label=label, color=color,
+               yerr=[err_lo, err_hi], capsize=4, error_kw={"elinewidth": 1.2})
+
+    ax.axhline(BC_SELFPLAY_REF, color="grey", linestyle="--", linewidth=1.2,
+               label=f"BC×BC self-play ({BC_SELFPLAY_REF:.1f})")
+    ax.set_xticks(x)
+    ax.set_xticklabels([g.upper() for g in plot_groups])
+    ax.set_ylabel("shaped return")
+    ax.set_title("ego × BC (overcooked-v1/coord_ring)")
+    ax.legend(loc="upper left", fontsize=9)
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(bar_path, dpi=150)
+    plt.close(fig)
+    print(f"Saved bar chart         -> {bar_path}")
 
 
 if __name__ == "__main__":

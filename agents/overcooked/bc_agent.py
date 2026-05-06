@@ -41,21 +41,22 @@ LAYOUT_TO_BASE_DIR = {
 
 class BCPolicy(AgentPolicy):
     """Behavior Cloning policy that directly implements the AgentPolicy interface."""
-    def __init__(self, layout_name, using_log_wrapper=True):
+    def __init__(self, layout_name, using_log_wrapper=True, run_id=0):
         """
         Initialize BC policy with layout name.
         The agent_id must be provided through init_hstate via aux_info.
-        
+
         Args:
             layout_name: Name of the layout (e.g., "cramped_room")
             using_log_wrapper: If True, assume that the agent is interacting with the wrapped Overcooked-v1
                 environment. If False, assume that the agent is interacting with the original Overcooked-v1
-                environment. 
+                environment.
+            run_id: BC training run id (checkpoint index). Available from 0 to 4.
         """
         super().__init__(action_dim=ACTION_DIM, obs_dim=None)
         self.network = BCModel(action_dim=ACTION_DIM, hidden_dims=(64, 64))
         self.layout_name = layout_name
-        self.run_id = 0 # checkpoints are available from 0 to 4
+        self.run_id = run_id # checkpoints are available from 0 to 4
         self.unblock_if_stuck = True
         self.using_log_wrapper = using_log_wrapper
         
@@ -204,7 +205,44 @@ class BCPolicy(AgentPolicy):
             hstate = jnp.repeat(hstate[jnp.newaxis, ...], batch_size, axis=0)
 
         return hstate
-    
+
+
+class BCProxyPartnerWrapper(AgentPolicy):
+    """Adapter that lets a BCPolicy plug into ppo_br's HeuristicPolicyPopulation.
+
+    BCPolicy uses a leading-batch hstate contract (shape (1, D)) and a (1,1,obs)
+    obs contract. ppo_br's HeuristicPolicyPopulation vmaps init_hstate / get_action
+    over an envs axis, so per-call inputs have no leading batch (hstate (D,),
+    obs (1, obs_dim)). This wrapper bridges by adding/removing the (1,) leading
+    dim around BCPolicy calls.
+    """
+
+    def __init__(self, bc):
+        super().__init__(action_dim=bc.action_dim, obs_dim=bc.obs_dim)
+        self.bc = bc
+
+    def init_hstate(self, batch_size, aux_info=None):
+        # Heuristic-partner contract: return per-element hstate; vmap stacks them.
+        agent_id = aux_info["agent_id"] if aux_info is not None else 1
+        if self.bc.unblock_if_stuck:
+            ph = BCPolicyHState.init_empty(agent_id)
+        else:
+            ph = BCPolicyHState(agent_id=jnp.asarray(agent_id), bc_state=jnp.array([]))
+        return ph.to_numpy()  # shape (D,)
+
+    @partial(jax.jit, static_argnums=(0,))
+    def get_action(self, params, obs, done, avail_actions, hstate, rng,
+                   env_state=None, aux_obs=None, test_mode=False):
+        # Add leading batch dim to hstate so BC's internal hstate[0] deslice is correct.
+        hstate_b = hstate[jnp.newaxis, ...]
+        action, new_hstate_b = self.bc.get_action(
+            params=None, obs=obs, done=done, avail_actions=avail_actions,
+            hstate=hstate_b, rng=rng, aux_obs=None, env_state=env_state,
+            test_mode=test_mode,
+        )
+        return action.squeeze(), new_hstate_b[0]
+
+
 # Define the model architecture
 class BCModel(nn.Module):
     action_dim: int
