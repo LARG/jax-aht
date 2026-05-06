@@ -2,7 +2,7 @@ defaults:
   - meliba_ego/_base_
   - _self_
 
-TOTAL_TIMESTEPS: 100000000
+TOTAL_TIMESTEPS: 3e7
 NUM_ENVS: 128
 NUM_EGO_TRAIN_SEEDS: 3
 LR: 3e-4
