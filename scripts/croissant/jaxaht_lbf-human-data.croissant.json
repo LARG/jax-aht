@@ -208,12 +208,25 @@
   ],
   "license": "https://choosealicense.com/licenses/mit/",
   "url": "https://huggingface.co/datasets/jaxaht/lbf-human-data",
-  "rai:dataLimitations": "",
-  "rai:dataBiases": "",
-  "rai:personalSensitiveInformation": "",
-  "rai:dataUseCases": "",
-  "rai:dataSocialImpact": "",
+  "rai:dataLimitations": "This dataset contains aggregated performance metrics (avg_return, avg_episode_length) from human participants playing Level-Based Foraging (LBF), limited to the lbf_7x7_nolevels and lbf_12x12 task configurations [VERIFY THIS]. Raw trajectory data is not included, only per-session summary statistics. The dataset is small (<1K entries), which limits statistical power [VERIFY THIS]. Results may not generalize to other LBF configurations or other cooperative environments. The agent_type field records the type of AI partner the human played with; the range of AI partners tested reflects the set available at study time and may not cover all possible partner strategies.",
+  "rai:dataBiases": "Human participants were drawn from [INSERT SURVEY POPULATION], which may not represent the broader population of potential users. The number of episodes per participant and any training or practice effects are not recorded. Performance may be influenced by familiarity with game-like interfaces. Results reflect paired human-AI play and do not capture solo human baselines.",
+  "rai:personalSensitiveInformation": "None. The dataset contains only aggregated performance metrics (avg_return, avg_episode_length, num_episodes) per (config, agent_type) pair; no personally identifiable information, demographic data, or individual-level records are included.",
+  "rai:dataUseCases": "This dataset is intended to establish human-level performance baselines for LBF benchmark tasks (lbf_7x7_nolevels, lbf_12x12), enabling comparison of AI ego agent performance against human players. Validity has been established for the purpose of computing human performance baselines in the JaxAHT benchmark [VERIFY THIS]. Use for other purposes (e.g., modeling individual human behavior, training imitation learning agents [VERIFY THIS]) has not been validated.",
+  "rai:dataSocialImpact": "This dataset supports fair benchmarking of AI cooperative agents by providing human performance baselines [VERIFY THIS], contributing to transparent reporting of human-AI performance gaps. Positive impacts include encouraging development of AI agents that perform at or above human level in cooperative tasks. No direct negative societal impact is anticipated given the dataset's small scale and research-only scope.",
   "rai:hasSyntheticData": false,
-  "prov:wasDerivedFrom": [],
-  "prov:wasGeneratedBy": []
+  "prov:wasDerivedFrom": [
+    {
+      "@type": "Dataset",
+      "name": "Jumanji Level-Based Foraging",
+      "description": "The LBF environment implementations used in this study are from the Jumanji library. The lbf_7x7_nolevels and lbf_12x12 task configurations define the cooperative foraging tasks in which human data was collected.",
+      "url": "https://github.com/instadeepai/jumanji"
+    }
+  ],
+  "prov:wasGeneratedBy": [
+    {
+      "@type": "prov:Activity",
+      "name": "Human Study Data Collection",
+      "description": "Human participants played paired LBF sessions in lbf_7x7_nolevels and lbf_12x12 configurations, each partnered with an AI agent of a specific type (recorded in the agent_type field). Average return (avg_return) and average episode length (avg_episode_length) were computed over num_episodes episodes per participant session. Data was collected as part of the JaxAHT benchmark study. [TODO: DESCRIBE BRIEFLY THE COLLECTION PROCESS]"
+    }
+  ]
 }

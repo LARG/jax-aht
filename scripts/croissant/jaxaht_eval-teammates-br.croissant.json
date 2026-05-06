@@ -17,12 +17,39 @@
   ],
   "license": "https://choosealicense.com/licenses/mit/",
   "url": "https://huggingface.co/datasets/jaxaht/eval-teammates-br",
-  "rai:dataLimitations": "This evaluation teammate best-response set are only best-responses to their counterpart agents in the jaxaht/eval-teammates dataset. Moreover, they are only applicable for the specific environments specified by the name of the directory each agent is located in.",
-  "rai:dataBiases": "This evaluation teammate best-response set was constructed entirely from the teammates provided in the jaxaht/eval-teammates dataset. Therefore, the best-responses provided here are only representative of the evaluation teammates in the other dataset.",
-  "rai:personalSensitiveInformation": "N/A",
-  "rai:dataUseCases": "This evaluation teammate best-response set is used to evaluate the diversity of the evaluation teammates found in the jaxaht/eval-teammates dataset. Validity has been established through two tasks: (1) generating cross-play matrices of the set of evaluation teammates playing against the set of best-responses and (2) computing the best-response returns. Validity has not been established in any other context.",
-  "rai:dataSocialImpact": "",
-  "rai:hasSyntheticData": false,
-  "prov:wasDerivedFrom": [],
-  "prov:wasGeneratedBy": []
+  "rai:dataLimitations": "This evaluation teammate best-response set contains best-response policies only for the evaluation teammates in jaxaht/eval-teammates, and is only applicable to the specific environment tasks named in each agent's directory path. Best-response agents are trained for a fixed number of RL steps and may not represent true optimal policies. The dataset is limited to two-agent cooperative tasks in Level-Based Foraging (LBF; lbf_7x7_nolevels and lbf_12x12), Overcooked-v1 (coord_ring), and Mini-Hanabi (2-player). Generalization to other cooperative task settings or partner distributions has not been validated.",
+  "rai:dataBiases": "Best-response agents are trained exclusively against the evaluation teammates in jaxaht/eval-teammates, which are themselves products of specific algorithmic teammate generation methods (FCP, BRDiv, LBRDiv, CoMeDi, IPPO, and rule-based heuristics). Consequently, these best-responses may not generalize to partner strategies outside that distribution. Overcooked environment layouts are limited to the five maps introduced by Carroll et al. (2019), and the Hanabi BC agent is trained on a human dataset from AH2AC2 (Dizdarević et al. 2025); biases in those upstream data sources propagate here.",
+  "rai:personalSensitiveInformation": "None. All agents are computationally generated policies (neural network weights or rule-based programs); no human-identifiable information is present.",
+  "rai:dataUseCases": "This dataset is intended for evaluating the diversity and coverage of the evaluation teammates in jaxaht/eval-teammates, specifically via: (1) computing cross-play matrices between the teammate set and this best-response set, and (2) reporting best-response returns as a diversity metric. This use case has been validated within the JaxAHT benchmark. Use outside of this benchmarking context — e.g., as training partners for ego agents or for deployment in real human-AI interaction — has not been validated.",
+  "rai:dataSocialImpact": "This dataset is intended purely as a research benchmark artifact for the ad hoc teamwork (AHT) research community. Positive impacts include enabling standardized, reproducible evaluation of AHT methods in cooperative multi-agent settings. No direct negative societal impact is anticipated, as the dataset consists of simulated game-playing policies without real-world deployment. Indirect risks include over-reliance on this specific evaluation protocol as a proxy for human-AI cooperation ability.",
+  "rai:hasSyntheticData": true,
+  "prov:wasDerivedFrom": [
+    {
+      "@type": "Dataset",
+      "name": "jaxaht/eval-teammates",
+      "description": "The evaluation teammate dataset against which these best-response policies were trained.",
+      "url": "https://huggingface.co/datasets/jaxaht/eval-teammates"
+    },
+    {
+      "@type": "Dataset",
+      "name": "Overcooked-AI (Carroll et al. 2019)",
+      "description": "Overcooked environment layouts and human gameplay data from Carroll et al. (2019) 'On the Utility of Learning about Humans for Human-AI Coordination', which define the five Overcooked task configurations used in this dataset.",
+      "url": "https://github.com/HumanCompatibleAI/overcooked_ai",
+      "citation": "Carroll, M., Shah, R., Ho, M. K., Griffiths, T. L., Seshia, S. A., Abbeel, P., & Dragan, A. (2019). On the Utility of Learning about Humans for Human-AI Coordination. NeurIPS 2019. https://doi.org/10.48550/arXiv.1910.05789"
+    },
+    {
+      "@type": "Dataset",
+      "name": "AH2AC2 Hanabi Human Dataset (Dizdarević et al. 2025)",
+      "description": "Dataset of 3,079 Hanabi games used to train the behavioral cloning (BC) human proxy agent included among the evaluation teammates; the BC-LSTM agent weights are derived from training on this data.",
+      "url": "https://github.com/FLAIROx/ah2ac2",
+      "citation": "Dizdarević, T., Hammond, R., Gessler, T., Calinescu, A., Cook, J., Gallici, M., Lupu, A., Muglich, D., Forkel, J., & Foerster, J. N. (2025). Ad-Hoc Human-AI Coordination Challenge. ICML 2025. https://arxiv.org/abs/2506.21490"
+    }
+  ],
+  "prov:wasGeneratedBy": [
+    {
+      "@type": "prov:Activity",
+      "name": "Best-Response Agent Training",
+      "description": "For each evaluation teammate in jaxaht/eval-teammates, a best-response policy was trained using PPO (Proximal Policy Optimization) in the corresponding environment task. Training was conducted independently per (teammate, task) pair with a fixed training budget. No annotation or post-processing was applied beyond selecting the final checkpoint."
+    }
+  ]
 }
