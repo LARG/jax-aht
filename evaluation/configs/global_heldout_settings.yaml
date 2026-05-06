@@ -118,6 +118,7 @@ heldout_set:
       layout: lbf_7x7
       test_mode: true
       performance_bounds:
+        percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
   lbf/lbf_12x12:
     ippo_mlp:
@@ -211,6 +212,7 @@ heldout_set:
       layout: lbf_12x12
       test_mode: true
       performance_bounds:
+        percent_eaten: [0.0, 70.34]
         returned_episode_returns: [0.0, 0.3517]
   overcooked-v1/cramped_room: # DONE - DO NOT MODIFY
     ippo_mlp: 
@@ -282,6 +284,7 @@ heldout_set:
       layout: cramped_room
       test_mode: true
       performance_bounds:
+        base_return: [[0.0, 222.00], [0.0, 216.00], [0.0, 222.00], [0.0, 231.00], [0.0, 231.00]]
         returned_episode_returns: [[0.0, 237.28], [0.0, 230.82], [0.0, 237.35], [0.0, 246.57], [0.0, 246.55]]
   overcooked-v1/asymm_advantages: # DONE - DO NOT MODIFY
     ippo_mlp: 
@@ -483,6 +486,7 @@ heldout_set:
       layout: coord_ring
       test_mode: true
       performance_bounds:
+        base_return: [[0.0, 215.00], [0.0, 216.00], [0.0, 199.00], [0.0, 209.00], [0.0, 201.00]]
         returned_episode_returns: [[0.0, 228.85], [0.0, 229.89], [0.0, 211.75], [0.0, 222.74], [0.0, 213.90]]
   overcooked-v1/forced_coord:  # DONE - DO NOT MODIFY
     ippo_mlp: 
