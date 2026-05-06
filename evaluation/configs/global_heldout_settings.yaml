@@ -113,6 +113,12 @@ heldout_set:
       performance_bounds:
         percent_eaten: [[0.0, 100.00], [0.0, 51.56], [0.0, 100.00], [0.0, 100.00], [0.0, 99.48]]
         returned_episode_returns: [[0.0, 0.50], [0.0, 0.32], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50]]
+    human_proxy:
+      actor_type: bc_proxy
+      layout: lbf_7x7
+      test_mode: true
+      performance_bounds:
+        returned_episode_returns: [0.0, 0.5]
   lbf/lbf_12x12:
     ippo_mlp:
       path: "eval_teammates/lbf_12x12/ippo-lbf-12-levels/saved_train_run"
@@ -200,6 +206,12 @@ heldout_set:
       performance_bounds:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
+    human_proxy:
+      actor_type: bc_proxy
+      layout: lbf_12x12
+      test_mode: true
+      performance_bounds:
+        returned_episode_returns: [0.0, 0.3517]
   overcooked-v1/cramped_room: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/cramped_room/ippo/2025-04-21_22-53-04/saved_train_run"
@@ -265,6 +277,12 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 250.31], [0.0, 202.19], [0.0, 209.69], [0.0, 208.44], [0.0, 201.25]]
         returned_episode_returns: [[0.0, 267.72], [0.0, 216.13], [0.0, 224.01], [0.0, 222.96], [0.0, 215.27]]
+    human_proxy:
+      actor_type: bc_proxy
+      layout: cramped_room
+      test_mode: true
+      performance_bounds:
+        returned_episode_returns: [[0.0, 237.28], [0.0, 230.82], [0.0, 237.35], [0.0, 246.57], [0.0, 246.55]]
   overcooked-v1/asymm_advantages: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/asymm_advantages/ippo/2025-04-21_22-53-56/saved_train_run"
@@ -460,6 +478,12 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 189.69], [0.0, 176.25], [0.0, 137.50], [0.0, 141.56], [0.0, 154.69]]
         returned_episode_returns: [[0.0, 201.83], [0.0, 187.43], [0.0, 145.86], [0.0, 150.90], [0.0, 164.88]]
+    human_proxy:
+      actor_type: bc_proxy
+      layout: coord_ring
+      test_mode: true
+      performance_bounds:
+        returned_episode_returns: [[0.0, 228.85], [0.0, 229.89], [0.0, 211.75], [0.0, 222.74], [0.0, 213.90]]
   overcooked-v1/forced_coord:  # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/forced_coord/ippo/2025-04-21_23-00-17/saved_train_run"
