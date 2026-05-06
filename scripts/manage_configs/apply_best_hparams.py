@@ -30,11 +30,15 @@ _EGO_ALGO_TO_CONFIG_NAME = {
 
 
 def _config_path(task: str, algorithm: str) -> Path:
-    task_family, task_name = task.split("/")
+    parts = task.split("/")
     if algorithm not in ALGO_TO_ENTRY_POINT:
         raise ValueError(f"Unknown algorithm '{algorithm}'. Known: {list(ALGO_TO_ENTRY_POINT)}")
     root = ALGO_TO_ENTRY_POINT[algorithm]
     config_name = _EGO_ALGO_TO_CONFIG_NAME.get(algorithm, algorithm)
+    if len(parts) == 1:
+        return REPO_ROOT / root / "configs" / "algorithm" / config_name / f"{task}.yaml"
+    task_family = "/".join(parts[:-1])
+    task_name = parts[-1]
     return REPO_ROOT / root / "configs" / "algorithm" / config_name / task_family / f"{task_name}.yaml"
 
 

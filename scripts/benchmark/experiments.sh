@@ -37,6 +37,7 @@ tasks=(
     # "overcooked-v1/counter_circuit"
     # "overcooked-v1/cramped_room"
     # "overcooked-v1/forced_coord"
+    # "mini-hanabi"
 )
 
 # === Algorithm → entry point mapping ===
