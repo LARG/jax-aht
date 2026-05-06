@@ -207,5 +207,13 @@
     "\ud83c\uddfa\ud83c\uddf8 Region: US"
   ],
   "license": "https://choosealicense.com/licenses/mit/",
-  "url": "https://huggingface.co/datasets/jaxaht/lbf-human-data"
+  "url": "https://huggingface.co/datasets/jaxaht/lbf-human-data",
+  "rai:dataLimitations": "",
+  "rai:dataBiases": "",
+  "rai:personalSensitiveInformation": "",
+  "rai:dataUseCases": "",
+  "rai:dataSocialImpact": "",
+  "rai:hasSyntheticData": false,
+  "prov:wasDerivedFrom": [],
+  "prov:wasGeneratedBy": []
 }
