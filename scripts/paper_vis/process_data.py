@@ -1,5 +1,6 @@
 """Load and summarize heldout eval metrics pulled from wandb."""
 import pickle
+import warnings
 from pathlib import Path
 from typing import List, Tuple
 
@@ -13,12 +14,48 @@ from scripts.paper_vis.plot_globals import (
 from scripts.wandb_utils.wandb_cache import fetch_run_eval_metrics_cached, DEFAULT_CACHE_DIR
 
 
+def detect_failed_seeds(
+    eval_metrics: dict,
+    metric_name: str,
+    relative_threshold: float = 0.10,
+    breadth_threshold: float = 0.80,
+    oel_method: bool = False,
+) -> np.ndarray:
+    """Return a boolean mask (num_seeds,) where True indicates a collapsed seed.
+
+    A seed is flagged when its mean return is below `relative_threshold` * the
+    best seed's mean return for more than `breadth_threshold` fraction of
+    heldout agents.
+
+    Handles both standard 4D arrays (num_seeds, num_heldout_agents, num_eval_eps,
+    num_agents_per_game) and OEL 5D arrays (adds num_oel_iter as axis 1; uses
+    the last iteration).
+    """
+    data = eval_metrics[metric_name]
+    if oel_method and data.ndim == 5:
+        data = data[:, -1]  # (num_seeds, num_heldout_agents, num_eval_eps, num_agents_per_game)
+
+    # Mean over eval_eps and agents_per_game -> (num_seeds, num_heldout_agents)
+    seed_teammate_means = data.mean(axis=(-1, -2))
+
+    best_per_teammate = seed_teammate_means.max(axis=0)  # (num_heldout_agents,)
+    valid = best_per_teammate > 0
+    if not valid.any():
+        return np.zeros(seed_teammate_means.shape[0], dtype=bool)
+
+    below = seed_teammate_means[:, valid] < relative_threshold * best_per_teammate[valid]
+    return below.mean(axis=-1) > breadth_threshold
+
+
 def load_results_for_task(
     task_name: str,
     run_specs: List[Tuple[str, str, bool]],
     force_recompute: bool = False,
     renormalize_metrics: bool = False,
     cache_dir: Path = DEFAULT_CACHE_DIR,
+    filter_failed_seeds: bool = False,
+    failed_seed_relative_threshold: float = 0.10,
+    failed_seed_breadth_threshold: float = 0.80,
 ) -> dict:
     """Fetch wandb eval-metric artifacts and compute summary stats for each method.
 
@@ -28,6 +65,12 @@ def load_results_for_task(
         force_recompute: skip summary-stats cache and recompute
         renormalize_metrics: if True, apply best-return normalization
         cache_dir: root of the local cache tree
+        filter_failed_seeds: if True, remove seeds that collapsed (near-zero
+            return across most heldout agents) before computing summary stats
+        failed_seed_relative_threshold: seed-vs-teammate mean must be below
+            this fraction of the best seed's mean to count as failed
+        failed_seed_breadth_threshold: fraction of heldout agents that must
+            be below the relative threshold to flag a seed as failed
 
     Returns:
         dict mapping display_name -> summary_data dict
@@ -39,7 +82,8 @@ def load_results_for_task(
     best_returns = None
     if renormalize_metrics:
         from scripts.paper_vis.compute_best_returns import load_best_returns
-        best_returns = load_best_returns(task_name, run_specs, cache_dir=cache_dir)
+        best_returns = load_best_returns(task_name, run_specs, cache_dir=cache_dir,
+                                         force_recompute=force_recompute)
         print(f"Loaded best returns for {task_name}: {best_returns}")
 
     results = {}
@@ -49,6 +93,8 @@ def load_results_for_task(
 
         safe_name = display_name.replace("/", "_").replace(" ", "_")
         suffix = "_renorm" if renormalize_metrics else ""
+        if filter_failed_seeds:
+            suffix += f"_filtered{failed_seed_relative_threshold}x{failed_seed_breadth_threshold}"
         summary_cache = (
             cache_dir / "summary_stats" / task_name / f"{safe_name}__{run_id_str}{suffix}.pkl"
         )
@@ -81,9 +127,31 @@ def load_results_for_task(
             perf_bounds = get_performance_bounds_from_run_config(run_config, task_name)
             eval_metrics = renormalize_eval_metrics(eval_metrics, perf_bounds, best_returns)
 
+        had_filtered_seeds = False
+        if filter_failed_seeds:
+            failed_mask = detect_failed_seeds(
+                eval_metrics, metric_names[0],
+                relative_threshold=failed_seed_relative_threshold,
+                breadth_threshold=failed_seed_breadth_threshold,
+                oel_method=is_oel,
+            )
+            if failed_mask.any():
+                had_filtered_seeds = True
+                seed_means = eval_metrics[metric_names[0]].mean(
+                    axis=tuple(range(1, eval_metrics[metric_names[0]].ndim))
+                )
+                warnings.warn(
+                    f"[{display_name}] Filtering {failed_mask.sum()} failed seed(s) "
+                    f"at index {np.where(failed_mask)[0].tolist()} "
+                    f"(per-seed means: {seed_means.round(4).tolist()})",
+                    stacklevel=2,
+                )
+                eval_metrics = {k: v[~failed_mask] for k, v in eval_metrics.items()}
+
         summary_data = heldout_metrics_per_agent(
             GLOBAL_HELDOUT_CONFIG, eval_metrics, metric_names, oel_method=is_oel
         )
+        summary_data["_filtered_seeds"] = had_filtered_seeds
 
         summary_cache.parent.mkdir(parents=True, exist_ok=True)
         with open(summary_cache, "wb") as f:
@@ -101,23 +169,18 @@ def load_results_for_task_merged(
     bc_run_specs: List[Tuple[str, str, bool]],
     force_recompute: bool = False,
     cache_dir: Path = DEFAULT_CACHE_DIR,
+    filter_failed_seeds: bool = False,
+    failed_seed_relative_threshold: float = 0.10,
+    failed_seed_breadth_threshold: float = 0.80,
 ) -> dict:
-    """Like `load_results_for_task` but merges each ego's training-time
-    heldout-eval artifact with its BC heldout-eval artifact along the partner
-    axis BEFORE running the reducer.
+    """Like `load_results_for_task` but merges each ego's training-time heldout
+    artifact with its BC heldout-eval artifact along the partner axis BEFORE
+    running the reducer. Both source artifacts are already per-partner
+    normalized by their `performance_bounds`, so the concat is comparable.
 
-    Both source artifacts are already per-partner normalized by their respective
-    `performance_bounds`, so concatenation produces a tensor whose values are
-    on a comparable [0,1]-ish scale across all partners.
-
-    Args:
-        run_specs: list of (display_name, run_id, is_oel) — the standard
-            EGO_BENCHMARK_RUNS entries (training-time heldout-eval, 17–23
-            diverse partners depending on task).
-        bc_run_specs: list of (display_name, run_id, is_oel) for the BC
-            heldout-eval (1 BC partner for LBF, 5 for overcooked). Indexed by
-            display_name; cells without a matching BC entry fall back to the
-            old behavior.
+    `bc_run_specs` indexes by display_name; cells without a matching BC entry
+    fall back to the standard pool only. Failed-seed filtering uses the same
+    `detect_failed_seeds` heuristic and threshold defaults as `load_results_for_task`.
     """
     cache_dir = Path(cache_dir)
     env_name = TASK_TO_ENV_NAME[task_name]
@@ -134,9 +197,12 @@ def load_results_for_task_merged(
         bc_id_str = bc_id if bc_id else "none"
 
         safe_name = display_name.replace("/", "_").replace(" ", "_")
+        suffix = ""
+        if filter_failed_seeds:
+            suffix += f"_filtered{failed_seed_relative_threshold}x{failed_seed_breadth_threshold}"
         summary_cache = (
             cache_dir / "summary_stats_merged" / task_name
-            / f"{safe_name}__{run_id_str}__bc_{bc_id_str}.pkl"
+            / f"{safe_name}__{run_id_str}__bc_{bc_id_str}{suffix}.pkl"
         )
 
         if not force_recompute and summary_cache.exists():
@@ -171,9 +237,31 @@ def load_results_for_task_merged(
                   f"{old_metrics[common[0]].shape} + BC shape "
                   f"{bc_metrics[common[0]].shape} → {eval_metrics[common[0]].shape}")
 
+        had_filtered_seeds = False
+        if filter_failed_seeds:
+            failed_mask = detect_failed_seeds(
+                eval_metrics, metric_names[0],
+                relative_threshold=failed_seed_relative_threshold,
+                breadth_threshold=failed_seed_breadth_threshold,
+                oel_method=is_oel,
+            )
+            if failed_mask.any():
+                had_filtered_seeds = True
+                seed_means = eval_metrics[metric_names[0]].mean(
+                    axis=tuple(range(1, eval_metrics[metric_names[0]].ndim))
+                )
+                warnings.warn(
+                    f"[{display_name}] Filtering {failed_mask.sum()} failed seed(s) "
+                    f"at index {np.where(failed_mask)[0].tolist()} "
+                    f"(per-seed means: {seed_means.round(4).tolist()})",
+                    stacklevel=2,
+                )
+                eval_metrics = {k: v[~failed_mask] for k, v in eval_metrics.items()}
+
         summary_data = heldout_metrics_per_agent(
             GLOBAL_HELDOUT_CONFIG, eval_metrics, metric_names, oel_method=is_oel
         )
+        summary_data["_filtered_seeds"] = had_filtered_seeds
 
         summary_cache.parent.mkdir(parents=True, exist_ok=True)
         with open(summary_cache, "wb") as f:

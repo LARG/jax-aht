@@ -27,6 +27,7 @@ def plot_single_bar_chart(results, metric_name: str, aggregate_stat_name: str,
     fig, ax = plt.subplots(figsize=(max(4, num_methods * bar_width * 2 + 4), 5))
     colors = plt.cm.tab10(np.arange(num_methods) / 10)
 
+    star_positions = []
     for i, display_name in enumerate(method_display_names):
         stat_key = f"overall_{aggregate_stat_name}"
         point_estimate = results[display_name][metric_name][stat_key]
@@ -36,6 +37,11 @@ def plot_single_bar_chart(results, metric_name: str, aggregate_stat_name: str,
         x = (i - num_methods / 2 + 0.5) * bar_width
         ax.bar([x], [point_estimate], width=bar_width, label=display_name,
                yerr=yerr, alpha=0.7, color=colors[i], ecolor='black', capsize=5, zorder=10)
+        if results[display_name].get("_filtered_seeds", False):
+            star_positions.append((x, upper_ci))
+
+    for x_s, y_s in star_positions:
+        ax.text(x_s, y_s, "*", ha="center", va="bottom", fontsize=LEGEND_FONTSIZE, zorder=11)
 
     ax.set_xticks([0])
     ax.set_xticklabels([task_display_name], fontsize=AXIS_LABEL_FONTSIZE)
@@ -91,6 +97,7 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
     colors = plt.cm.tab10(np.arange(num_methods) / 10)
     
     # Plot bars for each method across all tasks (skip tasks where method is absent)
+    star_positions = []
     for i, method_name in enumerate(method_display_names):
         x_positions = []
         y_values = []
@@ -107,9 +114,12 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
             lower_ci = method_results[task_metric_name]["overall_lower_ci"]
             upper_ci = method_results[task_metric_name]["overall_upper_ci"]
 
-            x_positions.append(task_positions[j] + (i - num_methods / 2 + 0.5) * bar_width)
+            x_pos = task_positions[j] + (i - num_methods / 2 + 0.5) * bar_width
+            x_positions.append(x_pos)
             y_values.append(point_estimate)
             y_errors.append([point_estimate - lower_ci, upper_ci - point_estimate])
+            if method_results.get("_filtered_seeds", False):
+                star_positions.append((x_pos, upper_ci))
 
         if not y_values:
             continue
@@ -118,6 +128,9 @@ def plot_all_tasks_bar_chart(all_task_results, metric_name: str, aggregate_stat_
         ax.bar(x_positions, y_values, width=bar_width, label=method_name,
                yerr=y_errors_transposed, alpha=0.7, color=colors[i],
                ecolor='black', capsize=5, zorder=10)
+
+    for x_s, y_s in star_positions:
+        ax.text(x_s, y_s, "*", ha="center", va="bottom", fontsize=LEGEND_FONTSIZE, zorder=11)
     
     # Set x-axis tick labels to task names
     task_display_names = [TASK_TO_AXIS_DISPLAY_NAME[task] for task in tasks]
@@ -184,6 +197,7 @@ def plot_all_tasks_ego_bar_chart(
     fig, ax = plt.subplots(figsize=(max(4, num_tasks * (num_bars * bar_width * 2 + 1)), 6))
     task_positions = np.arange(num_tasks)
 
+    star_positions = []
     for i, (display_name, base_method, hatch) in enumerate(run_info):
         color = colors[seen_base[base_method]]
         x_positions, y_values, y_errors = [], [], []
@@ -202,9 +216,12 @@ def plot_all_tasks_ego_bar_chart(
             lower_ci = method_results[task_metric_name]["overall_lower_ci"]
             upper_ci = method_results[task_metric_name]["overall_upper_ci"]
 
-            x_positions.append(task_positions[j] + (i - num_bars / 2 + 0.5) * bar_width)
+            x_pos = task_positions[j] + (i - num_bars / 2 + 0.5) * bar_width
+            x_positions.append(x_pos)
             y_values.append(point_estimate)
             y_errors.append([point_estimate - lower_ci, upper_ci - point_estimate])
+            if method_results.get("_filtered_seeds", False):
+                star_positions.append((x_pos, upper_ci))
 
         if not y_values:
             continue
@@ -212,6 +229,9 @@ def plot_all_tasks_ego_bar_chart(
         ax.bar(x_positions, y_values, width=bar_width, label=display_name,
                yerr=np.array(y_errors).T, alpha=0.7, color=color, hatch=hatch,
                ecolor='black', capsize=5, zorder=10)
+
+    for x_s, y_s in star_positions:
+        ax.text(x_s, y_s, "*", ha="center", va="bottom", fontsize=LEGEND_FONTSIZE, zorder=11)
 
     task_display_names = [TASK_TO_AXIS_DISPLAY_NAME[task] for task in tasks]
     ax.set_xticks(task_positions)
@@ -247,8 +267,8 @@ if __name__ == "__main__":
     parser.add_argument("--plot_type", type=str, default="unified",
                         choices=["unified", "ego"],
                         help="unified: teammate-generation methods; ego: ego-training methods")
-    parser.add_argument("--use_best_returns_normalization", action="store_true",
-                        help="Renormalize using best observed returns across all methods")
+    parser.add_argument("--use_best_returns_normalization", action=argparse.BooleanOptionalAction,
+                        default=True, help="Renormalize using best observed returns across all methods")
     parser.add_argument("--show_plots", action="store_true",
                         help="Show plots in addition to saving them")
     parser.add_argument("--save_dir", type=str, default=SAVE_DIR,
@@ -259,6 +279,12 @@ if __name__ == "__main__":
                         help="Re-fetch artifacts and recompute summary stats")
     parser.add_argument("--include_bc", action="store_true",
                         help="Merge BC heldout-eval artifacts (BC_BENCHMARK_RUNS) onto the standard heldout pool along the partner axis before computing aggregate stats. Only applies to --plot_type=ego.")
+    parser.add_argument("--filter_failed_seeds", action="store_true",
+                        help="Exclude seeds with near-zero returns across most heldout agents")
+    parser.add_argument("--failed_seed_relative_threshold", type=float, default=0.10,
+                        help="Seed-vs-teammate mean below this fraction of best seed counts as failed (default: 0.10)")
+    parser.add_argument("--failed_seed_breadth_threshold", type=float, default=0.80,
+                        help="Fraction of heldout agents that must fail to flag a seed (default: 0.80)")
     args = parser.parse_args()
 
     # Collect tasks that have at least one benchmark run defined
@@ -322,6 +348,9 @@ if __name__ == "__main__":
                 run_specs,
                 bc_run_specs,
                 force_recompute=args.force_recompute,
+                filter_failed_seeds=args.filter_failed_seeds,
+                failed_seed_relative_threshold=args.failed_seed_relative_threshold,
+                failed_seed_breadth_threshold=args.failed_seed_breadth_threshold,
             )
         else:
             all_task_results[task_name] = load_results_for_task(
@@ -329,6 +358,9 @@ if __name__ == "__main__":
                 run_specs,
                 force_recompute=args.force_recompute,
                 renormalize_metrics=args.use_best_returns_normalization,
+                filter_failed_seeds=args.filter_failed_seeds,
+                failed_seed_relative_threshold=args.failed_seed_relative_threshold,
+                failed_seed_breadth_threshold=args.failed_seed_breadth_threshold,
             )
 
     if not all_task_results:
