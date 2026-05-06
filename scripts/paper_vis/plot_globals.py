@@ -168,6 +168,17 @@ HYPERPARAM_SWEEPS = {
         "cole": "irstlaiv", 
         "trajedi": "j26xa39y",
     },
+    "mini-hanabi": {
+        "ppo_ego": "", 
+        "liam": "", 
+        "meliba": "",
+        "fcp": "oku0yyg0", 
+        "brdiv": "wnnhav1m", 
+        "lbrdiv": "uvvpc05r",
+        "comedi": "s745q3lg", 
+        "cole": "158to6y5", 
+        "trajedi": "4my4n564",
+    }
 }
 
 # values that were mistakenly included in the
