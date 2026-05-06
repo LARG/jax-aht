@@ -12,3 +12,10 @@ S5_D_MODEL: 128
 S5_SSM_SIZE: 128
 S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
 FC_N_LAYERS: 3
+partner_agent:
+  ippo:
+    path: val_teammates/hanabi/ippo/default_label/saved_train_run
+    actor_type: mlp
+    ckpt_key: final_params
+    idx_list: [0, 1, 2]
+    FC_HIDDEN_DIM: 256

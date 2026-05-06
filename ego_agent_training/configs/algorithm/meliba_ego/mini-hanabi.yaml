@@ -4,3 +4,10 @@ defaults:
 
 TOTAL_TIMESTEPS: 7e6
 UPDATE_EPOCHS: 5
+partner_agent:
+  ippo:
+    path: val_teammates/hanabi/ippo/default_label/saved_train_run
+    actor_type: mlp
+    ckpt_key: final_params
+    idx_list: [0, 1, 2]
+    FC_HIDDEN_DIM: 256
