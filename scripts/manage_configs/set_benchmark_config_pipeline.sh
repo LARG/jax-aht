@@ -8,8 +8,8 @@
 # python scripts/manage_configs/apply_best_hparams.py \
 #     --task "lbf/lbf_7x7_nolevels" --dry-run
 
-# python scripts/manage_configs/apply_best_hparams.py \
-#     --task "mini-hanabi" --dry-run
+python scripts/manage_configs/apply_best_hparams.py \
+    --task "mini-hanabi" --dry-run
 
 # 2. Set benchmark timesteps
 python scripts/manage_configs/update_timesteps.py teammate_generation/ \

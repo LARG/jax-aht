@@ -176,7 +176,7 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "wnnhav1m", 
         "lbrdiv": "uvvpc05r",
         "comedi": "s745q3lg", 
-        # "cole": "158to6y5", # STILL RUNNING
+        "cole": "158to6y5",
         "trajedi": "4my4n564",
     }
 }
