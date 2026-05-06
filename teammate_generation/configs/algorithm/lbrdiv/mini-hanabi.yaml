@@ -3,7 +3,7 @@ defaults:
   - _self_
 
 # Mini-Hanabi (3c/3r/hand3) LBRDiv config.
-TOTAL_TIMESTEPS: 1e8
+TOTAL_TIMESTEPS: 9.5e7
 PARTNER_POP_SIZE: 10
 NUM_ENVS: 512
 LR: 1e-4

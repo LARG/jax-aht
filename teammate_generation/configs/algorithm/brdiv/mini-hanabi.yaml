@@ -3,7 +3,7 @@ defaults:
   - _self_
 
 # Mini-Hanabi (3c/3r/hand3) BRDiv config.
-TOTAL_TIMESTEPS: 1e8
+TOTAL_TIMESTEPS: 9.5e7
 PARTNER_POP_SIZE: 5
 NUM_ENVS: 512
 XP_LOSS_WEIGHTS: 0.01
