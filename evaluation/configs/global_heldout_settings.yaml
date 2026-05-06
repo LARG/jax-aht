@@ -540,7 +540,7 @@ heldout_set:
       actor_type: flawed
       play_threshold: 0.4
       performance_bounds:
-        returned_episode_returns: [0.0, 1.80]
+        returned_episode_returns: [0.0, 7.08]
     outer:
       actor_type: outer
       performance_bounds:
@@ -602,7 +602,7 @@ heldout_set:
         returned_episode_returns: [[0.0, 11.87]]
     # S5 recurrent IPPO self-play partners.
     ippo_s5_seed42:
-      path: "eval_teammates/hanabi/ippo_s5/seed42/saved_train_run"
+      path: "eval_teammates/hanabi/ippo_s5/seed42"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -614,7 +614,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 12.12]]
     ippo_s5_seed123:
-      path: "eval_teammates/hanabi/ippo_s5/seed123/saved_train_run"
+      path: "eval_teammates/hanabi/ippo_s5/seed123"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -626,7 +626,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 12.16]]
     ippo_s5_seed31415:
-      path: "eval_teammates/hanabi/ippo_s5/seed31415/saved_train_run"
+      path: "eval_teammates/hanabi/ippo_s5/seed31415"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -638,7 +638,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 11.69]]
     ippo_s5_op_seed42:
-      path: "eval_teammates/hanabi/ippo_s5_op/seed42/saved_train_run"
+      path: "eval_teammates/hanabi/ippo_s5_op/seed42"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -650,7 +650,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 12.87]]
     ippo_s5_op_seed123:
-      path: "eval_teammates/hanabi/ippo_s5_op/seed123/saved_train_run"
+      path: "eval_teammates/hanabi/ippo_s5_op/seed123"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -662,7 +662,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 11.91]]
     ippo_s5_op_seed31415:
-      path: "eval_teammates/hanabi/ippo_s5_op/seed31415/saved_train_run"
+      path: "eval_teammates/hanabi/ippo_s5_op/seed31415"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -721,7 +721,7 @@ heldout_set:
       actor_type: flawed
       play_threshold: 0.4
       performance_bounds:
-        returned_episode_returns: [0.0, 6.38]
+        returned_episode_returns: [0.0, 7.13]
     outer:
       actor_type: outer
       performance_bounds:
