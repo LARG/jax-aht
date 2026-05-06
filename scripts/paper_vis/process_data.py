@@ -163,6 +163,116 @@ def load_results_for_task(
     return results
 
 
+def load_results_for_task_merged(
+    task_name: str,
+    run_specs: List[Tuple[str, str, bool]],
+    bc_run_specs: List[Tuple[str, str, bool]],
+    force_recompute: bool = False,
+    cache_dir: Path = DEFAULT_CACHE_DIR,
+    filter_failed_seeds: bool = False,
+    failed_seed_relative_threshold: float = 0.10,
+    failed_seed_breadth_threshold: float = 0.80,
+) -> dict:
+    """Like `load_results_for_task` but merges each ego's training-time heldout
+    artifact with its BC heldout-eval artifact along the partner axis BEFORE
+    running the reducer. Both source artifacts are already per-partner
+    normalized by their `performance_bounds`, so the concat is comparable.
+
+    `bc_run_specs` indexes by display_name; cells without a matching BC entry
+    fall back to the standard pool only. Failed-seed filtering uses the same
+    `detect_failed_seeds` heuristic and threshold defaults as `load_results_for_task`.
+    """
+    cache_dir = Path(cache_dir)
+    env_name = TASK_TO_ENV_NAME[task_name]
+    metric_names = get_metric_names(env_name)
+
+    bc_by_name = {dn: rid for dn, rid, _ in bc_run_specs}
+
+    results = {}
+    for display_name, run_id, is_oel in run_specs:
+        run_ids = run_id if isinstance(run_id, list) else [run_id]
+        run_id_str = "+".join(run_ids)
+
+        bc_id = bc_by_name.get(display_name)
+        bc_id_str = bc_id if bc_id else "none"
+
+        safe_name = display_name.replace("/", "_").replace(" ", "_")
+        suffix = ""
+        if filter_failed_seeds:
+            suffix += f"_filtered{failed_seed_relative_threshold}x{failed_seed_breadth_threshold}"
+        summary_cache = (
+            cache_dir / "summary_stats_merged" / task_name
+            / f"{safe_name}__{run_id_str}__bc_{bc_id_str}{suffix}.pkl"
+        )
+
+        if not force_recompute and summary_cache.exists():
+            with open(summary_cache, "rb") as f:
+                results[display_name] = pickle.load(f)
+            print(f"Loaded cached merged summary for {display_name}")
+            continue
+
+        # Pull the standard heldout-eval artifact(s) (handles list-pooling).
+        old_parts = [
+            fetch_run_eval_metrics_cached(rid, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute)
+            for rid in run_ids
+        ]
+        old_metrics = old_parts[0] if len(old_parts) == 1 else {
+            k: np.concatenate([p[k] for p in old_parts], axis=0) for k in old_parts[0]
+        }
+
+        if bc_id is None:
+            print(f"  no BC run registered for {display_name}; using old artifact only.")
+            eval_metrics = old_metrics
+        else:
+            bc_metrics = fetch_run_eval_metrics_cached(
+                bc_id, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute
+            )
+            partner_axis = 2 if is_oel else 1   # OEL is 5D with seeds×iter prefix; partner axis shifts by 1
+            common = sorted(set(old_metrics) & set(bc_metrics))
+            eval_metrics = {
+                k: np.concatenate([old_metrics[k], bc_metrics[k]], axis=partner_axis)
+                for k in common
+            }
+            print(f"  merged {display_name}: old shape "
+                  f"{old_metrics[common[0]].shape} + BC shape "
+                  f"{bc_metrics[common[0]].shape} → {eval_metrics[common[0]].shape}")
+
+        had_filtered_seeds = False
+        if filter_failed_seeds:
+            failed_mask = detect_failed_seeds(
+                eval_metrics, metric_names[0],
+                relative_threshold=failed_seed_relative_threshold,
+                breadth_threshold=failed_seed_breadth_threshold,
+                oel_method=is_oel,
+            )
+            if failed_mask.any():
+                had_filtered_seeds = True
+                seed_means = eval_metrics[metric_names[0]].mean(
+                    axis=tuple(range(1, eval_metrics[metric_names[0]].ndim))
+                )
+                warnings.warn(
+                    f"[{display_name}] Filtering {failed_mask.sum()} failed seed(s) "
+                    f"at index {np.where(failed_mask)[0].tolist()} "
+                    f"(per-seed means: {seed_means.round(4).tolist()})",
+                    stacklevel=2,
+                )
+                eval_metrics = {k: v[~failed_mask] for k, v in eval_metrics.items()}
+
+        summary_data = heldout_metrics_per_agent(
+            GLOBAL_HELDOUT_CONFIG, eval_metrics, metric_names, oel_method=is_oel
+        )
+        summary_data["_filtered_seeds"] = had_filtered_seeds
+
+        summary_cache.parent.mkdir(parents=True, exist_ok=True)
+        with open(summary_cache, "wb") as f:
+            pickle.dump(summary_data, f)
+        print(f"Saved merged summary for {display_name} → {summary_cache}")
+
+        results[display_name] = summary_data
+
+    return results
+
+
 def heldout_metrics_per_agent(config, eval_metrics, metric_names: tuple, oel_method: bool):
     """Compute aggregate stat and CI over heldout agents.
 
