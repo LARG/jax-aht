@@ -127,6 +127,18 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
                 heuristic=heuristic,
                 using_log_wrapper=True,
             )
+        if actor_type == "bc_proxy":
+            # Frozen LBF BC-LSTM human-proxy. Layout (lbf_7x7 / lbf_12x12) is
+            # passed in agent_config; load_lbf_human_proxy auto-downloads from
+            # HF if not cached. The wrapper bakes in BC params and adapts the
+            # leading-batch hstate to per-element form for HeuristicPolicyPopulation.
+            from agents.bc.lbf_human_proxy import load_lbf_human_proxy
+            from agents.bc.bc_lstm import LBFBCProxyPartnerWrapper
+            layout = agent_config.get("layout") or agent_config.get("layout_name")
+            if layout is None:
+                raise ValueError("bc_proxy on lbf requires 'layout' (e.g. 'lbf_7x7' or 'lbf_12x12').")
+            bc_policy, bc_params = load_lbf_human_proxy(layout)
+            return LBFBCProxyPartnerWrapper(bc_policy, bc_params)
         raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
 
     if 'overcooked-v1' in task_name:

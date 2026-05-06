@@ -1,4 +1,7 @@
-"""Cross-play matrix: BC human-proxy × {ppo_ego, liam_ego, meliba_ego} on coord_ring.
+"""Cross-play matrix: BC human-proxy × {ppo_ego, liam_ego, meliba_ego} on a
+chosen overcooked-v1 layout. The runs evaluated for each (algo, teammate_set)
+cell are hardcoded in RUNS_BY_LAYOUT below — discovery is deliberately external
+(curate manually, paste the wandb ids in).
 
 Evaluates BOTH agent positions (ego at slot 0 vs BC at slot 0).
 Sweeps over all 5 BC checkpoints (run_id 0..4) per ego variant.
@@ -10,8 +13,9 @@ Vmap layout:
   a flat variant batch.
 
 Usage:
-  /scratch/cluster/jyliu/conda_envs/HANABI/bin/python scripts/coord_ring_bc_xp.py
+  /scratch/cluster/jyliu/conda_envs/HANABI/bin/python scripts/coord_ring_bc_xp.py [--layout LAYOUT]
 """
+import argparse
 import csv
 import json
 import time
@@ -32,26 +36,59 @@ from common.save_load_utils import load_train_run
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 
-LAYOUT = "coord_ring"
 NUM_EPS = 10
 EVAL_SEED = 34957
 ROLLOUT_LEN = 400
 BC_RUN_IDS = (0, 1, 2, 3, 4)
-BC_SELFPLAY_REF = 268.481  # measured BC×BC self-play (run_id=0) baseline
 
-ENV_KWARGS = {
-    "layout": LAYOUT,
-    "random_obj_state": True,
-    "do_reward_shaping": True,
-    "reward_shaping_params": {
-        "PLACEMENT_IN_POT_REW": 0.5,
-        "PLATE_PICKUP_REWARD": 0.1,
-        "SOUP_PICKUP_REWARD": 1.0,
-        "ONION_PICKUP_REWARD": 0.1,
-        "COUNTER_PICKUP_REWARD": 0,
-        "COUNTER_DROP_REWARD": 0,
+# ---- Per-layout settings ----
+# do_reward_shaping=True gives both shaped + base in the env step info; the
+# bar chart plots whichever metric matches the env's training reward (so coord_ring
+# uses shaped, all other layouts use sparse/base since their evals run unshaped).
+SHAPING_PARAMS = {
+    "PLACEMENT_IN_POT_REW": 0.5,
+    "PLATE_PICKUP_REWARD": 0.1,
+    "SOUP_PICKUP_REWARD": 1.0,
+    "ONION_PICKUP_REWARD": 0.1,
+    "COUNTER_PICKUP_REWARD": 0,
+    "COUNTER_DROP_REWARD": 0,
+}
+LAYOUT_CFG = {
+    "coord_ring": {
+        "do_reward_shaping": True,
+        "plot_metric": "shaped",       # "shaped" or "base"
+        "bc_selfplay_ref": 268.481,    # shaped BC×BC self-play (run_id=0)
+    },
+    "cramped_room": {
+        "do_reward_shaping": False,
+        "plot_metric": "base",
+        "bc_selfplay_ref": 196.25,     # base BC×BC self-play (run_id=0)
+    },
+    "asymm_advantages": {
+        "do_reward_shaping": False,
+        "plot_metric": "base",
+        "bc_selfplay_ref": 371.25,
+    },
+    "counter_circuit": {
+        "do_reward_shaping": False,
+        "plot_metric": "base",
+        "bc_selfplay_ref": 120.63,
+    },
+    "forced_coord": {
+        "do_reward_shaping": False,
+        "plot_metric": "base",
+        "bc_selfplay_ref": 152.50,
     },
 }
+
+
+def build_env_kwargs(layout):
+    cfg = LAYOUT_CFG[layout]
+    kw = {"layout": layout, "random_obj_state": True,
+          "do_reward_shaping": cfg["do_reward_shaping"]}
+    if cfg["do_reward_shaping"]:
+        kw["reward_shaping_params"] = SHAPING_PARAMS
+    return kw
 
 PPO_EGO_CFG = {
     "EGO_ACTOR_TYPE": "s5",
@@ -87,17 +124,32 @@ MELIBA_CFG = {
     "ENCODER_LATENT_DIM": 64,
 }
 
-# Each run id is one wandb training run. Listed in fcp/rotate/comedi order.
-RUNS = {
-    "ppo_ego":    [("0wzr6nbv", "fcp"), ("7mrfwnra", "rotate"), ("5njknt2q", "comedi")],
-    "liam_ego":   [("e8y4gy49", "fcp"), ("4vdq0mjv", "rotate"), ("pmm9u33p", "comedi")],
-    "meliba_ego": [("x6gmp9uc", "fcp"), ("c9o32dg3", "rotate"),
-                   ("bd6w70tr", "comedi"), ("7a19mtio", "comedi")],
+# Each (algo) -> list of (wandb_id, teammate_set). Multiple entries with the same
+# teammate set are pooled along the leading seed axis (e.g., a 3-seed + 2-seed
+# meliba pair forms a 5-variant cell). Curated manually — see RUNS_INVENTORY.md
+# for how these were discovered (project=aht-project/aht-benchmark,
+# tags=neurips:benchmark + neurips:benchmark:<set>_teammates + overcooked-v1/<layout>).
+RUNS_BY_LAYOUT = {
+    "coord_ring": {
+        "ppo_ego":    [("0wzr6nbv", "fcp"), ("7mrfwnra", "rotate"), ("5njknt2q", "comedi")],
+        "liam_ego":   [("e8y4gy49", "fcp"), ("4vdq0mjv", "rotate"), ("pmm9u33p", "comedi")],
+        "meliba_ego": [("x6gmp9uc", "fcp"), ("c9o32dg3", "rotate"),
+                       ("bd6w70tr", "comedi"), ("7a19mtio", "comedi")],
+    },
+    "cramped_room": {
+        "ppo_ego":    [("rm5bx4ui", "fcp"), ("7jhrdpxc", "comedi")],
+        "liam_ego":   [("xuvmlpmi", "fcp"), ("8486vdnp", "comedi")],
+        "meliba_ego": [("v5ey4lkt", "fcp"), ("lghgomp3", "fcp"),
+                       ("3e6wffoi", "comedi"), ("en1wbqt4", "comedi")],
+    },
+    # asymm_advantages / counter_circuit / forced_coord intentionally absent —
+    # no ppo_ego/liam_ego/meliba_ego wandb runs exist for those layouts (only
+    # teammate-generation runs: brdiv/comedi/fcp/ippo/lbrdiv/ppo_br/rotate).
 }
 
 
-def build_env():
-    return LogWrapper(make_env("overcooked-v1", ENV_KWARGS))
+def build_env(layout):
+    return LogWrapper(make_env("overcooked-v1", build_env_kwargs(layout)))
 
 
 def build_ego_policy(algo, env, init_rng):
@@ -209,12 +261,13 @@ def rollout_single_ep(
     return final[-1]
 
 
-def run_for_algo(algo, env, ego_policy, bc_policies, run_specs, rng_master):
+def run_for_algo(layout, algo, env, ego_policy, bc_policies, run_specs, rng_master):
     """Run all (run, seed, position, bc_run_id, episode) for one algorithm.
 
     One vmapped pass per (position, bc_run_id) — variant batch is (V × NUM_EPS).
 
     Args:
+        layout: overcooked-v1 layout name (used to resolve wandb_<id> path).
         bc_policies: dict mapping bc_run_id -> BCPolicy instance.
         run_specs: list of (run_id, teammate_set) for this algo.
     Returns:
@@ -225,7 +278,7 @@ def run_for_algo(algo, env, ego_policy, bc_policies, run_specs, rng_master):
     per_run_meta = []
     per_run_params = []
     for rid, tt in run_specs:
-        path = f"results/overcooked-v1/{LAYOUT}/{algo}/wandb_{rid}"
+        path = f"results/overcooked-v1/{layout}/{algo}/wandb_{rid}"
         out = load_train_run(path)
         params = extract_ego_params(algo, out["final_params"])
         n_seeds = jax.tree.leaves(params)[0].shape[0]
@@ -314,24 +367,39 @@ def bootstrap_ci(values, n_resamples=10000, alpha=0.05, rng=None):
 
 
 def main():
-    print("Building env...", flush=True)
-    env = build_env()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--layout", default="coord_ring",
+                        choices=sorted(LAYOUT_CFG.keys()))
+    args = parser.parse_args()
+    layout = args.layout
+
+    if layout not in RUNS_BY_LAYOUT:
+        raise SystemExit(f"No curated ego wandb runs for layout='{layout}'. "
+                         f"Edit RUNS_BY_LAYOUT in this file to add them.")
+    runs_for_layout = RUNS_BY_LAYOUT[layout]
+    cfg = LAYOUT_CFG[layout]
+    print(f"Layout: {layout}  do_reward_shaping={cfg['do_reward_shaping']}  "
+          f"plot_metric={cfg['plot_metric']}  bc_selfplay_ref={cfg['bc_selfplay_ref']}",
+          flush=True)
+    print(f"Building env (kwargs={build_env_kwargs(layout)})...", flush=True)
+    env = build_env(layout)
     print(f"Loading {len(BC_RUN_IDS)} BC policies (run_ids={list(BC_RUN_IDS)})...", flush=True)
-    bc_policies = {rid: BCPolicy(LAYOUT, using_log_wrapper=True, run_id=rid)
+    bc_policies = {rid: BCPolicy(layout, using_log_wrapper=True, run_id=rid)
                    for rid in BC_RUN_IDS}
 
     rng_master = jax.random.PRNGKey(EVAL_SEED)
 
     summary = {}
-    for algo, run_specs in RUNS.items():
+    for algo, run_specs in runs_for_layout.items():
         print(f"\n{'='*60}\nAlgo: {algo}\n{'='*60}", flush=True)
         rng_master, init_rng = jax.random.split(rng_master)
         ego_policy, _ = build_ego_policy(algo, env, init_rng)
-        rows, rng_master = run_for_algo(algo, env, ego_policy, bc_policies, run_specs, rng_master)
+        rows, rng_master = run_for_algo(layout, algo, env, ego_policy, bc_policies,
+                                        run_specs, rng_master)
         summary[algo] = rows
 
     # Save raw per-episode JSON.
-    out_dir = Path(f"results/overcooked-v1/{LAYOUT}")
+    out_dir = Path(f"results/overcooked-v1/{layout}")
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / "bc_xp_results.json"
     with open(json_path, "w") as f:
@@ -359,12 +427,17 @@ def main():
     agg_csv = out_dir / "bc_xp_agg.csv"
     agg_ci_csv = out_dir / "bc_xp_agg_with_ci.csv"
     order_a = ["liam_ego", "ppo_ego", "meliba_ego"]
-    order_t = ["fcp", "rotate", "comedi"]
+    # Iterate teammate sets in canonical order, but skip those with no runs in
+    # this layout (e.g., cramped_room has no rotate runs).
+    present_tts = {tt for specs in runs_for_layout.values() for _, tt in specs}
+    order_t = [tt for tt in ("fcp", "rotate", "comedi") if tt in present_tts]
+    plot_metric = cfg["plot_metric"]            # "shaped" | "base" — drives bar chart + bootstrap CI
     agg_table = []
     rng_boot = np.random.default_rng(20260504)
 
     print(f"\n{'algorithm':<11} {'teammate_set':<13} {'n':>5} "
-          f"{'shaped (mean ± std)':<22} {'base (mean ± std)':<22} {'CI95':<22}")
+          f"{'shaped (mean ± std)':<22} {'base (mean ± std)':<22} "
+          f"{'CI95(' + plot_metric + ')':<22}")
     print("-" * 100)
     with open(agg_csv, "w", newline="") as f_agg, \
          open(agg_ci_csv, "w", newline="") as f_ci:
@@ -372,8 +445,8 @@ def main():
         w_ci = csv.writer(f_ci)
         w_agg.writerow(["algorithm","teammate_set","n_obs","shaped_mean","shaped_std",
                         "base_mean","base_std"])
-        w_ci.writerow(["algorithm","teammate_set","n_obs","shaped_mean","shaped_std",
-                       "shaped_se","shaped_ci_lo_boot","shaped_ci_hi_boot"])
+        w_ci.writerow(["algorithm","teammate_set","n_obs","plot_metric",
+                       "mean","std","se","ci_lo_boot","ci_hi_boot"])
         for tt in order_t:
             for algo in order_a:
                 shaped = []
@@ -385,23 +458,28 @@ def main():
                     base.extend(r["base_per_ep"])
                 shaped = np.array(shaped); base = np.array(base)
                 n = len(shaped)
+                if n == 0:
+                    continue
                 mean_s, std_s = float(shaped.mean()), float(shaped.std())
                 mean_b, std_b = float(base.mean()),   float(base.std())
-                se = std_s / np.sqrt(n) if n > 0 else 0.0
-                ci_lo, ci_hi = bootstrap_ci(shaped, n_resamples=10000, rng=rng_boot)
+                values = shaped if plot_metric == "shaped" else base
+                mean_p, std_p = (mean_s, std_s) if plot_metric == "shaped" else (mean_b, std_b)
+                se = std_p / np.sqrt(n) if n > 0 else 0.0
+                ci_lo, ci_hi = bootstrap_ci(values, n_resamples=10000, rng=rng_boot)
 
                 w_agg.writerow([algo, tt, n,
                                 round(mean_s, 3), round(std_s, 3),
                                 round(mean_b, 3), round(std_b, 3)])
-                w_ci.writerow([algo, tt, n,
-                               round(mean_s, 3), round(std_s, 3),
+                w_ci.writerow([algo, tt, n, plot_metric,
+                               round(mean_p, 3), round(std_p, 3),
                                round(se, 3),
                                round(ci_lo, 3), round(ci_hi, 3)])
                 agg_table.append({
                     "algorithm": algo, "teammate_set": tt, "n": n,
                     "shaped_mean": mean_s, "shaped_std": std_s,
-                    "shaped_se": se, "ci_lo": ci_lo, "ci_hi": ci_hi,
                     "base_mean": mean_b, "base_std": std_b,
+                    "plot_mean": mean_p, "plot_std": std_p,
+                    "plot_se": se, "ci_lo": ci_lo, "ci_hi": ci_hi,
                 })
                 print(f"{algo:<11} {tt:<13} {n:>5} "
                       f"{mean_s:7.2f} ± {std_s:5.2f}      "
@@ -413,10 +491,12 @@ def main():
 
     # ---- Bar chart: 2 groups (fcp, comedi); 3 bars per group (liam, ppo, meliba) ----
     bar_path = out_dir / "bc_xp_bar.png"
-    plot_groups = ["fcp", "comedi"]
+    plot_groups = [tt for tt in ("fcp", "comedi") if tt in present_tts]
     plot_algos = [("liam_ego", "LIAM", "tab:blue"),
                   ("ppo_ego",  "PPO",  "tab:green"),
                   ("meliba_ego","MELIBA","tab:red")]
+    bc_ref = cfg["bc_selfplay_ref"]
+    metric_label = "shaped return" if plot_metric == "shaped" else "base (sparse) return"
 
     # Lookup: (algo, teammate_set) -> row dict
     by_key = {(r["algorithm"], r["teammate_set"]): r for r in agg_table}
@@ -425,7 +505,7 @@ def main():
     x = np.arange(len(plot_groups))
     bar_w = 0.25
     for i, (algo, label, color) in enumerate(plot_algos):
-        means = [by_key[(algo, tt)]["shaped_mean"] for tt in plot_groups]
+        means = [by_key[(algo, tt)]["plot_mean"] for tt in plot_groups]
         ci_lo = [by_key[(algo, tt)]["ci_lo"] for tt in plot_groups]
         ci_hi = [by_key[(algo, tt)]["ci_hi"] for tt in plot_groups]
         err_lo = [m - lo for m, lo in zip(means, ci_lo)]
@@ -433,12 +513,12 @@ def main():
         ax.bar(x + (i - 1) * bar_w, means, bar_w, label=label, color=color,
                yerr=[err_lo, err_hi], capsize=4, error_kw={"elinewidth": 1.2})
 
-    ax.axhline(BC_SELFPLAY_REF, color="grey", linestyle="--", linewidth=1.2,
-               label=f"BC×BC self-play ({BC_SELFPLAY_REF:.1f})")
+    ax.axhline(bc_ref, color="grey", linestyle="--", linewidth=1.2,
+               label=f"BC×BC self-play ({bc_ref:.1f})")
     ax.set_xticks(x)
     ax.set_xticklabels([g.upper() for g in plot_groups])
-    ax.set_ylabel("shaped return")
-    ax.set_title("ego × BC (overcooked-v1/coord_ring)")
+    ax.set_ylabel(metric_label)
+    ax.set_title(f"ego × BC (overcooked-v1/{layout})")
     ax.legend(loc="upper left", fontsize=9)
     ax.grid(axis="y", alpha=0.3)
     fig.tight_layout()
