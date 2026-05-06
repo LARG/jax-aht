@@ -26,36 +26,36 @@ heldout_set:
       run_id: 0
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 228.85]]
-        base_return:              [[0.0, 215.00]]
+        returned_episode_returns: [0.0, 228.85]
+        base_return: [0.0, 215.00]
     bc_run_1:
       actor_type: bc_proxy
       run_id: 1
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 229.89]]
-        base_return:              [[0.0, 216.00]]
+        returned_episode_returns: [0.0, 229.89]
+        base_return: [0.0, 216.00]
     bc_run_2:
       actor_type: bc_proxy
       run_id: 2
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 211.75]]
-        base_return:              [[0.0, 199.00]]
+        returned_episode_returns: [0.0, 211.75]
+        base_return: [0.0, 199.00]
     bc_run_3:
       actor_type: bc_proxy
       run_id: 3
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 222.74]]
-        base_return:              [[0.0, 209.00]]
+        returned_episode_returns: [0.0, 222.74]
+        base_return: [0.0, 209.00]
     bc_run_4:
       actor_type: bc_proxy
       run_id: 4
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 213.90]]
-        base_return:              [[0.0, 201.00]]
+        returned_episode_returns: [0.0, 213.90]
+        base_return: [0.0, 201.00]
 
   overcooked-v1/cramped_room:
     bc_run_0:
@@ -63,36 +63,36 @@ heldout_set:
       run_id: 0
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 237.28]]
-        base_return:              [[0.0, 222.00]]
+        returned_episode_returns: [0.0, 237.28]
+        base_return: [0.0, 222.00]
     bc_run_1:
       actor_type: bc_proxy
       run_id: 1
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 230.82]]
-        base_return:              [[0.0, 216.00]]
+        returned_episode_returns: [0.0, 230.82]
+        base_return: [0.0, 216.00]
     bc_run_2:
       actor_type: bc_proxy
       run_id: 2
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 237.35]]
-        base_return:              [[0.0, 222.00]]
+        returned_episode_returns: [0.0, 237.35]
+        base_return: [0.0, 222.00]
     bc_run_3:
       actor_type: bc_proxy
       run_id: 3
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 246.57]]
-        base_return:              [[0.0, 231.00]]
+        returned_episode_returns: [0.0, 246.57]
+        base_return: [0.0, 231.00]
     bc_run_4:
       actor_type: bc_proxy
       run_id: 4
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 246.55]]
-        base_return:              [[0.0, 231.00]]
+        returned_episode_returns: [0.0, 246.55]
+        base_return: [0.0, 231.00]
 
   overcooked-v1/asymm_advantages:
     bc_run_0:
@@ -100,36 +100,36 @@ heldout_set:
       run_id: 0
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 363.16]]
-        base_return:              [[0.0, 340.00]]
+        returned_episode_returns: [0.0, 363.16]
+        base_return: [0.0, 340.00]
     bc_run_1:
       actor_type: bc_proxy
       run_id: 1
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 355.50]]
-        base_return:              [[0.0, 333.00]]
+        returned_episode_returns: [0.0, 355.50]
+        base_return: [0.0, 333.00]
     bc_run_2:
       actor_type: bc_proxy
       run_id: 2
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 373.89]]
-        base_return:              [[0.0, 350.00]]
+        returned_episode_returns: [0.0, 373.89]
+        base_return: [0.0, 350.00]
     bc_run_3:
       actor_type: bc_proxy
       run_id: 3
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 326.58]]
-        base_return:              [[0.0, 306.00]]
+        returned_episode_returns: [0.0, 326.58]
+        base_return: [0.0, 306.00]
     bc_run_4:
       actor_type: bc_proxy
       run_id: 4
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 369.44]]
-        base_return:              [[0.0, 346.00]]
+        returned_episode_returns: [0.0, 369.44]
+        base_return: [0.0, 346.00]
 
   lbf/lbf_12x12:
     bc:
@@ -137,8 +137,8 @@ heldout_set:
       layout: lbf_12x12
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 0.3517]]
-        percent_eaten:            [[0.0, 0.7034]]
+        returned_episode_returns: [0.0, 0.3517]
+        percent_eaten: [0.0, 70.34]      # = returned_episode_returns × 200 (env uses 0-100 percent scale)
 
   lbf/lbf_7x7_nolevels:
     bc:
@@ -146,5 +146,5 @@ heldout_set:
       layout: lbf_7x7
       test_mode: true
       performance_bounds:
-        returned_episode_returns: [[0.0, 0.5000]]
-        percent_eaten:            [[0.0, 1.0000]]
+        returned_episode_returns: [0.0, 0.5000]
+        percent_eaten: [0.0, 100.0]      # = returned_episode_returns × 200 (env uses 0-100 percent scale)

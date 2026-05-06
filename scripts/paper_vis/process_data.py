@@ -95,6 +95,96 @@ def load_results_for_task(
     return results
 
 
+def load_results_for_task_merged(
+    task_name: str,
+    run_specs: List[Tuple[str, str, bool]],
+    bc_run_specs: List[Tuple[str, str, bool]],
+    force_recompute: bool = False,
+    cache_dir: Path = DEFAULT_CACHE_DIR,
+) -> dict:
+    """Like `load_results_for_task` but merges each ego's training-time
+    heldout-eval artifact with its BC heldout-eval artifact along the partner
+    axis BEFORE running the reducer.
+
+    Both source artifacts are already per-partner normalized by their respective
+    `performance_bounds`, so concatenation produces a tensor whose values are
+    on a comparable [0,1]-ish scale across all partners.
+
+    Args:
+        run_specs: list of (display_name, run_id, is_oel) — the standard
+            EGO_BENCHMARK_RUNS entries (training-time heldout-eval, 17–23
+            diverse partners depending on task).
+        bc_run_specs: list of (display_name, run_id, is_oel) for the BC
+            heldout-eval (1 BC partner for LBF, 5 for overcooked). Indexed by
+            display_name; cells without a matching BC entry fall back to the
+            old behavior.
+    """
+    cache_dir = Path(cache_dir)
+    env_name = TASK_TO_ENV_NAME[task_name]
+    metric_names = get_metric_names(env_name)
+
+    bc_by_name = {dn: rid for dn, rid, _ in bc_run_specs}
+
+    results = {}
+    for display_name, run_id, is_oel in run_specs:
+        run_ids = run_id if isinstance(run_id, list) else [run_id]
+        run_id_str = "+".join(run_ids)
+
+        bc_id = bc_by_name.get(display_name)
+        bc_id_str = bc_id if bc_id else "none"
+
+        safe_name = display_name.replace("/", "_").replace(" ", "_")
+        summary_cache = (
+            cache_dir / "summary_stats_merged" / task_name
+            / f"{safe_name}__{run_id_str}__bc_{bc_id_str}.pkl"
+        )
+
+        if not force_recompute and summary_cache.exists():
+            with open(summary_cache, "rb") as f:
+                results[display_name] = pickle.load(f)
+            print(f"Loaded cached merged summary for {display_name}")
+            continue
+
+        # Pull the standard heldout-eval artifact(s) (handles list-pooling).
+        old_parts = [
+            fetch_run_eval_metrics_cached(rid, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute)
+            for rid in run_ids
+        ]
+        old_metrics = old_parts[0] if len(old_parts) == 1 else {
+            k: np.concatenate([p[k] for p in old_parts], axis=0) for k in old_parts[0]
+        }
+
+        if bc_id is None:
+            print(f"  no BC run registered for {display_name}; using old artifact only.")
+            eval_metrics = old_metrics
+        else:
+            bc_metrics = fetch_run_eval_metrics_cached(
+                bc_id, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute
+            )
+            partner_axis = 2 if is_oel else 1   # OEL is 5D with seeds×iter prefix; partner axis shifts by 1
+            common = sorted(set(old_metrics) & set(bc_metrics))
+            eval_metrics = {
+                k: np.concatenate([old_metrics[k], bc_metrics[k]], axis=partner_axis)
+                for k in common
+            }
+            print(f"  merged {display_name}: old shape "
+                  f"{old_metrics[common[0]].shape} + BC shape "
+                  f"{bc_metrics[common[0]].shape} → {eval_metrics[common[0]].shape}")
+
+        summary_data = heldout_metrics_per_agent(
+            GLOBAL_HELDOUT_CONFIG, eval_metrics, metric_names, oel_method=is_oel
+        )
+
+        summary_cache.parent.mkdir(parents=True, exist_ok=True)
+        with open(summary_cache, "wb") as f:
+            pickle.dump(summary_data, f)
+        print(f"Saved merged summary for {display_name} → {summary_cache}")
+
+        results[display_name] = summary_data
+
+    return results
+
+
 def heldout_metrics_per_agent(config, eval_metrics, metric_names: tuple, oel_method: bool):
     """Compute aggregate stat and CI over heldout agents.
 
