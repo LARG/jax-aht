@@ -1,7 +1,7 @@
 """Cross-play matrix: LBF BC-LSTM human-proxy × {ppo_ego, liam_ego, meliba_ego}
 on overcooked-1 lbf/lbf_12x12.
 
-Mirrors scripts/coord_ring_bc_xp.py but specialized to LBF:
+Mirrors scripts/overcooked_bc_xp.py but specialized to LBF:
 - single BC checkpoint per layout (no `bc_run_id ∈ {0..4}` axis)
 - LBF env (sparse reward only — no shaped/base distinction)
 - avail_actions read off env_state directly (LBF wrapper exposes it; LogWrapper

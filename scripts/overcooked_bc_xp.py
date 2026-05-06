@@ -13,7 +13,7 @@ Vmap layout:
   a flat variant batch.
 
 Usage:
-  /scratch/cluster/jyliu/conda_envs/HANABI/bin/python scripts/coord_ring_bc_xp.py [--layout LAYOUT]
+  /scratch/cluster/jyliu/conda_envs/HANABI/bin/python scripts/overcooked_bc_xp.py [--layout LAYOUT]
 """
 import argparse
 import csv
