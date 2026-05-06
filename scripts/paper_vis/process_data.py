@@ -82,7 +82,8 @@ def load_results_for_task(
     best_returns = None
     if renormalize_metrics:
         from scripts.paper_vis.compute_best_returns import load_best_returns
-        best_returns = load_best_returns(task_name, run_specs, cache_dir=cache_dir)
+        best_returns = load_best_returns(task_name, run_specs, cache_dir=cache_dir,
+                                         force_recompute=force_recompute)
         print(f"Loaded best returns for {task_name}: {best_returns}")
 
     results = {}

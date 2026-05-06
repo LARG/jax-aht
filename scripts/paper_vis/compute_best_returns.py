@@ -252,6 +252,22 @@ def compute_best_returns(
     return {k: v.tolist() for k, v in best_returns.items()}
 
 
+def _run_specs_fingerprint(all_run_specs: List[Tuple[str, str, bool]]) -> str:
+    """Stable short hash over the run IDs in all_run_specs.
+
+    Ego and unified plots pass different run_specs for the same task, so the
+    best-returns cache must be keyed on run IDs as well as task name to avoid
+    cross-contamination between plot types.
+    """
+    import hashlib
+    run_ids_str = "|".join(
+        ("+".join(rid) if isinstance(rid, list) else rid)
+        for _, rid, _ in all_run_specs
+        if rid
+    )
+    return hashlib.md5(run_ids_str.encode()).hexdigest()[:8]
+
+
 def load_best_returns(
     task_name: str,
     all_run_specs: List[Tuple[str, str, bool]],
@@ -262,7 +278,8 @@ def load_best_returns(
 ) -> dict:
     """Return cached best returns, computing and caching them if necessary."""
     safe_task = task_name.replace("/", "__")
-    cache_path = Path(cache_dir) / "best_returns" / f"{safe_task}.json"
+    fingerprint = _run_specs_fingerprint(all_run_specs)
+    cache_path = Path(cache_dir) / "best_returns" / f"{safe_task}__{fingerprint}.json"
 
     if not force_recompute and cache_path.exists():
         print(f"Loading best returns from cache: {cache_path}")
