@@ -110,8 +110,8 @@ UNIFIED_BENCHMARK_RUNS = {
         "brdiv": "r4a3ncl2", 
         "lbrdiv": "x012q7qc",
         "comedi": "ehz0njkk", 
-        "cole": "gcfkxqas",
-        "trajedi": "bkuq6gvy",
+        "cole": "zxwuozip",
+        "trajedi": "bkuq6gvy", # TODO: update!
     }
 }
 

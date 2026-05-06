@@ -200,7 +200,7 @@ def compute_best_returns(
         run_config = fetch_run_config_cached(run_ids[0], entity, project, cache_dir)
         perf_bounds = get_performance_bounds_from_run_config(run_config, task_name)
 
-        # Record original upper bounds (from first run that has them)
+        # Record maximum upper bound per agent across all runs
         for h, bounds in enumerate(perf_bounds):
             if bounds:
                 for metric_name, (lo, hi) in bounds.items():
@@ -208,6 +208,10 @@ def compute_best_returns(
                         original_upper_bounds[metric_name] = []
                     if h >= len(original_upper_bounds[metric_name]):
                         original_upper_bounds[metric_name].append(hi)
+                    else:
+                        original_upper_bounds[metric_name][h] = max(
+                            original_upper_bounds[metric_name][h], hi
+                        )
 
         returns_data = extract_returns_for_run(eval_metrics, perf_bounds, is_oel)
 
@@ -270,6 +274,16 @@ def load_best_returns(
     with open(cache_path, "w") as f:
         json.dump(best_returns, f, indent=2)
     print(f"Saved best returns to {cache_path}")
+
+    # Invalidate renorm summary stats that were computed against old best_returns
+    stale_dir = Path(cache_dir) / "summary_stats" / task_name
+    if stale_dir.exists():
+        stale_files = list(stale_dir.glob("*_renorm*.pkl"))
+        for f in stale_files:
+            f.unlink()
+        if stale_files:
+            print(f"Deleted {len(stale_files)} stale renorm cache file(s) in {stale_dir}")
+
     return best_returns
 
 

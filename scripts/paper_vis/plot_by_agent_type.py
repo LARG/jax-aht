@@ -1,13 +1,10 @@
-"""Plot unified-method performance broken down by heldout agent type.
+"""Plot unified-method performance broken down by heldout agent type as radar charts.
 
-For each task, produces a bar chart where the x-axis is the RL agent type
-(comedi, lbrdiv, ippo, brdiv, obl) plus a heuristic bucket for non-RL agents.
-Each group of bars shows per-method performance aggregated over all heldout
-agents of that type.
+For each task, produces a radar chart where each axis is an agent type
+(CoMeDi, LBRDiv, IPPO, BRDiv, OBL, Heuristic) and each trace is a method.
+Values are the mean per-method performance over all heldout agents of that type.
 
-Run from repo root:
-    conda activate bench311
-    PYTHONPATH=. python scripts/paper_vis/plot_by_agent_type.py
+Run from repo root: python scripts/paper_vis/plot_by_agent_type.py
 """
 import argparse
 import os
@@ -29,7 +26,6 @@ from scripts.paper_vis.plot_globals import (
     RL_AGENTS,
     TASK_TO_METRIC_NAME,
     TASK_TO_DISPLAY_NAME,
-    TASK_TO_AXIS_DISPLAY_NAME,
     TITLE_FONTSIZE,
     AXIS_LABEL_FONTSIZE,
     LEGEND_FONTSIZE,
@@ -37,7 +33,6 @@ from scripts.paper_vis.plot_globals import (
 
 HEURISTIC_KEY = "heuristic"
 
-# Display names for x-axis tick labels
 AGENT_TYPE_DISPLAY = {
     "comedi": "CoMeDi",
     "lbrdiv": "LBRDiv",
@@ -49,7 +44,6 @@ AGENT_TYPE_DISPLAY = {
 
 
 def get_heldout_agent_labels(task_config: dict) -> list[str]:
-    """Return agent labels in heldout-set order (matches per-agent stat arrays)."""
     labels = []
     for teammate_name, agent_config in task_config.items():
         if "path" in agent_config:
@@ -62,11 +56,6 @@ def get_heldout_agent_labels(task_config: dict) -> list[str]:
 
 
 def classify_agent(label: str) -> str:
-    """Return the first matching RL agent type, or 'heuristic'.
-
-    RL_AGENTS is checked in order (lbrdiv before brdiv) so that 'lbrdiv-conf'
-    is correctly assigned to lbrdiv rather than brdiv.
-    """
     for rl_type in RL_AGENTS:
         if rl_type in label:
             return rl_type
@@ -80,25 +69,70 @@ def group_indices_by_type(labels: list[str]) -> dict[str, list[int]]:
     return dict(groups)
 
 
+def draw_radar_on_ax(
+    ax,
+    results: dict,
+    metric_name: str,
+    agg_stat: str,
+    type_order: list[str],
+    groups: dict[str, list[int]],
+    colors,
+    plot_title: str,
+    show_title: bool,
+):
+    """Draw a radar chart onto an existing polar axes. Returns the max value plotted."""
+    categories = [AGENT_TYPE_DISPLAY.get(t, t) for t in type_order]
+    N = len(categories)
+    angles = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
+    angles += angles[:1]
+
+    max_value = 0
+
+    for i, (method_name, method_results) in enumerate(results.items()):
+        per_agent = np.array(method_results[metric_name][f"{agg_stat}_per_agent"])
+        values = []
+        for ag_type in type_order:
+            indices = groups.get(ag_type, [])
+            valid = [k for k in indices if k < len(per_agent)]
+            values.append(float(np.mean(per_agent[valid])) if valid else 0.0)
+
+        max_value = max(max_value, max(values))
+        closed_values = values + values[:1]
+
+        ax.plot(angles, closed_values, 'o-', linewidth=2, color=colors[i], label=method_name)
+        ax.fill(angles, closed_values, alpha=0.15, color=colors[i])
+
+    ax.plot(angles, [1.0] * len(angles), '--', color='dimgray', linewidth=1.5,
+            label='_nolegend_')
+
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories, fontsize=AXIS_LABEL_FONTSIZE)
+    ax.set_ylim(0, max_value * 1.15)
+    ax.yaxis.set_tick_params(labelsize=AXIS_LABEL_FONTSIZE - 4)
+    ax.grid(color='#EEEEEE', linewidth=1)
+    ax.spines['polar'].set_color('#CCCCCC')
+
+    if show_title:
+        ax.set_title(plot_title, fontsize=TITLE_FONTSIZE, pad=20)
+
+    return max_value
+
+
 def plot_tasks(
     task_list: list[str],
     save_dir: str,
     use_best_returns_normalization: bool,
     force_recompute: bool,
     show_plots: bool,
+    show_legend: bool,
 ):
     agg_stat = str(GLOBAL_HELDOUT_CONFIG["global_heldout_settings"]["AGGREGATE_STAT"])
+    norm_suffix = "br_norm" if use_best_returns_normalization else "orig_norm"
 
-    ncols = min(2, len(task_list))
-    nrows = (len(task_list) + ncols - 1) // ncols
-    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 10, nrows * 5))
-    axes = np.array(axes).reshape(nrows, ncols)
-
-    for idx, task_name in enumerate(task_list):
-        row, col = divmod(idx, ncols)
-        ax = axes[row, col]
-
-        # Build run specs for this task
+    # Collect per-task data first so we know how many valid tasks there are
+    task_data = []
+    all_method_names = None
+    for task_name in task_list:
         run_specs = []
         for method_name, run_id in UNIFIED_BENCHMARK_RUNS.get(task_name, {}).items():
             if not run_id:
@@ -110,7 +144,7 @@ def plot_tasks(
             ))
 
         if not run_specs:
-            ax.set_visible(False)
+            print(f"No runs found for task {task_name}, skipping.")
             continue
 
         results = load_results_for_task(
@@ -126,76 +160,80 @@ def plot_tasks(
         )
         labels = get_heldout_agent_labels(heldout_cfg)
         groups = group_indices_by_type(labels)
-
-        # Type order: RL agents present in this task (canonical order), heuristic last
         type_order = [t for t in RL_AGENTS if t in groups]
         if HEURISTIC_KEY in groups:
             type_order.append(HEURISTIC_KEY)
 
-        method_names = list(results.keys())
-        n_methods = len(method_names)
-        n_types = len(type_order)
-        bar_w = min(0.8 / n_methods, 0.2)
-        colors = plt.cm.tab10(np.arange(n_methods) / 10)
-        x_centers = np.arange(n_types)
+        task_data.append((task_name, results, metric_name, groups, type_order))
+        if all_method_names is None:
+            all_method_names = list(results.keys())
 
-        for i, method_name in enumerate(method_names):
-            per_agent = np.array(results[method_name][metric_name][f"{agg_stat}_per_agent"])
-            x_vals, y_vals = [], []
-            for j, ag_type in enumerate(type_order):
-                indices = groups[ag_type]
-                # Filter to valid indices (guard against stale cache size mismatch)
-                valid = [k for k in indices if k < len(per_agent)]
-                if not valid:
-                    continue
-                x_vals.append(x_centers[j] + (i - n_methods / 2 + 0.5) * bar_w)
-                y_vals.append(float(np.mean(per_agent[valid])))
+    if not task_data:
+        print("No tasks to plot.")
+        return
 
-            ax.bar(x_vals, y_vals, width=bar_w, label=method_name,
-                   color=colors[i], alpha=0.7, zorder=3)
+    n_tasks = len(task_data)
+    ncols = n_tasks
+    nrows = 1
+    colors = plt.cm.Set2(np.arange(len(all_method_names)) / 10)
 
-        tick_labels = [AGENT_TYPE_DISPLAY.get(t, t) for t in type_order]
-        ax.set_xticks(x_centers)
-        ax.set_xticklabels(tick_labels, fontsize=AXIS_LABEL_FONTSIZE)
-        ax.set_ylabel(
-            f"{agg_stat.capitalize()} Normalized Return",
-            fontsize=AXIS_LABEL_FONTSIZE,
+    fig = plt.figure(figsize=(ncols * 6, 6))
+
+    for idx, (task_name, results, metric_name, groups, type_order) in enumerate(task_data):
+        ax = fig.add_subplot(nrows, ncols, idx + 1, projection='polar')
+        draw_radar_on_ax(
+            ax=ax,
+            results=results,
+            metric_name=metric_name,
+            agg_stat=agg_stat,
+            type_order=type_order,
+            groups=groups,
+            colors=colors,
+            plot_title=TASK_TO_DISPLAY_NAME.get(task_name, task_name),
+            show_title=True,
         )
-        ax.set_title(
-            TASK_TO_DISPLAY_NAME.get(task_name, task_name),
-            fontsize=TITLE_FONTSIZE,
-        )
-        ax.yaxis.grid(True, linestyle="--", alpha=0.7, zorder=0)
-        ax.set_axisbelow(True)
-        ax.legend(fontsize=LEGEND_FONTSIZE, loc="center left",
-                  bbox_to_anchor=(1.01, 0.5), framealpha=0.8)
 
-    for idx in range(len(task_list), nrows * ncols):
-        row, col = divmod(idx, ncols)
-        axes[row, col].set_visible(False)
+    if show_legend and all_method_names:
+        handles = [
+            plt.Line2D([0], [0], color=colors[i], linewidth=2, marker='o', label=name)
+            for i, name in enumerate(all_method_names)
+        ]
+        fig.legend(
+            handles=handles,
+            title="Algorithms",
+            title_fontsize=LEGEND_FONTSIZE,
+            loc='lower center',
+            ncol=len(all_method_names),
+            fontsize=LEGEND_FONTSIZE,
+            framealpha=0.8,
+            bbox_to_anchor=(0.5, -0.1),
+        )
+        fig.subplots_adjust(bottom=0.12)
 
     plt.tight_layout()
-    norm_suffix = "br_norm" if use_best_returns_normalization else "orig_norm"
+
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, f"by_agent_type_{norm_suffix}.pdf")
-    plt.savefig(save_path, bbox_inches="tight")
-    print(f"Saved figure to {save_path}")
+    plt.savefig(save_path, bbox_inches='tight')
+    print(f"Saved combined radar chart to {save_path}")
+
     if show_plots:
         plt.show()
+
     plt.close(fig)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Plot unified-method performance grouped by heldout agent type"
+        description="Plot unified-method performance grouped by heldout agent type (radar charts)"
     )
     parser.add_argument(
         "--tasks", nargs="+",
         help="Tasks to plot (default: all tasks with unified benchmark runs)",
     )
     parser.add_argument(
-        "--use_best_returns_normalization", action="store_true",
-        help="Renormalize using best observed returns",
+        "--use_best_returns_normalization", action=argparse.BooleanOptionalAction,
+        default=True, help="Renormalize using best observed returns",
     )
     parser.add_argument(
         "--force_recompute", action="store_true",
@@ -206,6 +244,7 @@ if __name__ == "__main__":
         help="Directory to save figures (default: %(default)s)",
     )
     parser.add_argument("--show_plots", action="store_true")
+    parser.add_argument("--show_legend", action=argparse.BooleanOptionalAction, default=True)
     args = parser.parse_args()
 
     task_list = args.tasks if args.tasks else sorted(UNIFIED_BENCHMARK_RUNS)
@@ -215,4 +254,5 @@ if __name__ == "__main__":
         use_best_returns_normalization=args.use_best_returns_normalization,
         force_recompute=args.force_recompute,
         show_plots=args.show_plots,
+        show_legend=args.show_legend,
     )
