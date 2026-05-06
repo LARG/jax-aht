@@ -11,6 +11,8 @@ def get_metric_names(env_name):
         return ("percent_eaten", "returned_episode_returns")
     elif env_name == "overcooked-v1":
         return ("base_return", "returned_episode_returns")
+    elif env_name == "hanabi":
+        return ("returned_episode_returns",)
     else:
         return ("returned_episode_returns",)
 
@@ -30,6 +32,11 @@ def get_stats(metrics, stats: tuple):
     # Initialize output dictionary
     all_stats = {}
     stats = list(stats) # convert to list to correctly iterate if the tuple only has a single element
+
+    # Detect condensed metrics: if mask is scalar per update (no rollout/env dims),
+    # the metrics are already episode-masked means from scan condensation.
+    condensed = (mask.ndim <= 2)
+
     for stat_name in stats:
         # Get the metric array
         metric_data = metrics[stat_name]  # Shape: (..., rollout_length, num_envs) or (num_seeds, num_updates)

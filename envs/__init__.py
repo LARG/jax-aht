@@ -76,7 +76,12 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         else:
             env = LBFWrapper(env, share_rewards=True)
 
-    elif env_name == 'overcooked-v1':
+    elif env_name == 'overcooked-v1' or env_name.startswith('overcooked-v1/'):
+        if '/' in env_name:
+            layout_from_name = env_name.split('/', 1)[1]
+            env_kwargs = dict(copy.deepcopy(env_kwargs))
+            env_kwargs.setdefault('layout', layout_from_name)
+
         default_env_kwargs = {
             "random_reset": True,
             "random_obj_state": False,
@@ -115,6 +120,7 @@ def make_env(env_name: str, env_kwargs: dict = {}):
             "num_agents": 2,
             "num_colors": 5,
             "num_ranks": 5,
+            "hand_size": 5,
             "max_info_tokens": 8,
             "max_life_tokens": 3,
             "num_cards_of_rank": np.array([3, 2, 2, 2, 1]),

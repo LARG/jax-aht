@@ -1,0 +1,16 @@
+defaults:
+  - cole/_base_
+  - _self_
+
+# Mini-Hanabi (3c/3r/hand3) CoLE config.
+TOTAL_TIMESTEPS_PER_ITERATION: 6e6
+PARTNER_POP_SIZE: 10
+LR: 5e-4
+UPDATE_EPOCHS: 4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+ANNEAL_LR: true
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+MAX_GRAD_NORM: 0.5
+COLE_ALPHA: 0.4

@@ -16,6 +16,14 @@ from agents.overcooked.agent_policy_wrappers import (
     OvercookedOnionPolicyWrapper, OvercookedPlatePolicyWrapper,
     OvercookedStaticPolicyWrapper,
 )
+from agents.hanabi.agent_policy_wrappers import (
+    HanabiRandomPolicyWrapper, HanabiRuleBasedPolicyWrapper,
+    HanabiIGGIPolicyWrapper, HanabiPiersPolicyWrapper,
+    HanabiFlawedPolicyWrapper, HanabiOuterPolicyWrapper,
+    HanabiVanDenBerghPolicyWrapper, HanabiSmartBotPolicyWrapper,
+    HanabiOBLPolicyWrapper, HanabiBCLSTMPolicyWrapper,
+    HanabiInternalPolicyWrapper, HanabiCautiousPolicyWrapper,
+)
 from common.save_load_utils import load_checkpoints, REPO_PATH
 from envs.overcooked.augmented_layouts import augmented_layouts
 
@@ -157,17 +165,78 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
             )
         raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
 
+    if 'hanabi' in task_name:
+        # Default to full Hanabi shape; mini-hanabi callers must pass num_colors,
+        # num_ranks, hand_size, num_actions through agent_config or env_kwargs.
+        hand_size = agent_config.get("hand_size", env_kwargs.get("hand_size", 5))
+        num_colors = agent_config.get("num_colors", env_kwargs.get("num_colors", 5))
+        num_ranks = agent_config.get("num_ranks", env_kwargs.get("num_ranks", 5))
+        # Action layout: discard + play + color hints + rank hints + noop.
+        num_actions = agent_config.get(
+            "num_actions", 2 * hand_size + num_colors + num_ranks + 1
+        )
+        common = dict(
+            hand_size=hand_size, num_colors=num_colors, num_ranks=num_ranks,
+            num_actions=num_actions, using_log_wrapper=True,
+        )
+
+        if actor_type == "random_agent":
+            return HanabiRandomPolicyWrapper(
+                num_actions=num_actions, using_log_wrapper=True
+            )
+        if actor_type == "rule_based":
+            return HanabiRuleBasedPolicyWrapper(
+                strategy=agent_config.get("strategy", "cautious"), **common
+            )
+        if actor_type == "iggi":
+            return HanabiIGGIPolicyWrapper(**common)
+        if actor_type == "piers":
+            return HanabiPiersPolicyWrapper(
+                play_threshold=agent_config.get("play_threshold", 0.6),
+                hint_threshold=agent_config.get("hint_threshold", 4),
+                **common,
+            )
+        if actor_type == "flawed":
+            return HanabiFlawedPolicyWrapper(
+                play_threshold=agent_config.get("play_threshold", 0.4), **common
+            )
+        if actor_type == "outer":
+            return HanabiOuterPolicyWrapper(**common)
+        if actor_type == "van_den_bergh":
+            return HanabiVanDenBerghPolicyWrapper(**common)
+        if actor_type == "internal":
+            return HanabiInternalPolicyWrapper(**common)
+        if actor_type == "cautious":
+            return HanabiCautiousPolicyWrapper(**common)
+        if actor_type == "smartbot":
+            return HanabiSmartBotPolicyWrapper(
+                card_counts=agent_config.get("card_counts", None), **common
+            )
+        if actor_type == "obl_r2d2":
+            return HanabiOBLPolicyWrapper(
+                weight_file=agent_config["weight_file"], using_log_wrapper=True
+            )
+        if actor_type == "bc_lstm":
+            return HanabiBCLSTMPolicyWrapper(
+                weight_file=agent_config["weight_file"],
+                using_log_wrapper=True,
+                greedy=agent_config.get("greedy", True),
+            )
+        raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
+
     raise ValueError(
         f"Unknown task '{task_name}' for heuristic agent {agent_name}. "
-        f"Expected 'lbf' or a task containing 'overcooked-v1'."
+        f"Expected 'lbf', 'overcooked-v1', or a task containing 'hanabi'."
     )
 
 def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     '''Load RL agent from checkpoint and initialize from config.
     The agent_config dictionary should have the following structure:
+
+    agent_config must include:
     {
         "path": str,
-        "actor_type": str,
+        "actor_type": str,  # one of: s5, mlp, rnn, actor_with_double_critic, actor_with_conditional_critic
         "ckpt_key": str, # key to load from checkpoint. Default is "checkpoints".
         "custom_loader": dict, # custom loader for the checkpoint. Default is None.
         "idx_list": list, # list of indices to load from checkpoint. If null, all checkpoints will be loaded.
@@ -178,8 +247,7 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         policy: policy function
         agent_params: agent parameters from checkpoint
         init_params: initial agent parameters from initialization
-        idx_list: list of indices used to extract checkpoints
-        idx_labels: list of string labels corresponding to the indices
+        idx_labels: list of string labels corresponding to the loaded checkpoint indices
     '''
     assert "path" in agent_config, "Path to agent checkpoint must be provided."
     assert "actor_type" in agent_config, "Actor type must be provided."

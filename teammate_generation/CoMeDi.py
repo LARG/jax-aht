@@ -80,10 +80,14 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
             Train a pool IPPO agents w/parameter sharing.
             Returns out, a dictionary of the model checkpoints, final parameters, and metrics.
             '''
-            config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
-            config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
+            # POP_SIZE is referenced throughout the CoMeDi training loops
             config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
-            out = make_ppo_train(config, env, wandb_logger)(partner_rng) # train a single PPO agent
+            # Use a local copy for warmup-specific overrides to avoid
+            # mutating the shared config (ACTOR_TYPE, TOTAL_TIMESTEPS)
+            warmup_config = dict(config)
+            warmup_config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
+            warmup_config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
+            out = make_ppo_train(warmup_config, env, wandb_logger)(partner_rng)
             return out
 
         def train(rng):
@@ -1073,7 +1077,10 @@ def run_comedi(config, wandb_logger):
 
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
 
-    log_metrics(config, out, wandb_logger, metric_names)
+    # Save FIRST so the checkpoint survives even if metric logging OOMs.
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
+    log_metrics(config, out, wandb_logger, metric_names, out_savepath)
     partner_params, partner_population = get_comedi_population(config, out, env)
     return partner_params, partner_population
 
@@ -1088,7 +1095,7 @@ def compute_sp_mask_and_ids(pop_size):
     sp_mask = (conf_ids == ego_ids)
     return sp_mask, agent_id_cartesian_product
 
-def log_metrics(config, outs, logger, metric_names: tuple):
+def log_metrics(config, outs, logger, metric_names: tuple, out_savepath):
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy
     num_seeds, pop_size, num_updates = metrics["pg_loss_conf_sp"].shape
@@ -1097,7 +1104,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     ### Log evaluation metrics
     # xp_eval_returns and sp_eval_returns logged at each evaluation only.
     algorithm_config = config["algorithm"]
-    ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
+    ckpt_and_eval_interval = max(1, num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1))
     # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
     eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
     if (num_updates - 1) not in eval_steps:
@@ -1143,10 +1150,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
             title=loss_name, xname="train_step")
         )
 
-    ### Log artifacts
-    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    # Save train run output and log to wandb as artifact
-    out_savepath = save_train_run(outs, savedir, savename="saved_train_run")
+    ### Log artifacts (already saved by caller; just publish to wandb)
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
 
