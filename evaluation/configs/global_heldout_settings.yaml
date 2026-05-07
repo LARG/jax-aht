@@ -209,7 +209,7 @@ heldout_set:
         percent_eaten: [0.0, 100.0]
         returned_episode_returns: [0.0, 0.5]
     human_proxy:
-      path: "eval_teammates/lbf/lbf_12x12/human_proxy"
+      path: "eval_teammates/lbf_12x12/human_proxy"
       actor_type: bc_proxy
       layout: lbf_12x12
       test_mode: true
