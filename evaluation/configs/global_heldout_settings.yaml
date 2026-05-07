@@ -344,6 +344,13 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 360.31], [0.0, 275.94], [0.0, 265.00], [0.0, 261.56], [0.0, 273.75]]
         returned_episode_returns: [[0.0, 360.31], [0.0, 275.94], [0.0, 265.00], [0.0, 261.56], [0.0, 273.75]]
+    human_proxy:  # bc_run_0 only (canonical human proxy for plots)
+      actor_type: bc_proxy
+      layout: asymm_advantages
+      test_mode: true
+      performance_bounds:
+        base_return: [0.0, 340.00]
+        returned_episode_returns: [0.0, 363.16]
   overcooked-v1/counter_circuit: # DONE - DO NOT MODIFY
     ippo_mlp_cc: # counterclockwise mmt 
       path: "eval_teammates/overcooked-v1/counter_circuit/ippo/2025-04-21_22-55-42/saved_train_run"
@@ -414,6 +421,13 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 134.06], [0.0, 96.25], [0.0, 46.88], [0.0, 100.62], [0.0, 50.00]]
         returned_episode_returns: [[0.0, 141.76], [0.0, 101.69], [0.0, 48.18], [0.0, 106.34], [0.0, 52.27]]
+    human_proxy:  # bc_run_0 only (canonical human proxy for plots)
+      actor_type: bc_proxy
+      layout: counter_circuit
+      test_mode: true
+      performance_bounds:
+        base_return: [0.0, 185.00]
+        returned_episode_returns: [0.0, 196.56]
   overcooked-v1/coord_ring: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/coord_ring/ippo/2025-04-21_22-58-26/saved_train_run"
@@ -552,6 +566,13 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 250.62], [0.0, 67.19], [0.0, 48.12], [0.0, 51.25], [0.0, 101.56]]
         returned_episode_returns: [[0.0, 267.41], [0.0, 70.21], [0.0, 49.78], [0.0, 53.41], [0.0, 107.21]]
+    human_proxy:  # bc_run_0 only (canonical human proxy for plots)
+      actor_type: bc_proxy
+      layout: forced_coord
+      test_mode: true
+      performance_bounds:
+        base_return: [0.0, 148.00]
+        returned_episode_returns: [0.0, 157.09]
 
   hanabi: # Full 2-player Hanabi (5 colors, 5 ranks) held-out partner set
     iggi:
@@ -628,43 +649,43 @@ heldout_set:
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 11.87]]
-    # S5 recurrent IPPO self-play partners.
+    # S5 recurrent IPPO self-play partners (large: D=128, SSM=128, ACH=1024).
     ippo_s5_seed42:
-      path: "eval_teammates/hanabi/ippo_s5/seed42"
+      path: "eval_teammates/hanabi/ippo_s5_large/seed42"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
       FC_N_LAYERS: 2
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 12.12]]
+        returned_episode_returns: [[0.0, 16.35]]
     ippo_s5_seed123:
-      path: "eval_teammates/hanabi/ippo_s5/seed123"
+      path: "eval_teammates/hanabi/ippo_s5_large/seed123"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
       FC_N_LAYERS: 2
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 12.16]]
+        returned_episode_returns: [[0.0, 18.08]]
     ippo_s5_seed31415:
-      path: "eval_teammates/hanabi/ippo_s5/seed31415"
+      path: "eval_teammates/hanabi/ippo_s5_large/seed31415"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
       FC_N_LAYERS: 2
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 11.69]]
+        returned_episode_returns: [[0.0, 21.34]]
     ippo_s5_op_seed42:
       path: "eval_teammates/hanabi/ippo_s5_op/seed42"
       actor_type: s5
