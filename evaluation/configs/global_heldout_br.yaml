@@ -662,6 +662,13 @@ best_response_set:
       idx_list: [0]
       test_mode: true
 
+    br_for_human_proxy:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_br_for_bc_run0_1e8/2026-05-05_20-08-22/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
   overcooked-v1/forced_coord:
     br_for_ippo_mlp_0:
       path: "results/overcooked-v1/forced_coord/ppo_br_s5/forced_coord_ippo_mlp_0_serious/2026-03-16_22-27-05/ego_train_run"

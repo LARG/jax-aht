@@ -334,6 +334,18 @@ def collect_heldout_pairwise_trajectories(
 
     def _load_agent(agent_cfg, agent_name, env, rng):
         actor_type = agent_cfg.get("actor_type", "")
+        if actor_type == "bc_proxy" and "overcooked-v1" in task_name:
+            # Trajectory pipeline has a stricter hstate contract than ppo_br's
+            # HeuristicPolicyPopulation, so we use BCTrajectoryWrapper (not the
+            # ppo_br wrapper). Also: this pipeline doesn't apply LogWrapper, so
+            # the inner BCPolicy must unwrap once (`env_state.env_state`).
+            from agents.overcooked.bc_agent import BCPolicy, BCTrajectoryWrapper
+            bc = BCPolicy(
+                layout_name=env_kwargs["layout"],
+                using_log_wrapper=False,
+                run_id=agent_cfg.get("run_id", 0),
+            )
+            return BCTrajectoryWrapper(bc), {}, {}
         if actor_type in HEURISTIC_ACTOR_TYPES:
             policy = initialize_heuristic_agent_from_config(agent_cfg, agent_name, task_name, env_kwargs)
             # Trajectory collection doesn't use a log wrapper (env state is WrappedEnvState,
