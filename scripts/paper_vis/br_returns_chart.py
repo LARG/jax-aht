@@ -71,7 +71,7 @@ def _extract_br_returns(agent_config):
 
 
 def _agent_sort_key(name: str) -> tuple:
-    """Return (group, sub_order) for sorting: heuristic(0), RL(1), human_proxy(2).
+    """Return (group, sub_order) for sorting: RL(0), heuristic(1), human_proxy(2).
     Within heuristics, independent_agent is placed third (sub_order=2)."""
     def _matches(name, patterns):
         return any(p.strip("*") in name for p in patterns)
@@ -79,15 +79,15 @@ def _agent_sort_key(name: str) -> tuple:
     if _matches(name, HUMAN_PROXY_AGENTS):
         return (2, 0)
     if _matches(name, RL_AGENTS):
-        return (1, 0)
+        return (0, 0)
     # Within heuristics: onion=0, plate=1, independent=2, others keep original order
     if "independent" in name:
-        return (0, 2)
+        return (1, 2)
     if "onion" in name:
-        return (0, 0)
+        return (1, 0)
     if "plate" in name:
-        return (0, 1)
-    return (0, 3)
+        return (1, 1)
+    return (1, 3)
 
 
 def extract_task_data(task_cfg):
@@ -155,7 +155,7 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
         axes[ax_idx].set_visible(False)
 
     # Single shared y-axis label on the left side of the figure
-    fig.text(0.04, 0.5, "Max Returned Episode Return", va="center", rotation="vertical",
+    fig.text(0.01, 0.5, "Max Returned Episode Return", va="center", rotation="vertical",
              fontsize=AXIS_LABEL_FONTSIZE)
 
     # Legend in the bottom-right subplot, lower-right corner, on top of bars

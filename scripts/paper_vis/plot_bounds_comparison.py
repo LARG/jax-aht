@@ -40,7 +40,7 @@ HATCH_PREFIXES = ("seq_agent", "entitled_agent", "greedy_")
 
 
 def _agent_sort_key(name: str) -> tuple:
-    """Return (group, sub_order) for sorting: heuristic(0), RL(1), human_proxy(2).
+    """Return (group, sub_order) for sorting: RL(0), heuristic(1), human_proxy(2).
     Within heuristics, independent_agent is placed third (sub_order=2)."""
     def _matches(name, patterns):
         return any(p.strip("*") in name for p in patterns)
@@ -48,15 +48,15 @@ def _agent_sort_key(name: str) -> tuple:
     if _matches(name, HUMAN_PROXY_AGENTS):
         return (2, 0)
     if _matches(name, RL_AGENTS):
-        return (1, 0)
+        return (0, 0)
     # Within heuristics: onion=0, plate=1, independent=2, others keep original order
     if "independent" in name:
-        return (0, 2)
+        return (1, 2)
     if "onion" in name:
-        return (0, 0)
+        return (1, 0)
     if "plate" in name:
-        return (0, 1)
-    return (0, 3)
+        return (1, 1)
+    return (1, 3)
 
 
 def _should_hatch(label: str) -> bool:
