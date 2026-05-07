@@ -585,30 +585,38 @@ heldout_set:
     iggi:
       actor_type: iggi
       performance_bounds:
-        returned_episode_returns: [0.0, 13.33]
+        returned_episode_returns: [0.0, 13.70]
     piers:
       actor_type: piers
       play_threshold: 0.6
       hint_threshold: 4
       performance_bounds:
-        returned_episode_returns: [0.0, 10.69]
+        returned_episode_returns: [0.0, 10.47]
     flawed:
       actor_type: flawed
       play_threshold: 0.4
       performance_bounds:
-        returned_episode_returns: [0.0, 7.08]
+        returned_episode_returns: [0.0, 7.02]
     outer:
       actor_type: outer
       performance_bounds:
-        returned_episode_returns: [0.0, 8.98]
+        returned_episode_returns: [0.0, 10.42]
     van_den_bergh:
       actor_type: van_den_bergh
       performance_bounds:
-        returned_episode_returns: [0.0, 8.55]
+        returned_episode_returns: [0.0, 10.03]
     smartbot:
       actor_type: smartbot
       performance_bounds:
-        returned_episode_returns: [0.0, 8.41]
+        returned_episode_returns: [0.0, 8.62]
+    cautious:
+      actor_type: cautious
+      performance_bounds:
+        returned_episode_returns: [0.0, 11.12]
+    internal:
+      actor_type: internal
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.00]
     obl_r2d2_l1:
       actor_type: obl_r2d2
       weight_file: agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
