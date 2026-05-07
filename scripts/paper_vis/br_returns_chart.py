@@ -155,7 +155,7 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
         axes[ax_idx].set_visible(False)
 
     # Single shared y-axis label on the left side of the figure
-    fig.text(0.01, 0.5, "Max Returned Episode Return", va="center", rotation="vertical",
+    fig.text(0.01, 0.5, "Empirical Best Response Returns", va="center", rotation="vertical",
              fontsize=AXIS_LABEL_FONTSIZE)
 
     # Legend in the bottom-right subplot, lower-right corner, on top of bars
