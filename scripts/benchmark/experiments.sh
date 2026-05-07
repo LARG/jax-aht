@@ -10,9 +10,10 @@
 # Configure the algorithms, tasks, and label in the section below.
 
 # === Configuration ===
-algos=("brdiv" "lbrdiv" "comedi")
+algos=("trajedi")
 label="neurips:benchmark"
-num_seeds=5
+num_seeds=1
+train_seed=$(date +%s)
 num_checkpoints=1   # used for all algorithms except FCP (see below)
 
 # Target total training timestep budgets per difficulty tier.
@@ -148,6 +149,7 @@ for algo in "${algos[@]}"; do
             task="${task}" \
             label="${label}" \
             algorithm.NUM_SEEDS="${num_seeds}" \
+            algorithm.TRAIN_SEED="${train_seed}" \
             ${checkpoint_arg} \
             logger.mode="online" \
             2>> "${log_file}"; then

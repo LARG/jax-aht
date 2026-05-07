@@ -17,16 +17,18 @@ we always set `--use_best_returns_normalization` for all figures to obtain most 
 
 **Unified benchmark** (teammate-generation methods — FCP, BRDiv, LBRDiv, CoMeDi, COLE, TrajeDi):
 ```bash
-PYTHONPATH=. python scripts/paper_vis/benchmark_bar_charts.py --plot_type unified
+PYTHONPATH=. python scripts/paper_vis/benchmark_bar_charts.py --plot_type unified --include_bc --filter_failed_seeds
 ```
 
 **Ego benchmark** (ego-training methods — PPO, LIAM, MeLIBA):
 ```bash
-PYTHONPATH=. python scripts/paper_vis/benchmark_bar_charts.py --plot_type ego
+PYTHONPATH=. python scripts/paper_vis/benchmark_bar_charts.py --plot_type ego --include_bc --filter_failed_seeds
 ```
 
 **Key flags:**
-- `--use_best_returns_normalization` — renormalize by the best observed return per heldout agent instead of the original per-agent bounds
+- `--use_best_returns_normalization` (default true) — renormalize by the best observed return per heldout agent instead of the original per-agent bounds
+- `--include_bc` (default false) — include BC evaluation results (where available) in the benchmark
+- `--filter_failed_seeds` (default false) — filter out failed seeds
 - `--tasks lbf/lbf_7x7_nolevels overcooked-v1/cramped_room` — restrict to specific tasks
 - `--force_recompute` — recompute summary stats from cached wandb artifacts (does not re-download from wandb)
 - `--save_dir PATH` — override output directory (default: `results/figures/`)

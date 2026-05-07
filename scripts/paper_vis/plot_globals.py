@@ -141,7 +141,15 @@ UNIFIED_BENCHMARK_RUNS = {
         "lbrdiv": "x012q7qc",
         "comedi": "ehz0njkk", 
         "cole": "zxwuozip",
-        "trajedi": "bkuq6gvy", # TODO: update!
+        "trajedi": "bkuq6gvy", # TODO: update to u7ssnuyi when finished
+    },
+    "mini-hanabi": {
+        "fcp": "c5kukiyx", 
+        "brdiv": "0az0sa6t", 
+        "lbrdiv": ["wv7j92rh", "fig22cpk"],
+        "comedi": "acp6wglt", 
+        "cole": "6zhwr6yb",
+        # "trajedi": "2v2lw5k7", # RUNNING
     }
 }
 
@@ -202,12 +210,12 @@ HYPERPARAM_SWEEPS = {
         "ppo_ego": "y2w21bej",
         "liam": "8t2so38u", 
         "meliba": "q4z3szuh",
-        # "fcp": "oku0yyg0", 
-        # "brdiv": "wnnhav1m", 
-        # "lbrdiv": "uvvpc05r",
-        # "comedi": "s745q3lg", 
-        # "cole": "158to6y5",
-        # "trajedi": "4my4n564",
+        "fcp": "oku0yyg0", 
+        "brdiv": "wnnhav1m", 
+        "lbrdiv": "uvvpc05r",
+        "comedi": "s745q3lg", 
+        "cole": "158to6y5",
+        "trajedi": "4my4n564",
     }
 }
 
@@ -240,6 +248,7 @@ TASK_TO_AXIS_DISPLAY_NAME = {
     "overcooked-v1/forced_coord": "FC",
     "overcooked-v1/counter_circuit": "CC",
     "overcooked-v1/coord_ring": "CoR",
+    "mini-hanabi": "Mini Hanabi"
 }
 
 METHOD_TO_DISPLAY_NAME = {
@@ -267,6 +276,7 @@ TASK_TO_DISPLAY_NAME = {
     "overcooked-v1/asymm_advantages": "Asymmetric Advantages (Overcooked)",
     "overcooked-v1/forced_coord": "Forced Coordination (Overcooked)",
     "overcooked-v1/counter_circuit": "Counter Circuit (Overcooked)",
+    "mini-hanabi": "Mini Hanabi"
 }
 
 TASK_TO_ENV_NAME = {
@@ -277,6 +287,7 @@ TASK_TO_ENV_NAME = {
     "overcooked-v1/forced_coord": "overcooked-v1",
     "overcooked-v1/counter_circuit": "overcooked-v1",
     "overcooked-v1/coord_ring": "overcooked-v1",
+    "mini-hanabi": "hanabi"
 }
 
 TASK_TO_METRIC_NAME = {
@@ -287,6 +298,7 @@ TASK_TO_METRIC_NAME = {
     "overcooked-v1/forced_coord": "returned_episode_returns",
     "overcooked-v1/counter_circuit": "returned_episode_returns",
     "overcooked-v1/coord_ring": "returned_episode_returns",
+    "mini-hanabi": "returned_episode_returns",
 }
 
 # Methods that use open-ended learning (OEL); these have 5D eval metrics
