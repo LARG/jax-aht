@@ -810,7 +810,7 @@ heldout_set:
       path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
-      idx_list: [2]
+      idx_list: [2] 
       FC_HIDDEN_DIM: 256
       ACTIVATION: relu
       test_mode: false

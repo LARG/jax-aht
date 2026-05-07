@@ -78,6 +78,21 @@ EGO_BENCHMARK_RUNS = {
             "comedi_teammates": ["7a19mtio", "bd6w70tr"]
         },
     },
+    "mini-hanabi": {
+        "ppo_ego": {
+            "fcp_teammates": ["hkoidsa0", "rflrtlzo", "719okso0"],
+            "comedi_teammates": ["g61afu52", "7rpmb6ie", "70d2c8v2", "38pn9msz"]
+        },
+        "liam": {
+            "fcp_teammates": ["gr03b106", "5ab05qxj", "0hwgmfj3"],
+            "comedi_teammates": ["x0ckfnlv", "b2by5off", "72at5w6x", "tq4fcjh4", "6sig81om"]
+        },
+        "meliba": {
+            "fcp_teammates": ["canru355", "cob5rucj", "fdt0n0jq"],
+            "comedi_teammates": ["zppuzci6", "buj9lvwp", "usfsicq8", "gw2b4uz1", "8scr8vhv"]
+        },
+    },
+
 }
 
 # BC heldout-eval wandb runs (64-eps variant — eps count matches the training-time
@@ -149,7 +164,7 @@ UNIFIED_BENCHMARK_RUNS = {
         "lbrdiv": ["wv7j92rh", "fig22cpk"],
         "comedi": "acp6wglt", 
         "cole": "6zhwr6yb",
-        # "trajedi": "2v2lw5k7", # RUNNING
+        "trajedi": "2v2lw5k7",
     }
 }
 
@@ -178,7 +193,7 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "fdg6dw1n", 
         "lbrdiv": "y23unh8y",
         "comedi": "7e9yf5zg",
-        # "rotate": "t4hufinh", # running
+        # "rotate": "t4hufinh", # done but excluded
         "cole": "kbvghubr", 
         "trajedi": "mavnqv7e",
     },
