@@ -84,12 +84,6 @@ def main():
         help="Tasks to recompute (default: all tasks with benchmark runs)",
     )
     parser.add_argument(
-        "--bc_only", action="store_true",
-        help="Use BC_BENCHMARK_RUNS (BC-only heldout artifacts) instead of "
-             "EGO/UNIFIED runs; writes to best_returns/<safe>__bc_only.json so "
-             "the bounds-gap plot can find it independently of run-id fingerprints.",
-    )
-    parser.add_argument(
         "--include_bc", action="store_true",
         help="In default mode, also compute best_returns from BC_BENCHMARK_RUNS "
              "and append them to the per-metric arrays so the bounds-gap plot "
@@ -97,33 +91,6 @@ def main():
              "live yaml's bc_proxy entry order).",
     )
     args = parser.parse_args()
-
-    if args.bc_only:
-        all_tasks = sorted(BC_BENCHMARK_RUNS)
-        task_list = args.tasks if args.tasks else all_tasks
-        for task_name in task_list:
-            run_specs = build_bc_run_specs(task_name)
-            if not run_specs:
-                print(f"No BC benchmark runs configured for '{task_name}', skipping.")
-                continue
-            print(f"\n{'='*60}")
-            print(f"Recomputing BC-only best returns for: {task_name}")
-            print(f"  {len(run_specs)} run spec(s): {[s[0] for s in run_specs]}")
-            safe = task_name.replace("/", "__")
-            br = compute_best_returns(
-                task_name, run_specs, entity=ENTITY,
-                project=BENCHMARK_PROJECT, cache_dir=DEFAULT_CACHE_DIR,
-            )
-            # Restrict to bc_run_0 only for overcooked (5 BC partners → 1).
-            if "overcooked" in task_name:
-                br = {k: v[:1] for k, v in br.items()}
-            cache_path = Path(DEFAULT_CACHE_DIR) / "best_returns" / f"{safe}__bc_only.json"
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(cache_path, "w") as f:
-                json.dump(br, f, indent=2)
-            lens = {m: len(v) for m, v in br.items()}
-            print(f"  saved -> {cache_path}  (per-metric lengths: {lens})")
-        return
 
     all_tasks = sorted(set(UNIFIED_BENCHMARK_RUNS) | set(EGO_BENCHMARK_RUNS))
     task_list = args.tasks if args.tasks else all_tasks
