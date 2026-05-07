@@ -76,33 +76,52 @@ def get_flat_bounds(task_config: dict, metric_name: str):
                 else:
                     original_maxes.append(float(metric_bounds[1]))
         else:
-            # Heuristic agent — single entry
+            # Heuristic agent — single entry, OR a single block with per-instance
+            # bounds expressed as a list-of-lists (e.g. bc_proxy with N partners
+            # in one human_proxy entry).
             if bounds is None or metric_name not in bounds:
                 labels.append(teammate_name)
                 original_maxes.append(None)
                 continue
             metric_bounds = bounds[metric_name]
-            labels.append(teammate_name)
-            original_maxes.append(float(metric_bounds[1]))
+            if isinstance(metric_bounds[0], (list, tuple)):
+                n = len(metric_bounds)
+                for i in range(n):
+                    lbl = teammate_name if n == 1 else f"{teammate_name}[{i}]"
+                    labels.append(lbl)
+                    original_maxes.append(float(metric_bounds[i][1]))
+            else:
+                labels.append(teammate_name)
+                original_maxes.append(float(metric_bounds[1]))
 
     return labels, original_maxes
 
 
-def load_best_returns(task_name: str) -> dict | None:
+def load_best_returns(task_name: str, bc_only: bool = False) -> dict | None:
     safe = task_name.replace("/", "__")
-    path = BEST_RETURNS_CACHE_DIR / f"{safe}.json"
+    name = f"{safe}__bc_only.json" if bc_only else f"{safe}.json"
+    path = BEST_RETURNS_CACHE_DIR / name
     if not path.exists():
         return None
     with open(path) as f:
         return json.load(f)
 
 
-def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
+def plot_bounds_comparison(save_dir: str, show_plots: bool = False, bc_only: bool = False):
     heldout_cfg = omegaconf.OmegaConf.to_container(
         GLOBAL_HELDOUT_CONFIG["heldout_set"], resolve=True
     )
 
-    tasks_with_cache = [t for t in heldout_cfg if load_best_returns(t) is not None]
+    if bc_only:
+        # Filter each task's heldout set to only bc_proxy entries; drop tasks
+        # that have none.
+        heldout_cfg = {
+            t: {k: v for k, v in entries.items() if v.get("actor_type") == "bc_proxy"}
+            for t, entries in heldout_cfg.items()
+        }
+        heldout_cfg = {t: e for t, e in heldout_cfg.items() if e}
+
+    tasks_with_cache = [t for t in heldout_cfg if load_best_returns(t, bc_only=bc_only) is not None]
     if not tasks_with_cache:
         print("No best_returns cache files found under", BEST_RETURNS_CACHE_DIR)
         return
@@ -120,7 +139,7 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
 
         metric_name = TASK_TO_METRIC_NAME.get(task_name, "returned_episode_returns")
         labels, original_maxes = get_flat_bounds(heldout_cfg[task_name], metric_name)
-        best_returns = load_best_returns(task_name)
+        best_returns = load_best_returns(task_name, bc_only=bc_only)
         best_vals = best_returns.get(metric_name, [])
 
         n = min(len(labels), len(best_vals))
@@ -171,15 +190,15 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
     fig.text(0.0, 0.5, unified_ylabel, va="center", rotation="vertical",
              fontsize=AXIS_LABEL_FONTSIZE)
 
-    plt.suptitle(
-        "Original vs Best-Seen BR Performance Bounds",
-        fontsize=TITLE_FONTSIZE + 2,
-        y=1.01,
-    )
+    suptitle = "Original vs Best-Seen BR Performance Bounds"
+    if bc_only:
+        suptitle += " (BC partners only)"
+    plt.suptitle(suptitle, fontsize=TITLE_FONTSIZE + 2, y=1.01)
     plt.tight_layout()
 
     os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "bounds_comparison.pdf")
+    fname = "bounds_comparison_bc_only.pdf" if bc_only else "bounds_comparison.pdf"
+    save_path = os.path.join(save_dir, fname)
     plt.savefig(save_path, bbox_inches="tight")
     print(f"Saved figure to {save_path}")
 
@@ -196,6 +215,11 @@ if __name__ == "__main__":
                         help="Directory to save figures (default: %(default)s)")
     parser.add_argument("--show_plots", action="store_true",
                         help="Display plots interactively in addition to saving")
+    parser.add_argument("--bc_only", action="store_true",
+                        help="Filter to actor_type=bc_proxy partners and load the "
+                             "<safe>__bc_only.json best-returns cache (produced by "
+                             "recompute_best_returns.py --bc_only).")
     args = parser.parse_args()
 
-    plot_bounds_comparison(save_dir=args.save_dir, show_plots=args.show_plots)
+    plot_bounds_comparison(save_dir=args.save_dir, show_plots=args.show_plots,
+                           bc_only=args.bc_only)

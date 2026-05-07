@@ -279,13 +279,13 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 250.31], [0.0, 202.19], [0.0, 209.69], [0.0, 208.44], [0.0, 201.25]]
         returned_episode_returns: [[0.0, 267.72], [0.0, 216.13], [0.0, 224.01], [0.0, 222.96], [0.0, 215.27]]
-    human_proxy:
+    human_proxy:  # bc_run_0 only (canonical human proxy for plots)
       actor_type: bc_proxy
       layout: cramped_room
       test_mode: true
       performance_bounds:
-        base_return: [[0.0, 222.00], [0.0, 216.00], [0.0, 222.00], [0.0, 231.00], [0.0, 231.00]]
-        returned_episode_returns: [[0.0, 237.28], [0.0, 230.82], [0.0, 237.35], [0.0, 246.57], [0.0, 246.55]]
+        base_return: [0.0, 222.00]
+        returned_episode_returns: [0.0, 237.28]
   overcooked-v1/asymm_advantages: # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/asymm_advantages/ippo/2025-04-21_22-53-56/saved_train_run"
@@ -481,13 +481,13 @@ heldout_set:
       performance_bounds:
         base_return: [[0.0, 189.69], [0.0, 176.25], [0.0, 137.50], [0.0, 141.56], [0.0, 154.69]]
         returned_episode_returns: [[0.0, 201.83], [0.0, 187.43], [0.0, 145.86], [0.0, 150.90], [0.0, 164.88]]
-    human_proxy:
+    human_proxy:  # bc_run_0 only (canonical human proxy for plots)
       actor_type: bc_proxy
       layout: coord_ring
       test_mode: true
       performance_bounds:
-        base_return: [[0.0, 215.00], [0.0, 216.00], [0.0, 199.00], [0.0, 209.00], [0.0, 201.00]]
-        returned_episode_returns: [[0.0, 228.85], [0.0, 229.89], [0.0, 211.75], [0.0, 222.74], [0.0, 213.90]]
+        base_return: [0.0, 215.00]
+        returned_episode_returns: [0.0, 228.85]
   overcooked-v1/forced_coord:  # DONE - DO NOT MODIFY
     ippo_mlp: 
       path: "eval_teammates/overcooked-v1/forced_coord/ippo/2025-04-21_23-00-17/saved_train_run"

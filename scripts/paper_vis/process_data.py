@@ -228,6 +228,9 @@ def load_results_for_task_merged(
                 bc_id, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute
             )
             partner_axis = 2 if is_oel else 1   # OEL is 5D with seeds×iter prefix; partner axis shifts by 1
+            # Restrict to bc_run_0 only for overcooked (5 BC partners → 1); LBF already has 1.
+            if "overcooked" in task_name:
+                bc_metrics = {k: v.take(indices=[0], axis=partner_axis) for k, v in bc_metrics.items()}
             common = sorted(set(old_metrics) & set(bc_metrics))
             eval_metrics = {
                 k: np.concatenate([old_metrics[k], bc_metrics[k]], axis=partner_axis)

@@ -275,11 +275,20 @@ def load_best_returns(
     project: str = BENCHMARK_PROJECT,
     cache_dir: Path = DEFAULT_CACHE_DIR,
     force_recompute: bool = False,
+    cache_filename: Optional[str] = None,
 ) -> dict:
-    """Return cached best returns, computing and caching them if necessary."""
+    """Return cached best returns, computing and caching them if necessary.
+
+    If `cache_filename` is provided, it overrides the default fingerprint-based
+    name (relative to `cache_dir/best_returns/`). Used by the BC-only flow so
+    the plotter can find the JSON without knowing the run-IDs.
+    """
     safe_task = task_name.replace("/", "__")
-    fingerprint = _run_specs_fingerprint(all_run_specs)
-    cache_path = Path(cache_dir) / "best_returns" / f"{safe_task}__{fingerprint}.json"
+    if cache_filename:
+        cache_path = Path(cache_dir) / "best_returns" / cache_filename
+    else:
+        fingerprint = _run_specs_fingerprint(all_run_specs)
+        cache_path = Path(cache_dir) / "best_returns" / f"{safe_task}__{fingerprint}.json"
 
     if not force_recompute and cache_path.exists():
         print(f"Loading best returns from cache: {cache_path}")
