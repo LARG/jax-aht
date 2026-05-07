@@ -26,9 +26,16 @@ ENCODER_OUTPUT_DIM: 20 # Embedding dimension
 DECODER_HIDDEN_DIM: 64
 
 partner_agent: # partner config for ppo_ego
-  # Only specify ONE partner agent type. Must be RL-based.
-  ippo: # Name of the partner agent type. Can be arbitrary.
-    path: null # Please set the path to a partner agent checkpoint.
-    actor_type: mlp # e.g. s5, rnn, mlp
-    ckpt_key: final_params # Key to load from the checkpoint pytree.
-    idx_list: [0] # list of checkpoint indices to load from the checkpoint pytree. If null, all checkpoints will be loaded.
+  # # Only specify ONE partner agent type. Must be RL-based.
+  # ippo: # Name of the partner agent type. Can be arbitrary.
+  #   path: null # Please set the path to a partner agent checkpoint.
+  #   actor_type: mlp # e.g. s5, rnn, mlp
+  #   ckpt_key: final_params # Key to load from the checkpoint pytree.
+  #   idx_list: null # list of checkpoint indices to load from the checkpoint pytree. If null, all checkpoints will be loaded.
+  comedi_conf:
+    path: "results/mini-hanabi/mini-hanabi/comedi/saved_train_run/"
+    actor_type: actor_with_conditional_critic
+    idx_list: null
+    ckpt_key: final_params_conf
+    POP_SIZE: 24
+    test_mode: false
