@@ -35,6 +35,7 @@ BEST_RETURNS_CACHE_DIR = Path(DEFAULT_CACHE_DIR) / "best_returns"
 COLOR_ORIGINAL = "#4C72B0"
 COLOR_DELTA = "#DD8452"
 
+# indicates agents with known BR bounds
 HATCH_PATTERN = "///"
 HATCH_PREFIXES = ("seq_agent", "entitled_agent", "greedy_")
 
@@ -203,10 +204,7 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
         axes[row, col].set_visible(False)
 
     # Single unified y-axis label
-    first_task = tasks_with_cache[0]
-    first_metric = TASK_TO_METRIC_NAME.get(first_task, "returned_episode_returns")
-    unified_ylabel = first_metric.replace("_", " ").title()
-    fig.text(0.0, 0.5, unified_ylabel, va="center", rotation="vertical",
+    fig.text(0.0, 0.5, "Empirical Best Response Returns", va="center", rotation="vertical",
              fontsize=AXIS_LABEL_FONTSIZE)
 
     plt.suptitle("Original vs Best-Seen BR Performance Bounds",
