@@ -80,6 +80,36 @@ EGO_BENCHMARK_RUNS = {
     },
 }
 
+# BC heldout-eval wandb runs (64-eps variant — eps count matches the training-time
+# heldout-eval runs in EGO_BENCHMARK_RUNS so artifacts can concat along the
+# partner axis without an eps mismatch). Each cell evaluates one ego against
+# the BC partner(s) for its task: 5 BC partners (overcooked) or 1 (LBF).
+# When --include-bc is passed to benchmark_bar_charts.py, these artifacts are
+# merged with the standard heldout-eval ones before the reducer runs.
+# Generated 2026-05-06 via evaluation/run_heldout_ego_bc.py at NUM_EVAL_EPISODES=64.
+BC_BENCHMARK_RUNS = {
+    "lbf/lbf_7x7_nolevels": {
+        "ppo_ego": {"fcp_teammates": "shov7vtt", "comedi_teammates": "5bzzvtvr"},
+        "liam":    {"fcp_teammates": "rodfedo5", "comedi_teammates": "kbmgv1qy"},
+        "meliba":  {"fcp_teammates": "yfqq4r7c", "comedi_teammates": "d66eh0tt"},
+    },
+    "lbf/lbf_12x12": {
+        "ppo_ego": {"fcp_teammates": "lgqum8kt", "comedi_teammates": "t7idtlm9"},
+        "liam":    {"fcp_teammates": "dhr9hjgo", "comedi_teammates": "pwuy5p46"},
+        "meliba":  {"fcp_teammates": "u5yu6xvn", "comedi_teammates": "ij48l33l"},
+    },
+    "overcooked-v1/coord_ring": {
+        "ppo_ego": {"fcp_teammates": "v8x87epc", "comedi_teammates": "1k2kz0ge"},
+        "liam":    {"fcp_teammates": "4k8zkd5e", "comedi_teammates": "p3a0x1gb"},
+        "meliba":  {"fcp_teammates": "gna0budi", "comedi_teammates": "0eqejvkm"},
+    },
+    "overcooked-v1/cramped_room": {
+        "ppo_ego": {"fcp_teammates": "durax862", "comedi_teammates": "86yovjo6"},
+        "liam":    {"fcp_teammates": "9ni4tvq3", "comedi_teammates": "tsfrosfr"},
+        "meliba":  {"fcp_teammates": "b612ne9c", "comedi_teammates": "kvygcmqc"},
+    },
+}
+
 UNIFIED_BENCHMARK_RUNS = {
     "lbf/lbf_7x7_nolevels": {
         "fcp": "1bhjc1ri", 
@@ -192,11 +222,14 @@ FILTERED_HYPERPARAMETER_KV = {
 ####### PLOTTING SETTINGS #######
 TASK_TO_PLOT_TITLE = {
     "lbf/lbf_7x7_nolevels": "LBF 7x7",
+    "lbf/lbf_12x12": "LBF 12x12",
     "overcooked-v1/cramped_room": "Cramped Room (Overcooked)",
     "overcooked-v1/asymm_advantages": "Asymmetric Advantages (Overcooked)",
     "overcooked-v1/forced_coord": "Forced Coordination (Overcooked)",
     "overcooked-v1/counter_circuit": "Counter Circuit (Overcooked)",
     "overcooked-v1/coord_ring": "Coordination Ring (Overcooked)",
+    "hanabi": "Hanabi",
+    "mini-hanabi": "Mini-Hanabi",
 }
 
 TASK_TO_AXIS_DISPLAY_NAME = {
