@@ -222,11 +222,14 @@ FILTERED_HYPERPARAMETER_KV = {
 ####### PLOTTING SETTINGS #######
 TASK_TO_PLOT_TITLE = {
     "lbf/lbf_7x7_nolevels": "LBF 7x7",
+    "lbf/lbf_12x12": "LBF 12x12",
     "overcooked-v1/cramped_room": "Cramped Room (Overcooked)",
     "overcooked-v1/asymm_advantages": "Asymmetric Advantages (Overcooked)",
     "overcooked-v1/forced_coord": "Forced Coordination (Overcooked)",
     "overcooked-v1/counter_circuit": "Counter Circuit (Overcooked)",
     "overcooked-v1/coord_ring": "Coordination Ring (Overcooked)",
+    "hanabi": "Hanabi",
+    "mini-hanabi": "Mini-Hanabi",
 }
 
 TASK_TO_AXIS_DISPLAY_NAME = {
