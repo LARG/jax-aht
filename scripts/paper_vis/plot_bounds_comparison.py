@@ -19,6 +19,8 @@ import omegaconf
 
 from scripts.paper_vis.plot_globals import (
     GLOBAL_HELDOUT_CONFIG,
+    HUMAN_PROXY_AGENTS,
+    RL_AGENTS,
     SAVE_DIR,
     TASK_TO_METRIC_NAME,
     TASK_TO_DISPLAY_NAME,
@@ -35,6 +37,18 @@ COLOR_DELTA = "#DD8452"
 
 HATCH_PATTERN = "///"
 HATCH_PREFIXES = ("seq_agent", "entitled_agent", "greedy_")
+
+
+def _agent_sort_key(name: str) -> int:
+    """Return 0 for heuristic, 1 for RL, 2 for human_proxy."""
+    def _matches(name, patterns):
+        return any(p.strip("*") in name for p in patterns)
+
+    if _matches(name, HUMAN_PROXY_AGENTS):
+        return 2
+    if _matches(name, RL_AGENTS):
+        return 1
+    return 0
 
 
 def _should_hatch(label: str) -> bool:
@@ -143,6 +157,13 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
             [v if v is not None else 0.0 for v in original_maxes[:n]], dtype=float
         )
         best_arr = np.array(best_vals[:n], dtype=float)
+
+        # Reorder: heuristic first, then RL, then human_proxy
+        order = sorted(range(n), key=lambda i: _agent_sort_key(labels[i]))
+        labels = [labels[i] for i in order]
+        orig_arr = orig_arr[order]
+        best_arr = best_arr[order]
+
         delta_arr = np.maximum(0.0, best_arr - orig_arr)
 
         x = np.arange(n)
@@ -182,7 +203,7 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
 
     plt.suptitle("Original vs Best-Seen BR Performance Bounds",
                  fontsize=TITLE_FONTSIZE + 2, y=1.01)
-    plt.tight_layout()
+    plt.tight_layout(rect=[0.02, 0.05, 1.0, 0.98])
 
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, "bounds_comparison.pdf")

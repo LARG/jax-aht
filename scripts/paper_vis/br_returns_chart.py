@@ -70,8 +70,21 @@ def _extract_br_returns(agent_config):
     return [(f"_{i}", float(pair[1])) for i, pair in enumerate(bounds)]
 
 
+def _agent_sort_key(name: str) -> int:
+    """Return 0 for heuristic, 1 for RL, 2 for human_proxy."""
+    def _matches(name, patterns):
+        return any(p.strip("*") in name for p in patterns)
+
+    if _matches(name, HUMAN_PROXY_AGENTS):
+        return 2
+    if _matches(name, RL_AGENTS):
+        return 1
+    return 0
+
+
 def extract_task_data(task_cfg):
-    """Return (names, values) lists for all agents in a task config."""
+    """Return (names, values) lists for all agents in a task config, ordered
+    by agent type: heuristic first, then RL, then human_proxy."""
     names = []
     values = []
     for agent_name, agent_cfg in task_cfg.items():
@@ -86,6 +99,10 @@ def extract_task_data(task_cfg):
             for suffix, val in entries:
                 names.append(f"{agent_name}{suffix}")
                 values.append(val)
+    # Sort by agent type: heuristic (0), RL (1), human_proxy (2)
+    paired = sorted(zip(names, values), key=lambda nv: _agent_sort_key(nv[0]))
+    names = [n for n, _ in paired]
+    values = [v for _, v in paired]
     return names, values
 
 
@@ -146,7 +163,7 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
                               framealpha=0.9)
     leg.set_zorder(20)
 
-    plt.tight_layout()
+    plt.tight_layout(rect=[0.02, 0.05, 1.0, 1.0])
 
     if save:
         os.makedirs(savedir, exist_ok=True)
