@@ -70,8 +70,29 @@ def _extract_br_returns(agent_config):
     return [(f"_{i}", float(pair[1])) for i, pair in enumerate(bounds)]
 
 
+def _agent_sort_key(name: str) -> tuple:
+    """Return (group, sub_order) for sorting: RL(0), heuristic(1), human_proxy(2).
+    Within heuristics, independent_agent is placed third (sub_order=2)."""
+    def _matches(name, patterns):
+        return any(p.strip("*") in name for p in patterns)
+
+    if _matches(name, HUMAN_PROXY_AGENTS):
+        return (2, 0)
+    if _matches(name, RL_AGENTS):
+        return (0, 0)
+    # Within heuristics: onion=0, plate=1, independent=2, others keep original order
+    if "independent" in name:
+        return (1, 2)
+    if "onion" in name:
+        return (1, 0)
+    if "plate" in name:
+        return (1, 1)
+    return (1, 3)
+
+
 def extract_task_data(task_cfg):
-    """Return (names, values) lists for all agents in a task config."""
+    """Return (names, values) lists for all agents in a task config, ordered
+    by agent type: heuristic first, then RL, then human_proxy."""
     names = []
     values = []
     for agent_name, agent_cfg in task_cfg.items():
@@ -86,6 +107,10 @@ def extract_task_data(task_cfg):
             for suffix, val in entries:
                 names.append(f"{agent_name}{suffix}")
                 values.append(val)
+    # Sort by agent type: heuristic (0), RL (1), human_proxy (2)
+    paired = sorted(zip(names, values), key=lambda nv: _agent_sort_key(nv[0]))
+    names = [n for n, _ in paired]
+    values = [v for _, v in paired]
     return names, values
 
 
@@ -130,20 +155,23 @@ def plot_br_returns(save: bool, savedir: str, show_plot: bool, savename: str):
         axes[ax_idx].set_visible(False)
 
     # Single shared y-axis label on the left side of the figure
-    fig.text(0.0, 0.5, "Max Returned Episode Return", va="center", rotation="vertical",
+    fig.text(0.01, 0.5, "Max Returned Episode Return", va="center", rotation="vertical",
              fontsize=AXIS_LABEL_FONTSIZE)
 
-    # Figure-level legend explaining the color scheme
+    # Legend in the bottom-right subplot, lower-right corner, on top of bars
     legend_handles = [
         plt.Rectangle((0, 0), 1, 1, color=COLOR_DELTA, alpha=0.85, label="Heuristic"),
         plt.Rectangle((0, 0), 1, 1, color=COLOR_ORIGINAL, alpha=0.85, label="RL-Based"),
         plt.Rectangle((0, 0), 1, 1, color=COLOR_HUMAN_PROXY, alpha=0.85, label="Human Data"),
     ]
-    fig.legend(handles=legend_handles, loc="center right", fontsize=LEGEND_FONTSIZE,
-               title="Agent Type", title_fontsize=LEGEND_FONTSIZE)
+    # Place on the last visible subplot
+    last_visible = axes[n_tasks - 1]
+    leg = last_visible.legend(handles=legend_handles, loc="lower right", fontsize=LEGEND_FONTSIZE,
+                              title="Agent Type", title_fontsize=LEGEND_FONTSIZE,
+                              framealpha=0.9)
+    leg.set_zorder(20)
 
-    plt.tight_layout()
-    fig.subplots_adjust(right=0.88)
+    plt.tight_layout(rect=[0.02, 0.05, 1.0, 1.0])
 
     if save:
         os.makedirs(savedir, exist_ok=True)

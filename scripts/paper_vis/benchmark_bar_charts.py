@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 
-from scripts.paper_vis.process_data import load_results_for_task
+from scripts.paper_vis.process_data import load_results_for_task, load_results_for_task_merged
 from scripts.paper_vis.plot_globals import (
     TITLE_FONTSIZE, AXIS_LABEL_FONTSIZE, LEGEND_FONTSIZE,
     TASK_TO_AXIS_DISPLAY_NAME, TASK_TO_METRIC_NAME,
@@ -259,7 +259,7 @@ def plot_all_tasks_ego_bar_chart(
 if __name__ == "__main__":
     from scripts.paper_vis.plot_globals import (
         GLOBAL_HELDOUT_CONFIG, SAVE_DIR,
-        EGO_BENCHMARK_RUNS, UNIFIED_BENCHMARK_RUNS,
+        EGO_BENCHMARK_RUNS, UNIFIED_BENCHMARK_RUNS, BC_BENCHMARK_RUNS,
         METHOD_TO_DISPLAY_NAME, OEL_METHODS,
     )
 
@@ -277,6 +277,8 @@ if __name__ == "__main__":
                         help="Tasks to plot. Defaults to all tasks with benchmark runs.")
     parser.add_argument("--force_recompute", action="store_true",
                         help="Re-fetch artifacts and recompute summary stats")
+    parser.add_argument("--include_bc", action="store_true",
+                        help="Merge BC heldout-eval artifacts (BC_BENCHMARK_RUNS) onto the standard heldout pool along the partner axis before computing aggregate stats. Only applies to --plot_type=ego.")
     parser.add_argument("--filter_failed_seeds", action="store_true",
                         help="Exclude seeds with near-zero returns across most heldout agents")
     parser.add_argument("--failed_seed_relative_threshold", type=float, default=0.10,
@@ -291,7 +293,10 @@ if __name__ == "__main__":
     )
     task_list = args.tasks if args.tasks else all_tasks
 
-    norm_suffix = "br_normalization" if args.use_best_returns_normalization else "original_normalization"
+    if args.include_bc:
+        norm_suffix = "with_bc"
+    else:
+        norm_suffix = "br_normalization" if args.use_best_returns_normalization else "original_normalization"
 
     all_task_results = {}
     ego_run_info: list[tuple[str, str, str]] = []  # (display_name, base_name, hatch)
@@ -299,6 +304,7 @@ if __name__ == "__main__":
 
     for task_name in task_list:
         run_specs = []
+        bc_run_specs: list[tuple[str, str, bool]] = []
 
         if args.plot_type == "unified":
             for method_name, run_id in UNIFIED_BENCHMARK_RUNS.get(task_name, {}).items():
@@ -323,19 +329,39 @@ if __name__ == "__main__":
                         hatch = TEAMMATE_HATCH.get(teammate_type, "")
                         ego_run_info.append((display_name, base_name, hatch))
 
+                    if args.include_bc:
+                        bc_run_id = (
+                            BC_BENCHMARK_RUNS.get(task_name, {})
+                            .get(method_name, {})
+                            .get(teammate_type)
+                        )
+                        if bc_run_id:
+                            bc_run_specs.append((display_name, bc_run_id, is_oel))
+
         if not run_specs:
             print(f"No benchmark runs configured for {task_name}, skipping.")
             continue
 
-        all_task_results[task_name] = load_results_for_task(
-            task_name,
-            run_specs,
-            force_recompute=args.force_recompute,
-            renormalize_metrics=args.use_best_returns_normalization,
-            filter_failed_seeds=args.filter_failed_seeds,
-            failed_seed_relative_threshold=args.failed_seed_relative_threshold,
-            failed_seed_breadth_threshold=args.failed_seed_breadth_threshold,
-        )
+        if args.include_bc and args.plot_type == "ego":
+            all_task_results[task_name] = load_results_for_task_merged(
+                task_name,
+                run_specs,
+                bc_run_specs,
+                force_recompute=args.force_recompute,
+                filter_failed_seeds=args.filter_failed_seeds,
+                failed_seed_relative_threshold=args.failed_seed_relative_threshold,
+                failed_seed_breadth_threshold=args.failed_seed_breadth_threshold,
+            )
+        else:
+            all_task_results[task_name] = load_results_for_task(
+                task_name,
+                run_specs,
+                force_recompute=args.force_recompute,
+                renormalize_metrics=args.use_best_returns_normalization,
+                filter_failed_seeds=args.filter_failed_seeds,
+                failed_seed_relative_threshold=args.failed_seed_relative_threshold,
+                failed_seed_breadth_threshold=args.failed_seed_breadth_threshold,
+            )
 
     if not all_task_results:
         print("No results to plot.")

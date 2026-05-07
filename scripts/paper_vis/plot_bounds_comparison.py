@@ -19,6 +19,8 @@ import omegaconf
 
 from scripts.paper_vis.plot_globals import (
     GLOBAL_HELDOUT_CONFIG,
+    HUMAN_PROXY_AGENTS,
+    RL_AGENTS,
     SAVE_DIR,
     TASK_TO_METRIC_NAME,
     TASK_TO_DISPLAY_NAME,
@@ -35,6 +37,26 @@ COLOR_DELTA = "#DD8452"
 
 HATCH_PATTERN = "///"
 HATCH_PREFIXES = ("seq_agent", "entitled_agent", "greedy_")
+
+
+def _agent_sort_key(name: str) -> tuple:
+    """Return (group, sub_order) for sorting: RL(0), heuristic(1), human_proxy(2).
+    Within heuristics, independent_agent is placed third (sub_order=2)."""
+    def _matches(name, patterns):
+        return any(p.strip("*") in name for p in patterns)
+
+    if _matches(name, HUMAN_PROXY_AGENTS):
+        return (2, 0)
+    if _matches(name, RL_AGENTS):
+        return (0, 0)
+    # Within heuristics: onion=0, plate=1, independent=2, others keep original order
+    if "independent" in name:
+        return (1, 2)
+    if "onion" in name:
+        return (1, 0)
+    if "plate" in name:
+        return (1, 1)
+    return (1, 3)
 
 
 def _should_hatch(label: str) -> bool:
@@ -76,14 +98,23 @@ def get_flat_bounds(task_config: dict, metric_name: str):
                 else:
                     original_maxes.append(float(metric_bounds[1]))
         else:
-            # Heuristic agent — single entry
+            # Heuristic agent — single entry, OR a single block with per-instance
+            # bounds expressed as a list-of-lists (e.g. bc_proxy with N partners
+            # in one human_proxy entry).
             if bounds is None or metric_name not in bounds:
                 labels.append(teammate_name)
                 original_maxes.append(None)
                 continue
             metric_bounds = bounds[metric_name]
-            labels.append(teammate_name)
-            original_maxes.append(float(metric_bounds[1]))
+            if isinstance(metric_bounds[0], (list, tuple)):
+                n = len(metric_bounds)
+                for i in range(n):
+                    lbl = teammate_name if n == 1 else f"{teammate_name}[{i}]"
+                    labels.append(lbl)
+                    original_maxes.append(float(metric_bounds[i][1]))
+            else:
+                labels.append(teammate_name)
+                original_maxes.append(float(metric_bounds[1]))
 
     return labels, original_maxes
 
@@ -134,6 +165,13 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
             [v if v is not None else 0.0 for v in original_maxes[:n]], dtype=float
         )
         best_arr = np.array(best_vals[:n], dtype=float)
+
+        # Reorder: heuristic first, then RL, then human_proxy
+        order = sorted(range(n), key=lambda i: _agent_sort_key(labels[i]))
+        labels = [labels[i] for i in order]
+        orig_arr = orig_arr[order]
+        best_arr = best_arr[order]
+
         delta_arr = np.maximum(0.0, best_arr - orig_arr)
 
         x = np.arange(n)
@@ -171,12 +209,9 @@ def plot_bounds_comparison(save_dir: str, show_plots: bool = False):
     fig.text(0.0, 0.5, unified_ylabel, va="center", rotation="vertical",
              fontsize=AXIS_LABEL_FONTSIZE)
 
-    plt.suptitle(
-        "Original vs Best-Seen BR Performance Bounds",
-        fontsize=TITLE_FONTSIZE + 2,
-        y=1.01,
-    )
-    plt.tight_layout()
+    plt.suptitle("Original vs Best-Seen BR Performance Bounds",
+                 fontsize=TITLE_FONTSIZE + 2, y=1.01)
+    plt.tight_layout(rect=[0.02, 0.05, 1.0, 0.98])
 
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, "bounds_comparison.pdf")
