@@ -110,11 +110,11 @@ def run_training(cfg):
         env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
         env = LogWrapper(env)
 
-        if cfg.algorithm.get("ALPHA_VERIFICATION", True):
-            run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
-                                        agent_eval_checkpoints, agent_policies, env.horizon,
-                                        cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
-                                        render=True, agent_test_mode=False)
+        # if cfg.algorithm.get("ALPHA_VERIFICATION", True):
+        run_single_agent_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
+                                    agent_eval_checkpoints, agent_policies, env.horizon,
+                                    cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
+                                    render=True, agent_test_mode=False)
 
         # Value function estimation for joint policies
         # Creates value functions for joint policies for all agents in the environment
@@ -168,11 +168,11 @@ def run_training(cfg):
         env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
         env = LogWrapper(env)
 
-        if cfg.algorithm.get("ALPHA_VERIFICATION", True):
-            run_single_agent_reppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
-                                              agent_eval_checkpoints, agent_policies, env.horizon,
-                                              cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
-                                              render=True, agent_test_mode=True)
+        # if cfg.algorithm.get("ALPHA_VERIFICATION", True):
+        run_single_agent_reppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
+                                        agent_eval_checkpoints, agent_policies, env.horizon,
+                                        cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
+                                        render=True, agent_test_mode=True)
 
     elif cfg["algorithm"]["ALG"] == "creppo":
         if cfg["algorithm"]["SINGLE_AGENT_CENTRALIZED"]:
@@ -207,11 +207,11 @@ def run_training(cfg):
         env = make_env(cfg["algorithm"]["ENV_NAME"], env_kwargs)
         env = LogWrapper(env)
 
-        if cfg.algorithm.get("ALPHA_VERIFICATION", True):
-            run_single_agent_creppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
-                                               agent_eval_checkpoints, agent_policies, env.horizon,
-                                               cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
-                                               render=True, agent_test_mode=True)
+        # if cfg.algorithm.get("ALPHA_VERIFICATION", True):
+        run_single_agent_creppo_joint_eval(wandb_logger, cfg.algorithm.EVAL_SEED, env,
+                                        agent_eval_checkpoints, agent_policies, env.horizon,
+                                        cfg.algorithm.NUM_EVAL_EPISODES, cfg.algorithm.FIXED_EVAL,
+                                        render=True, agent_test_mode=True)
 
     # Joint multi-agent training
     # Creates polices for joint policies for all agents in the environment
