@@ -2,14 +2,14 @@ defaults:
   - rotate/_base_
   - _self_ # values from this file override the values from the base file
 
-TIMESTEPS_PER_ITER_PARTNER: 6e6
+TIMESTEPS_PER_ITER_PARTNER: 6.86e6
 TIMESTEPS_PER_ITER_EGO: 2e6
-NUM_OPEN_ENDED_ITERS: 30
-REGRET_SP_WEIGHT: 3.0 # weight on the SP term in the perstep regret loss
-LR: 1e-4
+NUM_OPEN_ENDED_ITERS: 22
+REGRET_SP_WEIGHT: 3 # weight on the SP term in the perstep regret loss
+LR: 5e-4
 NUM_MINIBATCHES: 8
 CLIP_EPS: 0.2
-ENT_COEF: 0.01
+ENT_COEF: 5e-3
 ANNEAL_LR: true
 EGO_ARGS:
   LR: 5e-5

@@ -33,4 +33,6 @@ command:
   - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
+  - algorithm.TOTAL_TIMESTEPS=1e8
+  - algorithm.ego_train_algorithm.TOTAL_TIMESTEPS=3e7
   - ${args_no_hyphens}

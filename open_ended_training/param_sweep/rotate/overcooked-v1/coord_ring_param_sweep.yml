@@ -27,4 +27,7 @@ command:
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
   - label="param_sweep"
+  - algorithm.TIMESTEPS_PER_ITER_PARTNER=1.6e7
+  - algorithm.TIMESTEPS_PER_ITER_EGO=6e6
+  - algorithm.NUM_OPEN_ENDED_ITERS=9
   - ${args_no_hyphens}

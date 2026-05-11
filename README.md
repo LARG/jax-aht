@@ -3,6 +3,26 @@
 Welcome to JaxAHT! This is a JAX-based benchmark repository for Ad Hoc Teamwork.
 For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
+## Reproducing Experimental Results
+
+For reviewers or users reproducing the paper experiments, start from the installation instructions in
+[docs/install_instructions.md](docs/install_instructions.md), then use the following entry points:
+
+- **Training BRs:** best-response policies use the `ppo_br` configs under
+  `ego_agent_training/configs/algorithm/ppo_br/` and are launched through `ego_agent_training/run.py`.
+  The batch runners used for LBF and Overcooked BR jobs are
+  [`scripts/run_lbf_br_jobs.sh`](scripts/run_lbf_br_jobs.sh),
+  [`scripts/run_lbf_extra_br_jobs.sh`](scripts/run_lbf_extra_br_jobs.sh), and
+  [`scripts/run_overcooked_br_jobs.sh`](scripts/run_overcooked_br_jobs.sh). The BR-to-XP helper
+  pipeline is [`scripts/br_xp_pipeline.py`](scripts/br_xp_pipeline.py).
+- **Running hyperparameter sweeps:** W&B sweep usage is documented in
+  [docs/wandb_sweep_usage.md](docs/wandb_sweep_usage.md). Benchmark config management for sweep
+  timesteps and applying best hyperparameters is documented in
+  [`scripts/manage_configs/README.md`](scripts/manage_configs/README.md).
+- **Running benchmark experiments:** use
+  [`scripts/benchmark/experiments.sh`](scripts/benchmark/experiments.sh).
+- **Visualizations for paper:** plotting scripts and usage notes live in
+  [`scripts/paper_vis/`](scripts/paper_vis/).
 
 If you find this repository useful for your research, please cite,
 ```bibtex

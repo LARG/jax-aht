@@ -5,7 +5,7 @@ one per algorithm — where each point is one sweep run. The y-axis shows perfor
 the x-axis is meaningless (points are spread with jitter for readability).
 
 To run: edit the config block at the bottom of this file, then:
-    python vis/plot_sweep_distribution.py
+    python scripts/paper_vis/plot_sweep_distribution.py
 """
 
 from __future__ import annotations
@@ -19,16 +19,17 @@ import pandas as pd
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import gaussian_kde
 
-from vis.plot_globals import (
+from scripts.paper_vis.plot_globals import (
     SAVE_DIR,
     ENTITY,
     METHOD_TO_DISPLAY_NAME, TASK_TO_DISPLAY_NAME,
     HYPERPARAM_PROJECT,
     HYPERPARAM_DEFAULT_METRIC,
-    EGO_HYPERPARAM_SWEEPS,
-    UNIFIED_HYPERPARAM_SWEEPS,
+    HYPERPARAM_SWEEPS,
+    TASK_LEGACY_NAMES,
 )
-from vis.wandb_cache import fetch_sweep_cached, extract_metric
+from scripts.utils import ALGO_TO_ENTRY_POINT
+from scripts.wandb_utils.wandb_cache import fetch_sweep_cached, extract_metric
 
 
 def _get_hparam_cols(df: pd.DataFrame) -> list[str]:
@@ -133,7 +134,7 @@ def plot_distribution(
     for idx in range(n, nrows * ncols):
         axes[idx // ncols][idx % ncols].set_visible(False)
 
-    fig.suptitle(title, fontsize=12, y=0.95)
+    fig.suptitle(title, fontsize=12, y=0.97)
     plt.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path, bbox_inches="tight")
@@ -148,10 +149,10 @@ if __name__ == "__main__":
     parser.add_argument("--algo-type", choices=["ego", "unified"], required=True,
                         help="Which sweep family to visualize.")
     parser.add_argument("--task", required=True,
-                        help="Task name (e.g. lbf).")
+                        help="Task name (e.g. lbf/lbf_7x7_nolevels).")
     parser.add_argument("--force-recompute", action="store_true",
                         help="Re-fetch from wandb, ignoring the local cache.")
-    parser.add_argument("--max-hparams", type=int, default=400,
+    parser.add_argument("--max-hparams", type=int, default=200,
                         help="Max unique hyperparam combinations to visualize per algorithm. "
                              "If exceeded, randomly sample down to this limit.")
     args = parser.parse_args()
@@ -161,19 +162,23 @@ if __name__ == "__main__":
     FORCE_RECOMPUTE = args.force_recompute
     MAX_NUM_TO_VISUALIZE = args.max_hparams
 
-    sweep_map = EGO_HYPERPARAM_SWEEPS if ALGO_TYPE == "ego" else UNIFIED_HYPERPARAM_SWEEPS
-    task_sweeps = sweep_map[TASK]
+    all_task_sweeps = HYPERPARAM_SWEEPS[TASK]
+    task_sweeps = {
+        algo: sid for algo, sid in all_task_sweeps.items()
+        if (ALGO_TO_ENTRY_POINT.get(algo) == "ego_agent_training") == (ALGO_TYPE == "ego")
+    }
 
     scores_by_algo: dict[str, np.ndarray] = {}
     for algo, sweep_id in task_sweeps.items():
+        task_leaf = TASK_LEGACY_NAMES.get(TASK, TASK.split("/")[-1])
         df = fetch_sweep_cached(sweep_id, ENTITY, HYPERPARAM_PROJECT,
                                 force_recompute=FORCE_RECOMPUTE,
-                                expected_name_parts=[algo, TASK])
+                                expected_name_parts=[algo, task_leaf])
         df = extract_metric(df, HYPERPARAM_DEFAULT_METRIC)
         df = deduplicate_and_sample(df, MAX_NUM_TO_VISUALIZE)
         scores_by_algo[algo] = df["_score"].values
         print(f"  {algo}: {len(df)} unique hparam combos")
 
     out_path = Path(SAVE_DIR) / f"sweep_distribution_{ALGO_TYPE}_{TASK.replace('/', '_')}.pdf"
-    title = f"{TASK_TO_DISPLAY_NAME[TASK]}: Hyperparameter Performance Distribution ({ALGO_TYPE.capitalize()} Algorithms)"
+    title = f"{TASK_TO_DISPLAY_NAME[TASK]}"
     plot_distribution(scores_by_algo, title, out_path)
