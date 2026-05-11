@@ -156,7 +156,7 @@ UNIFIED_BENCHMARK_RUNS = {
         "lbrdiv": "x012q7qc",
         "comedi": "ehz0njkk", 
         "cole": "zxwuozip",
-        "trajedi": "bkuq6gvy", # TODO: update to u7ssnuyi when finished
+        "trajedi": "u7ssnuyi",
     },
     "mini-hanabi": {
         "fcp": "c5kukiyx", 
