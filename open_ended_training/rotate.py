@@ -1228,11 +1228,16 @@ def run_rotate(config, wandb_logger):
     ego_params = jax.tree_map(lambda x: x[:, :, 0], ego_outs["final_params"]) # shape (num_seeds, num_open_ended_iters, 1, num_ckpts, leaf_dim)
     ego_policy, init_ego_params = initialize_s5_agent(algorithm_config, env, init_ego_rng)
 
-    # Log metrics
+    ### Prep reduced version of outs for saving
     # Save only the buffer from the last iteration of OEL, rather than all iterations
     ego_outs["final_buffer"] = get_final_buffer(ego_outs["final_buffer"])
     # Save only the final ego agent from the last iteration of OEL
     ego_outs["final_params"] = jax.tree_map(lambda x: x[:, -1], ego_outs["final_params"])
+    # Do not save checkpoints_conf and checkpoints_br
+    del teammate_outs["checkpoints_conf"]
+    del teammate_outs["checkpoints_br"]
+
+    ### Log metrics and save reduced version of outs (to save memory)
     log_metrics(config, wandb_logger, (teammate_outs, ego_outs), metric_names)
 
     return ego_policy, ego_params, init_ego_params
