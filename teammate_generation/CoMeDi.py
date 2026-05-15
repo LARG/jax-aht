@@ -899,17 +899,18 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                     return (new_update_runner_state, checkpoint_array, ckpt_idx+1), metric
 
                 # XP eval against all policies in the buffer
-                xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                        train_state.params,jnp.arange(config["POP_SIZE"]))
+                xp_eval_returns = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                    jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                        train_state.params,jnp.arange(config["POP_SIZE"])))
 
                 # SP performance against itself
-                sp_eval_returns = run_episodes(
+                sp_eval_returns = jax.tree.map(lambda x: x.mean(), run_episodes(
                     eval_rng, env,
                     agent_0_param=train_state.params, agent_0_policy=policy,
                     agent_1_param=train_state.params, agent_1_policy=policy,
                     max_episode_steps=config["ROLLOUT_LENGTH"],
                     num_eps=config["NUM_EVAL_EPISODES"]
-                )
+                ))
 
 
                 update_steps = 0
@@ -960,16 +961,17 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                         )
 
                         # Eval trained agent against all params in the pool
-                        xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                            train_state.params, jnp.arange(config["POP_SIZE"]))
+                        xp_eval_returns = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                            jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                                train_state.params, jnp.arange(config["POP_SIZE"])))
                         # Eval trained agent against itself
-                        sp_eval_returns = run_episodes(
+                        sp_eval_returns = jax.tree.map(lambda x: x.mean(), run_episodes(
                             eval_rng, env,
                             agent_0_param=train_state.params, agent_0_policy=policy,
                             agent_1_param=train_state.params, agent_1_policy=policy,
                             max_episode_steps=config["ROLLOUT_LENGTH"],
                             num_eps=config["NUM_EVAL_EPISODES"]
-                        )
+                        ))
 
                         return (new_ckpt_arr_conf, rng, cidx + 1, xp_eval_returns, sp_eval_returns)
 
@@ -1110,14 +1112,14 @@ def log_metrics(config, outs, logger, metric_names: tuple, out_savepath):
     if (num_updates - 1) not in eval_steps:
         eval_steps.append(num_updates - 1)
 
-    # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
-    # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates, pop_size)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns_xp = np.asarray(outs["last_ep_infos_xp"]["returned_episode_returns"])
 
-    # Average over seeds, then over agent pairs, episodes and num_agents_per_game
-    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))  # shape (pop_size - 1, num_updates)
-    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))  # shape (pop_size - 1, num_updates, pop_size)
+    # Average over seeds only (eval episodes and agents already averaged inside scan)
+    sp_return_curve = all_returns_sp.mean(axis=0)  # shape (pop_size - 1, num_updates)
+    xp_return_curve = all_returns_xp.mean(axis=0)  # shape (pop_size - 1, num_updates, pop_size)
 
     for num_add_policies in range(pop_size):
         for update_step in eval_steps:

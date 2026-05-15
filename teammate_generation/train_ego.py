@@ -107,8 +107,8 @@ def log_ego_metrics(config, out, logger, metric_names: tuple, out_savepath: str)
 
     # Process eval return metrics - average across ego seeds, eval episodes,  training partners
     # and num_agents per game for each checkpoint
-    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (num_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
-    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
+    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (num_seeds, num_updates)  [pre-scalarized: mean over partners, eval eps, and agents taken inside scan]
+    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=0)
 
     # Process loss metrics - average across ego seeds
     average_ego_value_losses = np.mean(all_ego_value_losses, axis=0)

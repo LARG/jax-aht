@@ -612,7 +612,8 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     )
 
                     rng, eval_rng = jax.random.split(rng)
-                    ep_last_info = run_all_episodes(eval_rng, train_state_conf, train_state_br)
+                    ep_last_info = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                        run_all_episodes(eval_rng, train_state_conf, train_state_br))
 
                     return ((new_ckpt_arr_conf, new_ckpt_arr_br, ep_last_info), rng, cidx + 1)
 
@@ -643,7 +644,8 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
             update_steps = 0
 
             rng, rng_eval = jax.random.split(rng, 2)
-            eval_ep_last_info = run_all_episodes(rng_eval, all_conf_optims, all_br_optims)
+            eval_ep_last_info = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                run_all_episodes(rng_eval, all_conf_optims, all_br_optims))
 
             # Initialize environment
             rng, reset_rng = jax.random.split(rng)
@@ -773,7 +775,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
 
     ### Log evaluation metrics
     # we plot XP return curves separately from SP return curves
-    # shape (num_seeds, num_updates, (pop_size)^2, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, num_updates, (pop_size)^2)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns = np.asarray(metrics["eval_ep_last_info"]["returned_episode_returns"])
     xs = list(range(num_updates))
 
@@ -782,9 +784,9 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     sp_returns = all_returns[:, :, sp_mask]
     xp_returns = all_returns[:, :, ~sp_mask]
 
-    # Average over seeds, then over agent pairs, episodes and num_agents_per_game
-    sp_return_curve = sp_returns.mean(axis=(0, 2, 3, 4))
-    xp_return_curve = xp_returns.mean(axis=(0, 2, 3, 4))
+    # Average over seeds and agent pairs (eval episodes and agents already averaged inside scan)
+    sp_return_curve = sp_returns.mean(axis=(0, 2))
+    xp_return_curve = xp_returns.mean(axis=(0, 2))
 
     for step in range(num_updates):
         logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[step], train_step=step)
@@ -792,7 +794,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     logger.commit()
 
     # log final XP matrix to wandb - average over seeds
-    last_returns_array = all_returns[:, -1].mean(axis=(0, 2, 3))
+    last_returns_array = all_returns[:, -1].mean(axis=0)
     last_returns_array = np.reshape(last_returns_array, (pop_size, pop_size))
     logger.log_xp_matrix("Eval/LastXPMatrix", last_returns_array)
 
