@@ -916,12 +916,14 @@ def train_regret_maximizing_partners(config, env,
                         agent_1_param=ego_params, agent_1_policy=ego_policy,
                         max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]
                     )
+                    last_ep_info_with_ego = jax.tree.map(lambda x: x.mean(), last_ep_info_with_ego)
                     # conf vs br
                     last_ep_info_with_br = run_episodes(eval_rng, env,
                         agent_0_param=train_state_br.params, agent_0_policy=br_policy,
                         agent_1_param=train_state_conf.params, agent_1_policy=confederate_policy,
                         max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]
                     )
+                    last_ep_info_with_br = jax.tree.map(lambda x: x.mean(), last_ep_info_with_br)
 
                     return ((new_ckpt_arr_conf, new_ckpt_arr_br, last_ep_info_with_br, last_ep_info_with_ego), rng, cidx + 1)
 
@@ -969,15 +971,15 @@ def train_regret_maximizing_partners(config, env,
 
             # initial ep_infos for scan over _update_step_with_ckpt
             rng, rng_eval_ego, rng_eval_br = jax.random.split(rng, 3)
-            ep_infos_ego = run_episodes(rng_eval_ego, env,
+            ep_infos_ego = jax.tree.map(lambda x: x.mean(), run_episodes(rng_eval_ego, env,
                 agent_0_param=train_state_conf.params, agent_0_policy=confederate_policy,
                 agent_1_param=ego_params, agent_1_policy=ego_policy,
                 max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]
-            )
-            ep_infos_br = run_episodes(rng_eval_br, env,
+            ))
+            ep_infos_br = jax.tree.map(lambda x: x.mean(), run_episodes(rng_eval_br, env,
                 agent_0_param=train_state_br.params, agent_0_policy=br_policy,
                 agent_1_param=ego_params, agent_1_policy=ego_policy,
-                max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"])
+                max_episode_steps=config["ROLLOUT_LENGTH"], num_eps=config["NUM_EVAL_EPISODES"]))
 
             # Initialize done flags
             init_dones_xp = {k: jnp.zeros((config["NUM_ENVS"]), dtype=bool) for k in env.agents + ["__all__"]}
@@ -1260,8 +1262,9 @@ def log_metrics(config, logger, outs, metric_names: tuple):
 
     ### Process/extract ROTATE-specific losses
     # Conf vs ego, conf vs br, br losses
-    # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates, num_eval_episodes, num_agents_per_env)
-    eval_mean_dims = (0, 2, 4, 5)
+    # shape (num_seeds, num_open_ended_iters, num_partner_seeds, num_updates)
+    # already pre-scalarized (mean over eval episodes and agents taken inside the scan)
+    eval_mean_dims = (0, 2)
     avg_teammate_sp_returns = np.asarray(teammate_metrics["eval_ep_last_info_br"]["returned_episode_returns"]).mean(axis=eval_mean_dims)
     avg_teammate_xp_returns = np.asarray(teammate_metrics["eval_ep_last_info_ego"]["returned_episode_returns"]).mean(axis=eval_mean_dims)
 
@@ -1284,8 +1287,9 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     avg_rewards_teammate_against_ego = np.asarray(teammate_metrics["average_rewards_ego"]).mean(axis=loss_mean_dims)
 
     # Process ego-specific metrics
-    # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates, num_partners, num_eval_episodes, num_agents_per_env)
-    avg_ego_returns = np.asarray(ego_metrics["eval_ep_last_info"]["returned_episode_returns"]).mean(axis=(0, 2, 4, 5, 6))
+    # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates)
+    # already pre-scalarized (mean over partners, eval episodes, and agents taken inside the scan)
+    avg_ego_returns = np.asarray(ego_metrics["eval_ep_last_info"]["returned_episode_returns"]).mean(axis=eval_mean_dims)
     # shape (num_seeds, num_open_ended_iters, num_ego_seeds, num_ego_updates)
     avg_ego_value_losses = np.asarray(ego_metrics["value_loss"]).mean(axis=loss_mean_dims)
     avg_ego_actor_losses = np.asarray(ego_metrics["actor_loss"]).mean(axis=loss_mean_dims)

@@ -450,14 +450,14 @@ def train_meliba_ego_agent(config, env, train_rng,
                     gathered_params = partner_population.gather_agent_params(partner_params, eval_partner_indices)
 
                     rng, eval_rng = jax.random.split(rng)
-                    eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
+                    eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), jax.vmap(lambda x: run_episodes(
                         eval_rng, env, agent_0_param={"encoder": encoder_decoder_train_state.params["encoder"],
                                                       "decoder": encoder_decoder_train_state.params["decoder"],
                                                       "policy": train_state.params},
                         agent_0_policy=ego_policy,
                         agent_1_param=x, agent_1_policy=partner_population.policy_cls,
                         max_episode_steps=max_episode_steps,
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params)
+                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params))
                     return (new_ckpt_arr, cidx + 1, rng, eval_eps_last_infos)
 
                 def skip_ckpt(args):
@@ -482,7 +482,7 @@ def train_meliba_ego_agent(config, env, train_rng,
             # Init eval return infos
             eval_partner_indices = jnp.arange(num_total_partners)
             gathered_params = partner_population.gather_agent_params(partner_params, eval_partner_indices)
-            eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
+            eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), jax.vmap(lambda x: run_episodes(
                         rng_eval, env,
                         agent_0_param={"encoder": encoder_decoder_train_state.params["encoder"],
                                        "decoder": encoder_decoder_train_state.params["decoder"],
@@ -490,7 +490,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                         agent_0_policy=ego_policy,
                         agent_1_param=x, agent_1_policy=partner_population.policy_cls,
                         max_episode_steps=max_episode_steps,
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params)
+                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params))
 
             # initial runner state for scanning
             update_steps = 0
@@ -619,8 +619,8 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     all_ego_decoder_grad_norms = np.asarray(train_metrics["decoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     # Process eval return metrics - average across ego seeds, eval episodes,  training partners
     # and num_agents per game for each checkpoint
-    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
-    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
+    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_ego_train_seeds, num_updates)  [pre-scalarized: mean over partners, eval eps, and agents taken inside scan]
+    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=0)
 
     # Process loss metrics - average across ego seeds, partners and minibatches dims
     # Loss metrics shape should be (n_ego_train_seeds, num_updates)
