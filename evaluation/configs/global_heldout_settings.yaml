@@ -585,30 +585,38 @@ heldout_set:
     iggi:
       actor_type: iggi
       performance_bounds:
-        returned_episode_returns: [0.0, 13.33]
+        returned_episode_returns: [0.0, 13.70]
     piers:
       actor_type: piers
       play_threshold: 0.6
       hint_threshold: 4
       performance_bounds:
-        returned_episode_returns: [0.0, 10.69]
+        returned_episode_returns: [0.0, 10.47]
     flawed:
       actor_type: flawed
       play_threshold: 0.4
       performance_bounds:
-        returned_episode_returns: [0.0, 7.08]
+        returned_episode_returns: [0.0, 7.02]
     outer:
       actor_type: outer
       performance_bounds:
-        returned_episode_returns: [0.0, 8.98]
+        returned_episode_returns: [0.0, 10.42]
     van_den_bergh:
       actor_type: van_den_bergh
       performance_bounds:
-        returned_episode_returns: [0.0, 8.55]
+        returned_episode_returns: [0.0, 10.03]
     smartbot:
       actor_type: smartbot
       performance_bounds:
-        returned_episode_returns: [0.0, 8.41]
+        returned_episode_returns: [0.0, 8.62]
+    cautious:
+      actor_type: cautious
+      performance_bounds:
+        returned_episode_returns: [0.0, 11.12]
+    internal:
+      actor_type: internal
+      performance_bounds:
+        returned_episode_returns: [0.0, 9.00]
     obl_r2d2_l1:
       actor_type: obl_r2d2
       weight_file: agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
@@ -802,7 +810,7 @@ heldout_set:
       path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
-      idx_list: [2]
+      idx_list: [2] 
       FC_HIDDEN_DIM: 256
       ACTIVATION: relu
       test_mode: false
@@ -837,89 +845,80 @@ heldout_set:
         returned_episode_returns: [[0.0, 6.25], [0.0, 5.77], [0.0, 6.45], [0.0, 6.52], [0.0, 6.52]]
     # S5 recurrent IPPO self-play partners.
     ippo_s5_seed42:
-      path: "eval_teammates/hanabi/ippo_s5_mini/seed42/"
+      path: "eval_teammates/mini-hanabi/ippo_s5/seed42"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-      FC_N_LAYERS: 2
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+      FC_N_LAYERS: 3
+      ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 7.56]]
+        returned_episode_returns: [[0.0, 6.88]]
     ippo_s5_seed123:
-      path: "eval_teammates/hanabi/ippo_s5_mini/seed123/"
+      path: "eval_teammates/mini-hanabi/ippo_s5/seed123"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-      FC_N_LAYERS: 2
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+      FC_N_LAYERS: 3
+      ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 7.80]]
+        returned_episode_returns: [[0.0, 6.88]]
     ippo_s5_seed31415:
-      path: "eval_teammates/hanabi/ippo_s5_mini/seed31415/"
+      path: "eval_teammates/mini-hanabi/ippo_s5/seed31415"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-      FC_N_LAYERS: 2
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+      FC_N_LAYERS: 3
+      ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 7.88]]
+        returned_episode_returns: [[0.0, 8.01]]
     ippo_s5_op_seed42:
-      path: "eval_teammates/hanabi/ippo_s5_op_mini/seed42/"
+      path: "eval_teammates/mini-hanabi/ippo_s5_op/seed42"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       S5_D_MODEL: 128
       S5_SSM_SIZE: 128
       S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
-      S5_N_LAYERS: 2
       FC_N_LAYERS: 3
-      S5_ACTIVATION: full_glu
-      S5_DO_NORM: true
-      S5_PRENORM: true
-      S5_DO_GTRXL_NORM: true
+      ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 7.45]]
+        returned_episode_returns: [[0.0, 8.19]]
     ippo_s5_op_seed123:
-      path: "eval_teammates/hanabi/ippo_s5_op_mini/seed123/"
+      path: "eval_teammates/mini-hanabi/ippo_s5_op/seed123"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       S5_D_MODEL: 128
       S5_SSM_SIZE: 128
       S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
-      S5_N_LAYERS: 2
       FC_N_LAYERS: 3
-      S5_ACTIVATION: full_glu
-      S5_DO_NORM: true
-      S5_PRENORM: true
-      S5_DO_GTRXL_NORM: true
+      ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 6.62]]
+        returned_episode_returns: [[0.0, 7.16]]
     ippo_s5_op_seed31415:
-      path: "eval_teammates/hanabi/ippo_s5_op_mini/seed31415/"
+      path: "eval_teammates/mini-hanabi/ippo_s5_op/seed31415"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       S5_D_MODEL: 128
       S5_SSM_SIZE: 128
       S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
-      S5_N_LAYERS: 2
       FC_N_LAYERS: 3
-      S5_ACTIVATION: full_glu
-      S5_DO_NORM: true
-      S5_PRENORM: true
-      S5_DO_GTRXL_NORM: true
+      ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 7.60]]
+        returned_episode_returns: [[0.0, 8.11]]
