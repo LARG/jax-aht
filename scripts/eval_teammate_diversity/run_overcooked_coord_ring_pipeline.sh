@@ -61,18 +61,11 @@ fi
 
 # Configuration - adjust these as needed
 SESSION_NAME="overcooked_coord_ring_pipeline"
-CONDA_ENV_NAME="${CONDA_ENV_NAME:-jax-aht}"
+CONDA_ENV_NAME="jax-aht"
 TASK_NAME="overcooked-v1/coord_ring"
 
-# Resolve conda python: caller can override via $CONDA_PYTHON to point at an env
-# that lives outside the default $CONDA_BASE/envs/ tree (e.g., a separate envs root).
-CONDA_PYTHON="${CONDA_PYTHON:-${CONDA_BASE}/envs/${CONDA_ENV_NAME}/bin/python}"
-if [ ! -x "${CONDA_PYTHON}" ]; then
-    echo "Error: CONDA_PYTHON='${CONDA_PYTHON}' is not executable."
-    echo "Set CONDA_PYTHON to your env's python, e.g.:"
-    echo "  CONDA_PYTHON=/scratch/cluster/jyliu/conda_envs/HANABI/bin/python $0"
-    exit 1
-fi
+# Load ENV_NAME from task config using conda python
+CONDA_PYTHON="${CONDA_BASE}/envs/${CONDA_ENV_NAME}/bin/python"
 TASK_CONFIG="${PROJECT_ROOT}/evaluation/configs/task/${TASK_NAME}.yaml"
 ENV_NAME=$(${CONDA_PYTHON} -c "import yaml; c=yaml.safe_load(open('${TASK_CONFIG}')); print(c['ENV_NAME'])")
 
@@ -121,13 +114,11 @@ tmux new-session -d -s "${SESSION_NAME}"
 if [ "${SKIP_COLLECT}" = true ]; then
     COLLECT_CMD=""
 else
-    COLLECT_CMD="echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 PYTHONPATH=${PROJECT_ROOT} ${CONDA_PYTHON} scripts/eval_teammate_diversity/collect_trajectories.py --task_name ${TASK_NAME} --num_points_per_pair ${NUM_POINTS_PER_PAIR} --num_envs ${NUM_ENVS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete.' &&"
+    COLLECT_CMD="echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --task_name ${TASK_NAME} --num_points_per_pair ${NUM_POINTS_PER_PAIR} --num_envs ${NUM_ENVS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete.' &&"
 fi
 
-# Use CONDA_PYTHON directly for all invocations (no `conda activate`) so the
-# pipeline works regardless of where the env lives relative to CONDA_BASE.
-# PYTHONPATH=${PROJECT_ROOT} so `from envs import ...` resolves at the repo root.
-tmux send-keys -t "${SESSION_NAME}" "cd ${PROJECT_ROOT} && ${COLLECT_CMD} echo 'Starting classifier training...' && CUDA_VISIBLE_DEVICES=1 PYTHONPATH=${PROJECT_ROOT} ${CONDA_PYTHON} scripts/eval_teammate_diversity/train_classifier.py --task_name ${TASK_NAME} --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Classifier training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 PYTHONPATH=${PROJECT_ROOT} ${CONDA_PYTHON} scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --latents_file ${LATENTS_FILE} --plot_title 'Overcooked-V1 (coord_ring)' && echo 'Pipeline complete!'" C-m
+# Send commands to activate conda environment and run the pipeline sequentially
+tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && ${COLLECT_CMD} echo 'Starting classifier training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_classifier.py --task_name ${TASK_NAME} --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Classifier training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --latents_file ${LATENTS_FILE} --plot_title 'Overcooked-V1 (coord_ring)' && echo 'Pipeline complete!'" C-m
 
 echo "Pipeline started in tmux session '${SESSION_NAME}'"
 echo "The commands will execute sequentially - each step waits for the previous to complete."
