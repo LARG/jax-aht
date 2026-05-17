@@ -157,6 +157,17 @@ best_response_set:
       idx_list: [0]
       test_mode: true
 
+    br_for_entitled_agent:
+      path: "results/lbf/ppo_br_s5/entitled_agent_serious/2026-05-05_10-30-43/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_greedy_closest_teammate:
+      actor_type: seq_agent
+      ordering_strategy: nearest_agent
+
   overcooked-v1/cramped_room:
     br_for_ippo_mlp_0:
       path: "results/overcooked-v1/cramped_room/ppo_br_s5/cramped_room_ippo_mlp_0_serious/2026-03-16_11-08-25/ego_train_run"
@@ -646,6 +657,13 @@ best_response_set:
 
     br_for_comedi_1_4:
       path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_comedi_1_4_serious/2026-04-01_11-12-21/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_human_proxy:
+      path: "results/overcooked-v1/coord_ring/ppo_br_s5/coord_ring_br_for_bc_run0_1e8/2026-05-05_20-08-22/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]

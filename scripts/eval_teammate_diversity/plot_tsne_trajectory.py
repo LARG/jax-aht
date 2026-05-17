@@ -1,3 +1,6 @@
+import colorsys
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
@@ -87,6 +90,13 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30, ti
         atype = _agent_type(agent)
         return _AGENT_MARKERS.get(atype, "o")
 
+    n_labels = len(unique_labels)
+    # Evenly-spaced hues with reduced saturation and high value for pastel look
+    colors = [
+        colorsys.hsv_to_rgb(i / n_labels, 0.45, 0.88)
+        for i in range(n_labels)
+    ]
+
     offset = 0
     plotted_count = 0
     for i, label in enumerate(unique_labels):
@@ -98,6 +108,7 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30, ti
                 embedding_slice[:, 1],
                 label=_display_name(label),
                 marker=_marker(label),
+                color=colors[i],
                 alpha=0.6,
                 s=20,
             )
@@ -111,6 +122,7 @@ def plot_tsne(latents_dict, save_path="tsne_trajectories.png", perplexity=30, ti
     ax.set_xlabel("t-SNE 1", fontsize=20)
     ax.set_ylabel("t-SNE 2", fontsize=20)
     ax.tick_params(axis='both', labelsize=17)
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     pdf_path = save_path.rsplit(".", 1)[0] + ".pdf" if "." in save_path else save_path + ".pdf"
     plt.savefig(pdf_path, bbox_inches='tight')

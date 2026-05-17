@@ -104,11 +104,11 @@ def plot_pair_confusion_matrix(predictions, all_true_labels, label_to_idx, idx_t
 
 # Config — paths are relative to the repo root (two levels up from this script)
 _REPO_ROOT = Path(__file__).parent.parent.parent
-DEFAULT_DATA_DIR = str(_REPO_ROOT / "results/lbf_7x7_nolevels/trajectory_data")
-DEFAULT_MODEL_DIR = str(_REPO_ROOT / "results/lbf_7x7_nolevels/models")
+DEFAULT_DATA_DIR = str(_REPO_ROOT / "results/lbf_lbf_7x7_nolevels/trajectory_data")
+DEFAULT_MODEL_DIR = str(_REPO_ROOT / "results/lbf_lbf_7x7_nolevels/models")
 DEFAULT_MODEL_FILE = "trajectory_classifier"
-DEFAULT_OUTPUT_FILE = str(_REPO_ROOT / "results/lbf_7x7_nolevels/tsne_trajectory_visualization.png")
-DEFAULT_LATENTS_FILE = str(_REPO_ROOT / "results/lbf_7x7_nolevles/latents.pkl")
+DEFAULT_OUTPUT_FILE = str(_REPO_ROOT / "results/lbf_lbf_7x7_nolevels/tsne_trajectory_visualization.png")
+DEFAULT_LATENTS_FILE = str(_REPO_ROOT / "results/lbf_lbf_7x7_nolevels/latents.pkl")
 
 
 def collect_latents(
