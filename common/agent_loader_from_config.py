@@ -163,6 +163,15 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
                 using_log_wrapper=True,
                 p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
             )
+        if actor_type == "bc_proxy":
+            from agents.overcooked.bc_agent import BCPolicy, BCProxyPartnerWrapper
+            bc = BCPolicy(
+                layout_name=env_kwargs["layout"],
+                using_log_wrapper=True,
+                run_id=agent_config.get("run_id", 0),
+            )
+            # Wrap so it fits ppo_br's vmapped HeuristicPolicyPopulation contract.
+            return BCProxyPartnerWrapper(bc)
         raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
 
     if 'hanabi' in task_name:
@@ -232,9 +241,11 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
 def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     '''Load RL agent from checkpoint and initialize from config.
     The agent_config dictionary should have the following structure:
+
+    agent_config must include:
     {
         "path": str,
-        "actor_type": str,
+        "actor_type": str,  # one of: s5, mlp, rnn, actor_with_double_critic, actor_with_conditional_critic
         "ckpt_key": str, # key to load from checkpoint. Default is "checkpoints".
         "custom_loader": dict, # custom loader for the checkpoint. Default is None.
         "idx_list": list, # list of indices to load from checkpoint. If null, all checkpoints will be loaded.
@@ -245,8 +256,7 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         policy: policy function
         agent_params: agent parameters from checkpoint
         init_params: initial agent parameters from initialization
-        idx_list: list of indices used to extract checkpoints
-        idx_labels: list of string labels corresponding to the indices
+        idx_labels: list of string labels corresponding to the loaded checkpoint indices
     '''
     assert "path" in agent_config, "Path to agent checkpoint must be provided."
     assert "actor_type" in agent_config, "Actor type must be provided."
