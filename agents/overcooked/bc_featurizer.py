@@ -3,6 +3,9 @@
 This module provides a standalone Featurizer class that converts Overcooked-v1 states
 into the featurized observation format required by the BC agent, without needing
 to wrap the entire environment.
+
+Features match features provided in Overcooked-V2 to be compatible with the BC agents (get_obs_featurized):
+https://github.com/overcookedv2/experiments/blob/main/JaxMARL/jaxmarl/environments/overcooked_v2/overcooked.py
 '''
 import numpy as np
 import jax
