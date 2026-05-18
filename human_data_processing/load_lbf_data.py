@@ -215,6 +215,12 @@ def load_bc_data_padded(config_name: str,
     )
 
 
+# Backward-compatible names used by human_data_processing/README.md.
+load_lbf_data = load_bc_data
+load_lbf_data_by_agent = load_bc_data_by_agent
+load_lbf_data_padded = load_bc_data_padded
+
+
 # ---------- Quick test ----------
 
 if __name__ == "__main__":
