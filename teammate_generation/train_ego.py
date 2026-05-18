@@ -104,16 +104,24 @@ def log_ego_metrics(config, out, logger, metric_names: tuple, out_savepath: str)
     all_ego_value_losses = np.asarray(train_metrics["value_loss"]) # shape (num_seeds, num_updates)
     all_ego_actor_losses = np.asarray(train_metrics["actor_loss"]) # shape (num_seeds, num_updates)
     all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"]) # shape (num_seeds, num_updates)
+    human_reg_losses = train_metrics.get("human_reg_loss")
 
     # Process eval return metrics - average across ego seeds, eval episodes,  training partners
     # and num_agents per game for each checkpoint
     all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (num_seeds, num_updates)  [pre-scalarized: mean over partners, eval eps, and agents taken inside scan]
     average_ego_rets_per_iter = np.mean(all_ego_returns, axis=0)
 
+    def mean_by_update(values):
+        extra_axes = tuple(range(2, values.ndim))
+        return np.mean(values, axis=(0,) + extra_axes)
+
     # Process loss metrics - average across ego seeds
-    average_ego_value_losses = np.mean(all_ego_value_losses, axis=0)
-    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=0)
-    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=0)
+    average_ego_value_losses = mean_by_update(all_ego_value_losses)
+    average_ego_actor_losses = mean_by_update(all_ego_actor_losses)
+    average_ego_entropy_losses = mean_by_update(all_ego_entropy_losses)
+    average_ego_human_reg_losses = None
+    if human_reg_losses is not None:
+        average_ego_human_reg_losses = mean_by_update(np.asarray(human_reg_losses))
     
     # Log metrics for each update step
     num_updates = len(average_ego_value_losses)
@@ -127,7 +135,8 @@ def log_ego_metrics(config, out, logger, metric_names: tuple, out_savepath: str)
         logger.log_item("Train/EgoValueLoss", average_ego_value_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoActorLoss", average_ego_actor_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
-
+        if average_ego_human_reg_losses is not None:
+            logger.log_item("Train/EgoHumanRegLoss", average_ego_human_reg_losses[step], train_step=step, commit=True)
         logger.commit()
 
     if config["logger"]["log_train_out"]:

@@ -24,6 +24,41 @@ from envs.log_wrapper import LogWrapper
 from marl.ppo_utils import Transition, batchify, unbatchify, _create_minibatches
 
 
+def _load_human_reference_policy(config):
+    if config.get("HUMAN_REG_MODE", "none") != "reference_kl":
+        return None
+    if float(config.get("HUMAN_REG_COEF", 0.0)) <= 0.0:
+        return None
+    if config["ENV_NAME"] != "lbf":
+        raise ValueError("Reference-policy human regularization currently supports LBF only")
+    if not config.get("HUMAN_REF_BC_CHECKPOINT"):
+        raise ValueError("Set HUMAN_REF_BC_CHECKPOINT when HUMAN_REG_MODE=reference_kl")
+    if not config.get("HUMAN_REF_BC_CONFIG"):
+        raise ValueError("Set HUMAN_REF_BC_CONFIG when HUMAN_REG_MODE=reference_kl")
+
+    from pathlib import Path
+    from agents.bc.bc_lstm import BCLSTMAgent
+    from agents.bc.evaluate_lbf import load_bc_config
+    from common.save_load_utils import REPO_PATH
+
+    cfg_path = Path(config["HUMAN_REF_BC_CONFIG"])
+    if not cfg_path.is_absolute():
+        cfg_path = Path(REPO_PATH) / cfg_path
+    ref_config = load_bc_config(str(cfg_path))
+    env_kwargs = config["ENV_KWARGS"]
+    if ref_config.lbf_feature_mode != "none":
+        ref_config = ref_config._replace(
+            lbf_grid_size=env_kwargs["grid_size"],
+            lbf_num_food=env_kwargs["num_food"],
+        )
+    ref_agent = BCLSTMAgent(ref_config, weight_path=config["HUMAN_REF_BC_CHECKPOINT"])
+    return {
+        "config": ref_config,
+        "network": ref_agent.network,
+        "params": ref_agent.params,
+    }
+
+
 def initialize_agent(actor_type, algorithm_config, env, init_rng):
     if actor_type == "s5":
         policy, init_params = initialize_s5_agent(algorithm_config, env, init_rng)
@@ -45,6 +80,21 @@ def make_train(config, env, logger, progress_callback=None):
     config["MINIBATCH_SIZE"] = (
         config["NUM_ACTORS"] * config["ROLLOUT_LENGTH"] // config["NUM_MINIBATCHES"]
     )
+    human_ref_data = _load_human_reference_policy(config)
+    human_ref_enabled = human_ref_data is not None
+    human_reg_schedule = config.get("HUMAN_REG_SCHEDULE", "constant")
+
+    def human_reg_coef_at(update_steps):
+        max_coef = jnp.asarray(config.get("HUMAN_REG_COEF", 0.0), dtype=jnp.float32)
+        if human_reg_schedule == "linear_ramp":
+            warmup_updates = config["NUM_UPDATES"] * config.get("HUMAN_REG_WARMUP_FRAC", 0.0)
+            ramp_updates = jnp.maximum(
+                1.0,
+                config["NUM_UPDATES"] * config.get("HUMAN_REG_RAMP_FRAC", 1.0),
+            )
+            progress = (update_steps - warmup_updates) / ramp_updates
+            return max_coef * jnp.clip(progress, 0.0, 1.0)
+        return max_coef
 
     def linear_schedule(count):
         frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
@@ -184,6 +234,59 @@ def make_train(config, env, logger, progress_callback=None):
 
             advantages, targets = _calculate_gae(traj_batch, last_val)
 
+            def _human_reference_logits(obs, avail_actions):
+                ref_config = human_ref_data["config"]
+                ref_obs = obs
+                if ref_config.lbf_feature_mode == "path":
+                    from agents.bc.lbf_features import augment_lbf_obs
+                    ref_obs = augment_lbf_obs(
+                        ref_obs,
+                        grid_size=ref_config.lbf_grid_size,
+                        num_food=ref_config.lbf_num_food,
+                    )
+                if ref_obs.shape[-1] < ref_config.obs_dim:
+                    ref_obs = jnp.pad(
+                        ref_obs,
+                        [(0, 0), (0, 0), (0, ref_config.obs_dim - ref_obs.shape[-1])],
+                    )
+                elif ref_obs.shape[-1] > ref_config.obs_dim:
+                    raise ValueError(
+                        f"Reference BC obs_dim={ref_config.obs_dim} cannot handle "
+                        f"obs_dim={ref_obs.shape[-1]}"
+                    )
+
+                init_carry = (
+                    jnp.zeros((ref_obs.shape[1], ref_config.lstm_dim)),
+                    jnp.zeros((ref_obs.shape[1], ref_config.lstm_dim)),
+                )
+
+                def step_fn(carry, inputs):
+                    obs_t, avail_t = inputs
+                    carry, logits = human_ref_data["network"].apply(
+                        {"params": human_ref_data["params"]},
+                        carry,
+                        obs_t,
+                    )
+                    logits = jnp.where(avail_t > 0, logits, -1e9)
+                    return carry, logits
+
+                _, logits = jax.lax.scan(step_fn, init_carry, (ref_obs, avail_actions))
+                return jax.lax.stop_gradient(logits)
+
+            def _human_reference_kl_loss(traj_batch, pi):
+                ref_logits = _human_reference_logits(
+                    traj_batch.obs,
+                    traj_batch.avail_actions,
+                )
+                ref_log_probs = jax.nn.log_softmax(ref_logits, axis=-1)
+                rl_log_probs = jax.nn.log_softmax(pi.logits, axis=-1)
+                ref_probs = jax.nn.softmax(ref_logits, axis=-1)
+                kl = jnp.sum(
+                    jnp.where(ref_probs > 0, ref_probs * (ref_log_probs - rl_log_probs), 0.0),
+                    axis=-1,
+                )
+                return kl.mean()
+
             def _update_epoch(update_state, unused):
                 def _update_minbatch(train_state, batch_info):
                     init_hstate, traj_batch, advantages, targets = batch_info
@@ -224,13 +327,24 @@ def make_train(config, env, logger, progress_callback=None):
                         loss_actor = -jnp.minimum(loss_actor1, loss_actor2)
                         loss_actor = loss_actor.mean()
                         entropy = pi.entropy().mean()
+                        human_reg_loss = jnp.array(0.0)
+                        human_reg_coef = human_reg_coef_at(update_steps)
+                        if human_ref_enabled:
+                            human_reg_loss = _human_reference_kl_loss(traj_batch, pi)
 
                         total_loss = (
                             loss_actor
                             + config["VF_COEF"] * value_loss
                             - config["ENT_COEF"] * entropy
+                            + human_reg_coef * human_reg_loss
                         )
-                        return total_loss, (value_loss, loss_actor, entropy)
+                        return total_loss, (
+                            value_loss,
+                            loss_actor,
+                            entropy,
+                            human_reg_loss,
+                            human_reg_coef,
+                        )
 
                     grad_fn = jax.value_and_grad(_loss_fn, has_aux=True)
                     total_loss, grads = grad_fn(
@@ -255,12 +369,15 @@ def make_train(config, env, logger, progress_callback=None):
                 _update_epoch, update_state, None, config["UPDATE_EPOCHS"]
             )
             train_state = update_state[0]
+
             def mask_and_mean(x, mask):
                 return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
-            
+
             mask = traj_batch.info.get("returned_episode", jnp.ones_like(traj_batch.reward))
-            metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
-            metric["update_steps"] = update_steps
+            callback_metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
+            callback_metric["update_steps"] = update_steps
+            callback_metric["human_reg_loss"] = loss_info[1][3].mean()
+            callback_metric["human_reg_coef"] = loss_info[1][4].mean()
 
             def callback(metrics):
                 log_metrics_intermediate(metrics, logger)
@@ -268,7 +385,7 @@ def make_train(config, env, logger, progress_callback=None):
                     progress_callback()
 
             # metrics: scalars
-            jax.experimental.io_callback(callback, None, metric)
+            jax.experimental.io_callback(callback, None, callback_metric)
 
             rng = update_state[-1]
             update_steps += 1
@@ -278,6 +395,7 @@ def make_train(config, env, logger, progress_callback=None):
             # Full per-timestep metrics are already logged via io_callback above.
             # Without condensation, storing (ROLLOUT_LENGTH, NUM_ACTORS) per key
             # per update step causes OOM for long runs (e.g. 1e9 steps).
+            metric = traj_batch.info
             mask = metric["returned_episode"]  # (ROLLOUT_LENGTH, NUM_ACTORS)
             n_episodes = mask.sum()
             condensed_metric = {}
@@ -300,6 +418,8 @@ def make_train(config, env, logger, progress_callback=None):
             condensed_metric["value_loss"] = loss_info[1][0].mean()
             condensed_metric["actor_loss"] = loss_info[1][1].mean()
             condensed_metric["entropy_loss"] = loss_info[1][2].mean()
+            condensed_metric["human_reg_loss"] = loss_info[1][3].mean()
+            condensed_metric["human_reg_coef"] = loss_info[1][4].mean()
 
             return (runner_state, update_steps), condensed_metric
 
