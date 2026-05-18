@@ -16,6 +16,21 @@ ENT_COEF: 0.01
 VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: true
+HUMAN_REG_COEF: 0.0
+HUMAN_REG_MODE: dataset_nll
+HUMAN_REG_LBF_CONFIG: null
+HUMAN_REG_EXCLUDE_UNCERTAIN: false
+HUMAN_REG_INVALID_ACTION_MODE: noop
+HUMAN_REG_BATCH_EPISODES: 16
+HUMAN_REF_BC_CHECKPOINT: null
+HUMAN_REF_BC_CONFIG: null
+GAIL_REWARD_COEF: 0.0
+GAIL_ENV_REWARD_COEF: 1.0
+GAIL_DISC_LR: 3e-4
+GAIL_DISC_EPOCHS: 1
+GAIL_DISC_BATCH_EPISODES: 32
+GAIL_DISC_HIDDEN_DIM: 64
+GAIL_DISC_ACTIVATION: tanh
 partner_agent: # partner config for ppo_ego
   # Only specify ONE partner agent type. Must be RL-based.
   ippo: # Name of the partner agent type. Can be arbitrary.

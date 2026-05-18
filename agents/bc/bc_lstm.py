@@ -19,6 +19,9 @@ class BCLSTMConfig(NamedTuple):
     lstm_dim: int = 512
     postprocess_dim: int = 256
     dropout_rate: float = 0.0
+    lbf_feature_mode: str = "none"
+    lbf_grid_size: int = 0
+    lbf_num_food: int = 0
 
 
 class BCLSTMNetwork(nn.Module):
@@ -140,9 +143,24 @@ class BCLSTMPolicyWrapper(AgentPolicy):
         shape = (batch_size, self.config.lstm_dim)
         return (jnp.zeros(shape), jnp.zeros(shape))
 
+    def _preprocess_obs(self, obs):
+        if self.config.lbf_feature_mode == "path":
+            from agents.bc.lbf_features import augment_lbf_obs
+            if self.config.lbf_grid_size <= 0 or self.config.lbf_num_food <= 0:
+                raise ValueError(
+                    "LBF feature mode requires lbf_grid_size and lbf_num_food"
+                )
+            return augment_lbf_obs(
+                obs,
+                grid_size=self.config.lbf_grid_size,
+                num_food=self.config.lbf_num_food,
+            )
+        return obs
+
     @partial(jax.jit, static_argnums=(0,))
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
                    aux_obs=None, env_state=None, test_mode=False):
+        obs = self._preprocess_obs(obs)
         obs_shape = obs.shape[:-1]
         obs_flat = obs.reshape((-1, obs.shape[-1]))
         if obs_flat.shape[-1] > self.config.obs_dim:

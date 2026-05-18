@@ -25,13 +25,19 @@ def is_supported_partner(label: str) -> bool:
     return (
         label.startswith("SequentialFruitAgent(")
         or label.startswith("GreedyHeuristicAgent(")
+        or label == "EntitledAgent"
         or label.startswith("ippo_mlp")
     )
 
 
-def checkpoint_paths(checkpoint_dir: Path, config_name: str) -> tuple[Path, Path]:
-    ckpt = checkpoint_dir / f"{config_name}.safetensors"
-    cfg = checkpoint_dir / f"{config_name}.yaml"
+def checkpoint_paths(
+    checkpoint_dir: Path,
+    config_name: str,
+    checkpoint_name: str | None = None,
+) -> tuple[Path, Path]:
+    stem = checkpoint_name or config_name
+    ckpt = checkpoint_dir / f"{stem}.safetensors"
+    cfg = checkpoint_dir / f"{stem}.yaml"
     if not ckpt.exists() or not cfg.exists():
         raise FileNotFoundError(
             f"Missing checkpoint/config for {config_name} in {checkpoint_dir}"
@@ -83,8 +89,18 @@ def main(args):
     checkpoint_dir = Path(args.checkpoint_dir)
 
     for config_name in args.lbf_config:
-        ckpt_path, cfg_path = checkpoint_paths(checkpoint_dir, config_name)
+        ckpt_path, cfg_path = checkpoint_paths(
+            checkpoint_dir,
+            config_name,
+            args.checkpoint_name,
+        )
         bc_config = load_bc_config(str(cfg_path))
+        env_kwargs = LBF_CONFIGS[config_name]
+        if bc_config.lbf_feature_mode != "none":
+            bc_config = bc_config._replace(
+                lbf_grid_size=env_kwargs["grid_size"],
+                lbf_num_food=env_kwargs["num_food"],
+            )
         bc_agent = BCLSTMAgent(bc_config, weight_path=str(ckpt_path))
         bc_policy = BCLSTMPolicyWrapper(bc_config)
 
@@ -139,6 +155,11 @@ if __name__ == "__main__":
         description="Evaluate BC-LSTM against dataset partner labels."
     )
     parser.add_argument("--checkpoint_dir", required=True)
+    parser.add_argument(
+        "--checkpoint_name",
+        default=None,
+        help="Shared checkpoint stem to use for every config, e.g. all_path",
+    )
     parser.add_argument(
         "--summary_csv",
         default="human_data_processing/processed/summary_stats.csv",

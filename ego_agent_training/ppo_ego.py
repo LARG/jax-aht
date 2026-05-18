@@ -21,6 +21,7 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import hydra
+import flax.linen as nn
 from flax.training.train_state import TrainState
 
 from agents.population_interface import AgentPopulation
@@ -35,6 +36,101 @@ from marl.ppo_utils import _create_minibatches, Transition, unbatchify
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+class GAILDiscriminator(nn.Module):
+    action_dim: int
+    hidden_dim: int = 64
+    activation: str = "tanh"
+
+    @nn.compact
+    def __call__(self, obs, action):
+        activation = nn.relu if self.activation == "relu" else nn.tanh
+        action_one_hot = jax.nn.one_hot(action, self.action_dim)
+        x = jnp.concatenate([obs, action_one_hot], axis=-1)
+        x = nn.Dense(self.hidden_dim)(x)
+        x = activation(x)
+        x = nn.Dense(self.hidden_dim)(x)
+        x = activation(x)
+        return nn.Dense(1)(x).squeeze(-1)
+
+
+def _pad_last_dim(x, target_dim: int):
+    if x.shape[-1] > target_dim:
+        raise ValueError(
+            f"Human regularization obs_dim={x.shape[-1]} exceeds "
+            f"policy obs_dim={target_dim}"
+        )
+    if x.shape[-1] == target_dim:
+        return x
+    return jnp.pad(x, [(0, 0), (0, 0), (0, target_dim - x.shape[-1])])
+
+
+def _load_human_regularization_data(config, policy_obs_dim: int):
+    coef = float(config.get("HUMAN_REG_COEF", 0.0))
+    gail_coef = float(config.get("GAIL_REWARD_COEF", 0.0))
+    mode = config.get("HUMAN_REG_MODE", "dataset_nll")
+    if mode == "reference_kl" and gail_coef <= 0.0:
+        return None
+    if coef <= 0.0 and gail_coef <= 0.0:
+        return None
+    if config["ENV_NAME"] != "lbf":
+        raise ValueError("Human regularization currently supports LBF only")
+    if not config.get("HUMAN_REG_LBF_CONFIG"):
+        raise ValueError("Set HUMAN_REG_LBF_CONFIG when HUMAN_REG_COEF > 0")
+
+    from human_data_processing.load_lbf_data import load_bc_data_padded
+
+    data = load_bc_data_padded(
+        config_name=config["HUMAN_REG_LBF_CONFIG"],
+        exclude_uncertain=bool(config.get("HUMAN_REG_EXCLUDE_UNCERTAIN", False)),
+    )
+    obs = _pad_last_dim(data.obs, policy_obs_dim)
+    actions = data.actions
+    if config.get("HUMAN_REG_INVALID_ACTION_MODE", "noop") == "noop":
+        picked = jnp.take_along_axis(
+            data.avail_actions,
+            actions[..., None],
+            axis=-1,
+        ).squeeze(-1)
+        actions = jnp.where(data.mask & ~picked, jnp.zeros_like(actions), actions)
+
+    return {
+        "obs": obs,
+        "actions": actions,
+        "avail_actions": data.avail_actions,
+        "mask": data.mask,
+    }
+
+
+def _load_human_reference_policy(config):
+    if config.get("HUMAN_REG_MODE", "dataset_nll") != "reference_kl":
+        return None
+    if float(config.get("HUMAN_REG_COEF", 0.0)) <= 0.0:
+        return None
+    if config["ENV_NAME"] != "lbf":
+        raise ValueError("Reference-policy human regularization currently supports LBF only")
+    if not config.get("HUMAN_REF_BC_CHECKPOINT"):
+        raise ValueError("Set HUMAN_REF_BC_CHECKPOINT when HUMAN_REG_MODE=reference_kl")
+    if not config.get("HUMAN_REF_BC_CONFIG"):
+        raise ValueError("Set HUMAN_REF_BC_CONFIG when HUMAN_REG_MODE=reference_kl")
+
+    from agents.bc.bc_lstm import BCLSTMAgent
+    from agents.bc.evaluate_lbf import load_bc_config
+
+    ref_config = load_bc_config(config["HUMAN_REF_BC_CONFIG"])
+    env_kwargs = config["ENV_KWARGS"]
+    if ref_config.lbf_feature_mode != "none":
+        ref_config = ref_config._replace(
+            lbf_grid_size=env_kwargs["grid_size"],
+            lbf_num_food=env_kwargs["num_food"],
+        )
+    ref_agent = BCLSTMAgent(ref_config, weight_path=config["HUMAN_REF_BC_CHECKPOINT"])
+    return {
+        "config": ref_config,
+        "network": ref_agent.network,
+        "params": ref_agent.params,
+    }
 
 
 def train_ppo_ego_agent(config, env, train_rng, 
@@ -76,6 +172,27 @@ def train_ppo_ego_agent(config, env, train_rng,
         config["NUM_ACTIONS"] = env.action_space(env.agents[0]).n
         assert config["NUM_CONTROLLED_ACTORS"] % config["NUM_MINIBATCHES"] == 0, "NUM_CONTROLLED_ACTORS must be divisible by NUM_MINIBATCHES"
         assert config["NUM_CONTROLLED_ACTORS"] >= config["NUM_MINIBATCHES"], "NUM_CONTROLLED_ACTORS must be >= NUM_MINIBATCHES"
+        human_reg_mode = config.get("HUMAN_REG_MODE", "dataset_nll")
+        human_reg_data = _load_human_regularization_data(
+            config,
+            ego_policy.obs_dim,
+        )
+        human_reg_enabled = (
+            human_reg_data is not None
+            and float(config.get("HUMAN_REG_COEF", 0.0)) > 0.0
+            and human_reg_mode == "dataset_nll"
+        )
+        human_ref_data = _load_human_reference_policy(config)
+        human_ref_enabled = human_ref_data is not None
+        gail_enabled = (
+            human_reg_data is not None
+            and float(config.get("GAIL_REWARD_COEF", 0.0)) > 0.0
+        )
+        gail_discriminator = GAILDiscriminator(
+            action_dim=config["NUM_ACTIONS"],
+            hidden_dim=config.get("GAIL_DISC_HIDDEN_DIM", 64),
+            activation=config.get("GAIL_DISC_ACTIVATION", "tanh"),
+        )
 
         def linear_schedule(count):
             frac = 1.0 - (count // (config["NUM_MINIBATCHES"] * config["UPDATE_EPOCHS"])) / config["NUM_UPDATES"]
@@ -97,6 +214,19 @@ def train_ppo_ego_agent(config, env, train_rng,
                 apply_fn=ego_policy.network.apply,
                 params=init_ego_params,
                 tx=tx,
+            )
+            rng, disc_rng = jax.random.split(rng)
+            disc_state = TrainState.create(
+                apply_fn=gail_discriminator.apply,
+                params=gail_discriminator.init(
+                    disc_rng,
+                    jnp.zeros((ego_policy.obs_dim,)),
+                    jnp.array(0, dtype=jnp.int32),
+                ),
+                tx=optax.adam(
+                    config.get("GAIL_DISC_LR", 3e-4),
+                    eps=1e-5,
+                ),
             )
             #  Init ego and partner hstates
             init_ego_hstate = ego_policy.init_hstate(config["NUM_CONTROLLED_ACTORS"])
@@ -214,8 +344,160 @@ def train_ppo_ego_agent(config, env, train_rng,
                 
                 return advantages, advantages + traj_batch.value
 
+            def _sample_human_episodes(rng, batch_episodes):
+                idx = jax.random.randint(
+                    rng,
+                    (batch_episodes,),
+                    0,
+                    human_reg_data["obs"].shape[0],
+                )
+                return jax.tree.map(lambda x: x[idx], human_reg_data)
+
+            def _sample_human_minibatches(rng):
+                rngs = jax.random.split(rng, config["NUM_MINIBATCHES"])
+                return jax.vmap(
+                    lambda key: _sample_human_episodes(
+                        key,
+                        config.get("HUMAN_REG_BATCH_EPISODES", 16),
+                    )
+                )(rngs)
+
+            def _human_regularization_loss(params, human_batch):
+                obs = jnp.swapaxes(human_batch["obs"], 0, 1)
+                actions = jnp.swapaxes(human_batch["actions"], 0, 1)
+                avail_actions = jnp.swapaxes(human_batch["avail_actions"], 0, 1)
+                mask = jnp.swapaxes(human_batch["mask"], 0, 1)
+                done = jnp.logical_not(mask)
+                human_hstate = ego_policy.init_hstate(obs.shape[1])
+                _, _, pi, _ = ego_policy.get_action_value_policy(
+                    params=params,
+                    obs=obs,
+                    done=done,
+                    avail_actions=avail_actions,
+                    hstate=human_hstate,
+                    rng=jax.random.PRNGKey(0),
+                )
+                action_available = jnp.take_along_axis(
+                    avail_actions,
+                    actions[..., None],
+                    axis=-1,
+                ).squeeze(-1)
+                valid = mask & action_available
+                nll = -pi.log_prob(actions) * valid
+                return nll.sum() / jnp.maximum(valid.sum(), 1.0)
+
+            def _human_reference_logits(obs, avail_actions):
+                ref_config = human_ref_data["config"]
+                ref_obs = obs
+                if ref_config.lbf_feature_mode == "path":
+                    from agents.bc.lbf_features import augment_lbf_obs
+                    ref_obs = augment_lbf_obs(
+                        ref_obs,
+                        grid_size=ref_config.lbf_grid_size,
+                        num_food=ref_config.lbf_num_food,
+                    )
+                if ref_obs.shape[-1] < ref_config.obs_dim:
+                    ref_obs = jnp.pad(
+                        ref_obs,
+                        [(0, 0), (0, 0), (0, ref_config.obs_dim - ref_obs.shape[-1])],
+                    )
+                elif ref_obs.shape[-1] > ref_config.obs_dim:
+                    raise ValueError(
+                        f"Reference BC obs_dim={ref_config.obs_dim} cannot handle "
+                        f"obs_dim={ref_obs.shape[-1]}"
+                    )
+
+                init_carry = (
+                    jnp.zeros((ref_obs.shape[1], ref_config.lstm_dim)),
+                    jnp.zeros((ref_obs.shape[1], ref_config.lstm_dim)),
+                )
+
+                def step_fn(carry, inputs):
+                    obs_t, avail_t = inputs
+                    carry, logits = human_ref_data["network"].apply(
+                        {"params": human_ref_data["params"]},
+                        carry,
+                        obs_t,
+                    )
+                    logits = jnp.where(avail_t > 0, logits, -1e9)
+                    return carry, logits
+
+                _, logits = jax.lax.scan(step_fn, init_carry, (ref_obs, avail_actions))
+                return jax.lax.stop_gradient(logits)
+
+            def _human_reference_kl_loss(traj_batch, pi):
+                ref_logits = _human_reference_logits(
+                    traj_batch.obs,
+                    traj_batch.avail_actions,
+                )
+                ref_log_probs = jax.nn.log_softmax(ref_logits, axis=-1)
+                rl_log_probs = jax.nn.log_softmax(pi.logits, axis=-1)
+                ref_probs = jax.nn.softmax(ref_logits, axis=-1)
+                kl = jnp.sum(
+                    jnp.where(ref_probs > 0, ref_probs * (ref_log_probs - rl_log_probs), 0.0),
+                    axis=-1,
+                )
+                return kl.mean()
+
+            def _gail_rewards(disc_params, traj_batch):
+                logits = gail_discriminator.apply(
+                    disc_params,
+                    traj_batch.obs,
+                    traj_batch.action,
+                )
+                return -jax.nn.log_sigmoid(-logits)
+
+            def _update_discriminator(disc_state, human_batch, traj_batch):
+                def _loss_fn(params):
+                    human_obs = human_batch["obs"].reshape(
+                        -1,
+                        human_batch["obs"].shape[-1],
+                    )
+                    human_actions = human_batch["actions"].reshape(-1)
+                    human_mask = human_batch["mask"].reshape(-1)
+                    policy_obs = traj_batch.obs.reshape(-1, traj_batch.obs.shape[-1])
+                    policy_actions = traj_batch.action.reshape(-1)
+
+                    human_logits = gail_discriminator.apply(
+                        params,
+                        human_obs,
+                        human_actions,
+                    )
+                    policy_logits = gail_discriminator.apply(
+                        params,
+                        policy_obs,
+                        policy_actions,
+                    )
+                    human_loss = (
+                        optax.sigmoid_binary_cross_entropy(
+                            human_logits,
+                            jnp.ones_like(human_logits),
+                        )
+                        * human_mask
+                    ).sum() / jnp.maximum(human_mask.sum(), 1.0)
+                    policy_loss = optax.sigmoid_binary_cross_entropy(
+                        policy_logits,
+                        jnp.zeros_like(policy_logits),
+                    ).mean()
+                    loss = human_loss + policy_loss
+                    human_acc = (
+                        ((human_logits > 0.0) == human_mask) * human_mask
+                    ).sum() / jnp.maximum(human_mask.sum(), 1.0)
+                    policy_acc = (policy_logits < 0.0).mean()
+                    return loss, (human_acc, policy_acc)
+
+                (loss, accs), grads = jax.value_and_grad(_loss_fn, has_aux=True)(
+                    disc_state.params
+                )
+                return disc_state.apply_gradients(grads=grads), (loss, accs[0], accs[1])
+
             def _update_minbatch(train_state, batch_info):
-                init_ego_hstate, traj_batch, advantages, returns = batch_info
+                if human_reg_enabled:
+                    ppo_batch_info, human_batch = batch_info
+                else:
+                    ppo_batch_info = batch_info
+                    human_batch = None
+                init_ego_hstate, traj_batch, advantages, returns = ppo_batch_info
                 def _loss_fn(params, init_ego_hstate, traj_batch, gae, target_v):
                     _, value, pi, _ = ego_policy.get_action_value_policy(
                         params=params, 
@@ -251,8 +533,25 @@ def train_ppo_ego_agent(config, env, train_rng,
                     # Entropy
                     entropy = jnp.mean(pi.entropy())
 
-                    total_loss = pg_loss + config["VF_COEF"] * value_loss - config["ENT_COEF"] * entropy
-                    return total_loss, (value_loss, pg_loss, entropy)
+                    human_reg_loss = jnp.array(0.0)
+                    if human_reg_enabled:
+                        human_reg_loss = _human_regularization_loss(
+                            params,
+                            human_batch,
+                        )
+                    if human_ref_enabled:
+                        human_reg_loss = _human_reference_kl_loss(
+                            traj_batch,
+                            pi,
+                        )
+
+                    total_loss = (
+                        pg_loss
+                        + config["VF_COEF"] * value_loss
+                        - config["ENT_COEF"] * entropy
+                        + config.get("HUMAN_REG_COEF", 0.0) * human_reg_loss
+                    )
+                    return total_loss, (value_loss, pg_loss, entropy, human_reg_loss)
 
                 grad_fn = jax.value_and_grad(_loss_fn, has_aux=True)
                 (loss_val, aux_vals), grads = grad_fn(
@@ -269,8 +568,11 @@ def train_ppo_ego_agent(config, env, train_rng,
 
             def _update_epoch(update_state, unused):
                 train_state, init_ego_hstate, traj_batch, advantages, targets, rng = update_state
-                rng, perm_rng = jax.random.split(rng)
+                rng, perm_rng, human_rng = jax.random.split(rng, 3)
                 minibatches = _create_minibatches(traj_batch, advantages, targets, init_ego_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
+                if human_reg_enabled:
+                    human_minibatches = _sample_human_minibatches(human_rng)
+                    minibatches = (minibatches, human_minibatches)
                 train_state, losses_and_grads = jax.lax.scan(
                     _update_minbatch, train_state, minibatches
                 )
@@ -283,7 +585,7 @@ def train_ppo_ego_agent(config, env, train_rng,
                 2. Compute advantage
                 3. PPO updates
                 """
-                (train_state, rng, update_steps) = update_runner_state
+                (train_state, disc_state, rng, update_steps) = update_runner_state
                 # Init envs & partner indices
                 rng, reset_rng, p_rng = jax.random.split(rng, 3)
                 reset_rngs = jax.random.split(reset_rng, config["NUM_ENVS"])
@@ -297,6 +599,17 @@ def train_ppo_ego_agent(config, env, train_rng,
                 runner_state, traj_batch = jax.lax.scan(
                     _env_step, runner_state, None, config["ROLLOUT_LENGTH"])
                 (train_state, env_state, obs, done, ego_hstate, partner_hstate, partner_indices, rng) = runner_state
+                gail_reward = jnp.zeros_like(traj_batch.reward)
+                if gail_enabled:
+                    gail_reward = _gail_rewards(disc_state.params, traj_batch)
+                    traj_batch_for_returns = traj_batch._replace(
+                        reward=(
+                            config.get("GAIL_ENV_REWARD_COEF", 1.0) * traj_batch.reward
+                            + config.get("GAIL_REWARD_COEF", 0.0) * gail_reward
+                        )
+                    )
+                else:
+                    traj_batch_for_returns = traj_batch
 
                 # 2) advantage
                 # Get available actions for agent 0 from environment state
@@ -312,7 +625,7 @@ def train_ppo_ego_agent(config, env, train_rng,
                     rng=jax.random.PRNGKey(0)  # Dummy key since we're just extracting the value
                 )
                 last_val = last_val.squeeze()
-                advantages, targets = _calculate_gae(traj_batch, last_val)
+                advantages, targets = _calculate_gae(traj_batch_for_returns, last_val)
 
                 # 3) PPO update
                 update_state = (
@@ -326,19 +639,42 @@ def train_ppo_ego_agent(config, env, train_rng,
                 update_state, losses_and_grads = jax.lax.scan(
                     _update_epoch, update_state, None, config["UPDATE_EPOCHS"])
                 train_state = update_state[0]
+                gail_disc_loss = jnp.array(0.0)
+                gail_disc_expert_acc = jnp.array(0.0)
+                gail_disc_policy_acc = jnp.array(0.0)
+                if gail_enabled:
+                    rng, disc_rng = jax.random.split(rng)
+                    human_disc_batch = _sample_human_episodes(
+                        disc_rng,
+                        config.get("GAIL_DISC_BATCH_EPISODES", 32),
+                    )
+
+                    def _disc_epoch(carry, _):
+                        return _update_discriminator(carry, human_disc_batch, traj_batch)
+
+                    disc_state, disc_metrics = jax.lax.scan(
+                        _disc_epoch,
+                        disc_state,
+                        None,
+                        config.get("GAIL_DISC_EPOCHS", 1),
+                    )
+                    gail_disc_loss = disc_metrics[0].mean()
+                    gail_disc_expert_acc = disc_metrics[1].mean()
+                    gail_disc_policy_acc = disc_metrics[2].mean()
                 _, loss_terms, avg_grad_norm = losses_and_grads
-                
-                def mask_and_mean(x, mask):
-                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
-                
-                mask = traj_batch.info.get("returned_episode", jnp.ones_like(traj_batch.reward))
-                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
+
+                metric = traj_batch.info
                 metric["update_steps"] = update_steps
                 metric["actor_loss"] = loss_terms[1].mean()
                 metric["value_loss"] = loss_terms[0].mean()
                 metric["entropy_loss"] = loss_terms[2].mean()
+                metric["human_reg_loss"] = loss_terms[3].mean()
+                metric["gail_reward"] = gail_reward
+                metric["gail_disc_loss"] = gail_disc_loss
+                metric["gail_disc_expert_acc"] = gail_disc_expert_acc
+                metric["gail_disc_policy_acc"] = gail_disc_policy_acc
                 metric["avg_grad_norm"] = avg_grad_norm.mean()
-                new_runner_state = (train_state, rng, update_steps + 1)
+                new_runner_state = (train_state, disc_state, rng, update_steps + 1)
                 return (new_runner_state, metric)
 
             # PPO Update and Checkpoint saving
@@ -367,7 +703,7 @@ def train_ppo_ego_agent(config, env, train_rng,
                     update_state,
                     None
                 )
-                (train_state, rng, update_steps) = new_update_state
+                (train_state, disc_state, rng, update_steps) = new_update_state
 
                 # update steps is 1-indexed because it was incremented at the end of the update step
                 to_store = jnp.logical_or(jnp.equal(jnp.mod(update_steps-1, ckpt_and_eval_interval), 0),
@@ -408,7 +744,9 @@ def train_ppo_ego_agent(config, env, train_rng,
                 condensed_metric = {}
                 for key, val in metric.items():
                     if key in ("update_steps", "actor_loss", "value_loss",
-                               "entropy_loss", "avg_grad_norm"):
+                               "entropy_loss", "human_reg_loss",
+                               "gail_disc_loss", "gail_disc_expert_acc",
+                               "gail_disc_policy_acc", "avg_grad_norm"):
                         # Already scalar-ish from loss aggregation
                         condensed_metric[key] = val.mean() if val.ndim > 0 else val
                     elif key == "returned_episode":
@@ -438,7 +776,7 @@ def train_ppo_ego_agent(config, env, train_rng,
                     lambda _: None,
                     (update_steps, avg_eval_return),
                 )
-                return ((train_state, rng, update_steps),
+                return ((train_state, disc_state, rng, update_steps),
                          checkpoint_array, ckpt_idx, eval_last_infos), condensed_metric
 
             checkpoint_array = init_ckpt_array(train_state.params)
@@ -459,7 +797,7 @@ def train_ppo_ego_agent(config, env, train_rng,
             update_steps = 0
             rng_train, partner_rng = jax.random.split(rng_train)
 
-            update_runner_state = (train_state, rng_train, update_steps)
+            update_runner_state = (train_state, disc_state, rng_train, update_steps)
             state_with_ckpt = (update_runner_state, checkpoint_array, ckpt_idx, eval_eps_last_infos)
             
             state_with_ckpt, metrics = jax.lax.scan(
@@ -577,6 +915,7 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     all_ego_value_losses = np.asarray(train_metrics["value_loss"])
     all_ego_actor_losses = np.asarray(train_metrics["actor_loss"])
     all_ego_entropy_losses = np.asarray(train_metrics["entropy_loss"])
+    all_ego_human_reg_losses = np.asarray(train_metrics["human_reg_loss"])
     all_ego_grad_norms = np.asarray(train_metrics["avg_grad_norm"])
     # Process eval return metrics - average across ego seeds, eval episodes,
     # training partners and num_agents per game for each checkpoint
@@ -592,6 +931,7 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     average_ego_value_losses = np.mean(all_ego_value_losses, axis=0)
     average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=0)
     average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=0)
+    average_ego_human_reg_losses = np.mean(all_ego_human_reg_losses, axis=0)
     average_ego_grad_norms = np.mean(all_ego_grad_norms, axis=0)
 
     # Log metrics for each update step
@@ -606,6 +946,7 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
         logger.log_item("Train/EgoValueLoss", average_ego_value_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoActorLoss", average_ego_actor_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoEntropyLoss", average_ego_entropy_losses[step], train_step=step, commit=True)
+        logger.log_item("Train/EgoHumanRegLoss", average_ego_human_reg_losses[step], train_step=step, commit=True)
         logger.log_item("Train/EgoGradNorm", average_ego_grad_norms[step], train_step=step, commit=True)
         logger.commit()
     

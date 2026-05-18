@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 from agents.agent_interface import AgentPolicy
 from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMConfig, BCLSTMPolicyWrapper
 from agents.lbf.agent_policy_wrappers import (
+    LBFEntitledPolicyWrapper,
     LBFGreedyHeuristicPolicyWrapper,
     LBFRandomPolicyWrapper,
     LBFSequentialFruitPolicyWrapper,
@@ -141,6 +142,9 @@ def load_bc_config(path: str) -> BCLSTMConfig:
         lstm_dim=int(raw.get("lstm_dim", 128)),
         postprocess_dim=int(raw.get("postprocess_dim", 64)),
         dropout_rate=float(raw.get("dropout_rate", 0.0)),
+        lbf_feature_mode=str(raw.get("lbf_feature_mode", "none")),
+        lbf_grid_size=int(raw.get("lbf_grid_size", 0)),
+        lbf_num_food=int(raw.get("lbf_num_food", 0)),
     )
 
 
@@ -197,6 +201,11 @@ def make_partner(args):
                 grid_size=env_kwargs["grid_size"],
                 num_fruits=env_kwargs["num_food"],
                 heuristic=heuristic,
+            )
+        if args.partner_label == "EntitledAgent":
+            return LBFEntitledPolicyWrapper(
+                grid_size=env_kwargs["grid_size"],
+                num_fruits=env_kwargs["num_food"],
             )
         if args.partner_label.startswith("ippo_mlp"):
             return make_ippo_partner(args.partner_label, args.lbf_config)
@@ -269,6 +278,12 @@ def run_episode(rng, env, bc_policy, bc_params, partner_policy, max_steps, test_
 
 def evaluate(args):
     config = load_bc_config(args.config)
+    env_kwargs = LBF_CONFIGS[args.lbf_config]
+    if config.lbf_feature_mode != "none":
+        config = config._replace(
+            lbf_grid_size=env_kwargs["grid_size"],
+            lbf_num_food=env_kwargs["num_food"],
+        )
     bc_agent = BCLSTMAgent(config, weight_path=args.checkpoint)
     bc_policy = BCLSTMPolicyWrapper(config)
     partner_policy = make_partner(args)

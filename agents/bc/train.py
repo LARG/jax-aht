@@ -16,13 +16,15 @@ import optax
 import yaml
 from flax.training.train_state import TrainState
 from agents.bc.bc_lstm import BCLSTMConfig, BCLSTMNetwork, compute_bc_loss, BCLSTMAgent
+from agents.bc.lbf_features import augment_lbf_obs
 
-LBF_CONFIG_NAMES = [
-    "grid7_food3_nolevels",
-    "grid7_food3_levels",
-    "grid12_food6_nolevels",
-    "grid12_food6_levels",
-]
+LBF_CONFIG_SPECS = {
+    "grid7_food3_nolevels": {"grid_size": 7, "num_food": 3},
+    "grid7_food3_levels": {"grid_size": 7, "num_food": 3},
+    "grid12_food6_nolevels": {"grid_size": 12, "num_food": 6},
+    "grid12_food6_levels": {"grid_size": 12, "num_food": 6},
+}
+LBF_CONFIG_NAMES = list(LBF_CONFIG_SPECS)
 
 
 def load_config(config_path: str) -> dict:
@@ -65,7 +67,8 @@ def load_data(data_dir: str):
 def load_lbf_data(config_name: str,
                   seed: int,
                   val_fraction: float,
-                  exclude_uncertain: bool) -> BCDataSplits:
+                  exclude_uncertain: bool,
+                  feature_mode: str) -> BCDataSplits:
     from human_data_processing.load_lbf_data import load_bc_data_padded
 
     if not 0.0 < val_fraction < 1.0:
@@ -75,6 +78,15 @@ def load_lbf_data(config_name: str,
         config_name=config_name,
         exclude_uncertain=exclude_uncertain,
     )
+    obs = data.obs
+    if feature_mode == "path":
+        spec = LBF_CONFIG_SPECS[config_name]
+        obs = augment_lbf_obs(
+            obs,
+            grid_size=spec["grid_size"],
+            num_food=spec["num_food"],
+        )
+
     num_episodes = int(data.obs.shape[0])
     if num_episodes < 2:
         raise ValueError(
@@ -90,15 +102,15 @@ def load_lbf_data(config_name: str,
     train_idx = jnp.array(perm[val_size:])
 
     return BCDataSplits(
-        train_obs=data.obs[train_idx],
+        train_obs=obs[train_idx],
         train_actions=data.actions[train_idx],
         train_avail=data.avail_actions[train_idx],
         train_mask=data.mask[train_idx],
-        val_obs=data.obs[val_idx],
+        val_obs=obs[val_idx],
         val_actions=data.actions[val_idx],
         val_avail=data.avail_actions[val_idx],
         val_mask=data.mask[val_idx],
-        source=f"lbf:{config_name}",
+        source=f"lbf:{config_name}:features={feature_mode}",
     )
 
 
@@ -114,13 +126,15 @@ def pad_obs(obs: jnp.ndarray, target_dim: int) -> jnp.ndarray:
 def load_pooled_lbf_data(config_names: list[str],
                          seed: int,
                          val_fraction: float,
-                         exclude_uncertain: bool) -> BCDataSplits:
+                         exclude_uncertain: bool,
+                         feature_mode: str) -> BCDataSplits:
     splits = [
         load_lbf_data(
             config_name=config_name,
             seed=seed + i,
             val_fraction=val_fraction,
             exclude_uncertain=exclude_uncertain,
+            feature_mode=feature_mode,
         )
         for i, config_name in enumerate(config_names)
     ]
@@ -139,7 +153,7 @@ def load_pooled_lbf_data(config_names: list[str],
         val_actions=jnp.concatenate([split.val_actions for split in splits], axis=0),
         val_avail=jnp.concatenate([split.val_avail for split in splits], axis=0),
         val_mask=jnp.concatenate([split.val_mask for split in splits], axis=0),
-        source=f"lbf_pooled:{','.join(config_names)}",
+        source=f"lbf_pooled:{','.join(config_names)}:features={feature_mode}",
     )
 
 
@@ -154,12 +168,14 @@ def load_training_data(args) -> BCDataSplits:
                 seed=args.seed,
                 val_fraction=args.val_fraction,
                 exclude_uncertain=args.exclude_uncertain,
+                feature_mode=args.lbf_feature_mode,
             )
         return load_pooled_lbf_data(
             config_names=config_names,
             seed=args.seed,
             val_fraction=args.val_fraction,
             exclude_uncertain=args.exclude_uncertain,
+            feature_mode=args.lbf_feature_mode,
         )
 
     if not args.data_dir:
@@ -189,6 +205,46 @@ def remap_unavailable_actions_to_noop(actions, avail, mask) -> jnp.ndarray:
     picked = jnp.take_along_axis(avail, actions[..., None], axis=-1).squeeze(-1)
     unavailable = mask & ~picked
     return jnp.where(unavailable, jnp.zeros_like(actions), actions)
+
+
+def write_checkpoint_config(path: str, config: BCLSTMConfig, args,
+                            val_accuracy: float, selected_epoch: int) -> None:
+    with open(path, 'w') as f:
+        yaml.dump({
+            'obs_dim': config.obs_dim,
+            'action_dim': config.action_dim,
+            'preprocess_dim': config.preprocess_dim,
+            'lstm_dim': config.lstm_dim,
+            'postprocess_dim': config.postprocess_dim,
+            'dropout_rate': config.dropout_rate,
+            'lbf_feature_mode': config.lbf_feature_mode,
+            'val_accuracy': float(val_accuracy),
+            'selected_epoch': int(selected_epoch),
+            'data_dir': args.data_dir,
+            'lbf_config': args.lbf_config,
+            'val_fraction': args.val_fraction,
+            'exclude_uncertain': args.exclude_uncertain,
+            'invalid_action_mode': args.invalid_action_mode,
+            'mask_unavailable_actions': args.mask_unavailable_actions,
+            'epochs': args.epochs,
+            'lr': args.lr,
+            'seed': args.seed,
+        }, f)
+
+
+def save_bc_checkpoint(path: str, params, config: BCLSTMConfig, args,
+                       val_accuracy: float, selected_epoch: int) -> None:
+    output_dir = os.path.dirname(path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+    write_checkpoint_config(
+        path.replace('.safetensors', '.yaml'),
+        config,
+        args,
+        val_accuracy,
+        selected_epoch,
+    )
+    BCLSTMAgent(config, params=params).save_weights(path)
 
 
 def train(args):
@@ -237,6 +293,7 @@ def train(args):
         lstm_dim=args.lstm_dim or defaults.get("lstm_dim", 128),
         postprocess_dim=args.postprocess_dim or defaults.get("postprocess_dim", 64),
         dropout_rate=dropout,
+        lbf_feature_mode=args.lbf_feature_mode if args.lbf_config else "none",
     )
     print(f"[train_bc] config: {config}")
 
@@ -262,6 +319,7 @@ def train(args):
     batch_size = min(args.batch_size, train_obs.shape[0])
     best_val_acc = -1.0
     best_params = None
+    best_epoch = 0
 
     @jax.jit
     def train_step(state, batch_obs, batch_actions, batch_avail, batch_mask):
@@ -337,36 +395,36 @@ def train(args):
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_params = jax.tree.map(lambda x: x.copy(), state.params)
+            best_epoch = epoch + 1
 
-    print(f"\n[train_bc] best val accuracy: {best_val_acc:.4f}")
-    output_dir = os.path.dirname(args.output)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
+        if args.save_epoch_checkpoints and (
+            (epoch + 1) % args.save_every == 0 or (epoch + 1) == args.epochs
+        ):
+            epoch_path = args.output.replace(
+                '.safetensors',
+                f'.epoch_{epoch + 1:04d}.safetensors',
+            )
+            save_bc_checkpoint(
+                epoch_path,
+                state.params,
+                config,
+                args,
+                val_acc,
+                epoch + 1,
+            )
+            print(f"[train_bc] saved epoch checkpoint to {epoch_path}")
 
-    config_path = args.output.replace('.safetensors', '.yaml')
-    with open(config_path, 'w') as f:
-        yaml.dump({
-            'obs_dim': config.obs_dim,
-            'action_dim': config.action_dim,
-            'preprocess_dim': config.preprocess_dim,
-            'lstm_dim': config.lstm_dim,
-            'postprocess_dim': config.postprocess_dim,
-            'dropout_rate': config.dropout_rate,
-            'val_accuracy': float(best_val_acc),
-            'data_dir': args.data_dir,
-            'lbf_config': args.lbf_config,
-            'val_fraction': args.val_fraction,
-            'exclude_uncertain': args.exclude_uncertain,
-            'invalid_action_mode': args.invalid_action_mode,
-            'mask_unavailable_actions': args.mask_unavailable_actions,
-            'epochs': args.epochs,
-            'lr': args.lr,
-            'seed': args.seed,
-        }, f)
-    print(f"[train_bc] saved config to {config_path}")
-
-    agent = BCLSTMAgent(config, params=best_params)
-    agent.save_weights(args.output)
+    print(f"\n[train_bc] best val accuracy: {best_val_acc:.4f} "
+          f"(epoch {best_epoch})")
+    save_bc_checkpoint(
+        args.output,
+        best_params,
+        config,
+        args,
+        best_val_acc,
+        best_epoch,
+    )
+    print(f"[train_bc] saved config to {args.output.replace('.safetensors', '.yaml')}")
     print(f"[train_bc] saved weights to {args.output}")
 
 
@@ -391,6 +449,9 @@ if __name__ == '__main__':
                         help="Validation fraction for --lbf_config episode split")
     parser.add_argument('--exclude_uncertain', action='store_true',
                         help="Drop LBF episodes with uncertain step-0 reconstruction")
+    parser.add_argument('--lbf_feature_mode', choices=["none", "path"],
+                        default="none",
+                        help="Optional LBF observation feature augmentation")
     parser.add_argument('--invalid_action_mode', choices=["drop", "noop"],
                         default="drop",
                         help="How to handle expert actions marked unavailable")
@@ -413,4 +474,8 @@ if __name__ == '__main__':
     parser.add_argument('--postprocess_dim', type=int, default=None)
     parser.add_argument('--dropout', type=float, default=0.0,
                         help="Dropout rate (0.0 = no dropout)")
+    parser.add_argument('--save_epoch_checkpoints', action='store_true',
+                        help="Save intermediate checkpoints for rollout-return selection")
+    parser.add_argument('--save_every', type=int, default=5,
+                        help="Epoch interval for --save_epoch_checkpoints")
     train(parser.parse_args())
