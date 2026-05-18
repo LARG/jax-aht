@@ -1,0 +1,27 @@
+# @package algorithm
+ALG: ppo_br
+EGO_ACTOR_TYPE: s5
+NUM_EGO_TRAIN_SEEDS: 3
+TOTAL_TIMESTEPS: 6e7
+NUM_CHECKPOINTS: 5
+NUM_ENVS: 8
+PROGRESS_LOG_INTERVAL: 250
+LR: 5e-5
+UPDATE_EPOCHS: 10
+NUM_MINIBATCHES: 4
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.1
+ENT_COEF: 1e-4
+VF_COEF: 0.5
+MAX_GRAD_NORM: 1.0
+ANNEAL_LR: false
+S5_D_MODEL: 128
+S5_SSM_SIZE: 128
+S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+FC_N_LAYERS: 3
+
+partner_agent:
+  seq_agent_col:
+    actor_type: seq_agent
+    ordering_strategy: column_major

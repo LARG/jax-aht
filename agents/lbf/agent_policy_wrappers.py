@@ -8,8 +8,6 @@ from agents.lbf.sequential_fruit_agent import SequentialFruitAgent
 from agents.lbf.entitled_agent import EntitledAgent
 from agents.lbf.greedy_heuristic_agent import GreedyHeuristicAgent
 
-
-
 class LBFRandomPolicyWrapper(AgentPolicy):
     def __init__(self):
         self.policy = RandomAgent() # agent id doesn't matter for the random agent
