@@ -9,21 +9,16 @@ import time
 import os
 import hydra
 
-from agents.lbf.agent_policy_wrappers import LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper
-from agents.overcooked.agent_policy_wrappers import (OvercookedIndependentPolicyWrapper, 
-    OvercookedOnionPolicyWrapper,
-    OvercookedPlatePolicyWrapper,
-    OvercookedStaticPolicyWrapper,
-    OvercookedRandomPolicyWrapper)
-
-from common.agent_loader_from_config import initialize_rl_agent_from_config
+from common.agent_loader_from_config import (
+    initialize_rl_agent_from_config,
+    initialize_heuristic_agent_from_config,
+)
 from common.run_episodes import run_episodes
 from common.tree_utils import tree_stack
 from common.plot_utils import get_metric_names
 from common.stat_utils import compute_aggregate_stat_and_ci_per_task
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from envs.overcooked.augmented_layouts import augmented_layouts
 
 
 def extract_params(params, init_params, idx_labels=None):
@@ -48,7 +43,6 @@ def extract_params(params, init_params, idx_labels=None):
     flattened_idx_labels = []
     params_shape = jax.tree.leaves(params)[0].shape
     init_params_shape = jax.tree.leaves(init_params)[0].shape
-
     # already matches init_params_shape, no extraction needed
     if params_shape == init_params_shape:
         model_list = [params]
@@ -101,6 +95,10 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
     '''
     heldout_agents = {}
     for agent_name, agent_config in heldout_config.items():
+        # Allow env-specific configs to null out entries inherited from a
+        # base config (skip entries set to null in the task-specific block).
+        if agent_config is None:
+            continue
         params_list = None
         idx_labels = None
         test_mode = agent_config.get("test_mode", False)
@@ -114,44 +112,11 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
             performance_bounds_list = extract_performance_bounds(agent_config, len(params_list))
 
         # Load non-RL-based heuristic agents
-        elif task_name == 'lbf':
-            performance_bounds = agent_config.get("performance_bounds", None)
-            if agent_config["actor_type"] == 'random_agent':
-                policy = LBFRandomPolicyWrapper(using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'seq_agent':
-                # Get grid size and num fruits from environment
-                grid_size = env_kwargs.get("grid_size", 7)
-                num_fruits = env_kwargs.get("num_fruits", 3)
-                ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
-                policy = LBFSequentialFruitPolicyWrapper(
-                    grid_size=grid_size,
-                    num_fruits=num_fruits,
-                    ordering_strategy=ordering_strategy,
-                    using_log_wrapper=True
-                )
-
-        elif 'overcooked-v1' in task_name:
-            performance_bounds = agent_config.get("performance_bounds", None)
-            aug_layout_dict = augmented_layouts[env_kwargs["layout"]]
-            if agent_config["actor_type"] == 'random_agent':
-                policy = OvercookedRandomPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'static_agent':
-                policy = OvercookedStaticPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
-            elif agent_config["actor_type"] == 'independent_agent':
-                policy = OvercookedIndependentPolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0), 
-                    p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
-            elif agent_config["actor_type"] == 'onion_agent':
-                policy = OvercookedOnionPolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0))
-            elif agent_config["actor_type"] == 'plate_agent':
-                policy = OvercookedPlatePolicyWrapper(
-                    aug_layout_dict, using_log_wrapper=True, 
-                    p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0))
         else:
-            raise ValueError(f"Unknown task: {task_name}")
+            performance_bounds = agent_config.get("performance_bounds", None)
+            policy = initialize_heuristic_agent_from_config(
+                agent_config, agent_name, task_name, env_kwargs
+            )
         
         # Generate agent labels
         if params_list is None: # heuristic agent
@@ -174,8 +139,8 @@ def normalize_metrics(metrics, performance_bounds):
     return metrics
 
 
-def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params, 
-                          heldout_agent_list, ego_test_mode=False):
+def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params,
+                          heldout_agent_list, heldout_agent_names=None, ego_test_mode=False):
     '''Evaluate all ego agents against all heldout partners using vmap over egos.
     Ego_params must be a pytree of shape (num_ego_agents, ...)
     '''
@@ -222,7 +187,8 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
             if heldout_performance_bounds is not None:
                 results_for_this_partner = normalize_metrics(results_for_this_partner, heldout_performance_bounds)
             else:
-                print(f"Warning: no performance bounds provided for {heldout_agent_list[partner_idx]}. Skipping normalization.")
+                agent_name = heldout_agent_names[partner_idx] if heldout_agent_names is not None else f"partner_{partner_idx}"
+                print(f"Warning: no performance bounds provided for {agent_name}. Skipping normalization.")
         all_metrics_for_partners.append(results_for_this_partner)
 
     end_time = time.time()
@@ -255,12 +221,13 @@ def run_heldout_evaluation(config, print_metrics=False):
     # load heldout agents
     heldout_cfg = config["heldout_set"][config["TASK_NAME"]]
     heldout_agents = load_heldout_set(heldout_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], heldout_init_rng)
+    heldout_agent_names = list(heldout_agents.keys())
     heldout_agent_list = list(heldout_agents.values())
-    
+
     # run evaluation
     eval_metrics = eval_egos_vs_heldouts(
-        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"], 
-        ego_policy, flattened_ego_params, heldout_agent_list, ego_test_mode)
+        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"],
+        ego_policy, flattened_ego_params, heldout_agent_list, heldout_agent_names, ego_test_mode)
 
     if print_metrics:
         # each leaf of eval_metrics has shape (num_ego_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)
@@ -273,14 +240,16 @@ def run_heldout_evaluation(config, print_metrics=False):
                 aggregate_stat, config["global_heldout_settings"]["NORMALIZE_RETURNS"])
     return eval_metrics
 
-def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names, 
-                        aggregate_stat: str, normalized_metrics: bool, save: bool = False):
+def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names,
+                        aggregate_stat: str, normalized_metrics: bool,
+                        save: bool = False, save_heatmap: bool = False):
     '''Generate a table of the aggregate stat and CI of the metric for each ego agent and heldout agent.'''
     # eval_metrics[metric_name] shape (num_ego_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)
     # we first take the mean over the num_agents_per_env dimension
     eval_metric_data = np.array(eval_metrics[metric_name]).mean(axis=-1) # shape (num_ego_agents, num_heldout_agents, num_eval_episodes, 2)
     table = PrettyTable()
     table.field_names = ["---", *heldout_names]
+    tidy_rows = []
 
     for i, ego_name in enumerate(ego_names):
         data = eval_metric_data[i].transpose(1, 0) # shape (num_eval_episodes, num_heldout_agents)
@@ -289,6 +258,17 @@ def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names,
         upper_ci = interval_ests_all[:, 1]
         row = [ego_name] + [f"{point_est_all[j]:.2f} ({lower_ci[j]:.2f}, {upper_ci[j]:.2f})" for j in range(len(heldout_names))]
         table.add_row(row)
+        for j, heldout_name in enumerate(heldout_names):
+            tidy_rows.append({
+                "row_agent": ego_name,
+                "col_agent": heldout_name,
+                "metric_name": metric_name,
+                "aggregate_stat": aggregate_stat,
+                "normalized": normalized_metrics,
+                "mean": float(point_est_all[j]),
+                "ci_lower": float(lower_ci[j]),
+                "ci_upper": float(upper_ci[j]),
+            })
     
     print(f"\n{metric_name} ({aggregate_stat} ± CI):")
     if normalized_metrics:
@@ -307,3 +287,34 @@ def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names,
         with open(csv_filename, 'w', newline='') as f_output:
             f_output.write(table.get_csv_string())
         print(f"Table saved to {csv_filename}")
+
+        tidy_csv_filename = os.path.join(output_dir, f"{safe_metric_name}_{aggregate_stat}_normalized={normalized_metrics}_tidy.csv")
+        import csv
+        with open(tidy_csv_filename, 'w', newline='') as tidy_file:
+            writer = csv.DictWriter(
+                tidy_file,
+                fieldnames=[
+                    "row_agent",
+                    "col_agent",
+                    "metric_name",
+                    "aggregate_stat",
+                    "normalized",
+                    "mean",
+                    "ci_lower",
+                    "ci_upper",
+                ],
+            )
+            writer.writeheader()
+            writer.writerows(tidy_rows)
+        print(f"Tidy table saved to {tidy_csv_filename}")
+
+        if save_heatmap:
+            try:
+                from pathlib import Path
+                from evaluation.plot_xp_csv_heatmap import generate_heatmap_from_csv
+
+                heatmap_title = f"XP Matrix: {metric_name} ({aggregate_stat})"
+                png_path = generate_heatmap_from_csv(Path(csv_filename), title=heatmap_title)
+                print(f"Heatmap saved to {png_path}")
+            except Exception as exc:
+                print(f"Warning: failed to generate heatmap for {csv_filename}: {exc}")

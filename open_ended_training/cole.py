@@ -4,18 +4,18 @@ Paper: https://proceedings.mlr.press/v202/li23au.html
 Code: https://github.com/liyang619/COLE-Platform/tree/COLE_training
 
 Suggested debug command:
-python open_ended_training/run.py
-    algorithm=cole/lbf 
-    task=lbf
-    label=test_cole
-    run_heldout_eval=false
-    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5
-    algorithm.PARTNER_POP_SIZE=2
-    algorithm.NUM_SEEDS=1
-    logger.mode=offline
-    logger.log_train_out=false
-    logger.log_eval_out=false
-    local_logger.save_train_out=false
+python open_ended_training/run.py \
+    algorithm=cole/lbf/lbf_7x7_nolevels \
+    task=lbf/lbf_7x7_nolevels \
+    label=test_cole \
+    run_heldout_eval=false \
+    algorithm.TOTAL_TIMESTEPS_PER_ITERATION=2e5 \
+    algorithm.PARTNER_POP_SIZE=2 \
+    algorithm.NUM_SEEDS=1 \
+    logger.mode=offline \
+    logger.log_train_out=false \
+    logger.log_eval_out=false \
+    local_logger.save_train_out=false \
     local_logger.save_eval_out=false
 """
 from functools import partial
@@ -30,6 +30,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
+
+
 
 from agents.initialize_agents import (
     initialize_s5_agent,
@@ -736,16 +738,20 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                     )
 
                     # Metrics
-                    metric = traj_batch_xp.info
+                    def mask_and_mean(x, mask):
+                        return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+
+                    mask = traj_batch_xp.info.get("returned_episode", jnp.ones_like(traj_batch_xp.reward))
+                    metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_xp.info)
                     metric["update_steps"] = update_steps
-                    metric["value_loss_xp"] = value_loss_xp
-                    metric["value_loss_sp"] = value_loss_sp
+                    metric["value_loss_xp"] = value_loss_xp.mean()
+                    metric["value_loss_sp"] = value_loss_sp.mean()
 
-                    metric["pg_loss_xp"] = pg_loss_xp
-                    metric["pg_loss_sp"] = pg_loss_sp
+                    metric["pg_loss_xp"] = pg_loss_xp.mean()
+                    metric["pg_loss_sp"] = pg_loss_sp.mean()
 
-                    metric["entropy_xp"] = entropy_xp
-                    metric["entropy_sp"] = entropy_sp
+                    metric["entropy_xp"] = entropy_xp.mean()
+                    metric["entropy_sp"] = entropy_sp.mean()
 
                     metric["average_rewards_xp"] = jnp.mean(traj_batch_xp.reward)
                     metric["average_rewards_sp"] = jnp.mean(traj_batch_sp1.reward)
@@ -760,18 +766,19 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                     return (new_update_runner_state, checkpoint_array, ckpt_idx+1), metric
 
                 # XP eval current policy against all policies in the buffer
-                # shape (pop_size, num_eval_episodes, num_agents_per_game)
-                xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                        train_state.params, jnp.arange(config["POP_SIZE"]))
+                # shape (pop_size,) after pre-scalarization (mean over eval episodes and agents)
+                xp_eval_returns = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                    jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                        train_state.params, jnp.arange(config["POP_SIZE"])))
 
                 # SP performance against itself
-                sp_eval_returns = run_episodes(
+                sp_eval_returns = jax.tree.map(lambda x: x.mean(), run_episodes(
                     eval_rng, env,
                     agent_0_param=train_state.params, agent_0_policy=policy,
                     agent_1_param=train_state.params, agent_1_policy=policy,
                     max_episode_steps=config["ROLLOUT_LENGTH"],
                     num_eps=config["NUM_EVAL_EPISODES"]
-                )
+                ))
 
                 # Pre-compute the metasolve sampling distribution for agent i and write it into
                 # pop_buffer.scores so that sample_agent_indices uses it throughout the PPO loop.
@@ -844,16 +851,17 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                         )
 
                         # Eval trained agent against all params in the pool
-                        xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                            train_state.params, jnp.arange(config["POP_SIZE"]))
+                        xp_eval_returns = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                            jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                                train_state.params, jnp.arange(config["POP_SIZE"])))
                         # Eval trained agent against itself
-                        sp_eval_returns = run_episodes(
+                        sp_eval_returns = jax.tree.map(lambda x: x.mean(), run_episodes(
                             eval_rng, env,
                             agent_0_param=train_state.params, agent_0_policy=policy,
                             agent_1_param=train_state.params, agent_1_policy=policy,
                             max_episode_steps=config["ROLLOUT_LENGTH"],
                             num_eps=config["NUM_EVAL_EPISODES"]
-                        )
+                        ))
                         return (new_ckpt_arr, rng, cidx + 1, xp_eval_returns, sp_eval_returns)
 
                     def skip_ckpt(args):
@@ -1088,11 +1096,11 @@ def log_metrics_intermediate(metric, logger):
 
     Metric keys and their shapes (before vmap over seeds collapses them):
       update_steps            : scalar int
-      value_loss_xp/sp        : (UPDATE_EPOCHS, NUM_MINIBATCHES)
-      pg_loss_xp/sp           : (UPDATE_EPOCHS, NUM_MINIBATCHES)
-      entropy_xp/sp           : (UPDATE_EPOCHS, NUM_MINIBATCHES)
-      average_rewards_xp/sp  : scalar float
-      returned_episode_returns: (ROLLOUT_LENGTH, NUM_ENVS)  – from LogWrapper
+      value_loss_xp/sp        : scalar float
+      pg_loss_xp/sp           : scalar float
+      entropy_xp/sp           : scalar float
+      average_rewards_xp/sp   : scalar float
+      returned_episode_returns: scalar float  – masked mean over episode-terminal steps
     """
     metric = dict(metric)  # shallow copy – avoid mutating the original
     step = int(np.array(metric.pop("update_steps")))
@@ -1128,7 +1136,7 @@ def log_final_metrics(config, outs, logger, metric_names: tuple):
     """
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy, so it's pop_size - 1
-    num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_sp"].shape
+    num_seeds, trained_pop_size, num_updates = metrics["pg_loss_sp"].shape
 
     ### Log last XP matrix
     final_xp_matrix = np.asarray(outs["final_xp_matrix"]).mean(axis=0)  # shape (pop_size, pop_size)
@@ -1143,14 +1151,14 @@ def log_final_metrics(config, outs, logger, metric_names: tuple):
     if (num_updates - 1) not in eval_steps:
         eval_steps.append(num_updates - 1)
 
-    # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
-    # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates, pop_size)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns_xp = np.asarray(outs["last_ep_infos_xp"]["returned_episode_returns"])
 
-    # Average over seeds, eval episodes and num_agents_per_game
-    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4)) # shape (pop_size - 1, num_updates)
-    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5)) #  shape (pop_size - 1, num_updates, pop_size)
+    # Average over seeds only (eval episodes and agents already averaged inside scan)
+    sp_return_curve = all_returns_sp.mean(axis=0) # shape (pop_size - 1, num_updates)
+    xp_return_curve = all_returns_xp.mean(axis=0) #  shape (pop_size - 1, num_updates, pop_size)
 
     for num_add_policies in range(trained_pop_size):
         for update_step in eval_steps:

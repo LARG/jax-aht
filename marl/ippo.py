@@ -3,7 +3,7 @@ Based on the IPPO implementation from JaxMarl. Trains a parameter-shared IPPO ag
 fully cooperative multi-agent environment.
 
 Recommended run command:
-python marl/run.py task=lbf algorithm=ippo/lbf
+python marl/run.py task=lbf/lbf_7x7_nolevels algorithm=ippo/lbf/lbf_7x7_nolevels
 '''
 import shutil
 
@@ -82,13 +82,16 @@ def make_train(config, env, logger, progress_callback=None):
             def _env_step(runner_state, unused):
                 train_state, env_state, last_obs, last_done, last_hstate, rng = runner_state
 
-                rng, act_rng = jax.random.split(rng)
+                rng, act_rng = jax.random.split(rng, 2)
 
                 last_obs_batch = batchify(last_obs, env.agents, config["NUM_ACTORS"])
                 last_done_batch = batchify(last_done, env.agents, config["NUM_ACTORS"])
 
+                # Other-Play color permutation, when active, is applied by
+                # SymmetryAugmentationWrapper inside env.reset/step/get_avail_actions.
+                # See envs/common/symmetry_wrapper.py and envs/hanabi/other_play.py.
                 avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)
-                avail_actions = jax.lax.stop_gradient(batchify(avail_actions, 
+                avail_actions = jax.lax.stop_gradient(batchify(avail_actions,
                     env.agents, config["NUM_ACTORS"]).astype(jnp.float32))
 
                 action, value, pi, new_hstate = policy.get_action_value_policy(
@@ -252,21 +255,53 @@ def make_train(config, env, logger, progress_callback=None):
                 _update_epoch, update_state, None, config["UPDATE_EPOCHS"]
             )
             train_state = update_state[0]
-            metric = traj_batch.info
-            metric["update_steps"] = update_steps
+            def mask_and_mean(x, mask):
+                return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
             
+            mask = traj_batch.info.get("returned_episode", jnp.ones_like(traj_batch.reward))
+            metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
+            metric["update_steps"] = update_steps
+
             def callback(metrics):
                 log_metrics_intermediate(metrics, logger)
                 if progress_callback is not None:
                     progress_callback()
 
-            # metrics: (ROLLOUT_LENGTH, NUM_ACTORS)
+            # metrics: scalars
             jax.experimental.io_callback(callback, None, metric)
 
             rng = update_state[-1]
             update_steps += 1
             runner_state = (train_state, env_state, last_obs, last_done, last_hstate, rng)
-            return (runner_state, update_steps), metric
+
+            # Condense metrics to per-update scalars for the scan output.
+            # Full per-timestep metrics are already logged via io_callback above.
+            # Without condensation, storing (ROLLOUT_LENGTH, NUM_ACTORS) per key
+            # per update step causes OOM for long runs (e.g. 1e9 steps).
+            mask = metric["returned_episode"]  # (ROLLOUT_LENGTH, NUM_ACTORS)
+            n_episodes = mask.sum()
+            condensed_metric = {}
+            for key, val in metric.items():
+                if key == "update_steps":
+                    condensed_metric[key] = val
+                elif key == "returned_episode":
+                    condensed_metric[key] = n_episodes.astype(jnp.float32)
+                else:
+                    # Episode-masked mean: average only over timesteps where
+                    # an episode ended (where returned_episode == True)
+                    condensed_metric[key] = jnp.where(
+                        n_episodes > 0,
+                        jnp.where(mask, val, 0.0).sum() / jnp.maximum(n_episodes, 1),
+                        0.0,
+                    )
+            # Add loss statistics from the PPO update epochs.
+            # loss_info structure: (total_loss, (value_loss, actor_loss, entropy))
+            # each with shape (UPDATE_EPOCHS, NUM_MINIBATCHES)
+            condensed_metric["value_loss"] = loss_info[1][0].mean()
+            condensed_metric["actor_loss"] = loss_info[1][1].mean()
+            condensed_metric["entropy_loss"] = loss_info[1][2].mean()
+
+            return (runner_state, update_steps), condensed_metric
 
         ckpt_and_eval_interval = config["NUM_UPDATES"] // max(1, config["NUM_CHECKPOINTS"] - 1)
         num_ckpts = config["NUM_CHECKPOINTS"]
@@ -343,6 +378,21 @@ def make_train(config, env, logger, progress_callback=None):
 def run_ippo(config, logger):
     algorithm_config = dict(config.algorithm)
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
+
+    # Other-Play (Hu et al. 2020): wrap env so one agent sees a permuted
+    # color view. Hanabi-only: the symmetry depends on the color/rank obs
+    # layout. Generalizable to other envs by adding new EnvSymmetry impls.
+    if algorithm_config.get("USE_OTHER_PLAY", False):
+        if algorithm_config["ENV_NAME"] != "hanabi":
+            raise ValueError(
+                "USE_OTHER_PLAY currently only supports env_name='hanabi'. "
+                "Add a new EnvSymmetry subclass to use this on other envs."
+            )
+        from envs.hanabi.other_play import HanabiColorSymmetry
+        from envs.common.symmetry_wrapper import SymmetryAugmentationWrapper
+        sym = HanabiColorSymmetry(**algorithm_config["ENV_KWARGS"])
+        env = SymmetryAugmentationWrapper(env, sym)
+
     env = LogWrapper(env)
 
     num_updates = (
@@ -375,19 +425,11 @@ def run_ippo(config, logger):
 def log_metrics_intermediate(train_stats, logger):
     # Log metrics for one update step
     step = int(np.array(train_stats.pop("update_steps")))
-    # remaining values have shape (ROLLOUT_LENGTH, NUM_ACTORS)
-    mask = np.array(train_stats.pop("returned_episode"))  # boolean mask for episode-ending steps
-    num_trajectories = mask.sum()
     
     metric_names = [k for k in train_stats if k != "returned_episode"]
     for stat_name in metric_names:        
-        if num_trajectories > 0:
-            # Only average over timesteps where an episode actually ended, matching get_stats logic
-            metric_sum = np.where(mask, np.array(train_stats[stat_name]), 0).sum()
-            stat_mean = metric_sum / num_trajectories
-        else:
-            stat_mean = 0.0
-        logger.log_item(f"Train/{stat_name}", float(stat_mean), train_step=step, commit=True)
+        stat_mean = float(np.array(train_stats[stat_name]))
+        logger.log_item(f"Train/{stat_name}", stat_mean, train_step=step, commit=True)
     logger.commit()
 
 def log_artifacts(config, out, logger):

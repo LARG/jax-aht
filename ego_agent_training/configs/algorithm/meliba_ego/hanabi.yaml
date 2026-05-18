@@ -1,0 +1,14 @@
+defaults:
+  - meliba_ego/_base_
+  - _self_
+
+TOTAL_TIMESTEPS: 10000000
+NUM_ENVS: 32
+NUM_EGO_TRAIN_SEEDS: 1
+LR: 3e-4
+ENT_COEF: 0.01
+CLIP_EPS: 0.1
+ANNEAL_LR: false
+UPDATE_EPOCHS: 5
+POLICY_OPTIMIZER: adam
+DECODER_OUTPUT_DIM: 21  # match Hanabi action_space.n

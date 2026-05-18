@@ -23,7 +23,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
     init_hstate_1 = agent_1_policy.init_hstate(1, aux_info={"agent_id": 1})
 
     # Get available actions for agent 0 from environment state
-    avail_actions = env.get_avail_actions(init_env_state.env_state)
+    avail_actions = env.get_avail_actions(init_env_state)
     avail_actions = jax.lax.stop_gradient(avail_actions)
     avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
     avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
@@ -71,7 +71,7 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
         def take_step(carry_step):
             ep_ts, env_state, obs, rng, done, reward, act_onehot, hstate_0, hstate_1, last_info = carry_step
             # Get available actions for agent 0 from environment state
-            avail_actions = env.get_avail_actions(env_state.env_state)
+            avail_actions = env.get_avail_actions(env_state)
             avail_actions = jax.lax.stop_gradient(avail_actions)
             avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
             avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)

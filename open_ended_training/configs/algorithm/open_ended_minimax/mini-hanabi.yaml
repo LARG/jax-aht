@@ -1,0 +1,24 @@
+defaults:
+  - open_ended_minimax/_base_
+  - _self_
+
+# Mini-Hanabi (3c/3r/hand3) Open-Ended Minimax config.
+TIMESTEPS_PER_ITER_PARTNER: 1e6
+TIMESTEPS_PER_ITER_EGO: 1e6
+NUM_OPEN_ENDED_ITERS: 20
+LR: 5e-4
+CLIP_EPS: 0.2
+ENT_COEF: 0.01
+ANNEAL_LR: true
+GAMMA: 0.999
+GAE_LAMBDA: 0.95
+MAX_GRAD_NORM: 0.5
+EGO_ARGS:
+  LR: 5e-4
+  ENT_COEF: 0.01
+  CLIP_EPS: 0.2
+  ANNEAL_LR: true
+  UPDATE_EPOCHS: 4
+  GAMMA: 0.999
+  GAE_LAMBDA: 0.95
+  MAX_GRAD_NORM: 0.5

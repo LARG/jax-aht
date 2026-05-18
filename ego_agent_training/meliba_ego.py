@@ -9,13 +9,13 @@ Only supports a population of homogeneous RL partner agents.
 
 Command to run MeLIBA ego training:
 
-python ego_agent_training/run.py algorithm=meliba_ego/lbf task=lbf label=test_meliba_ego
+python ego_agent_training/run.py algorithm=meliba_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_meliba_ego
 
 
 
 Suggested debug command:
 
-python ego_agent_training/run.py algorithm=meliba_ego/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
+python ego_agent_training/run.py algorithm=meliba_ego/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5
 '''
 import shutil
 import time
@@ -87,18 +87,21 @@ def train_meliba_ego_agent(config, env, train_rng,
             return config["LR"] * frac
 
         def train(rng):
+            # Default stays RMSProp so LBF and Overcooked keep behaving the
+            # same. Hanabi configs set POLICY_OPTIMIZER: adam because
+            # RMSProp wouldn't converge there (reward stuck near zero
+            # through 1e7 steps).
+            policy_opt = config.get("POLICY_OPTIMIZER", "rmsprop").lower()
             if config["ANNEAL_LR"]:
-                tx = optax.chain(
-                    optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
-                    # optax.adam(learning_rate=linear_schedule, eps=1e-5),
-                    optax.rmsprop(learning_rate=linear_schedule),
-                )
+                lr = linear_schedule
+                inner = optax.adam(learning_rate=lr, eps=1e-5) if policy_opt == "adam" else optax.rmsprop(learning_rate=lr)
             else:
-                tx = optax.chain(
-                    optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
-                    # optax.adam(config["LR"], eps=1e-5),
-                    optax.rmsprop(config["LR"]),
-                )
+                lr = config["LR"]
+                inner = optax.adam(lr, eps=1e-5) if policy_opt == "adam" else optax.rmsprop(lr)
+            tx = optax.chain(
+                optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
+                inner,
+            )
 
             train_state = TrainState.create(
                 apply_fn=ego_policy.policy.network.apply,
@@ -388,17 +391,21 @@ def train_meliba_ego_agent(config, env, train_rng,
                 encoder_decoder_train_state = update_state[1]
                 _, loss_terms, avg_grad_norm, encoder_avg_grad_norm, decoder_avg_grad_norm = losses_and_grads
 
-                metric = traj_batch.info
+                def mask_and_mean(x, mask):
+                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+                
+                mask = traj_batch.info.get("returned_episode", jnp.ones_like(traj_batch.reward))
+                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch.info)
                 metric["update_steps"] = update_steps
-                metric["actor_loss"] = loss_terms[1]
-                metric["value_loss"] = loss_terms[0]
-                metric["entropy_loss"] = loss_terms[2]
-                metric["kl_divergence_loss"] = loss_terms[3]
-                metric["reconstruction_loss"] = loss_terms[4]
-                metric["elbo_loss"] = loss_terms[5]
-                metric["avg_grad_norm"] = avg_grad_norm
-                metric["encoder_avg_grad_norm"] = encoder_avg_grad_norm
-                metric["decoder_avg_grad_norm"] = decoder_avg_grad_norm
+                metric["actor_loss"] = loss_terms[1].mean()
+                metric["value_loss"] = loss_terms[0].mean()
+                metric["entropy_loss"] = loss_terms[2].mean()
+                metric["kl_divergence_loss"] = loss_terms[3].mean()
+                metric["reconstruction_loss"] = loss_terms[4].mean()
+                metric["elbo_loss"] = loss_terms[5].mean()
+                metric["avg_grad_norm"] = avg_grad_norm.mean()
+                metric["encoder_avg_grad_norm"] = encoder_avg_grad_norm.mean()
+                metric["decoder_avg_grad_norm"] = decoder_avg_grad_norm.mean()
                 new_runner_state = (train_state, encoder_decoder_train_state, rng, update_steps + 1)
                 return (new_runner_state, metric)
 
@@ -443,14 +450,14 @@ def train_meliba_ego_agent(config, env, train_rng,
                     gathered_params = partner_population.gather_agent_params(partner_params, eval_partner_indices)
 
                     rng, eval_rng = jax.random.split(rng)
-                    eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
+                    eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), jax.vmap(lambda x: run_episodes(
                         eval_rng, env, agent_0_param={"encoder": encoder_decoder_train_state.params["encoder"],
                                                       "decoder": encoder_decoder_train_state.params["decoder"],
                                                       "policy": train_state.params},
                         agent_0_policy=ego_policy,
                         agent_1_param=x, agent_1_policy=partner_population.policy_cls,
                         max_episode_steps=max_episode_steps,
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params)
+                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params))
                     return (new_ckpt_arr, cidx + 1, rng, eval_eps_last_infos)
 
                 def skip_ckpt(args):
@@ -475,7 +482,7 @@ def train_meliba_ego_agent(config, env, train_rng,
             # Init eval return infos
             eval_partner_indices = jnp.arange(num_total_partners)
             gathered_params = partner_population.gather_agent_params(partner_params, eval_partner_indices)
-            eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
+            eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), jax.vmap(lambda x: run_episodes(
                         rng_eval, env,
                         agent_0_param={"encoder": encoder_decoder_train_state.params["encoder"],
                                        "decoder": encoder_decoder_train_state.params["decoder"],
@@ -483,7 +490,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                         agent_0_policy=ego_policy,
                         agent_1_param=x, agent_1_policy=partner_population.policy_cls,
                         max_episode_steps=max_episode_steps,
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params)
+                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params))
 
             # initial runner state for scanning
             update_steps = 0
@@ -532,6 +539,11 @@ def run_ego_training(config, wandb_logger):
     # Set the policy input dimension for the meliba policy
     # (Latent dim * 4) + observation dimension
     algorithm_config['POLICY_INPUT_DIM'] = (algorithm_config['ENCODER_LATENT_DIM'] * 4) + env.observation_space(env.agents[0]).shape[0]
+
+    # Derive DECODER_OUTPUT_DIM from the partner's action space at runtime
+    # so the reconstruction head matches the env. The previous default of
+    # 32 silently mismatched envs whose action_space.n != 32.
+    algorithm_config['DECODER_OUTPUT_DIM'] = env.action_space(env.agents[1]).n
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rng, init_partner_rng, init_ego_rng, train_rng = jax.random.split(rng, 4)
@@ -607,20 +619,20 @@ def log_metrics(config, train_out, logger, metric_names: tuple):
     all_ego_decoder_grad_norms = np.asarray(train_metrics["decoder_avg_grad_norm"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_minibatches)
     # Process eval return metrics - average across ego seeds, eval episodes,  training partners
     # and num_agents per game for each checkpoint
-    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_ego_train_seeds, num_updates, num_partners, num_eval_episodes, nuM_agents_per_game)
-    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=(0, 2, 3, 4))
+    all_ego_returns = np.asarray(train_metrics["eval_ep_last_info"]["returned_episode_returns"]) # shape (n_ego_train_seeds, num_updates)  [pre-scalarized: mean over partners, eval eps, and agents taken inside scan]
+    average_ego_rets_per_iter = np.mean(all_ego_returns, axis=0)
 
     # Process loss metrics - average across ego seeds, partners and minibatches dims
-    # Loss metrics shape should be (n_ego_train_seeds, num_updates, ...)
-    average_ego_value_losses = np.mean(all_ego_value_losses, axis=(0, 2, 3))
-    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=(0, 2, 3))
-    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=(0, 2, 3))
-    average_ego_kl_divergence_losses = np.mean(all_ego_kl_divergence_losses, axis=(0, 2, 3))
-    average_ego_reconstruction_losses = np.mean(all_ego_reconstruction_losses, axis=(0, 2, 3))
-    average_ego_elbo_losses = np.mean(all_ego_elbo_losses, axis=(0, 2, 3))
-    average_ego_grad_norms = np.mean(all_ego_grad_norms, axis=(0, 2, 3))
-    average_ego_encoder_grad_norms = np.mean(all_ego_encoder_grad_norms, axis=(0, 2, 3))
-    average_ego_decoder_grad_norms = np.mean(all_ego_decoder_grad_norms, axis=(0, 2, 3))
+    # Loss metrics shape should be (n_ego_train_seeds, num_updates)
+    average_ego_value_losses = np.mean(all_ego_value_losses, axis=0)
+    average_ego_actor_losses = np.mean(all_ego_actor_losses, axis=0)
+    average_ego_entropy_losses = np.mean(all_ego_entropy_losses, axis=0)
+    average_ego_kl_divergence_losses = np.mean(all_ego_kl_divergence_losses, axis=0)
+    average_ego_reconstruction_losses = np.mean(all_ego_reconstruction_losses, axis=0)
+    average_ego_elbo_losses = np.mean(all_ego_elbo_losses, axis=0)
+    average_ego_grad_norms = np.mean(all_ego_grad_norms, axis=0)
+    average_ego_encoder_grad_norms = np.mean(all_ego_encoder_grad_norms, axis=0)
+    average_ego_decoder_grad_norms = np.mean(all_ego_decoder_grad_norms, axis=0)
 
     # Log metrics for each update step
     num_updates = len(average_ego_value_losses)

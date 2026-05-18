@@ -14,7 +14,7 @@ from agents.population_interface import AgentPopulation
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from marl.ippo import make_train as make_ppo_train
-from common.plot_utils import get_metric_names, get_stats
+from common.plot_utils import get_metric_names
 from common.save_load_utils import save_train_run
 
 log = logging.getLogger(__name__)
@@ -80,23 +80,28 @@ def run_fcp(config, wandb_logger):
 
     flattened_partner_params, partner_population = get_fcp_population(config, out, env)
 
-    # log metrics
-    log_metrics(config, out, wandb_logger)
+    # Save FIRST so the checkpoint survives even if metric logging OOMs
+    # on long runs. Same pattern as teammate_generation/train_ego.py.
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
+    log_metrics(config, out, wandb_logger, out_savepath)
 
     return flattened_partner_params, partner_population
 
-def log_metrics(config, out, logger):
-    '''Log statistics, save train run output and log to wandb as artifact.'''
+def log_metrics(config, out, logger, out_savepath):
+    '''Log statistics and log saved train run to wandb as artifact.'''
     metric_names = get_metric_names(config["ENV_NAME"])
-    # metrics is a pytree where each leaf has shape
-    # (num_seeds, partner_pop_size, num_partner_updates, rollout_length, agents_per_env * num_envs)
+    # After mask_and_mean in ippo, metrics have shape
+    # (num_seeds, partner_pop_size, num_partner_updates)
     partner_metrics = out["metrics"]
     num_partner_updates = partner_metrics["returned_episode_returns"].shape[2]
-    # Extract partner train stats
-    num_controlled_actors = config["algorithm"]["NUM_ENVS"]
-    partner_metrics = jax.tree.map(lambda x: x[..., :num_controlled_actors], partner_metrics)
-    partner_stats = get_stats(partner_metrics, metric_names) # shape (num_seeds, partner_pop_size, num_partner_updates, 2)
-    partner_stat_means = jax.tree.map(lambda x: np.mean(x, axis=(0, 1))[..., 0], partner_stats) # shape (num_partner_updates)
+
+    # Average over seeds and pop members → (num_partner_updates,)
+    partner_stat_means = {
+        stat_name: np.mean(np.asarray(partner_metrics[stat_name]), axis=(0, 1))
+        for stat_name in metric_names
+        if stat_name in partner_metrics
+    }
 
     for step in range(num_partner_updates):
         for stat_name, stat_data in partner_stat_means.items():
@@ -104,9 +109,6 @@ def log_metrics(config, out, logger):
 
     logger.commit()
 
-    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    # save artifacts
-    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
         # Cleanup locally logged out file

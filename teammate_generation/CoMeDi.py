@@ -2,7 +2,7 @@
 https://openreview.net/forum?id=MljeRycu9s
 
 Command to run CoMeDi only on LBF:
-python teammate_generation/run.py algorithm=comedi/lbf task=lbf label=test_comedi run_heldout_eval=false train_ego=false
+python teammate_generation/run.py algorithm=comedi/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_comedi run_heldout_eval=false train_ego=false
 
 Limitations: does not support recurrent actors.
 '''
@@ -80,10 +80,14 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
             Train a pool IPPO agents w/parameter sharing.
             Returns out, a dictionary of the model checkpoints, final parameters, and metrics.
             '''
-            config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
-            config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
+            # POP_SIZE is referenced throughout the CoMeDi training loops
             config["POP_SIZE"] = config["PARTNER_POP_SIZE"]
-            out = make_ppo_train(config, env, wandb_logger)(partner_rng) # train a single PPO agent
+            # Use a local copy for warmup-specific overrides to avoid
+            # mutating the shared config (ACTOR_TYPE, TOTAL_TIMESTEPS)
+            warmup_config = dict(config)
+            warmup_config["TOTAL_TIMESTEPS"] = config["TOTAL_TIMESTEPS_PER_ITERATION"]
+            warmup_config["ACTOR_TYPE"] = "pseudo_actor_with_conditional_critic"
+            out = make_ppo_train(warmup_config, env, wandb_logger)(partner_rng)
             return out
 
         def train(rng):
@@ -870,19 +874,23 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                     )
 
                     # Metrics
-                    metric = traj_batch_xp.info
+                    def mask_and_mean(x, mask):
+                        return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+                    
+                    mask = traj_batch_xp.info.get("returned_episode", jnp.ones_like(traj_batch_xp.reward))
+                    metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_xp.info)
                     metric["update_steps"] = update_steps
-                    metric["value_loss_conf_xp"] = conf_value_loss_xp
-                    metric["value_loss_conf_sp"] = conf_value_loss_sp
-                    metric["value_loss_conf_mp"] = conf_value_loss_mp
+                    metric["value_loss_conf_xp"] = conf_value_loss_xp.mean()
+                    metric["value_loss_conf_sp"] = conf_value_loss_sp.mean()
+                    metric["value_loss_conf_mp"] = conf_value_loss_mp.mean()
 
-                    metric["pg_loss_conf_xp"] = conf_pg_loss_xp
-                    metric["pg_loss_conf_sp"] = conf_pg_loss_sp
-                    metric["pg_loss_conf_mp"] = conf_pg_loss_mp
+                    metric["pg_loss_conf_xp"] = conf_pg_loss_xp.mean()
+                    metric["pg_loss_conf_sp"] = conf_pg_loss_sp.mean()
+                    metric["pg_loss_conf_mp"] = conf_pg_loss_mp.mean()
 
-                    metric["entropy_conf_xp"] = conf_entropy_xp
-                    metric["entropy_conf_sp"] = conf_entropy_sp
-                    metric["entropy_conf_mp"] = conf_entropy_mp
+                    metric["entropy_conf_xp"] = conf_entropy_xp.mean()
+                    metric["entropy_conf_sp"] = conf_entropy_sp.mean()
+                    metric["entropy_conf_mp"] = conf_entropy_mp.mean()
 
                     metric["average_rewards_ego"] = jnp.mean(traj_batch_xp.reward)
                     metric["average_rewards_br_sp"] = jnp.mean(traj_batch_sp_agent1.reward)
@@ -891,17 +899,18 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                     return (new_update_runner_state, checkpoint_array, ckpt_idx+1), metric
 
                 # XP eval against all policies in the buffer
-                xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                        train_state.params,jnp.arange(config["POP_SIZE"]))
+                xp_eval_returns = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                    jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                        train_state.params,jnp.arange(config["POP_SIZE"])))
 
                 # SP performance against itself
-                sp_eval_returns = run_episodes(
+                sp_eval_returns = jax.tree.map(lambda x: x.mean(), run_episodes(
                     eval_rng, env,
                     agent_0_param=train_state.params, agent_0_policy=policy,
                     agent_1_param=train_state.params, agent_1_policy=policy,
                     max_episode_steps=config["ROLLOUT_LENGTH"],
                     num_eps=config["NUM_EVAL_EPISODES"]
-                )
+                ))
 
 
                 update_steps = 0
@@ -952,16 +961,17 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                         )
 
                         # Eval trained agent against all params in the pool
-                        xp_eval_returns = jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
-                            train_state.params, jnp.arange(config["POP_SIZE"]))
+                        xp_eval_returns = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                            jax.vmap(per_id_run_episode_fixed_rng, in_axes=(None, 0))(
+                                train_state.params, jnp.arange(config["POP_SIZE"])))
                         # Eval trained agent against itself
-                        sp_eval_returns = run_episodes(
+                        sp_eval_returns = jax.tree.map(lambda x: x.mean(), run_episodes(
                             eval_rng, env,
                             agent_0_param=train_state.params, agent_0_policy=policy,
                             agent_1_param=train_state.params, agent_1_policy=policy,
                             max_episode_steps=config["ROLLOUT_LENGTH"],
                             num_eps=config["NUM_EVAL_EPISODES"]
-                        )
+                        ))
 
                         return (new_ckpt_arr_conf, rng, cidx + 1, xp_eval_returns, sp_eval_returns)
 
@@ -1069,7 +1079,10 @@ def run_comedi(config, wandb_logger):
 
     metric_names = get_metric_names(algorithm_config["ENV_NAME"])
 
-    log_metrics(config, out, wandb_logger, metric_names)
+    # Save FIRST so the checkpoint survives even if metric logging OOMs.
+    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    out_savepath = save_train_run(out, savedir, savename="saved_train_run")
+    log_metrics(config, out, wandb_logger, metric_names, out_savepath)
     partner_params, partner_population = get_comedi_population(config, out, env)
     return partner_params, partner_population
 
@@ -1084,31 +1097,31 @@ def compute_sp_mask_and_ids(pop_size):
     sp_mask = (conf_ids == ego_ids)
     return sp_mask, agent_id_cartesian_product
 
-def log_metrics(config, outs, logger, metric_names: tuple):
+def log_metrics(config, outs, logger, metric_names: tuple, out_savepath):
     metrics = outs["metrics"]
     # trained_pop_size excludes the initial policy
-    num_seeds, trained_pop_size, num_updates, _, _ = metrics["pg_loss_conf_sp"].shape
+    num_seeds, pop_size, num_updates = metrics["pg_loss_conf_sp"].shape
     # TODO: add the eval_ep_last_info metrics
 
     ### Log evaluation metrics
     # xp_eval_returns and sp_eval_returns logged at each evaluation only.
     algorithm_config = config["algorithm"]
-    ckpt_and_eval_interval = num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1)
+    ckpt_and_eval_interval = max(1, num_updates // max(1, algorithm_config["NUM_CHECKPOINTS"] - 1))
     # Steps at which store_and_eval_ckpt fires (0-indexed, matching the update_step logged below)
     eval_steps = list(range(0, num_updates, ckpt_and_eval_interval))
     if (num_updates - 1) not in eval_steps:
         eval_steps.append(num_updates - 1)
 
-    # shape (num_seeds, pop_size - 1, num_updates, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns_sp = np.asarray(outs["last_ep_infos_sp"]["returned_episode_returns"])
-    # shape (num_seeds, pop_size - 1, num_updates, pop_size, num_eval_episodes, num_agents_per_game)
+    # shape (num_seeds, pop_size - 1, num_updates, pop_size)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns_xp = np.asarray(outs["last_ep_infos_xp"]["returned_episode_returns"])
 
-    # Average over seeds, then over agent pairs, episodes and num_agents_per_game
-    sp_return_curve = all_returns_sp.mean(axis=(0, 3, 4))  # shape (pop_size - 1, num_updates)
-    xp_return_curve = all_returns_xp.mean(axis=(0, 4, 5))  # shape (pop_size - 1, num_updates, pop_size)
+    # Average over seeds only (eval episodes and agents already averaged inside scan)
+    sp_return_curve = all_returns_sp.mean(axis=0)  # shape (pop_size - 1, num_updates)
+    xp_return_curve = all_returns_xp.mean(axis=0)  # shape (pop_size - 1, num_updates, pop_size)
 
-    for num_add_policies in range(trained_pop_size):
+    for num_add_policies in range(pop_size):
         for update_step in eval_steps:
             logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[num_add_policies, update_step], train_step=update_step)
             mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
@@ -1119,15 +1132,15 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     # both xp and xp metrics has shape (num_seeds, pop_size - 1, num_updates, update_epochs, num_minibatches)
     # Average over seeds
     processed_losses = {
-        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=(0, 3, 4)), # desired shape (pop_size - 1, num_updates)
-        "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=(0, 3, 4)),
-        "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossXP": np.asarray(metrics["value_loss_conf_xp"]).mean(axis=(0, 3, 4)),
-        "ConfValLossMP": np.asarray(metrics["value_loss_conf_mp"]).mean(axis=(0, 3, 4)),
-        "EntropySP": np.asarray(metrics["entropy_conf_sp"]).mean(axis=(0, 3, 4)),
-        "EntropyXP": np.asarray(metrics["entropy_conf_xp"]).mean(axis=(0, 3, 4)),
-        "EntropyMP": np.asarray(metrics["entropy_conf_mp"]).mean(axis=(0, 3, 4)),
+        "ConfPGLossSP": np.asarray(metrics["pg_loss_conf_sp"]).mean(axis=0), # desired shape (pop_size - 1, num_updates)
+        "ConfPGLossXP": np.asarray(metrics["pg_loss_conf_xp"]).mean(axis=0),
+        "ConfPGLossMP": np.asarray(metrics["pg_loss_conf_mp"]).mean(axis=0),
+        "ConfValLossSP": np.asarray(metrics["value_loss_conf_sp"]).mean(axis=0),
+        "ConfValLossXP": np.asarray(metrics["value_loss_conf_xp"]).mean(axis=0),
+        "ConfValLossMP": np.asarray(metrics["value_loss_conf_mp"]).mean(axis=0),
+        "EntropySP": np.asarray(metrics["entropy_conf_sp"]).mean(axis=0),
+        "EntropyXP": np.asarray(metrics["entropy_conf_xp"]).mean(axis=0),
+        "EntropyMP": np.asarray(metrics["entropy_conf_mp"]).mean(axis=0),
     }
 
     xs = list(range(num_updates))
@@ -1139,10 +1152,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
             title=loss_name, xname="train_step")
         )
 
-    ### Log artifacts
-    savedir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    # Save train run output and log to wandb as artifact
-    out_savepath = save_train_run(outs, savedir, savename="saved_train_run")
+    ### Log artifacts (already saved by caller; just publish to wandb)
     if config["logger"]["log_train_out"]:
         logger.log_artifact(name="saved_train_run", path=out_savepath, type_name="train_run")
 

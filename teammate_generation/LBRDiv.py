@@ -2,10 +2,10 @@
 https://ojs.aaai.org/index.php/AAAI/article/view/29702
 
 Command to run LBRDiv only on LBF:
-python teammate_generation/run.py algorithm=lbrdiv/lbf task=lbf label=test_lbrdiv run_heldout_eval=false train_ego=false
+python teammate_generation/run.py algorithm=lbrdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels label=test_lbrdiv run_heldout_eval=false train_ego=false
 
 Suggested Debug command:
-python teammate_generation/run.py algorithm=lbrdiv/lbf task=lbf logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5 algorithm.PARTNER_POP_SIZE=2 train_ego=false run_heldout_eval=false
+python teammate_generation/run.py algorithm=lbrdiv/lbf/lbf_7x7_nolevels task=lbf/lbf_7x7_nolevels logger.mode=disabled label=debug algorithm.TOTAL_TIMESTEPS=1e5 algorithm.PARTNER_POP_SIZE=2 train_ego=false run_heldout_eval=false
 
 Limitations: does not support recurrent actors.
 '''
@@ -464,250 +464,11 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     (minibatches_conf, minibatches_br, repeated_lms_vertical, repeated_lms_horizontal)
                 )
 
-                def compute_lagrange_grads_same(params_br, batch, target_value, ids):
-                    '''
-                    conf_id: int
-                    br_id: int
-                    batch: a pytree where all leaves have shape (rollout_len, num_envs, -1)
-                    target_value: (rollout_len, num_envs)
-                    '''
-                    conf_id, br_id = ids
-
-                    all_target_value = jnp.reshape(
-                        target_value, (-1, 1)
-                    )
-
-                    repeated_value_sp = jnp.repeat(
-                        jnp.reshape(all_target_value, (1, -1)),
-                        config["PARTNER_POP_SIZE"],
-                        axis=0
-                    )
-
-                    ##### Compute grad_sp_vary_conf
-                    relevant_conf_params = gather_params(params_br, jnp.reshape(conf_id, (1,)))
-                    relevant_conf_params = jax.tree.map(lambda x: jnp.squeeze(x, 0), relevant_conf_params)
-                    def _get_value_xp_vary_conf(param, agent_onehot_id):
-                        ts, bs = batch.obs.shape[:2]
-                        agent_onehot_id = agent_onehot_id[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
-                        _, value_xp_vary_conf, _, _ = br_policy.get_action_value_policy(
-                            params=param,
-                            obs=batch.obs,
-                            done=batch.done,
-                            avail_actions=batch.avail_actions,
-                            hstate=init_br_hstate,
-                            rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
-                            aux_obs=agent_onehot_id
-                        )
-                        return value_xp_vary_conf.reshape(ts*bs)
-
-                    # For a given trajectory, identify the BR policy that generates that trajectory
-                    # For every state in the trajectory, estimate (using the value function) the ego agent's returns
-                    # when they follow the identified BR policy. Do this assuming various possible partner
-                    # confederate policies (thus, why we basically "vary" the conf policy).
-                    all_possible_value_xp_vary_conf = jax.vmap(
-                        lambda agent_id: _get_value_xp_vary_conf(relevant_conf_params, agent_id)
-                    )(jnp.eye(config["PARTNER_POP_SIZE"]))
-
-                    all_possible_value_xp_vary_conf = all_possible_value_xp_vary_conf.at[conf_id].set(
-                        repeated_value_sp[conf_id]
-                    )
-
-                    offsetting_thresholds = jnp.zeros_like(repeated_value_sp)
-                    offsetting_thresholds = offsetting_thresholds.at[conf_id].set(
-                        config["TOLERANCE_FACTOR"] * jnp.ones_like(offsetting_thresholds[conf_id])
-                    )
-                    grad_sp_vary_conf = repeated_value_sp + offsetting_thresholds  - (
-                        all_possible_value_xp_vary_conf + config["TOLERANCE_FACTOR"] * jnp.ones_like(offsetting_thresholds)
-                    )
-
-                    ##### Compute grad_sp_vary_br
-                    # This code tries to measure the expected returns of the ego agent had the BR policy been
-                    # substituted by another BR policy
-
-                    # Lets say that R_{i,-j} is the ego agent's returns when following the BR policy of the i^th pair
-                    # againts the confederate policy of the j^th pair.
-
-                    # Then grad_sp_vary_conf computes R_{i,-i} - R_{i,-j} - tolerance factor
-                    # for all possible j (note for j=i, we sub in <repeated_value_sp + offsetting_thresholds above>
-                    # R_{i,-i} with the target returns + tolerance factor so that R_{i,-i} - R_{i,-j} = 0)
-
-                    # Meanwhile grad_sp_vary_br below computes R_{i,-i} - R_{j,-i} - tolerance factor
-                    # for all possible j.
-
-                    # Vary the BR policy parameters (j) used in value computation
-                    # Use the experience generating pop id (batch.self_onehot_id) <i> as the conf ID.
-
-                    relevant_params = gather_params(params_br, jnp.arange(config["PARTNER_POP_SIZE"]))
-                    def _get_value_xp_vary_br(param):
-                        ts, bs = batch.obs.shape[:2]
-                        conf_one_hot = jnp.eye(config["PARTNER_POP_SIZE"])[conf_id]
-                        conf_one_hot = conf_one_hot[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
-                        _, value_xp_vary_br, _, _ = br_policy.get_action_value_policy(
-                            params=param,
-                            obs=batch.obs,
-                            done=batch.done,
-                            avail_actions=batch.avail_actions,
-                            hstate=init_br_hstate,
-                            rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
-                            aux_obs=conf_one_hot
-                        )
-                        return value_xp_vary_br.reshape(ts*bs)
-
-                    all_possible_value_xp_vary_br = jax.vmap(
-                        lambda param: _get_value_xp_vary_br(param)
-                    )(relevant_params)
-
-                    all_possible_value_xp_vary_br = jnp.reshape(
-                        all_possible_value_xp_vary_br, (config["PARTNER_POP_SIZE"], -1)
-                    )
-                    all_possible_value_xp_vary_br = all_possible_value_xp_vary_br.at[conf_id].set(
-                        repeated_value_sp[conf_id]
-                    )
-
-                    grad_sp_vary_br = repeated_value_sp + offsetting_thresholds - (
-                        all_possible_value_xp_vary_br + config["TOLERANCE_FACTOR"] * jnp.ones_like(offsetting_thresholds)
-                    )
-
-                    #### Compute loss weights
-                    all_self_id_int = jnp.reshape(
-                        batch.self_onehot_id, (-1, jnp.shape(batch.self_onehot_id)[-1])
-                    ).argmax(axis=-1)
-
-                    all_oppo_id_int = jnp.reshape(
-                        batch.oppo_onehot_id, (-1, jnp.shape(batch.oppo_onehot_id)[-1])
-                    ).argmax(axis=-1)
-
-                    # check if self and oppo ids both correspond to the confederate for the self-play update
-                    self_is_conf = jnp.equal(all_self_id_int, conf_id).astype(jnp.float32)
-                    oppo_is_conf = jnp.equal(all_oppo_id_int, conf_id).astype(jnp.float32)
-                    loss_weights = self_is_conf * oppo_is_conf
-                    repeated_loss_weights = jnp.repeat(
-                        jnp.expand_dims(loss_weights, axis=0),
-                        config["PARTNER_POP_SIZE"],
-                        axis=0
-                    )
-
-                    # Compute vertical and horizontal gradients
-                    vertical_grads = jnp.sum(grad_sp_vary_conf * repeated_loss_weights, axis=-1)/(jnp.sum(loss_weights) + 1e-8)
-                    horizontal_grads = jnp.sum(grad_sp_vary_br * repeated_loss_weights, axis=-1)/(jnp.sum(loss_weights) + 1e-8)
-
-                    output_grad_matrix_vertical = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
-                    output_grad_matrix_horizontal = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
-
-                    output_grad_matrix_vertical = output_grad_matrix_vertical.at[conf_id].set(vertical_grads)
-                    output_grad_matrix_horizontal = output_grad_matrix_horizontal.at[conf_id].set(horizontal_grads)
-
-                    return output_grad_matrix_vertical, output_grad_matrix_horizontal
-
-                def compute_lagrange_grads_diff(params_br, batch, target_returns, ids):
-                    conf_id, br_id = ids
-                    param_conf_id = gather_params(params_br, jnp.reshape(conf_id, (1,)))
-                    param_br_id = gather_params(params_br, jnp.reshape(br_id, (1,)))
-
-                    param_br_id = jax.tree.map(lambda x: jnp.squeeze(x, 0), param_br_id)
-                    param_conf_id = jax.tree.map(lambda x: jnp.squeeze(x, 0), param_conf_id)
-
-                    all_self_id_int = jnp.reshape(
-                        batch.self_onehot_id, (-1, jnp.shape(batch.self_onehot_id)[-1])
-                    ).argmax(axis=-1)
-
-                    all_oppo_id_int = jnp.reshape(
-                        batch.oppo_onehot_id, (-1, jnp.shape(batch.oppo_onehot_id)[-1])
-                    ).argmax(axis=-1)
-
-                    all_target_returns = jnp.reshape(
-                        target_returns, (-1)
-                    )
-
-                    # Compute data weights based on whether selected ID
-                    # is relevant for the gradient computation process
-                    oppo_is_conf = jnp.equal(all_oppo_id_int, conf_id).astype(jnp.float32)
-                    self_is_br = jnp.equal(all_self_id_int, br_id).astype(jnp.float32)
-                    loss_weights = oppo_is_conf * self_is_br
-
-                    ts, bs = batch.obs.shape[:2]
-
-                    conf_one_hot = jnp.eye(config["PARTNER_POP_SIZE"])[conf_id]
-                    conf_one_hot = conf_one_hot[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
-                    br_one_hot = jnp.eye(config["PARTNER_POP_SIZE"])[br_id]
-                    br_one_hot = br_one_hot[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
-
-                    _, value_sp_pop_is_br, _, _ = br_policy.get_action_value_policy(
-                        params=param_br_id,
-                        obs=batch.obs,
-                        done=batch.done,
-                        avail_actions=batch.avail_actions,
-                        hstate=init_br_hstate,
-                        rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
-                        aux_obs=br_one_hot
-                    )
-                    value_sp_pop_is_br = value_sp_pop_is_br.reshape(bs*ts)
-
-                    _, value_sp_pop_is_not_br, _, _ = br_policy.get_action_value_policy(
-                        params=param_conf_id,
-                        obs=batch.obs,
-                        done=batch.done,
-                        avail_actions=batch.avail_actions,
-                        hstate=init_br_hstate,
-                        rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
-                        aux_obs=conf_one_hot
-                    )
-                    value_sp_pop_is_not_br = value_sp_pop_is_not_br.reshape(bs*ts)
-                     # Compute V_{b_id, b_id} - V_{c_id, br_id} - tolerance_factor
-                     # which will be the gradient for lm_vertical[b_id][c_id] in the Lagrange dual objective
-                    vertical_diff = value_sp_pop_is_br - all_target_returns - config["TOLERANCE_FACTOR"]
-
-                    # Compute V_{c_id, c_id} - V_{c_id, br_id} - tolerance_factor
-                    # which will be the gradient for lm_horizontal[b_id][c_id] in the Lagrange dual objective
-                    horizontal_diff = value_sp_pop_is_not_br - all_target_returns - config["TOLERANCE_FACTOR"]
-
-                    total_grad_vertical = (loss_weights * vertical_diff).sum()/(loss_weights.sum() + 1e-8)
-                    total_grad_horizontal = (loss_weights * horizontal_diff).sum()/(loss_weights.sum() + 1e-8)
-
-                    output_grad_matrix_vertical = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
-                    output_grad_matrix_horizontal = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
-
-                    output_grad_matrix_vertical = output_grad_matrix_vertical.at[br_id, conf_id].set(total_grad_vertical)
-                    output_grad_matrix_horizontal = output_grad_matrix_horizontal.at[conf_id, br_id].set(total_grad_horizontal)
-
-                    return output_grad_matrix_vertical, output_grad_matrix_horizontal
-
-                def _compute_indiv_lagrange_grads(conf_id, br_id):
-                    return jax.lax.cond(
-                    conf_id == br_id,
-                    lambda ids: compute_lagrange_grads_same(train_state_br.params, traj_batch_br, targets_br, ids),
-                    lambda ids: compute_lagrange_grads_diff(train_state_br.params, traj_batch_br, targets_br, ids),
-                    (conf_id, br_id)
-                )
-
-                all_conf_ids, all_br_ids = _get_all_ids(config["PARTNER_POP_SIZE"])
-                all_lagrange_grads = jax.vmap(_compute_indiv_lagrange_grads)(all_conf_ids, all_br_ids)
-                averaged_grad_vertical = jnp.sum(all_lagrange_grads[0], axis=0)
-                averaged_grad_horizontal = jnp.sum(all_lagrange_grads[1], axis=0)
-
-                lms_vertical_new = jnp.maximum(
-                    lms_vertical - config["LAGRANGE_LR"] * averaged_grad_vertical,
-                    0.5 * jnp.eye(config["PARTNER_POP_SIZE"])
-                )
-                lms_vertical_new = jnp.fill_diagonal(
-                    lms_vertical_new, 0.5 * jnp.ones((config["PARTNER_POP_SIZE"]), dtype=jnp.float32),
-                    inplace=False
-                )
-
-                lms_horizontal_new = jnp.maximum(
-                    lms_horizontal - config["LAGRANGE_LR"] * averaged_grad_horizontal,
-                    0.5 * jnp.eye(config["PARTNER_POP_SIZE"]),
-                )
-                lms_horizontal_new = jnp.fill_diagonal(
-                    lms_horizontal_new, 0.5 * jnp.ones((config["PARTNER_POP_SIZE"]), dtype=jnp.float32),
-                    inplace=False
-                )
-
                 update_state = (train_state_conf, train_state_br,
                     traj_batch_conf, traj_batch_br,
                     advantages_conf, advantages_br,
                     targets_conf, targets_br,
-                    rng, lms_vertical_new, lms_horizontal_new
+                    rng, lms_vertical, lms_horizontal
                 )
                 return update_state, all_losses
 
@@ -715,7 +476,8 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                 """
                 1. Collect rollouts
                 2. Compute advantage
-                3. PPO updates
+                3. PPO updates (UPDATE_EPOCHS epochs)
+                4. Lagrange multiplier update (once, after all PPO epochs)
                 """
                 (
                     all_train_state_conf, all_train_state_br,
@@ -789,21 +551,249 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     _update_epoch, update_state, None, config["UPDATE_EPOCHS"])
                 all_train_state_conf, all_train_state_br = update_state[:2]
                 lms_vertical, lms_horizontal = update_state[-2:]
+
+                # Compute Lagrange gradient updates once per update step (after all PPO epochs).
+                # Diagonal and off-diagonal pairs use separate vmaps to avoid evaluating both
+                # branches of lax.cond for all pop_size^2 elements under vmap.
+                def compute_lagrange_grads_same(params_br, batch, target_value, ids):
+                    conf_id, br_id = ids
+
+                    all_target_value = jnp.reshape(target_value, (-1, 1))
+                    repeated_value_sp = jnp.repeat(
+                        jnp.reshape(all_target_value, (1, -1)),
+                        config["PARTNER_POP_SIZE"],
+                        axis=0
+                    )
+
+                    relevant_conf_params = gather_params(params_br, jnp.reshape(conf_id, (1,)))
+                    relevant_conf_params = jax.tree.map(lambda x: jnp.squeeze(x, 0), relevant_conf_params)
+                    def _get_value_xp_vary_conf(param, agent_onehot_id):
+                        ts, bs = batch.obs.shape[:2]
+                        agent_onehot_id = agent_onehot_id[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
+                        _, value_xp_vary_conf, _, _ = br_policy.get_action_value_policy(
+                            params=param,
+                            obs=batch.obs,
+                            done=batch.done,
+                            avail_actions=batch.avail_actions,
+                            hstate=init_br_hstate,
+                            rng=jax.random.PRNGKey(0),
+                            aux_obs=agent_onehot_id
+                        )
+                        return value_xp_vary_conf.reshape(ts*bs)
+
+                    all_possible_value_xp_vary_conf = jax.vmap(
+                        lambda agent_id: _get_value_xp_vary_conf(relevant_conf_params, agent_id)
+                    )(jnp.eye(config["PARTNER_POP_SIZE"]))
+                    all_possible_value_xp_vary_conf = all_possible_value_xp_vary_conf.at[conf_id].set(
+                        repeated_value_sp[conf_id]
+                    )
+
+                    offsetting_thresholds = jnp.zeros_like(repeated_value_sp)
+                    offsetting_thresholds = offsetting_thresholds.at[conf_id].set(
+                        config["TOLERANCE_FACTOR"] * jnp.ones_like(offsetting_thresholds[conf_id])
+                    )
+                    grad_sp_vary_conf = repeated_value_sp + offsetting_thresholds - (
+                        all_possible_value_xp_vary_conf + config["TOLERANCE_FACTOR"] * jnp.ones_like(offsetting_thresholds)
+                    )
+
+                    ##### Compute grad_sp_vary_br
+                    # This code tries to measure the expected returns of the ego agent had the BR policy been
+                    # substituted by another BR policy
+
+                    # Lets say that R_{i,-j} is the ego agent's returns when following the BR policy of the i^th pair
+                    # againts the confederate policy of the j^th pair.
+
+                    # Then grad_sp_vary_conf computes R_{i,-i} - R_{i,-j} - tolerance factor
+                    # for all possible j (note for j=i, we sub in <repeated_value_sp + offsetting_thresholds above>
+                    # R_{i,-i} with the target returns + tolerance factor so that R_{i,-i} - R_{i,-j} = 0)
+
+                    # Meanwhile grad_sp_vary_br below computes R_{i,-i} - R_{j,-i} - tolerance factor
+                    # for all possible j.
+
+                    # Vary the BR policy parameters (j) used in value computation
+                    # Use the experience generating pop id (batch.self_onehot_id) <i> as the conf ID.
+
+                    relevant_params = gather_params(params_br, jnp.arange(config["PARTNER_POP_SIZE"]))
+                    def _get_value_xp_vary_br(param):
+                        ts, bs = batch.obs.shape[:2]
+                        conf_one_hot = jnp.eye(config["PARTNER_POP_SIZE"])[conf_id]
+                        conf_one_hot = conf_one_hot[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
+                        _, value_xp_vary_br, _, _ = br_policy.get_action_value_policy(
+                            params=param,
+                            obs=batch.obs,
+                            done=batch.done,
+                            avail_actions=batch.avail_actions,
+                            hstate=init_br_hstate,
+                            rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
+                            aux_obs=conf_one_hot
+                        )
+                        return value_xp_vary_br.reshape(ts*bs)
+
+                    all_possible_value_xp_vary_br = jax.vmap(
+                        lambda param: _get_value_xp_vary_br(param)
+                    )(relevant_params)
+                    all_possible_value_xp_vary_br = jnp.reshape(
+                        all_possible_value_xp_vary_br, (config["PARTNER_POP_SIZE"], -1)
+                    )
+                    all_possible_value_xp_vary_br = all_possible_value_xp_vary_br.at[conf_id].set(
+                        repeated_value_sp[conf_id]
+                    )
+
+                    grad_sp_vary_br = repeated_value_sp + offsetting_thresholds - (
+                        all_possible_value_xp_vary_br + config["TOLERANCE_FACTOR"] * jnp.ones_like(offsetting_thresholds)
+                    )
+
+                    all_self_id_int = jnp.reshape(
+                        batch.self_onehot_id, (-1, jnp.shape(batch.self_onehot_id)[-1])
+                    ).argmax(axis=-1)
+                    all_oppo_id_int = jnp.reshape(
+                        batch.oppo_onehot_id, (-1, jnp.shape(batch.oppo_onehot_id)[-1])
+                    ).argmax(axis=-1)
+
+                    self_is_conf = jnp.equal(all_self_id_int, conf_id).astype(jnp.float32)
+                    oppo_is_conf = jnp.equal(all_oppo_id_int, conf_id).astype(jnp.float32)
+                    loss_weights = self_is_conf * oppo_is_conf
+                    repeated_loss_weights = jnp.repeat(
+                        jnp.expand_dims(loss_weights, axis=0),
+                        config["PARTNER_POP_SIZE"],
+                        axis=0
+                    )
+
+                    # Compute vertical and horizontal gradient
+                    vertical_grads = jnp.sum(grad_sp_vary_conf * repeated_loss_weights, axis=-1) / (jnp.sum(loss_weights) + 1e-8)
+                    horizontal_grads = jnp.sum(grad_sp_vary_br * repeated_loss_weights, axis=-1) / (jnp.sum(loss_weights) + 1e-8)
+
+                    output_grad_matrix_vertical = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
+                    output_grad_matrix_horizontal = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
+                    output_grad_matrix_vertical = output_grad_matrix_vertical.at[conf_id].set(vertical_grads)
+                    output_grad_matrix_horizontal = output_grad_matrix_horizontal.at[conf_id].set(horizontal_grads)
+                    return output_grad_matrix_vertical, output_grad_matrix_horizontal
+
+                def compute_lagrange_grads_diff(params_br, batch, target_returns, ids):
+                    conf_id, br_id = ids
+                    param_conf_id = gather_params(params_br, jnp.reshape(conf_id, (1,)))
+                    param_br_id = gather_params(params_br, jnp.reshape(br_id, (1,)))
+                    param_br_id = jax.tree.map(lambda x: jnp.squeeze(x, 0), param_br_id)
+                    param_conf_id = jax.tree.map(lambda x: jnp.squeeze(x, 0), param_conf_id)
+
+                    all_self_id_int = jnp.reshape(
+                        batch.self_onehot_id, (-1, jnp.shape(batch.self_onehot_id)[-1])
+                    ).argmax(axis=-1)
+                    all_oppo_id_int = jnp.reshape(
+                        batch.oppo_onehot_id, (-1, jnp.shape(batch.oppo_onehot_id)[-1])
+                    ).argmax(axis=-1)
+                    all_target_returns = jnp.reshape(target_returns, (-1))
+
+                    # Compute data weights based on whether selected ID
+                    # is relevant for the gradient computation process
+                    oppo_is_conf = jnp.equal(all_oppo_id_int, conf_id).astype(jnp.float32)
+                    self_is_br = jnp.equal(all_self_id_int, br_id).astype(jnp.float32)
+                    loss_weights = oppo_is_conf * self_is_br
+
+                    ts, bs = batch.obs.shape[:2]
+                    conf_one_hot = jnp.eye(config["PARTNER_POP_SIZE"])[conf_id]
+                    conf_one_hot = conf_one_hot[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
+                    br_one_hot = jnp.eye(config["PARTNER_POP_SIZE"])[br_id]
+                    br_one_hot = br_one_hot[jnp.newaxis, jnp.newaxis, ...].repeat(ts, axis=0).repeat(bs, axis=1)
+
+                    _, value_sp_pop_is_br, _, _ = br_policy.get_action_value_policy(
+                        params=param_br_id,
+                        obs=batch.obs,
+                        done=batch.done,
+                        avail_actions=batch.avail_actions,
+                        hstate=init_br_hstate,
+                        rng=jax.random.PRNGKey(0),
+                        aux_obs=br_one_hot
+                    )
+                    value_sp_pop_is_br = value_sp_pop_is_br.reshape(bs*ts)
+
+                    _, value_sp_pop_is_not_br, _, _ = br_policy.get_action_value_policy(
+                        params=param_conf_id,
+                        obs=batch.obs,
+                        done=batch.done,
+                        avail_actions=batch.avail_actions,
+                        hstate=init_br_hstate,
+                        rng=jax.random.PRNGKey(0),
+                        aux_obs=conf_one_hot
+                    )
+                    value_sp_pop_is_not_br = value_sp_pop_is_not_br.reshape(bs*ts)
+
+                    vertical_diff = value_sp_pop_is_br - all_target_returns - config["TOLERANCE_FACTOR"]
+                    horizontal_diff = value_sp_pop_is_not_br - all_target_returns - config["TOLERANCE_FACTOR"]
+
+                    total_grad_vertical = (loss_weights * vertical_diff).sum() / (loss_weights.sum() + 1e-8)
+                    total_grad_horizontal = (loss_weights * horizontal_diff).sum() / (loss_weights.sum() + 1e-8)
+
+                    output_grad_matrix_vertical = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
+                    output_grad_matrix_horizontal = jnp.zeros((config["PARTNER_POP_SIZE"], config["PARTNER_POP_SIZE"]))
+                    output_grad_matrix_vertical = output_grad_matrix_vertical.at[br_id, conf_id].set(total_grad_vertical)
+                    output_grad_matrix_horizontal = output_grad_matrix_horizontal.at[conf_id, br_id].set(total_grad_horizontal)
+                    return output_grad_matrix_vertical, output_grad_matrix_horizontal
+
+                # Diagonal pairs (conf_id == br_id): vmap over pop_size elements only
+                diag_ids = np.arange(config["PARTNER_POP_SIZE"])
+                diag_lagrange_grads = jax.vmap(
+                    lambda conf_id, br_id: compute_lagrange_grads_same(
+                        all_train_state_br.params, traj_batch_br, targets_br, (conf_id, br_id)
+                    )
+                )(diag_ids, diag_ids)
+
+                # Off-diagonal pairs (conf_id != br_id): vmap over pop_size*(pop_size-1) elements only
+                all_conf_ids_np, all_br_ids_np = _get_all_ids(config["PARTNER_POP_SIZE"])
+                off_diag_mask = all_conf_ids_np != all_br_ids_np
+                off_diag_conf_ids = all_conf_ids_np[off_diag_mask]
+                off_diag_br_ids = all_br_ids_np[off_diag_mask]
+                off_diag_lagrange_grads = jax.vmap(
+                    lambda conf_id, br_id: compute_lagrange_grads_diff(
+                        all_train_state_br.params, traj_batch_br, targets_br, (conf_id, br_id)
+                    )
+                )(off_diag_conf_ids, off_diag_br_ids)
+
+                averaged_grad_vertical = (
+                    jnp.sum(diag_lagrange_grads[0], axis=0) +
+                    jnp.sum(off_diag_lagrange_grads[0], axis=0)
+                )
+                averaged_grad_horizontal = (
+                    jnp.sum(diag_lagrange_grads[1], axis=0) +
+                    jnp.sum(off_diag_lagrange_grads[1], axis=0)
+                )
+
+                lms_vertical = jnp.maximum(
+                    lms_vertical - config["LAGRANGE_LR"] * averaged_grad_vertical,
+                    0.5 * jnp.eye(config["PARTNER_POP_SIZE"])
+                )
+                lms_vertical = jnp.fill_diagonal(
+                    lms_vertical, 0.5 * jnp.ones((config["PARTNER_POP_SIZE"]), dtype=jnp.float32),
+                    inplace=False
+                )
+                lms_horizontal = jnp.maximum(
+                    lms_horizontal - config["LAGRANGE_LR"] * averaged_grad_horizontal,
+                    0.5 * jnp.eye(config["PARTNER_POP_SIZE"]),
+                )
+                lms_horizontal = jnp.fill_diagonal(
+                    lms_horizontal, 0.5 * jnp.ones((config["PARTNER_POP_SIZE"]), dtype=jnp.float32),
+                    inplace=False
+                )
+
                 (_, (value_loss_conf, pg_loss_conf, entropy_conf)), (_, (value_loss_br, pg_loss_br, entropy_br)) = all_losses
 
                 # Metrics
-                metric = traj_batch_conf.info
+                def mask_and_mean(x, mask):
+                    return jnp.where(mask, x, 0).sum() / jnp.maximum(1, mask.sum())
+                
+                mask = traj_batch_conf.info.get("returned_episode", jnp.ones_like(traj_batch_conf.reward))
+                metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_conf.info)
                 metric["lms_vertical"] = lms_vertical
                 metric["lms_horizontal"] = lms_horizontal
                 metric["update_steps"] = update_steps
-                metric["value_loss_conf_agent"] = value_loss_conf
-                metric["value_loss_br_agent"] = value_loss_br
+                metric["value_loss_conf_agent"] = value_loss_conf.mean(axis=(0, 1))
+                metric["value_loss_br_agent"] = value_loss_br.mean(axis=(0, 1))
 
-                metric["pg_loss_conf_agent"] = pg_loss_conf
-                metric["pg_loss_br_agent"] = pg_loss_br
+                metric["pg_loss_conf_agent"] = pg_loss_conf.mean(axis=(0, 1))
+                metric["pg_loss_br_agent"] = pg_loss_br.mean(axis=(0, 1))
 
-                metric["entropy_conf"] = entropy_conf
-                metric["entropy_br"] = entropy_br
+                metric["entropy_conf"] = entropy_conf.mean(axis=(0, 1))
+                metric["entropy_br"] = entropy_br.mean(axis=(0, 1))
 
                 new_runner_state = (
                     all_train_state_conf, all_train_state_br,
@@ -856,7 +846,8 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     )
 
                     rng, eval_rng = jax.random.split(rng)
-                    ep_last_info = run_all_episodes(eval_rng, train_state_conf, train_state_br)
+                    ep_last_info = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                        run_all_episodes(eval_rng, train_state_conf, train_state_br))
 
                     return ((new_ckpt_arr_conf, new_ckpt_arr_br, ep_last_info), rng, cidx + 1)
 
@@ -888,7 +879,8 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
             update_steps = 0
 
             rng, rng_eval = jax.random.split(rng, 2)
-            eval_ep_last_info = run_all_episodes(rng_eval, all_conf_optims, all_br_optims)
+            eval_ep_last_info = jax.tree.map(lambda x: x.mean(axis=(-2, -1)),
+                run_all_episodes(rng_eval, all_conf_optims, all_br_optims))
 
             # Initialize environment
             rng, reset_rng = jax.random.split(rng)
@@ -1026,10 +1018,11 @@ def run_lbrdiv(config, wandb_logger):
 
 def log_metrics(config, outs, logger, metric_names: tuple):
     metrics = outs["metrics"]
-    # metrics now has shape (num_seeds, num_updates, _, _, pop_size)
-    num_seeds, num_updates, _, _, pop_size = metrics["pg_loss_conf_agent"].shape # number of trained pairs
+    # metrics now has shape (num_seeds, num_updates, pop_size)
+    num_seeds, num_updates, pop_size = metrics["pg_loss_conf_agent"].shape # number of trained pairs
 
     ### Log evaluation metrics
+    # shape (num_seeds, num_updates, (pop_size)^2)  [pre-scalarized: mean over eval eps and agents taken inside scan]
     all_returns = np.asarray(metrics["eval_ep_last_info"]["returned_episode_returns"])
     xs = list(range(num_updates))
 
@@ -1038,9 +1031,9 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     sp_returns = all_returns[:, :, sp_mask]
     xp_returns = all_returns[:, :, ~sp_mask]
 
-    # Average over seeds, then over agent pairs, episodes and num_agents_per_game
-    sp_return_curve = sp_returns.mean(axis=(0, 2, 3, 4))
-    xp_return_curve = xp_returns.mean(axis=(0, 2, 3, 4))
+    # Average over seeds and agent pairs (eval episodes and agents already averaged inside scan)
+    sp_return_curve = sp_returns.mean(axis=(0, 2))
+    xp_return_curve = xp_returns.mean(axis=(0, 2))
 
     for step in range(num_updates):
         logger.log_item("Eval/AvgSPReturnCurve", sp_return_curve[step], train_step=step)
@@ -1048,7 +1041,7 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     logger.commit()
 
     # log final XP matrix to wandb - average over seeds
-    last_returns_array = all_returns[:, -1].mean(axis=(0, 2, 3))
+    last_returns_array = all_returns[:, -1].mean(axis=0)
     last_returns_array = np.reshape(last_returns_array, (pop_size, pop_size))
     logger.log_xp_matrix("Eval/LastXPMatrix", last_returns_array)
 
@@ -1056,12 +1049,12 @@ def log_metrics(config, outs, logger, metric_names: tuple):
     # shape (num_seeds, num_updates, update_epochs, num_minibatches, pop_size)
     # Average over seeds
     processed_losses = {
-        "ConfPGLoss": np.asarray(metrics["pg_loss_conf_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "BRPGLoss": np.asarray(metrics["pg_loss_br_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "ConfValLoss": np.asarray(metrics["value_loss_conf_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "BRValLoss": np.asarray(metrics["value_loss_br_agent"]).mean(axis=(0, 2, 3)).transpose(),
-        "ConfEntropy": np.asarray(metrics["entropy_conf"]).mean(axis=(0, 2, 3)).transpose(),
-        "BREntropy": np.asarray(metrics["entropy_br"]).mean(axis=(0, 2, 3)).transpose(),
+        "ConfPGLoss": np.asarray(metrics["pg_loss_conf_agent"]).mean(axis=0).transpose(),
+        "BRPGLoss": np.asarray(metrics["pg_loss_br_agent"]).mean(axis=0).transpose(),
+        "ConfValLoss": np.asarray(metrics["value_loss_conf_agent"]).mean(axis=0).transpose(),
+        "BRValLoss": np.asarray(metrics["value_loss_br_agent"]).mean(axis=0).transpose(),
+        "ConfEntropy": np.asarray(metrics["entropy_conf"]).mean(axis=0).transpose(),
+        "BREntropy": np.asarray(metrics["entropy_br"]).mean(axis=0).transpose(),
     }
 
     xs = list(range(num_updates))

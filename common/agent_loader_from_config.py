@@ -1,15 +1,45 @@
 import logging
 import jax
 import numpy as np
+import os
 from omegaconf import OmegaConf
 
 from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, \
     initialize_rnn_agent, initialize_actor_with_double_critic, \
     initialize_actor_with_conditional_critic
-from common.save_load_utils import load_checkpoints
+from agents.lbf.agent_policy_wrappers import (
+    LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper,
+    LBFEntitledPolicyWrapper, LBFGreedyHeuristicPolicyWrapper,
+)
+from agents.overcooked.agent_policy_wrappers import (
+    OvercookedRandomPolicyWrapper, OvercookedIndependentPolicyWrapper,
+    OvercookedOnionPolicyWrapper, OvercookedPlatePolicyWrapper,
+    OvercookedStaticPolicyWrapper,
+)
+from agents.hanabi.agent_policy_wrappers import (
+    HanabiRandomPolicyWrapper, HanabiRuleBasedPolicyWrapper,
+    HanabiIGGIPolicyWrapper, HanabiPiersPolicyWrapper,
+    HanabiFlawedPolicyWrapper, HanabiOuterPolicyWrapper,
+    HanabiVanDenBerghPolicyWrapper, HanabiSmartBotPolicyWrapper,
+    HanabiOBLPolicyWrapper, HanabiBCLSTMPolicyWrapper,
+    HanabiInternalPolicyWrapper, HanabiCautiousPolicyWrapper,
+)
+from common.save_load_utils import load_checkpoints, REPO_PATH
+from envs.overcooked.augmented_layouts import augmented_layouts
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+def _validate_teammate_path(path: str) -> str:
+    """Validate checkpoint path and fail fast if it does not exist."""
+    resolved_path = path if os.path.isabs(path) else os.path.join(REPO_PATH, path)
+    if not os.path.exists(resolved_path):
+        raise FileNotFoundError(
+            f"Checkpoint path does not exist: {path}. "
+            "Use the new eval_teammates/... layout."
+        )
+    return path
 
 
 def process_idx_list(idx_list):
@@ -58,6 +88,146 @@ def create_idx_labels(idx_list, checkpoint_shape):
         idx_labels = [f"{idx}" for idx in idx_list]
     return idx_labels
 
+def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, env_kwargs=None):
+    '''Load a heuristic (non-RL) agent from config, dispatching on task_name.
+
+    agent_config must include "actor_type".
+    env_kwargs is used as a fallback for env-level parameters (e.g. grid_size,
+    num_fruits for lbf; layout for overcooked-v1).  Per-agent values in
+    agent_config take priority. Note that the LBF enviornment calls this
+    'num_food'.
+
+    Returns:
+        policy: policy function (no checkpoint or params required)
+    '''
+    assert "actor_type" in agent_config, "Actor type must be provided."
+    actor_type = agent_config["actor_type"]
+
+    if env_kwargs is None:
+        env_kwargs = {}
+
+    if 'lbf' in task_name:
+        # Grid dimensions: per-agent config > env_kwargs > defaults (7x7, 3 fruits).
+        grid_size = agent_config.get("grid_size", env_kwargs.get("grid_size", 7))
+        num_fruits = agent_config.get("num_fruits", env_kwargs.get("num_food", 3))
+
+        if actor_type == "random_agent":
+            return LBFRandomPolicyWrapper()
+        if actor_type == "seq_agent":
+            ordering_strategy = agent_config.get("ordering_strategy", "lexicographic")
+            return LBFSequentialFruitPolicyWrapper(
+                grid_size=grid_size,
+                num_fruits=num_fruits,
+                ordering_strategy=ordering_strategy,
+                using_log_wrapper=True,
+            )
+        if actor_type == "entitled_agent":
+            return LBFEntitledPolicyWrapper(
+                grid_size=grid_size,
+                num_fruits=num_fruits,
+                using_log_wrapper=True,
+            )
+        if actor_type == "greedy_agent":
+            heuristic = agent_config.get("heuristic", "closest_self")
+            return LBFGreedyHeuristicPolicyWrapper(
+                grid_size=grid_size,
+                num_fruits=num_fruits,
+                heuristic=heuristic,
+                using_log_wrapper=True,
+            )
+        raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
+
+    if 'overcooked-v1' in task_name:
+        aug_layout_dict = augmented_layouts[env_kwargs["layout"]]
+
+        if actor_type == "random_agent":
+            return OvercookedRandomPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
+        if actor_type == "static_agent":
+            return OvercookedStaticPolicyWrapper(aug_layout_dict, using_log_wrapper=True)
+        if actor_type == "independent_agent":
+            return OvercookedIndependentPolicyWrapper(
+                aug_layout_dict,
+                using_log_wrapper=True,
+                p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0),
+                p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
+            )
+        if actor_type == "onion_agent":
+            return OvercookedOnionPolicyWrapper(
+                aug_layout_dict,
+                using_log_wrapper=True,
+                p_onion_on_counter=agent_config.get("p_onion_on_counter", 0.0),
+            )
+        if actor_type == "plate_agent":
+            return OvercookedPlatePolicyWrapper(
+                aug_layout_dict,
+                using_log_wrapper=True,
+                p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
+            )
+        raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
+
+    if 'hanabi' in task_name:
+        # Default to full Hanabi shape; mini-hanabi callers must pass num_colors,
+        # num_ranks, hand_size, num_actions through agent_config or env_kwargs.
+        hand_size = agent_config.get("hand_size", env_kwargs.get("hand_size", 5))
+        num_colors = agent_config.get("num_colors", env_kwargs.get("num_colors", 5))
+        num_ranks = agent_config.get("num_ranks", env_kwargs.get("num_ranks", 5))
+        # Action layout: discard + play + color hints + rank hints + noop.
+        num_actions = agent_config.get(
+            "num_actions", 2 * hand_size + num_colors + num_ranks + 1
+        )
+        common = dict(
+            hand_size=hand_size, num_colors=num_colors, num_ranks=num_ranks,
+            num_actions=num_actions, using_log_wrapper=True,
+        )
+
+        if actor_type == "random_agent":
+            return HanabiRandomPolicyWrapper(
+                num_actions=num_actions, using_log_wrapper=True
+            )
+        if actor_type == "rule_based":
+            return HanabiRuleBasedPolicyWrapper(
+                strategy=agent_config.get("strategy", "cautious"), **common
+            )
+        if actor_type == "iggi":
+            return HanabiIGGIPolicyWrapper(**common)
+        if actor_type == "piers":
+            return HanabiPiersPolicyWrapper(
+                play_threshold=agent_config.get("play_threshold", 0.6),
+                hint_threshold=agent_config.get("hint_threshold", 4),
+                **common,
+            )
+        if actor_type == "flawed":
+            return HanabiFlawedPolicyWrapper(
+                play_threshold=agent_config.get("play_threshold", 0.4), **common
+            )
+        if actor_type == "outer":
+            return HanabiOuterPolicyWrapper(**common)
+        if actor_type == "van_den_bergh":
+            return HanabiVanDenBerghPolicyWrapper(**common)
+        if actor_type == "internal":
+            return HanabiInternalPolicyWrapper(**common)
+        if actor_type == "cautious":
+            return HanabiCautiousPolicyWrapper(**common)
+        if actor_type == "smartbot":
+            return HanabiSmartBotPolicyWrapper(
+                card_counts=agent_config.get("card_counts", None), **common
+            )
+        if actor_type == "obl_r2d2":
+            return HanabiOBLPolicyWrapper(
+                weight_file=agent_config["weight_file"], using_log_wrapper=True
+            )
+        if actor_type == "bc_lstm":
+            return HanabiBCLSTMPolicyWrapper(
+                weight_file=agent_config["weight_file"],
+                using_log_wrapper=True,
+                greedy=agent_config.get("greedy", True),
+            )
+        raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
+
+    raise ValueError(
+        f"Unknown task '{task_name}' for heuristic agent {agent_name}. "
+        f"Expected 'lbf', 'overcooked-v1', or a task containing 'hanabi'."
+    )
 
 def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     '''Load RL agent from checkpoint and initialize from config.
@@ -82,12 +252,11 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
     assert "actor_type" in agent_config, "Actor type must be provided."
     assert "idx_list" in agent_config, "Indices to load from checkpoint must be provided."
 
-    agent_path = agent_config["path"]
+    agent_path = _validate_teammate_path(agent_config["path"])
     ckpt_key = agent_config.get("ckpt_key", "checkpoints")
     custom_loader_cfg = agent_config.get("custom_loader", None)
 
     agent_ckpt = load_checkpoints(agent_path, ckpt_key=ckpt_key, custom_loader_cfg=custom_loader_cfg)
-
     leaf0_shape = jax.tree.leaves(agent_ckpt)[0].shape
 
     if agent_config["idx_list"] is None: # load all checkpoints
@@ -110,7 +279,6 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
 
     # Create index labels for the loaded checkpoints
     idx_labels = create_idx_labels(idx_list, leaf0_shape)
-
 
     rng, init_rng = jax.random.split(rng, 2)
     
