@@ -1,0 +1,32 @@
+# @package algorithm
+# HDR-IPPO loss (AH2AC2 paper, Eq. 2)
+# L = (1 - lambda) * L_IPPO + lambda * KL(pi_BC || pi_theta)
+ALG: hdr_ippo_ego
+EGO_ACTOR_TYPE: rnn
+NUM_EGO_TRAIN_SEEDS: 1
+TOTAL_TIMESTEPS: 1e10
+NUM_CHECKPOINTS: 5
+NUM_ENVS: 1024
+LR: 5.e-4
+UPDATE_EPOCHS: 4
+NUM_MINIBATCHES: 4
+GAMMA: 0.99
+GAE_LAMBDA: 0.95
+CLIP_EPS: 0.2
+ENT_COEF: 0.001
+VF_COEF: 0.5
+MAX_GRAD_NORM: 0.5
+ANNEAL_LR: true
+ACTIVATION: tanh
+GRU_HIDDEN_DIM: 128
+FC_HIDDEN_DIM: 128
+BC_POLICY_KL_WEIGHT: 0.25
+BC_ANCHOR_PATH: agents/hanabi/bc_lstm_weights/bc_2p.safetensors
+BC_ANCHOR_CONFIG_PATH: agents/hanabi/bc_lstm_weights/bc_2p.yaml
+SELF_PLAY: true
+partner_agent:
+  ippo:
+    path: null
+    actor_type: rnn
+    ckpt_key: final_params
+    idx_list: [0]

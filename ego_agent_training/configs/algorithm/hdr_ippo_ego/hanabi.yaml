@@ -1,0 +1,5 @@
+defaults:
+  - hdr_ippo_ego/_base_
+  - _self_
+
+NUM_EGO_TRAIN_SEEDS: 1
