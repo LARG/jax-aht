@@ -633,17 +633,6 @@ heldout_set:
       greedy: true
       performance_bounds:
         returned_episode_returns: [0.0, 4.39]
-    hdr_ippo:
-      path: results/hanabi/hdr_ippo_ego_rnn/hdr_overnight_sp_20260505_0315/2026-05-05_03-15-32/ego_train_run
-      actor_type: rnn
-      ckpt_key: final_params
-      idx_list: [0]
-      GRU_HIDDEN_DIM: 128
-      FC_HIDDEN_DIM: 128
-      ACTIVATION: tanh
-      test_mode: false
-      performance_bounds:
-        returned_episode_returns: [[0.0, 5.98]]
     bc_lstm_v2:
       actor_type: bc_lstm
       weight_file: eval_teammates/hanabi/bc_lstm_v2.safetensors
