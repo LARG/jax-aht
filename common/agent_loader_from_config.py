@@ -163,6 +163,15 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
                 using_log_wrapper=True,
                 p_plate_on_counter=agent_config.get("p_plate_on_counter", 0.0),
             )
+        if actor_type == "bc_proxy":
+            from agents.overcooked.bc_agent import BCPolicy, BCProxyPartnerWrapper
+            bc = BCPolicy(
+                layout_name=env_kwargs["layout"],
+                using_log_wrapper=True,
+                run_id=agent_config.get("run_id", 0),
+            )
+            # Wrap so it fits ppo_br's vmapped HeuristicPolicyPopulation contract.
+            return BCProxyPartnerWrapper(bc)
         raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
 
     if 'hanabi' in task_name:
