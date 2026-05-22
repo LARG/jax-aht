@@ -34,6 +34,13 @@
 
 set -e  # Exit on any error
 
+SKIP_COLLECT=false
+for arg in "$@"; do
+    case $arg in
+        --skip-collect) SKIP_COLLECT=true ;;
+    esac
+done
+
 # Resolve project root and conda base dynamically so this script works for any clone
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
@@ -72,6 +79,7 @@ fi
 DATA_DIR="results/${TASK_NAME}/trajectory_data"
 MODEL_DIR="results/${TASK_NAME}/models"
 OUTPUT_FILE="results/${TASK_NAME}/tsne_trajectory_visualization.png"
+LATENTS_FILE="results/${TASK_NAME}/latents.pkl"
 
 # Default parameters for the scripts
 NUM_POINTS_PER_PAIR=20  # Episodes collected per specific-BR pair for the validation / t-SNE set
@@ -80,17 +88,20 @@ HIDDEN_DIM=64  # Autoencoder hidden dimension
 LATENT_DIM=16  # Autoencoder latent dimension
 LEARNING_RATE=0.0005  # Learning rate
 NUM_EPOCHS=200  # Training epochs
-BATCH_SIZE=512  # Training batch size
+BATCH_SIZE=1024  # Training batch size
 
 echo "Starting trajectory pipeline in tmux session: ${SESSION_NAME}"
 echo "Task: ${TASK_NAME} (env: ${ENV_NAME})"
 echo "Data directory: ${DATA_DIR}"
 echo "Model directory: ${MODEL_DIR}"
 echo "Output file: ${OUTPUT_FILE}"
+echo "Skip collect: ${SKIP_COLLECT}"
 echo ""
 echo "The pipeline will run the following steps sequentially:"
 echo "1. Activate conda environment (${CONDA_ENV_NAME})"
+if [ "${SKIP_COLLECT}" = false ]; then
 echo "2. Collect trajectories from agent pairs"
+fi
 echo "3. Train LSTM classifier on trajectories"
 echo "4. Generate t-SNE visualizations"
 echo ""
@@ -99,8 +110,15 @@ echo "Each step will wait for the previous one to complete before starting."
 # Start tmux session
 tmux new-session -d -s "${SESSION_NAME}"
 
+# Build collect step conditionally
+if [ "${SKIP_COLLECT}" = true ]; then
+    COLLECT_CMD=""
+else
+    COLLECT_CMD="echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --task_name ${TASK_NAME} --num_points_per_pair ${NUM_POINTS_PER_PAIR} --num_envs ${NUM_ENVS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete.' &&"
+fi
+
 # Send commands to activate conda environment and run the pipeline sequentially
-tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && echo 'Starting trajectory collection...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/collect_trajectories.py --task_name ${TASK_NAME} --num_points_per_pair ${NUM_POINTS_PER_PAIR} --num_envs ${NUM_ENVS} --data_dir ${DATA_DIR} && echo 'Trajectory collection complete. Starting classifier training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_classifier.py --task_name ${TASK_NAME} --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Classifier training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --plot_title 'Overcooked-V1 (coord_ring)' && echo 'Pipeline complete!'" C-m
+tmux send-keys -t "${SESSION_NAME}" "source ${CONDA_BASE}/etc/profile.d/conda.sh && conda activate ${CONDA_ENV_NAME} && cd ${PROJECT_ROOT} && ${COLLECT_CMD} echo 'Starting classifier training...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/train_classifier.py --task_name ${TASK_NAME} --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --hidden_dim ${HIDDEN_DIM} --latent_dim ${LATENT_DIM} --learning_rate ${LEARNING_RATE} --num_epochs ${NUM_EPOCHS} --batch_size ${BATCH_SIZE} && echo 'Classifier training complete. Starting visualization...' && CUDA_VISIBLE_DEVICES=1 python scripts/eval_teammate_diversity/visualize_trajectories.py --data_dir ${DATA_DIR} --model_dir ${MODEL_DIR} --output_file ${OUTPUT_FILE} --latents_file ${LATENTS_FILE} --plot_title 'Overcooked-V1 (coord_ring)' && echo 'Pipeline complete!'" C-m
 
 echo "Pipeline started in tmux session '${SESSION_NAME}'"
 echo "The commands will execute sequentially - each step waits for the previous to complete."

@@ -15,7 +15,7 @@ from trajectory_classifier import (
     train_classifier,
     pad_labeled_episodes,
 )
-from common.save_load_utils import save_train_run
+from common.save_load_utils import save_train_run, REPO_PATH
 # Config
 DEFAULT_TASK_NAME = "lbf/lbf_7x7_nolevels"
 DEFAULT_DATA_DIR = None  # auto-derived from task_name when not provided
@@ -65,6 +65,16 @@ def main(
     data_path = Path(data_dir)
     model_path = Path(model_dir)
     model_path.mkdir(parents=True, exist_ok=True)
+
+    # Fail fast if the checkpoint destination already exists — orbax refuses to
+    # overwrite, so catch this before spending time on training.
+    abs_model_dir = model_path if model_path.is_absolute() else Path(REPO_PATH) / model_dir
+    checkpoint_dest = abs_model_dir / "trajectory_classifier"
+    if checkpoint_dest.exists():
+        raise FileExistsError(
+            f"Checkpoint already exists at '{checkpoint_dest}'. "
+            "Delete it or choose a different --model_dir before training."
+        )
 
     # Load trajectories
     train_path = data_path / "train_episodes.pkl"

@@ -212,6 +212,17 @@ def train_classifier(
     num_batches = max(1, N // batch_size)
     apply_fn = train_state.apply_fn
 
+    # Keep the full datasets on host (numpy). Per-epoch we permute indices on
+    # host and upload one batch at a time; the train_step_fn / _logits_batch are
+    # still JIT-compiled and run on device.  Memory cost on GPU is one batch
+    # (batch_size × max_len × obs_dim × 4 bytes), regardless of dataset size.
+    padded_np = np.asarray(padded_episodes)
+    masks_np = np.asarray(masks)
+    labels_np = np.asarray(labels)
+    test_padded_np = np.asarray(test_padded) if test_padded is not None else None
+    test_masks_np = np.asarray(test_masks) if test_masks is not None else None
+    test_labels_np = np.asarray(test_labels) if test_labels is not None else None
+
     @jax.jit
     def _logits_batch(params, x, mask):
         return jax.vmap(lambda xi, mi: apply_fn(params, xi, mi))(x, mask)
@@ -220,38 +231,45 @@ def train_classifier(
         n = data.shape[0]
         correct = 0
         for i in range(0, n, batch_size):
-            logits = np.array(_logits_batch(params, data[i:i+batch_size], data_masks[i:i+batch_size]))
+            x = jnp.asarray(data[i:i+batch_size])
+            m = jnp.asarray(data_masks[i:i+batch_size])
+            logits = np.array(_logits_batch(params, x, m))
             preds = np.argmax(logits, axis=-1)
-            correct += (preds == np.array(data_labels[i:i+batch_size])).sum()
+            correct += (preds == data_labels[i:i+batch_size]).sum()
         return correct / n
 
     losses = []
     train_accs = []
     test_accs = []
+    # Derive a numpy seed from the JAX rng so per-epoch shuffles are deterministic
+    # and roughly threaded with the caller's rng without depending on a specific
+    # JAX random API surface.
+    rng_np = np.random.default_rng(int(jnp.sum(jnp.asarray(rng).astype(jnp.uint32))))
     for epoch in range(num_epochs):
-        rng, rng_perm = jax.random.split(rng)
-        perm = np.array(jax.random.permutation(rng_perm, N))
+        # Shuffle indices on host; chunk into fixed-size batches (drop last partial).
+        perm = rng_np.permutation(N)[: num_batches * batch_size]
+        batch_indices = perm.reshape(num_batches, batch_size)
+
         epoch_losses = []
-        for batch_idx in range(num_batches):
-            idx = perm[batch_idx * batch_size : (batch_idx + 1) * batch_size]
-            batch_x = padded_episodes[idx]
-            batch_mask = masks[idx]
-            batch_y = labels[idx]
+        for idx in batch_indices:
+            batch_x = jnp.asarray(padded_np[idx])
+            batch_mask = jnp.asarray(masks_np[idx])
+            batch_y = jnp.asarray(labels_np[idx])
             train_state, loss = train_step_fn(train_state, batch_x, batch_mask, batch_y)
-            epoch_losses.append(float(loss))
-        avg_loss = np.mean(epoch_losses)
+            epoch_losses.append(loss)
+        avg_loss = float(jnp.stack(epoch_losses).mean())
         losses.append(avg_loss)
 
-        train_acc = float(_accuracy(train_state.params, padded_episodes, masks, labels))
+        train_acc = float(_accuracy(train_state.params, padded_np, masks_np, labels_np))
         train_accs.append(train_acc)
 
-        if test_padded is not None:
-            test_acc = float(_accuracy(train_state.params, test_padded, test_masks, test_labels))
+        if test_padded_np is not None:
+            test_acc = float(_accuracy(train_state.params, test_padded_np, test_masks_np, test_labels_np))
             test_accs.append(test_acc)
 
         if epoch % 10 == 0 or epoch == num_epochs - 1:
             acc_str = f", Train Acc: {train_acc:.4f}"
-            if test_padded is not None:
+            if test_padded_np is not None:
                 acc_str += f", Test Acc: {test_accs[-1]:.4f}"
             print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.6f}{acc_str}")
     return rng, train_state, losses, train_accs, test_accs
