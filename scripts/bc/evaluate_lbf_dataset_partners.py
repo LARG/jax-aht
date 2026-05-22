@@ -11,14 +11,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMPolicyWrapper
-from agents.bc.evaluate_lbf import (
-    LBF_CONFIGS,
-    load_bc_config,
-    make_partner,
-    run_episode,
-)
+from agents.bc.bc_lstm import BCLSTMAgent
+from agents.lbf.agent_policy_wrappers import LBFBCLSTMPolicyWrapper
+from agents.lbf.bc import LBF_CONFIGS, load_bc_config
 from envs import make_env
+from scripts.bc.evaluate_lbf import make_partner, run_episode
 
 
 def is_supported_partner(label: str) -> bool:
@@ -102,7 +99,7 @@ def main(args):
                 lbf_num_food=env_kwargs["num_food"],
             )
         bc_agent = BCLSTMAgent(bc_config, weight_path=str(ckpt_path))
-        bc_policy = BCLSTMPolicyWrapper(bc_config)
+        bc_policy = LBFBCLSTMPolicyWrapper(bc_config)
 
         weighted_human = 0.0
         weighted_bc = 0.0

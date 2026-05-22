@@ -9,14 +9,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+import distrax
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
 import yaml
 from flax.training.train_state import TrainState
-from agents.bc.bc_lstm import BCLSTMConfig, BCLSTMNetwork, compute_bc_loss, BCLSTMAgent
-from agents.bc.lbf_features import augment_lbf_obs
+from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMConfig, BCLSTMNetwork
+from agents.lbf.bc.features import augment_lbf_obs
 
 LBF_CONFIG_SPECS = {
     "grid7_food3_nolevels": {"grid_size": 7, "num_food": 3},
@@ -205,6 +206,39 @@ def remap_unavailable_actions_to_noop(actions, avail, mask) -> jnp.ndarray:
     picked = jnp.take_along_axis(avail, actions[..., None], axis=-1).squeeze(-1)
     unavailable = mask & ~picked
     return jnp.where(unavailable, jnp.zeros_like(actions), actions)
+
+
+def compute_bc_loss(params, network, carry, obs_seq, action_seq, avail_seq, mask,
+                    mask_unavailable_actions: bool = True):
+    _, seq_len, _ = obs_seq.shape
+
+    def step_fn(carry, t):
+        action_t = action_seq[:, t]
+        mask_t = mask[:, t]
+        avail_t = avail_seq[:, t, :]
+        if mask_unavailable_actions:
+            action_available = jnp.take_along_axis(
+                avail_t,
+                action_t[:, None],
+                axis=-1,
+            ).squeeze(-1)
+            valid_t = mask_t & action_available
+        else:
+            valid_t = mask_t
+
+        carry, logits = network.apply({"params": params}, carry, obs_seq[:, t, :])
+        if mask_unavailable_actions:
+            logits = jnp.where(avail_t, logits, -1e9)
+        pi = distrax.Categorical(logits=logits)
+        step_loss = -pi.log_prob(action_t) * valid_t
+        return carry, (step_loss, valid_t)
+
+    _, (all_losses, all_valid) = jax.lax.scan(
+        step_fn,
+        carry,
+        jnp.arange(seq_len),
+    )
+    return all_losses.sum() / jnp.maximum(all_valid.sum(), 1.0)
 
 
 def write_checkpoint_config(path: str, config: BCLSTMConfig, args,

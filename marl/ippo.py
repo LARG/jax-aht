@@ -38,7 +38,7 @@ def _load_human_reference_policy(config):
 
     from pathlib import Path
     from agents.bc.bc_lstm import BCLSTMAgent
-    from agents.bc.evaluate_lbf import load_bc_config
+    from agents.lbf.bc import load_bc_config
     from common.save_load_utils import REPO_PATH
 
     cfg_path = Path(config["HUMAN_REF_BC_CONFIG"])
@@ -238,7 +238,7 @@ def make_train(config, env, logger, progress_callback=None):
                 ref_config = human_ref_data["config"]
                 ref_obs = obs
                 if ref_config.lbf_feature_mode == "path":
-                    from agents.bc.lbf_features import augment_lbf_obs
+                    from agents.lbf.bc.features import augment_lbf_obs
                     ref_obs = augment_lbf_obs(
                         ref_obs,
                         grid_size=ref_config.lbf_grid_size,

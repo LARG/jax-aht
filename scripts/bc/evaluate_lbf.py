@@ -5,47 +5,25 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
-import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from agents.agent_interface import AgentPolicy
-from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMConfig, BCLSTMPolicyWrapper
+from agents.bc.bc_lstm import BCLSTMAgent
 from agents.lbf.agent_policy_wrappers import (
+    LBFBCLSTMPolicyWrapper,
     LBFEntitledPolicyWrapper,
     LBFGreedyHeuristicPolicyWrapper,
     LBFRandomPolicyWrapper,
     LBFSequentialFruitPolicyWrapper,
 )
+from agents.lbf.bc import LBF_CONFIGS, load_bc_config, resolve_first_existing_path
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from evaluation.heldout_evaluator import extract_params
 from envs import make_env
 
-
-LBF_CONFIGS = {
-    "grid7_food3_nolevels": {
-        "grid_size": 7,
-        "num_food": 3,
-        "different_levels": False,
-    },
-    "grid7_food3_levels": {
-        "grid_size": 7,
-        "num_food": 3,
-        "different_levels": True,
-    },
-    "grid12_food6_nolevels": {
-        "grid_size": 12,
-        "num_food": 6,
-        "different_levels": False,
-    },
-    "grid12_food6_levels": {
-        "grid_size": 12,
-        "num_food": 6,
-        "different_levels": True,
-    },
-}
 
 IPPO_PARTNER_CONFIGS = {
     "ippo_mlp": {
@@ -130,31 +108,6 @@ class BoundPolicyWrapper(AgentPolicy):
             env_state=env_state,
             test_mode=self.test_mode,
         )
-
-
-def load_bc_config(path: str) -> BCLSTMConfig:
-    with open(path) as f:
-        raw = yaml.safe_load(f)
-    return BCLSTMConfig(
-        obs_dim=int(raw["obs_dim"]),
-        action_dim=int(raw["action_dim"]),
-        preprocess_dim=int(raw.get("preprocess_dim", 256)),
-        lstm_dim=int(raw.get("lstm_dim", 128)),
-        postprocess_dim=int(raw.get("postprocess_dim", 64)),
-        dropout_rate=float(raw.get("dropout_rate", 0.0)),
-        lbf_feature_mode=str(raw.get("lbf_feature_mode", "none")),
-        lbf_grid_size=int(raw.get("lbf_grid_size", 0)),
-        lbf_num_food=int(raw.get("lbf_num_food", 0)),
-    )
-
-
-def resolve_first_existing_path(paths: list[str]) -> str:
-    for path in paths:
-        if (REPO_ROOT / path).exists() or Path(path).exists():
-            return path
-    raise FileNotFoundError(
-        f"None of the candidate checkpoint paths exist: {paths}"
-    )
 
 
 def make_ippo_partner(partner_label: str, config_name: str):
@@ -285,7 +238,7 @@ def evaluate(args):
             lbf_num_food=env_kwargs["num_food"],
         )
     bc_agent = BCLSTMAgent(config, weight_path=args.checkpoint)
-    bc_policy = BCLSTMPolicyWrapper(config)
+    bc_policy = LBFBCLSTMPolicyWrapper(config)
     partner_policy = make_partner(args)
     env = make_env("lbf", LBF_CONFIGS[args.lbf_config])
 

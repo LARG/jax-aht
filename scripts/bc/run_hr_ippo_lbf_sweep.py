@@ -12,14 +12,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMPolicyWrapper
-from agents.bc.evaluate_lbf import LBF_CONFIGS, load_bc_config
-from agents.bc.evaluate_ppo_human_likeness import evaluate_batch, pad_obs
+from agents.bc.bc_lstm import BCLSTMAgent
+from agents.lbf.agent_policy_wrappers import LBFBCLSTMPolicyWrapper
+from agents.lbf.bc import LBF_CONFIGS, load_bc_config
 from common.run_episodes import run_episodes
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 from human_data_processing.load_lbf_data import load_bc_data_padded
 from marl.ippo import initialize_agent, make_train
+from scripts.bc.evaluate_ppo_human_likeness import evaluate_batch, pad_obs
 
 
 class NullLogger:
@@ -194,7 +195,7 @@ def evaluate_bc(args, data) -> dict:
             lbf_num_food=env_kwargs["num_food"],
         )
     agent = BCLSTMAgent(config, weight_path=args.human_ref_bc_checkpoint)
-    policy = BCLSTMPolicyWrapper(config)
+    policy = LBFBCLSTMPolicyWrapper(config)
     env = LogWrapper(make_env("lbf", env_kwargs))
     mean_return, median_return = evaluate_policy_return(env, policy, agent.params, args)
     nll, accuracy, valid_steps = evaluate_bc_human_likeness(agent, data, args)

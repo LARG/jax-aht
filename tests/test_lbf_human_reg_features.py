@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 
-from agents.bc.lbf_features import augment_lbf_obs
+from agents.lbf.bc.features import augment_lbf_obs
 
 
 def test_augment_lbf_obs_adds_finite_features():

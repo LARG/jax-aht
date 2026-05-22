@@ -11,9 +11,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMPolicyWrapper
-from agents.bc.evaluate_lbf import LBF_CONFIGS, load_bc_config
-from agents.bc.evaluate_lbf_dataset_partners import (
+from agents.bc.bc_lstm import BCLSTMAgent
+from agents.lbf.agent_policy_wrappers import LBFBCLSTMPolicyWrapper
+from agents.lbf.bc import LBF_CONFIGS, load_bc_config
+from scripts.bc.evaluate_lbf_dataset_partners import (
     evaluate_partner,
     is_supported_partner,
     rows_for_config,
@@ -45,7 +46,7 @@ def load_policy_for_config(checkpoint_dir: Path, stem: str, config_name: str):
             lbf_num_food=env_kwargs["num_food"],
         )
     bc_agent = BCLSTMAgent(bc_config, weight_path=str(ckpt_path))
-    return BCLSTMPolicyWrapper(bc_config), bc_agent.params
+    return LBFBCLSTMPolicyWrapper(bc_config), bc_agent.params
 
 
 def evaluate_checkpoint(args, stem: str) -> tuple[list[dict], dict]:
