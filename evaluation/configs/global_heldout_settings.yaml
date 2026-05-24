@@ -629,13 +629,13 @@ heldout_set:
         returned_episode_returns: [0.0, 8.52]
     bc_lstm_human_proxy:
       actor_type: bc_lstm
-      weight_file: eval_teammates/hanabi/bc_lstm.safetensors
+      weight_file: eval_teammates/hanabi/hanabi_ah2ac2_bc.safetensors
       greedy: true
       performance_bounds:
         returned_episode_returns: [0.0, 4.39]
     bc_lstm_v2:
       actor_type: bc_lstm
-      weight_file: eval_teammates/hanabi/bc_lstm_v2.safetensors
+      weight_file: eval_teammates/hanabi/hanabi_ah2ac2_bc_v2.safetensors
       greedy: true
       performance_bounds:
         returned_episode_returns: [0.0, 4.85]

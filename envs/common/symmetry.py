@@ -7,8 +7,6 @@ agent's view + actions, so the policy learns to be robust to it.
 
 Examples:
   HanabiColorSymmetry: Hu et al. 2020 Other-Play (color permutation)
-  OvercookedReflection: left-right reflection of layout coordinates
-  LBFAgentPermutation: agent-id permutation in the obs
 """
 from abc import ABC, abstractmethod
 import chex
