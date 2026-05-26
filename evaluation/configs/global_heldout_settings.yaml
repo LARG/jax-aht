@@ -619,20 +619,26 @@ heldout_set:
         returned_episode_returns: [0.0, 9.00]
     obl_r2d2_l1:
       actor_type: obl_r2d2
-      weight_file: agents/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
+      weight_file: eval_teammates/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
       performance_bounds:
         returned_episode_returns: [0.0, 11.66]
     obl_r2d2_l4:
       actor_type: obl_r2d2
-      weight_file: agents/hanabi/obl-r2d2-flax/icml_OBL4/OFF_BELIEF1_SHUFFLE_COLOR0_LOAD1_BZA0_BELIEF_a.safetensors
+      weight_file: eval_teammates/hanabi/obl-r2d2-flax/icml_OBL4/OFF_BELIEF1_SHUFFLE_COLOR0_LOAD1_BZA0_BELIEF_a.safetensors
       performance_bounds:
         returned_episode_returns: [0.0, 8.52]
     bc_lstm_human_proxy:
       actor_type: bc_lstm
-      weight_file: agents/bc_weights/hanabi_ah2ac2_bc.safetensors
+      weight_file: eval_teammates/hanabi/hanabi_ah2ac2_bc.safetensors
       greedy: true
       performance_bounds:
         returned_episode_returns: [0.0, 4.39]
+    bc_lstm_v2:
+      actor_type: bc_lstm
+      weight_file: eval_teammates/hanabi/hanabi_ah2ac2_bc_v2.safetensors
+      greedy: true
+      performance_bounds:
+        returned_episode_returns: [0.0, 4.85]
     # MLP IPPO self-play partners (FC_HIDDEN_DIM=64).
     ippo_mlp_seed0:
       path: "eval_teammates/hanabi/ippo_fullhanabi/mlp_1e9_3seeds/saved_train_run"
@@ -738,7 +744,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 11.11]]
     ippo_s5_seed99999:
-      path: "eval_teammates/hanabi/ippo_s5/seed99999/saved_train_run"
+      path: "eval_teammates/hanabi/ippo_s5/seed99999"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -752,7 +758,7 @@ heldout_set:
   mini-hanabi: # Mini-Hanabi (3 colors, 3 ranks) held-out partner set
     # OBL R2D2 NOT included because its architecture is hardcoded for full Hanabi (out_dim=21, obs split at [125:])
     ippo_mlp_seed0:
-      path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
+      path: "eval_teammates/mini_hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
       idx_list: [0]
@@ -762,7 +768,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 7.28]]
     ippo_mlp_seed1:
-      path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
+      path: "eval_teammates/mini_hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
       idx_list: [1]
@@ -807,17 +813,17 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [0.0, 6.85]
     ippo_mlp_seed2:
-      path: "eval_teammates/hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
+      path: "eval_teammates/mini_hanabi/ippo_mlp_1e8/minihanabi_1e8/saved_train_run"
       actor_type: mlp
       ckpt_key: final_params
-      idx_list: [2] 
+      idx_list: [2]
       FC_HIDDEN_DIM: 256
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 7.56]]
     brdiv_conf:
-      path: "eval_teammates/hanabi/brdiv/heldout_matrix/saved_train_run"
+      path: "eval_teammates/mini_hanabi/brdiv/heldout_matrix/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [[0, 0], [0, 1], [0, 2]]
       ckpt_key: final_params_conf
@@ -826,7 +832,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 5.67], [0.0, 5.77], [0.0, 5.06]]
     lbrdiv_conf:
-      path: "eval_teammates/hanabi/lbrdiv/heldout_matrix/saved_train_run"
+      path: "eval_teammates/mini_hanabi/lbrdiv/heldout_matrix/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [[0, 0], [0, 1], [0, 2]]
       ckpt_key: final_params_conf
@@ -835,7 +841,7 @@ heldout_set:
       performance_bounds:
         returned_episode_returns: [[0.0, 5.22], [0.0, 5.98], [0.0, 4.95]]
     comedi_conf:
-      path: "eval_teammates/hanabi/comedi_v2/heldout_matrix/saved_train_run"
+      path: "eval_teammates/mini_hanabi/comedi_v2/heldout_matrix/saved_train_run"
       actor_type: actor_with_conditional_critic
       idx_list: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]]
       ckpt_key: final_params_conf
@@ -845,7 +851,7 @@ heldout_set:
         returned_episode_returns: [[0.0, 6.25], [0.0, 5.77], [0.0, 6.45], [0.0, 6.52], [0.0, 6.52]]
     # S5 recurrent IPPO self-play partners.
     ippo_s5_seed42:
-      path: "eval_teammates/mini-hanabi/ippo_s5/seed42"
+      path: "eval_teammates/mini_hanabi/ippo_s5_mini/seed42"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -856,9 +862,9 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 6.88]]
+        returned_episode_returns: [[0.0, 7.56]]
     ippo_s5_seed123:
-      path: "eval_teammates/mini-hanabi/ippo_s5/seed123"
+      path: "eval_teammates/mini_hanabi/ippo_s5_mini/seed123"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -869,9 +875,9 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 6.88]]
+        returned_episode_returns: [[0.0, 7.80]]
     ippo_s5_seed31415:
-      path: "eval_teammates/mini-hanabi/ippo_s5/seed31415"
+      path: "eval_teammates/mini_hanabi/ippo_s5_mini/seed31415"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -882,9 +888,9 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 8.01]]
+        returned_episode_returns: [[0.0, 7.88]]
     ippo_s5_op_seed42:
-      path: "eval_teammates/mini-hanabi/ippo_s5_op/seed42"
+      path: "eval_teammates/mini_hanabi/ippo_s5_op_mini/seed42"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -895,9 +901,9 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 8.19]]
+        returned_episode_returns: [[0.0, 7.45]]
     ippo_s5_op_seed123:
-      path: "eval_teammates/mini-hanabi/ippo_s5_op/seed123"
+      path: "eval_teammates/mini_hanabi/ippo_s5_op_mini/seed123"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -908,9 +914,9 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 7.16]]
+        returned_episode_returns: [[0.0, 6.62]]
     ippo_s5_op_seed31415:
-      path: "eval_teammates/mini-hanabi/ippo_s5_op/seed31415"
+      path: "eval_teammates/mini_hanabi/ippo_s5_op_mini/seed31415"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -921,4 +927,4 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 8.11]]
+        returned_episode_returns: [[0.0, 7.60]]
