@@ -5,7 +5,7 @@ import yaml
 from agents.bc.bc_lstm import BCLSTMConfig
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 LBF_CONFIGS = {
     "grid7_food3_nolevels": {

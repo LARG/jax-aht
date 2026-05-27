@@ -13,7 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from agents.bc.bc_lstm import BCLSTMAgent
 from agents.lbf.agent_policy_wrappers import LBFBCLSTMPolicyWrapper
-from agents.lbf.bc import LBF_CONFIGS, load_bc_config
+from common.bc_utils import LBF_CONFIGS, load_bc_config
 from scripts.bc.evaluate_lbf_dataset_partners import (
     evaluate_partner,
     is_supported_partner,

@@ -116,7 +116,7 @@ def _load_human_reference_policy(config):
         raise ValueError("Set HUMAN_REF_BC_CONFIG when HUMAN_REG_MODE=reference_kl")
 
     from agents.bc.bc_lstm import BCLSTMAgent
-    from agents.lbf.bc import load_bc_config
+    from common.bc_utils import load_bc_config
 
     ref_config = load_bc_config(config["HUMAN_REF_BC_CONFIG"])
     env_kwargs = config["ENV_KWARGS"]
@@ -390,7 +390,7 @@ def train_ppo_ego_agent(config, env, train_rng,
                 ref_config = human_ref_data["config"]
                 ref_obs = obs
                 if ref_config.lbf_feature_mode == "path":
-                    from agents.lbf.bc.features import augment_lbf_obs
+                    from human_data_processing.lbf_features import augment_lbf_obs
                     ref_obs = augment_lbf_obs(
                         ref_obs,
                         grid_size=ref_config.lbf_grid_size,

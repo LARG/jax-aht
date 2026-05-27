@@ -35,7 +35,7 @@ class LBFBCLSTMPolicyWrapper(AgentPolicy):
 
     def _preprocess_obs(self, obs):
         if self.config.lbf_feature_mode == "path":
-            from agents.lbf.bc.features import augment_lbf_obs
+            from human_data_processing.lbf_features import augment_lbf_obs
             if self.config.lbf_grid_size <= 0 or self.config.lbf_num_food <= 0:
                 raise ValueError(
                     "LBF feature mode requires lbf_grid_size and lbf_num_food"

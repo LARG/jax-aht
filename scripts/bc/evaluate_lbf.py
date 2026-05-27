@@ -19,7 +19,7 @@ from agents.lbf.agent_policy_wrappers import (
     LBFRandomPolicyWrapper,
     LBFSequentialFruitPolicyWrapper,
 )
-from agents.lbf.bc import LBF_CONFIGS, load_bc_config, resolve_first_existing_path
+from common.bc_utils import LBF_CONFIGS, load_bc_config, resolve_first_existing_path
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from evaluation.heldout_evaluator import extract_params
 from envs import make_env

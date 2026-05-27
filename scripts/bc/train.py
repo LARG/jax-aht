@@ -17,7 +17,7 @@ import optax
 import yaml
 from flax.training.train_state import TrainState
 from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMConfig, BCLSTMNetwork
-from agents.lbf.bc.features import augment_lbf_obs
+from human_data_processing.lbf_features import augment_lbf_obs
 
 LBF_CONFIG_SPECS = {
     "grid7_food3_nolevels": {"grid_size": 7, "num_food": 3},
