@@ -14,7 +14,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from agents.bc.bc_lstm import BCLSTMAgent
 from agents.lbf.agent_policy_wrappers import LBFBCLSTMPolicyWrapper
-from common.bc_utils import LBF_CONFIGS, load_bc_config
+from common.bc_utils import load_bc_config
+from human_data_processing.lbf_configs import LBF_CONFIGS
 from common.run_episodes import run_episodes
 from envs import make_env
 from envs.log_wrapper import LogWrapper

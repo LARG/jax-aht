@@ -11,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from common.bc_utils import LBF_CONFIGS
+from human_data_processing.lbf_configs import LBF_CONFIGS
 from common.save_load_utils import load_checkpoints
 from ego_agent_training.utils import initialize_ego_agent
 from envs import make_env

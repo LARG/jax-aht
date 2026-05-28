@@ -17,15 +17,10 @@ import optax
 import yaml
 from flax.training.train_state import TrainState
 from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMConfig, BCLSTMNetwork
+from human_data_processing.lbf_configs import LBF_CONFIGS, LBF_CONFIG_NAMES
 from human_data_processing.lbf_features import augment_lbf_obs
 
-LBF_CONFIG_SPECS = {
-    "grid7_food3_nolevels": {"grid_size": 7, "num_food": 3},
-    "grid7_food3_levels": {"grid_size": 7, "num_food": 3},
-    "grid12_food6_nolevels": {"grid_size": 12, "num_food": 6},
-    "grid12_food6_levels": {"grid_size": 12, "num_food": 6},
-}
-LBF_CONFIG_NAMES = list(LBF_CONFIG_SPECS)
+DEFAULT_LBF_BC_CONFIG = REPO_ROOT / "agents/bc/configs/lbf.yaml"
 
 
 def load_config(config_path: str) -> dict:
@@ -81,7 +76,7 @@ def load_lbf_data(config_name: str,
     )
     obs = data.obs
     if feature_mode == "path":
-        spec = LBF_CONFIG_SPECS[config_name]
+        spec = LBF_CONFIGS[config_name]
         obs = augment_lbf_obs(
             obs,
             grid_size=spec["grid_size"],
@@ -284,10 +279,14 @@ def save_bc_checkpoint(path: str, params, config: BCLSTMConfig, args,
 def train(args):
     rng = jax.random.PRNGKey(args.seed)
 
+    config_path = args.config
+    if config_path is None and args.lbf_config:
+        config_path = str(DEFAULT_LBF_BC_CONFIG)
+
     defaults = {}
-    if args.config:
-        defaults = load_config(args.config)
-        print(f"[train_bc] loaded config from {args.config}")
+    if config_path:
+        defaults = load_config(config_path)
+        print(f"[train_bc] loaded config from {config_path}")
 
     data = load_training_data(args)
     train_obs = data.train_obs
@@ -473,10 +472,7 @@ if __name__ == '__main__':
     parser.add_argument('--lbf_config', nargs='+', default=None,
                         choices=[
                             "all",
-                            "grid7_food3_nolevels",
-                            "grid7_food3_levels",
-                            "grid12_food6_nolevels",
-                            "grid12_food6_levels",
+                            *LBF_CONFIG_NAMES,
                         ],
                         help="Load a processed LBF padded dataset by config name")
     parser.add_argument('--val_fraction', type=float, default=0.2,
