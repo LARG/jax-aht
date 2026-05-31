@@ -19,7 +19,11 @@ from agents.lbf.agent_policy_wrappers import (
     LBFRandomPolicyWrapper,
     LBFSequentialFruitPolicyWrapper,
 )
-from common.bc_utils import load_bc_config, resolve_first_existing_path
+from common.bc_utils import (
+    load_bc_config,
+    resolve_first_existing_path,
+    with_lbf_env_config,
+)
 from human_data_processing.lbf_configs import LBF_CONFIGS
 from common.agent_loader_from_config import initialize_rl_agent_from_config
 from evaluation.heldout_evaluator import extract_params
@@ -233,12 +237,8 @@ def run_episode(rng, env, bc_policy, bc_params, partner_policy, max_steps, test_
 def evaluate(args):
     config = load_bc_config(args.config)
     env_kwargs = LBF_CONFIGS[args.lbf_config]
-    if config.lbf_feature_mode != "none":
-        config = config._replace(
-            lbf_grid_size=env_kwargs["grid_size"],
-            lbf_num_food=env_kwargs["num_food"],
-        )
-    bc_agent = BCLSTMAgent(config, weight_path=args.checkpoint)
+    config = with_lbf_env_config(config, env_kwargs)
+    bc_agent = BCLSTMAgent(config.model, weight_path=args.checkpoint)
     bc_policy = LBFBCLSTMPolicyWrapper(config)
     partner_policy = make_partner(args)
     env = make_env("lbf", LBF_CONFIGS[args.lbf_config])

@@ -8,7 +8,7 @@ import jax
 import jax.numpy as jnp
 
 from agents.agent_interface import AgentPolicy
-from agents.bc.bc_lstm import BCLSTMConfig, BCLSTMNetwork
+from agents.bc.bc_lstm import BCLSTMNetwork
 from agents.lbf.random_agent import RandomAgent
 from agents.lbf.sequential_fruit_agent import SequentialFruitAgent
 from agents.lbf.entitled_agent import EntitledAgent
@@ -18,7 +18,7 @@ from agents.lbf.greedy_heuristic_agent import GreedyHeuristicAgent
 class LBFBCLSTMPolicyWrapper(AgentPolicy):
     """Adapter that lets LBF BC-LSTM checkpoints run through JaxAHT evaluation."""
 
-    def __init__(self, config: BCLSTMConfig):
+    def __init__(self, config):
         super().__init__(config.action_dim, config.obs_dim)
         self.config = config
         self.network = BCLSTMNetwork(
@@ -34,16 +34,18 @@ class LBFBCLSTMPolicyWrapper(AgentPolicy):
         return (jnp.zeros(shape), jnp.zeros(shape))
 
     def _preprocess_obs(self, obs):
-        if self.config.lbf_feature_mode == "path":
+        if getattr(self.config, "lbf_feature_mode", "none") == "path":
             from human_data_processing.lbf_features import augment_lbf_obs
-            if self.config.lbf_grid_size <= 0 or self.config.lbf_num_food <= 0:
+            grid_size = getattr(self.config, "lbf_grid_size", 0)
+            num_food = getattr(self.config, "lbf_num_food", 0)
+            if grid_size <= 0 or num_food <= 0:
                 raise ValueError(
                     "LBF feature mode requires lbf_grid_size and lbf_num_food"
                 )
             return augment_lbf_obs(
                 obs,
-                grid_size=self.config.lbf_grid_size,
-                num_food=self.config.lbf_num_food,
+                grid_size=grid_size,
+                num_food=num_food,
             )
         return obs
 

@@ -238,6 +238,7 @@ def compute_bc_loss(params, network, carry, obs_seq, action_seq, avail_seq, mask
 
 def write_checkpoint_config(path: str, config: BCLSTMConfig, args,
                             val_accuracy: float, selected_epoch: int) -> None:
+    lbf_feature_mode = args.lbf_feature_mode if args.lbf_config else "none"
     with open(path, 'w') as f:
         yaml.dump({
             'obs_dim': config.obs_dim,
@@ -246,7 +247,7 @@ def write_checkpoint_config(path: str, config: BCLSTMConfig, args,
             'lstm_dim': config.lstm_dim,
             'postprocess_dim': config.postprocess_dim,
             'dropout_rate': config.dropout_rate,
-            'lbf_feature_mode': config.lbf_feature_mode,
+            'lbf_feature_mode': lbf_feature_mode,
             'val_accuracy': float(val_accuracy),
             'selected_epoch': int(selected_epoch),
             'data_dir': args.data_dir,
@@ -326,7 +327,6 @@ def train(args):
         lstm_dim=args.lstm_dim or defaults.get("lstm_dim", 128),
         postprocess_dim=args.postprocess_dim or defaults.get("postprocess_dim", 64),
         dropout_rate=dropout,
-        lbf_feature_mode=args.lbf_feature_mode if args.lbf_config else "none",
     )
     print(f"[train_bc] config: {config}")
 

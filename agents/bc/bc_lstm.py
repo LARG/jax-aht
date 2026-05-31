@@ -15,9 +15,6 @@ class BCLSTMConfig(NamedTuple):
     lstm_dim: int = 512
     postprocess_dim: int = 256
     dropout_rate: float = 0.0
-    lbf_feature_mode: str = "none"
-    lbf_grid_size: int = 0
-    lbf_num_food: int = 0
 
 
 class BCLSTMNetwork(nn.Module):

@@ -14,7 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from agents.bc.bc_lstm import BCLSTMAgent
 from agents.lbf.agent_policy_wrappers import LBFBCLSTMPolicyWrapper
-from common.bc_utils import load_bc_config
+from common.bc_utils import load_bc_config, with_lbf_env_config
 from human_data_processing.lbf_configs import LBF_CONFIGS
 from common.run_episodes import run_episodes
 from envs import make_env
@@ -190,12 +190,8 @@ def evaluate_bc_human_likeness(agent, data, args) -> tuple[float, float, int]:
 def evaluate_bc(args, data) -> dict:
     config = load_bc_config(args.human_ref_bc_config)
     env_kwargs = LBF_CONFIGS[args.lbf_config]
-    if config.lbf_feature_mode != "none":
-        config = config._replace(
-            lbf_grid_size=env_kwargs["grid_size"],
-            lbf_num_food=env_kwargs["num_food"],
-        )
-    agent = BCLSTMAgent(config, weight_path=args.human_ref_bc_checkpoint)
+    config = with_lbf_env_config(config, env_kwargs)
+    agent = BCLSTMAgent(config.model, weight_path=args.human_ref_bc_checkpoint)
     policy = LBFBCLSTMPolicyWrapper(config)
     env = LogWrapper(make_env("lbf", env_kwargs))
     mean_return, median_return = evaluate_policy_return(env, policy, agent.params, args)

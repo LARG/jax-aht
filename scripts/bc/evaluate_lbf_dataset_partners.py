@@ -13,7 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from agents.bc.bc_lstm import BCLSTMAgent
 from agents.lbf.agent_policy_wrappers import LBFBCLSTMPolicyWrapper
-from common.bc_utils import load_bc_config
+from common.bc_utils import load_bc_config, with_lbf_env_config
 from human_data_processing.lbf_configs import LBF_CONFIGS
 from envs import make_env
 from scripts.bc.evaluate_lbf import make_partner, run_episode
@@ -94,12 +94,8 @@ def main(args):
         )
         bc_config = load_bc_config(str(cfg_path))
         env_kwargs = LBF_CONFIGS[config_name]
-        if bc_config.lbf_feature_mode != "none":
-            bc_config = bc_config._replace(
-                lbf_grid_size=env_kwargs["grid_size"],
-                lbf_num_food=env_kwargs["num_food"],
-            )
-        bc_agent = BCLSTMAgent(bc_config, weight_path=str(ckpt_path))
+        bc_config = with_lbf_env_config(bc_config, env_kwargs)
+        bc_agent = BCLSTMAgent(bc_config.model, weight_path=str(ckpt_path))
         bc_policy = LBFBCLSTMPolicyWrapper(bc_config)
 
         weighted_human = 0.0

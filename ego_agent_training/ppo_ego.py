@@ -116,16 +116,15 @@ def _load_human_reference_policy(config):
         raise ValueError("Set HUMAN_REF_BC_CONFIG when HUMAN_REG_MODE=reference_kl")
 
     from agents.bc.bc_lstm import BCLSTMAgent
-    from common.bc_utils import load_bc_config
+    from common.bc_utils import load_bc_config, with_lbf_env_config
 
     ref_config = load_bc_config(config["HUMAN_REF_BC_CONFIG"])
     env_kwargs = config["ENV_KWARGS"]
-    if ref_config.lbf_feature_mode != "none":
-        ref_config = ref_config._replace(
-            lbf_grid_size=env_kwargs["grid_size"],
-            lbf_num_food=env_kwargs["num_food"],
-        )
-    ref_agent = BCLSTMAgent(ref_config, weight_path=config["HUMAN_REF_BC_CHECKPOINT"])
+    ref_config = with_lbf_env_config(ref_config, env_kwargs)
+    ref_agent = BCLSTMAgent(
+        ref_config.model,
+        weight_path=config["HUMAN_REF_BC_CHECKPOINT"],
+    )
     return {
         "config": ref_config,
         "network": ref_agent.network,
