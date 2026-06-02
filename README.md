@@ -3,10 +3,17 @@
 Welcome to JaxAHT! This is a JAX-based benchmark repository for Ad Hoc Teamwork.
 For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
-## Reproducing Experimental Results
+## For Reviewers
 
-For reviewers or users reproducing the paper experiments, start from the installation instructions in
-[docs/install_instructions.md](docs/install_instructions.md), then use the following entry points:
+Please note that this is an anonymized version of the repository with identifying information removed, such as pointers to de-anonymized data repositories.
+If you would like to run the code, please manually download the anonymized evaluation teammate dataset [here](https://anonymous-hf.up.railway.app/a/u77g0c1dnqgq/).
+
+## Reproducing Experimental Results in Paper
+
+Start by following the installation instructions in
+[docs/install_instructions.md](docs/install_instructions.md). 
+
+Then, use the following entry points:
 
 - **Training BRs:** best-response policies use the `ppo_br` configs under
   `ego_agent_training/configs/algorithm/ppo_br/` and are launched through `ego_agent_training/run.py`.
