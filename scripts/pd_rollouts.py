@@ -1152,23 +1152,6 @@ def _match_partner_to_br(heldout_name: str, available_dirs: List[str], layout_pr
     return None
 
 
-def _normalize_partner_name_for_br(heldout_name: str) -> List[str]:
-    """legacy direct-pattern fallback for when br_root isn't scannable."""
-    name = heldout_name.strip()
-    candidates: List[str] = [name]
-    base, outer_idx, inner_idx = _strip_idx_suffix(name)
-    base_us = base.replace("-", "_")
-    candidates.append(base_us)
-    idx = inner_idx if inner_idx is not None else outer_idx
-    if idx is not None:
-        candidates.extend([
-            f"{base_us}_{idx}",
-            f"{base_us}_conf_{idx}",
-            base_us,
-        ])
-    return candidates
-
-
 def load_brs_for_pd(
     env, env_kwargs: dict, task_name: str, br_root: Path, partner_names: List[str],
     seed: int, layout_prefix: Optional[str] = None,
