@@ -8,7 +8,7 @@ Example:
     python download_from_hf.py \
         --dataset jaxaht/eval-teammates-br \
         --path_in_dataset overcooked_v1_coord_ring \
-        --dest_dir results/overcooked-v1/coord_ring/ppo_br_s5
+        --dest_dir eval_teammates/overcooked_v1_coord_ring
 """
 
 import argparse
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--dest_dir", required=True,
-        help="Local directory to download into (e.g. results/overcooked-v1/coord_ring/ppo_br_s5)",
+        help="Local directory to download into (e.g. eval_teammates/overcooked_v1_coord_ring)",
     )
     parser.add_argument(
         "--api_key", default=None,
