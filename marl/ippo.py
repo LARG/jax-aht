@@ -5,6 +5,7 @@ fully cooperative multi-agent environment.
 Recommended run command:
 python marl/run.py task=lbf/lbf_7x7_nolevels algorithm=ippo/lbf/lbf_7x7_nolevels
 '''
+import copy
 import shutil
 
 import hydra
@@ -38,6 +39,7 @@ def initialize_agent(actor_type, algorithm_config, env, init_rng):
     return policy, init_params
 
 def make_train(config, env, logger, progress_callback=None):
+    config = copy.copy(config)    
     config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
     config["NUM_UPDATES"] = (
         config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
