@@ -73,6 +73,29 @@ LBF_FEATURE_NAMES = [
     # Partner-distance + opportunity.
     "partner_distance_sum",     # cumulative Manhattan distance to partner
     "noop_when_food_visible",   # idled while >= 1 uneaten fruit on map
+    # --- extended vocabulary (all normalized to [0, 1]-ish scales) ---
+    # Relative spatial configuration w.r.t. the partner (fraction of steps).
+    "rel_north_frac",           # tracked agent strictly north of partner (smaller row)
+    "rel_south_frac",
+    "rel_east_frac",            # strictly east of partner (larger col)
+    "rel_west_frac",
+    # Territorial overlap: Jaccard of visited-cell sets (tracked agent vs partner).
+    "territory_overlap",
+    # Among cooperatively-loaded fruits, fraction where the tracked agent arrived first.
+    "arrival_first_rate",
+    # Mean length of a "loitering next to fruit without loading" run, / episode length.
+    "mean_wait_at_fruit",
+    # Tempo: steps per successful load by the tracked agent.
+    "steps_per_load",
+    # Manhattan-optimal / actual move count, averaged over inter-load segments.
+    "path_efficiency",
+    # --- sabotage vocabulary (force_coop LBF: every fruit needs BOTH agents) ---
+    # A "join opportunity" = partner adjacent to a fruit it cannot load alone, tracked
+    # agent NOT adjacent to it. Cooperating means closing distance; declining is the
+    # LBF form of sabotage. Rates are conditioned on an opportunity existing.
+    "decline_to_join_rate",     # fraction of join opportunities where distance did not shrink
+    "abandon_partner_rate",     # fraction where the agent moved strictly AWAY (active refusal)
+    "join_latency",             # mean steps partner waited before the agent joined, / ep_len
 ]
 
 # overcooked events (wang+2024 SHAPED_INFOS)
@@ -96,4 +119,39 @@ OVERCOOKED_SHAPED_INFOS = [
     "IDLE_INTERACT_EMPTY",
 ]
 
-OVERCOOKED_FEATURE_NAMES = list(OVERCOOKED_SHAPED_INFOS)
+# Extended overcooked vocabulary. Appended AFTER the shaped_infos block so the
+# original 17 columns keep their names and positions.
+OVERCOOKED_EXTENDED_FEATURE_NAMES = [
+    # Handoff: who put what on which counter, and who took it back off.
+    "handoff_given",            # tracked agent placed, partner later picked up
+    "handoff_received",         # partner placed, tracked agent later picked up
+    "dead_drop",                # tracked agent placed, still there at episode end
+    "self_retrieve",            # tracked agent placed and picked back up itself
+    "counter_entropy",          # normalized entropy of placements over counters
+    # Resource choice: fraction of uses that went to the canonically-first
+    # instance of each resource. 0.0 when the layout has < 2 of that resource.
+    "pot_first_frac",
+    "onion_pile_first_frac",
+    "plate_pile_first_frac",
+    "goal_first_frac",
+    # Spatial / territorial.
+    "region_NW_frac",
+    "region_NE_frac",
+    "region_SW_frac",
+    "region_SE_frac",
+    "territory_overlap",        # Jaccard of visited tiles with the partner
+    # Role specialization.
+    "onion_role_frac",
+    "role_purity",
+    # Delivery tempo.
+    "deliveries_per_100_steps",
+    "mean_inter_delivery_interval",
+    # Partner-relational.
+    "mean_partner_distance",
+    "interact_into_partner",
+    "blocked_partner_steps",
+]
+
+OVERCOOKED_FEATURE_NAMES = list(OVERCOOKED_SHAPED_INFOS) + list(
+    OVERCOOKED_EXTENDED_FEATURE_NAMES
+)
