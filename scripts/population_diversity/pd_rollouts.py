@@ -12,7 +12,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from scripts.pd_events import (
+from scripts.population_diversity.pd_events import (
     HANABI_BASE_FEATURE_NAMES,
     hanabi_feature_names,
     HANABI_FEATURE_NAMES,

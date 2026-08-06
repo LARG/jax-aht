@@ -22,19 +22,19 @@ if str(REPO_ROOT) not in sys.path:
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 
-from scripts.pd_events import (
+from scripts.population_diversity.pd_events import (
     HANABI_FEATURE_NAMES,
     LBF_FEATURE_NAMES,
     OVERCOOKED_FEATURE_NAMES,
     hanabi_feature_names,
 )
-from scripts.pd_plots import (
+from scripts.population_diversity.pd_plots import (
     population_diversity,
     pca_2d,
     save_pca_plot,
     save_cosine_heatmap,
 )
-from scripts.pd_rollouts import (
+from scripts.population_diversity.pd_rollouts import (
     HanabiActionLayout,
     HanabiEpisodeCounts,
     hanabi_episode_to_vector,
