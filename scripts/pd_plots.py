@@ -1,10 +1,13 @@
 # PD scalar math (det(K), PCA) and figure savers (heatmap, PCA scatter).
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
 import numpy as np
+
+log = logging.getLogger(__name__)
 
 
 def population_diversity(theta: np.ndarray) -> Dict[str, Any]:
@@ -19,6 +22,17 @@ def population_diversity(theta: np.ndarray) -> Dict[str, Any]:
     # log|det| + sign for our analysis, not the zsc-eval value
     sign, logdet = np.linalg.slogdet(K)
 
+    n_agents, n_features = theta_norm.shape
+    rank = int(np.linalg.matrix_rank(theta_norm))
+    eigvals = np.linalg.eigvalsh(K)
+    degenerate = rank < n_agents
+    if degenerate:
+        log.warning(
+            "PD det(K) is degenerate: rank(theta)=%d < N=%d (D=%d); det is ~0/undefined. "
+            "Use rank / cosine / PCA, not det_K.",
+            rank, n_agents, n_features,
+        )
+
     # cosine sim for the heatmaps, on normalized theta
     norms = np.linalg.norm(theta_norm, axis=1, keepdims=True)
     norms_safe = np.where(norms < 1e-12, 1.0, norms)
@@ -29,6 +43,11 @@ def population_diversity(theta: np.ndarray) -> Dict[str, Any]:
         "det_K": det,
         "log_det_K": float(logdet),
         "sign": int(sign),
+        "n_agents": n_agents,
+        "n_features": n_features,
+        "rank": rank,
+        "degenerate": bool(degenerate),
+        "eigvals_K": eigvals.tolist(),
         "K": K.tolist(),
         "cosine": cosine.tolist(),
         "unit_theta": unit.tolist(),
