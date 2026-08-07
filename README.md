@@ -21,6 +21,9 @@ For reviewers or users reproducing the paper experiments, start from the install
   [`scripts/manage_configs/README.md`](scripts/manage_configs/README.md).
 - **Running benchmark experiments:** use
   [`scripts/benchmark/experiments.sh`](scripts/benchmark/experiments.sh).
+- **LBF human-policy experiments:** the BC and human-regularized self-play
+  workflow used in the paper is documented in
+  [`scripts/bc/README.md`](scripts/bc/README.md).
 - **Visualizations for paper:** plotting scripts and usage notes live in
   [`scripts/paper_vis/`](scripts/paper_vis/).
 

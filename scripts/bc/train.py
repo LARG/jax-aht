@@ -18,7 +18,7 @@ import yaml
 from flax.training.train_state import TrainState
 from agents.bc.bc_lstm import BCLSTMAgent, BCLSTMConfig, BCLSTMNetwork
 from human_data_processing.lbf_configs import LBF_CONFIGS, LBF_CONFIG_NAMES
-from human_data_processing.lbf_features import augment_lbf_obs
+from scripts.bc.lbf_features import augment_lbf_obs
 
 DEFAULT_LBF_BC_CONFIG = REPO_ROOT / "agents/bc/configs/lbf.yaml"
 

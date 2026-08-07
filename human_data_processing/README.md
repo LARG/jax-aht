@@ -20,13 +20,13 @@ Episodes without a recorded step 0 have their initial state reconstructed by rev
 ## Usage
 
 ```python
-from human_data_processing.load_lbf_data import load_lbf_data, load_lbf_data_by_agent, load_lbf_data_padded
+from human_data_processing.load_lbf_data import load_bc_data, load_bc_data_by_agent, load_bc_data_padded
 ```
 
 ### Flat dataset (all episodes concatenated)
 
 ```python
-data = load_lbf_data("grid7_food3_nolevels")
+data = load_bc_data("grid7_food3_nolevels")
 ```
 
 Returns a `BCDataset` (NamedTuple):
@@ -46,14 +46,14 @@ Where `N` = total timesteps across all episodes, `obs_dim` = 15 (7x7) or 24 (12x
 ### Grouped by agent type
 
 ```python
-by_agent = load_lbf_data_by_agent("grid7_food3_nolevels")
+by_agent = load_bc_data_by_agent("grid7_food3_nolevels")
 # dict mapping agent_type (str) -> BCDataset
 ```
 
 ### Padded episodes (for recurrent / sequence models)
 
 ```python
-padded = load_lbf_data_padded("grid7_food3_nolevels")
+padded = load_bc_data_padded("grid7_food3_nolevels")
 ```
 
 Returns a `BCDatasetPadded` (NamedTuple):

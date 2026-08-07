@@ -35,7 +35,7 @@ class LBFBCLSTMPolicyWrapper(AgentPolicy):
 
     def _preprocess_obs(self, obs):
         if getattr(self.config, "lbf_feature_mode", "none") == "path":
-            from human_data_processing.lbf_features import augment_lbf_obs
+            from scripts.bc.lbf_features import augment_lbf_obs
             grid_size = getattr(self.config, "lbf_grid_size", 0)
             num_food = getattr(self.config, "lbf_num_food", 0)
             if grid_size <= 0 or num_food <= 0:
