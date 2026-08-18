@@ -13,15 +13,37 @@ from flax.training.train_state import TrainState
 from agents.population_buffer import BufferedPopulation, PopulationBuffer
 from marl.ppo_utils import Transition, unbatchify, _create_minibatches
 from common.run_episodes import run_episodes
+from common.n_agent_utils import (
+    get_ego_teammate_indices, augment_all_obs, augment_done, split_actions
+)
+from common.run_n_agent_episodes import run_n_agent_episodes
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
+# Maps the raw per-update ego metric keys (built in the ego update step) to the
+# fully-qualified wandb tags used by the end-of-run log_metrics. Consumed by the
+# live-logging callback (common.live_log_utils.make_live_log_callback) so live curves
+# use the same naming as the log-at-end paradigm. Loss stats live under "Losses/*";
+# rollout-return stats (every other metric key) fall through to EGO_LIVE_RETURNS_PREFIX
+# under "Train/Ego/". Keep in sync with rotate_without_pop.log_metrics.
+EGO_LIVE_LOSS_KEYS = {
+    "value_loss": "Losses/EgoValueLoss",
+    "actor_loss": "Losses/EgoActorLoss",
+    "entropy_loss": "Losses/EgoEntropyLoss",
+    "avg_grad_norm": "Losses/EgoGradNorm",
+}
+EGO_LIVE_RETURNS_PREFIX = "Train/Ego/"
+
+def compute_ego_num_updates(cfg):
+    return int(cfg["TOTAL_TIMESTEPS"] // (cfg["ROLLOUT_LENGTH"] * cfg["NUM_ENVS"]))
+
 def train_ppo_ego_agent_with_buffer(config, env, train_rng, 
                            ego_policy, init_ego_params, n_ego_train_seeds,
                            partner_population: BufferedPopulation, 
-                           population_buffer: PopulationBuffer
+                           population_buffer: PopulationBuffer,
+                           logger=None, progress_callback=None
                            ):
     '''
     Train PPO ego agent using partners from the BufferedPopulation.
@@ -40,14 +62,18 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
     # Build the PPO training function
     # ------------------------------
     def make_ppo_train(config):
-        '''agent 0 is the ego agent while agent 1 is the confederate'''
+        '''Ego agents occupy ego_indices slots; partner (buffered population) occupies teammate_indices slots.'''
         num_agents = env.num_agents
-        assert num_agents == 2, "This snippet assumes exactly 2 agents."
+        ego_indices, teammate_indices = get_ego_teammate_indices(config, env)
+        n_ego = len(ego_indices)
+        n_teammates = len(teammate_indices)
+        
+        augment_obs = config.get("EGO_INDICES") is not None
 
         config["NUM_ACTORS"] = env.num_agents * config["NUM_ENVS"]
-        config["NUM_UNCONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["NUM_CONTROLLED_ACTORS"] = config["NUM_ENVS"] # assumption: we control 1 agent
-        config["NUM_UPDATES"] = config["TOTAL_TIMESTEPS"] // config["ROLLOUT_LENGTH"] // config["NUM_ENVS"]
+        config["NUM_CONTROLLED_ACTORS"] = n_ego * config["NUM_ENVS"]        # ego
+        config["NUM_UNCONTROLLED_ACTORS"] = n_teammates * config["NUM_ENVS"] # partner
+        config["NUM_UPDATES"] = compute_ego_num_updates(config)
 
         config["NUM_ACTIONS"] = env.action_space(env.agents[0]).n
         assert config["NUM_CONTROLLED_ACTORS"] % config["NUM_MINIBATCHES"] == 0, "NUM_CONTROLLED_ACTORS must be divisible by NUM_MINIBATCHES"
@@ -81,97 +107,105 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
 
             def _env_step(runner_state, unused):
                 """
-                One step of the environment:
-                1. Get observations, sample actions from all agents
-                2. Step environment using sampled actions
-                3. Return state, reward, ...
+                One step of the environment with N-agent parameter sharing:
+                - ego slots  (ego_indices)      -> shared ego policy
+                - partner slots (teammate_indices) -> BufferedPopulation
                 """
                 train_state, env_state, prev_obs, prev_done, ego_hstate, partner_hstate, population_buffer, partner_indices, rng = runner_state
                 rng, actor_rng, partner_rng, partner_sample_rng, step_rng = jax.random.split(rng, 5)
 
-                 # Get available actions for agent 0 from environment state
-                avail_actions = jax.vmap(env.get_avail_actions)(env_state.env_state)
-                avail_actions = jax.lax.stop_gradient(avail_actions)
-                avail_actions_0 = avail_actions["agent_0"].astype(jnp.float32)
-                avail_actions_1 = avail_actions["agent_1"].astype(jnp.float32)
+                avail_actions_vmap = jax.vmap(env.get_avail_actions)(env_state.env_state)
+                avail_actions_vmap = jax.lax.stop_gradient(avail_actions_vmap)
 
-                # Conditionally resample partners based on prev_done["__all__"]                
-                needs_resample = prev_done["__all__"] # shape (NUM_ENVS,) bool
+                # Stack obs/dones for ego and partner role groups (augmented with one-hot ID)
+                obs_ego, obs_partner = augment_all_obs(
+                    prev_obs, ego_indices, teammate_indices, num_agents, config["NUM_ENVS"], augment_obs=augment_obs)
+                dones_ego = augment_done(prev_done, ego_indices, config["NUM_ENVS"])
+                dones_partner = augment_done(prev_done, teammate_indices, config["NUM_ENVS"])
 
-                # Sample potential new indices for all envs & get buffer with updated ages
-                # Pass the needs_resample mask to correctly update ages
+                avail_actions_ego = jnp.concatenate(
+                    [avail_actions_vmap[f'agent_{i}'].astype(jnp.float32) for i in ego_indices], axis=0)
+                avail_actions_partner = jnp.concatenate(
+                    [avail_actions_vmap[f'agent_{i}'].astype(jnp.float32) for i in teammate_indices], axis=0)
+
+                # Conditionally resample partners on episode end
+                needs_resample = prev_done["__all__"]
                 sampled_indices_all, updated_buffer = partner_population.sample_agent_indices(
-                    population_buffer, # Buffer from previous step
-                    config["NUM_UNCONTROLLED_ACTORS"], # Static n = num_envs
+                    population_buffer,
+                    config["NUM_UNCONTROLLED_ACTORS"],
                     partner_sample_rng,
                     needs_resample_mask=needs_resample
                 )
 
                 # Determine final indices based on whether resampling was needed for each env
+                # needs_resample is (NUM_ENVS,); partner_indices is (NUM_UNCONTROLLED_ACTORS,).
+                # Tile so all teammate slots for an env reset together.
+                needs_resample_tiled = jnp.tile(needs_resample, n_teammates)  # (NUM_UNCONTROLLED_ACTORS,)
                 updated_partner_indices = jnp.where(
-                    needs_resample,         # Mask shape (NUM_ENVS,)
+                    needs_resample_tiled,
                     sampled_indices_all,    # Use newly sampled index if True
                     partner_indices         # Else, keep index from previous step
                 )
-                
+
                 # Note that we do not need to reset the hiden states for both the ego and partner agents
                 # as the recurrent states are automatically reset when done is True, and the partner indices are only reset when done is True.
 
-                # Agent_0 (ego) action, value, log_prob
-                act_0, val_0, pi_0, ego_hstate = ego_policy.get_action_value_policy(
+                # Ego action (parameter sharing over n_ego slots)
+                act_ego, val_ego, pi_ego, new_ego_hstate = ego_policy.get_action_value_policy(
                     params=train_state.params,
-                    obs=prev_obs["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
-                    done=prev_done["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"]),
-                    avail_actions=avail_actions_0,
+                    obs=obs_ego.reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
+                    done=dones_ego.reshape(1, config["NUM_CONTROLLED_ACTORS"]),
+                    avail_actions=avail_actions_ego,
                     hstate=ego_hstate,
                     rng=actor_rng
                 )
-                logp_0 = pi_0.log_prob(act_0)
+                logp_ego = pi_ego.log_prob(act_ego)
+                act_ego = act_ego.squeeze()
+                logp_ego = logp_ego.squeeze()
+                val_ego = val_ego.squeeze()
 
-                act_0 = act_0.squeeze()
-                logp_0 = logp_0.squeeze()
-                val_0 = val_0.squeeze()
-
-                # Agent_1 (partner) action using the BufferedPopulation interface
-                act_1, new_partner_hstate = partner_population.get_actions(
-                    buffer=updated_buffer,              # Use buffer with correct ages
-                    agent_indices=updated_partner_indices,  # Use the final selected indices
-                    obs=prev_obs["agent_1"],
-                    done=prev_done["agent_1"],
-                    avail_actions=avail_actions_1,
+                # Partner action via BufferedPopulation (parameter sharing over n_teammate slots)
+                act_partner, new_partner_hstate = partner_population.get_actions(
+                    buffer=updated_buffer,
+                    agent_indices=updated_partner_indices,
+                    obs=obs_partner,
+                    done=dones_partner,
+                    avail_actions=avail_actions_partner,
                     hstate=partner_hstate,
                     rng=partner_rng,
                     env_state=env_state,
                     aux_obs=None
                 )
-                act_1 = act_1.squeeze()
+                act_partner = act_partner.squeeze()
 
-                # Combine actions into the env format
-                combined_actions = jnp.concatenate([act_0, act_1], axis=0)  # shape (2*num_envs,)
-                env_act = unbatchify(combined_actions, env.agents, config["NUM_ENVS"], num_agents)
-                env_act = {k: v.flatten() for k, v in env_act.items()}
-
-                # Step env
+                # Reconstruct action dict and step env
+                env_act = split_actions(act_ego, act_partner, ego_indices, teammate_indices, config["NUM_ENVS"])
                 step_rngs = jax.random.split(step_rng, config["NUM_ENVS"])
-                obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0,0,0))(
+                obs_next, env_state_next, reward, done, info = jax.vmap(env.step, in_axes=(0, 0, 0))(
                     step_rngs, env_state, env_act
                 )
-                # note that num_actors = num_envs * num_agents
-                info_0 = jax.tree.map(lambda x: x[:, 0], info) # Assuming agent_0 is the first agent
-
-                # Store agent_0 data in transition
-                transition = Transition(
-                    done=done["agent_0"],
-                    action=act_0,
-                    value=val_0,
-                    reward=reward["agent_0"],
-                    log_prob=logp_0,
-                    obs=prev_obs["agent_0"],
-                    info=info_0,
-                    avail_actions=avail_actions_0
+                # Stack ego reward per slot: (n_ego * NUM_ENVS,) — one entry per ego slot
+                ego_reward_stacked = jnp.concatenate(
+                    [reward[f'agent_{i}'] for i in ego_indices], axis=0)  # (NUM_CONTROLLED_ACTORS,)
+                info_ego = jax.tree.map(
+                    lambda x: jnp.concatenate([x[:, i] for i in ego_indices], axis=0), 
+                    info
                 )
-                new_runner_state = (train_state, env_state_next, obs_next, done, 
-                                    ego_hstate, new_partner_hstate, updated_buffer, 
+
+                # Store all NUM_CONTROLLED_ACTORS (n_ego * NUM_ENVS) ego data.
+                ego_done_stacked = augment_done(done, ego_indices, config["NUM_ENVS"])  # (NUM_CONTROLLED_ACTORS,)
+                transition = Transition(
+                    done=ego_done_stacked,
+                    action=act_ego,            # (NUM_CONTROLLED_ACTORS,)
+                    value=val_ego,             # (NUM_CONTROLLED_ACTORS,)
+                    reward=ego_reward_stacked,
+                    log_prob=logp_ego,         # (NUM_CONTROLLED_ACTORS,)
+                    obs=obs_ego,               # (NUM_CONTROLLED_ACTORS, aug_obs_dim)
+                    info=info_ego,
+                    avail_actions=avail_actions_ego  # (NUM_CONTROLLED_ACTORS, n_actions)
+                )
+                new_runner_state = (train_state, env_state_next, obs_next, done,
+                                    new_ego_hstate, new_partner_hstate, updated_buffer,
                                     updated_partner_indices, rng)
                 return new_runner_state, transition
 
@@ -195,7 +229,7 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
                     (jnp.zeros_like(last_val), last_val),
                     traj_batch,
                     reverse=True,
-                    unroll=16,
+                    unroll=4,
                 )
                 return advantages, advantages + traj_batch.value
 
@@ -253,7 +287,15 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
             def _update_epoch(update_state, unused):
                 train_state, init_ego_hstate, traj_batch, advantages, targets, rng = update_state
                 rng, perm_rng = jax.random.split(rng)
-                minibatches = _create_minibatches(traj_batch, advantages, targets, init_ego_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
+                minibatches = _create_minibatches(
+                    traj_batch, 
+                    advantages, 
+                    targets, 
+                    init_ego_hstate, 
+                    config["NUM_CONTROLLED_ACTORS"], 
+                    config["NUM_MINIBATCHES"], 
+                    perm_rng
+                )
                 train_state, losses_and_grads = jax.lax.scan(
                     _update_minbatch, train_state, minibatches
                 )
@@ -287,17 +329,21 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
                  buffer, partner_indices, rng) = runner_state
 
                 # 2) advantage
-                # Get available actions for agent 0 from environment state
-                avail_actions_0 = jax.vmap(env.get_avail_actions)(env_state.env_state)["agent_0"].astype(jnp.float32)
-                
+                # Stack augmented ego obs for the last value estimate
+                obs_ego_last, _ = augment_all_obs(obs, ego_indices, teammate_indices, num_agents, config["NUM_ENVS"], augment_obs=augment_obs)
+                dones_ego_last = augment_done(done, ego_indices, config["NUM_ENVS"])
+                avail_actions_ego_last = jnp.concatenate(
+                    [jax.vmap(env.get_avail_actions)(env_state.env_state)[f'agent_{i}'].astype(jnp.float32)
+                     for i in ego_indices], axis=0)
+
                 # Get final value estimate for completed trajectory
                 _, last_val, _, _ = ego_policy.get_action_value_policy(
-                    params=train_state.params, 
-                    obs=obs["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
-                    done=done["agent_0"].reshape(1, config["NUM_CONTROLLED_ACTORS"]),
-                    avail_actions=jax.lax.stop_gradient(avail_actions_0),
+                    params=train_state.params,
+                    obs=obs_ego_last.reshape(1, config["NUM_CONTROLLED_ACTORS"], -1),
+                    done=dones_ego_last.reshape(1, config["NUM_CONTROLLED_ACTORS"]),
+                    avail_actions=jax.lax.stop_gradient(avail_actions_ego_last),
                     hstate=ego_hstate,
-                    rng=jax.random.PRNGKey(0)  # Dummy key since we're just extracting the value
+                    rng=jax.random.PRNGKey(0)
                 )
                 last_val = last_val.squeeze()
                 advantages, targets = _calculate_gae(traj_batch, last_val)
@@ -327,6 +373,13 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
                 metric["value_loss"] = loss_terms[0].mean()
                 metric["entropy_loss"] = loss_terms[2].mean()
                 metric["avg_grad_norm"] = avg_grad_norm.mean()
+
+                # Live logging + progress bar are handled by a single stateful callback
+                # (see common.live_log_utils.make_live_log_callback) that aggregates over
+                # the seed vmap axis and logs under the end-of-run naming scheme.
+                if progress_callback is not None:
+                    jax.experimental.io_callback(progress_callback, None, metric)
+
                 new_runner_state = (train_state, buffer, rng, update_steps + 1)
                 return (new_runner_state, metric)
 
@@ -377,12 +430,16 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
                     )
                     
                     # Run evaluation with sampled partners
-                    eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
-                        eval_rng, env, agent_0_param=train_state.params, agent_0_policy=ego_policy,
-                        agent_1_param=x, agent_1_policy=partner_population.policy_cls,
-                        max_episode_steps=max_episode_steps,
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params)
-                    eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), eval_eps_last_infos)
+                    eval_eps_last_infos = jax.vmap(
+                        lambda partner_p: run_n_agent_episodes(
+                            eval_rng, env,
+                            ego_policy=ego_policy, ego_param=train_state.params,
+                            teammate_policy=partner_population.policy_cls, teammate_param=partner_p,
+                            ego_indices=ego_indices, teammate_indices=teammate_indices,
+                            max_episode_steps=max_episode_steps,
+                            num_eps=config["NUM_EVAL_EPISODES"]
+                        )
+                    )(gathered_params)
                     return (new_ckpt_arr, cidx + 1, rng, eval_eps_last_infos)
                 
                 def skip_ckpt(args):
@@ -415,12 +472,16 @@ def train_ppo_ego_agent_with_buffer(config, env, train_rng,
                 eval_buffer, eval_partner_indices
             )
             
-            eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), jax.vmap(lambda x: run_episodes(
-                        rng_eval, env,
-                        agent_0_param=train_state.params, agent_0_policy=ego_policy,
-                        agent_1_param=x, agent_1_policy=partner_population.policy_cls,
-                        max_episode_steps=max_episode_steps,
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params))
+            eval_eps_last_infos = jax.vmap(
+                lambda partner_p: run_n_agent_episodes(
+                    rng_eval, env,
+                    ego_policy=ego_policy, ego_param=train_state.params,
+                    teammate_policy=partner_population.policy_cls, teammate_param=partner_p,
+                    ego_indices=ego_indices, teammate_indices=teammate_indices,
+                    max_episode_steps=max_episode_steps,
+                    num_eps=config["NUM_EVAL_EPISODES"]
+                )
+            )(gathered_params)
 
             # initial runner state for scanning
             update_steps = 0
