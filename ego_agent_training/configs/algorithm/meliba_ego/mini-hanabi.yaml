@@ -19,7 +19,7 @@ DECODER_OUTPUT_DIM: 13  # match mini-Hanabi action_space.n
 ENCODER_LATENT_DIM: 64
 partner_agent:
   ippo:
-    path: val_teammates/hanabi/ippo/default_label/saved_train_run
+    path: val_teammates/mini_hanabi/ippo_mlp/default_label/saved_train_run
     actor_type: mlp
     ckpt_key: final_params
     idx_list: [0, 1, 2]
