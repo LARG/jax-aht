@@ -3,9 +3,11 @@ figures/
 notebooks/
 
 results*/
+temp/
 eval_teammates/
 val_teammates/
-wandb*/
+wandb/
+.wandb/
 .vscode/
 
 # Human data raw

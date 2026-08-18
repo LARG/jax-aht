@@ -9,8 +9,6 @@ metric:
 
 # 1125 Combinations: bayes search recommended over grid
 parameters:
-  algorithm.TOTAL_TIMESTEPS:
-    values: [1.5e7]
   algorithm.NUM_ENVS:
     values: [80]
   algorithm.UPDATE_EPOCHS:
@@ -55,6 +53,6 @@ command:
   - logger.log_train_out=false
   - local_logger.save_train_out=false
   - local_logger.save_eval_out=false
-  - algorithm.NUM_ENVS=1024
+  - algorithm.TOTAL_TIMESTEPS=1.5e7
   - label="param_sweep"
   - ${args_no_hyphens}

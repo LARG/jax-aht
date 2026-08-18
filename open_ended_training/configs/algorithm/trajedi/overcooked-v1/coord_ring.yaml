@@ -2,10 +2,13 @@ defaults:
   - trajedi/_base_
   - _self_ # values from this file override the values from the base file
 
-TOTAL_TIMESTEPS: 2.4e7 # per iter of open-ended training, divided between conf-br and conf-ego and between all partner seeds
-LR: 1e-3
+TOTAL_TIMESTEPS: 3.9e8
+LR: 1e-5
 NUM_MINIBATCHES: 8
 CLIP_EPS: 0.1
-ENT_COEF: 0.05
+ENT_COEF: 0.03
 ANNEAL_LR: false
 TRAJEDI_COEF: 0.1
+NUM_ENVS_BR: 32
+NUM_ENVS_CONFS: 64
+PARTNER_POP_SIZE: 10

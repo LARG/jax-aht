@@ -1391,11 +1391,11 @@ def train_trajedi_partners(config, env, partner_rng):
                         )
                         return ep_infos
             
-                    last_ep_info_with_ego = run_all_episodes_xp(
+                    last_ep_info_with_ego = jax.tree.map(lambda x: x.mean(), run_all_episodes_xp(
                         eval_rng,
-                        all_train_state_conf, 
+                        all_train_state_conf,
                         train_state_ego
-                    )
+                    ))
 
                     return ((new_ckpt_arr_conf, new_ckpt_arr_ego, last_ep_info_with_ego), rng, cidx + 1)
 
@@ -1449,11 +1449,11 @@ def train_trajedi_partners(config, env, partner_rng):
                 return ep_infos
             
             rng, rng_eval = jax.random.split(rng, 2)
-            ep_infos = run_all_episodes(
-                rng_eval, 
-                train_state_conf, 
+            ep_infos = jax.tree.map(lambda x: x.mean(), run_all_episodes(
+                rng_eval,
+                train_state_conf,
                 train_state_ego
-            )
+            ))
 
             rng, reset_rng_conf_sp, reset_rng_xp, reset_rng_br_sp= jax.random.split(rng, 4)
             reset_rngs_xp = jax.random.split(reset_rng_xp, config["NUM_CONF_ACTORS"])
@@ -1541,8 +1541,8 @@ def log_metrics(config, logger, outs, metric_names: tuple):
     metrics = outs["metrics"]
 
     # Extract metrics for all agents
-    # shape (num_seeds, num_updates, num_eval_episodes, num_agents_per_env)
-    avg_returns_confs_vs_br = np.asarray(metrics["eval_ep_last_info_ego"]["returned_episode_returns"]).mean(axis=(0, 2, 3))
+    # shape (num_seeds, num_updates)  [pre-scalarized: mean over partners, eval eps, and agents taken inside scan]
+    avg_returns_confs_vs_br = np.asarray(metrics["eval_ep_last_info_ego"]["returned_episode_returns"]).mean(axis=0)
     
     # Value losses
     # shape (num_seeds, num_updates)

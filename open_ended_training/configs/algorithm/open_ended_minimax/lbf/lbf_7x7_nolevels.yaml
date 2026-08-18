@@ -2,9 +2,9 @@ defaults:
   - open_ended_minimax/_base_
   - _self_ # values from this file override the values from the base file
 
-TIMESTEPS_PER_ITER_PARTNER: 1e7 # per iter of open-ended training
-TIMESTEPS_PER_ITER_EGO: 2e6
-NUM_OPEN_ENDED_ITERS: 30
+TIMESTEPS_PER_ITER_PARTNER: 7.36e6 # per iter of open-ended training
+TIMESTEPS_PER_ITER_EGO: 1.47e6
+NUM_OPEN_ENDED_ITERS: 22
 LR: .0001
 CLIP_EPS: 0.03
 ENT_COEF: 0.01

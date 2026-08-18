@@ -385,11 +385,11 @@ def train_ppo_ego_agent(config, env, train_rng,
                     gathered_params = partner_population.gather_agent_params(partner_params, eval_partner_indices)
                     
                     rng, eval_rng = jax.random.split(rng)
-                    eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
-                        eval_rng, env, agent_0_param=train_state.params, agent_0_policy=ego_policy, 
-                        agent_1_param=x, agent_1_policy=partner_population.policy_cls, 
-                        max_episode_steps=max_episode_steps, 
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params)
+                    eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), jax.vmap(lambda x: run_episodes(
+                        eval_rng, env, agent_0_param=train_state.params, agent_0_policy=ego_policy,
+                        agent_1_param=x, agent_1_policy=partner_population.policy_cls,
+                        max_episode_steps=max_episode_steps,
+                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params))
                     return (new_ckpt_arr, cidx + 1, rng, eval_eps_last_infos)
                 
                 def skip_ckpt(args):
@@ -448,12 +448,12 @@ def train_ppo_ego_agent(config, env, train_rng,
             # Init eval return infos
             eval_partner_indices = jnp.arange(num_total_partners)
             gathered_params = partner_population.gather_agent_params(partner_params, eval_partner_indices)
-            eval_eps_last_infos = jax.vmap(lambda x: run_episodes(
-                        rng_eval, env, 
-                        agent_0_param=train_state.params, agent_0_policy=ego_policy, 
-                        agent_1_param=x, agent_1_policy=partner_population.policy_cls, 
-                        max_episode_steps=max_episode_steps, 
-                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params)
+            eval_eps_last_infos = jax.tree.map(lambda x: x.mean(), jax.vmap(lambda x: run_episodes(
+                        rng_eval, env,
+                        agent_0_param=train_state.params, agent_0_policy=ego_policy,
+                        agent_1_param=x, agent_1_policy=partner_population.policy_cls,
+                        max_episode_steps=max_episode_steps,
+                        num_eps=config["NUM_EVAL_EPISODES"]))(gathered_params))
 
             # initial runner state for scanning
             update_steps = 0
