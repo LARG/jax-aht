@@ -102,8 +102,9 @@ def load_heldout_set(heldout_config, env, task_name, env_kwargs, rng):
         params_list = None
         idx_labels = None
         test_mode = agent_config.get("test_mode", False)
-        # Load RL-based agents
-        if "path" in agent_config:
+        # Load RL-based agents. bc_proxy agents are loaded as heuristic agents
+        # (BCPolicy locates its own checkpoint; the config "path" is informational).
+        if "path" in agent_config and agent_config.get("actor_type") != "bc_proxy":
             # ensure that each rl agent has a unique initialization rng
             rng, init_rng = jax.random.split(rng)
             policy, params, init_params, idx_labels = initialize_rl_agent_from_config(agent_config, agent_name, env, init_rng)

@@ -165,8 +165,10 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
             )
         if actor_type == "bc_proxy":
             from agents.overcooked.bc_agent import BCPolicy, BCProxyPartnerWrapper
+            assert "path" in agent_config, "bc_proxy agents must provide 'path' (BC model base dir)."
             bc = BCPolicy(
                 layout_name=env_kwargs["layout"],
+                model_base_dir=_validate_teammate_path(agent_config["path"]),
                 using_log_wrapper=True,
                 run_id=agent_config.get("run_id", 0),
             )

@@ -27,27 +27,21 @@ ACTION_DIM = len(Actions)
 STATE_HISTORY_LEN = 3
 
 
-# Layout name to base directory mapping
 # Get path to repo root
 REPO_ROOT = Path(__file__).parent.parent.parent
-LAYOUT_TO_BASE_DIR = {
-    "cramped_room": REPO_ROOT / "eval_teammates/overcooked-v1/cramped_room/human_proxy/models",
-    "asymm_advantages": REPO_ROOT / "eval_teammates/overcooked-v1/asymm_advantages/human_proxy/models",
-    "counter_circuit": REPO_ROOT / "eval_teammates/overcooked-v1/counter_circuit/human_proxy/models",
-    "coord_ring": REPO_ROOT / "eval_teammates/overcooked-v1/coord_ring/human_proxy/models",
-    "forced_coord": REPO_ROOT / "eval_teammates/overcooked-v1/forced_coord/human_proxy/models",
-}
 
 
 class BCPolicy(AgentPolicy):
     """Behavior Cloning policy that directly implements the AgentPolicy interface."""
-    def __init__(self, layout_name, using_log_wrapper=True, run_id=0):
+    def __init__(self, layout_name, model_base_dir, using_log_wrapper=True, run_id=0):
         """
         Initialize BC policy with layout name.
         The agent_id must be provided through init_hstate via aux_info.
 
         Args:
             layout_name: Name of the layout (e.g., "cramped_room")
+            model_base_dir: Directory containing the BC checkpoints, one subdirectory
+                per run_id. Relative paths are resolved against the repo root.
             using_log_wrapper: If True, assume that the agent is interacting with the wrapped Overcooked-v1
                 environment. If False, assume that the agent is interacting with the original Overcooked-v1
                 environment.
@@ -56,6 +50,8 @@ class BCPolicy(AgentPolicy):
         super().__init__(action_dim=ACTION_DIM, obs_dim=None)
         self.network = BCModel(action_dim=ACTION_DIM, hidden_dims=(64, 64))
         self.layout_name = layout_name
+        base_dir = Path(model_base_dir)
+        self.model_base_dir = base_dir if base_dir.is_absolute() else REPO_ROOT / base_dir
         self.run_id = run_id # checkpoints are available from 0 to 4
         self.unblock_if_stuck = True
         self.using_log_wrapper = using_log_wrapper
@@ -68,12 +64,10 @@ class BCPolicy(AgentPolicy):
         self.featurizer = BCFeaturizer(layout, num_pots=2, max_steps=400)
     
     def _load_params(self):
-        """Load parameters from checkpoint based on layout name and run ID."""
-        if self.layout_name not in LAYOUT_TO_BASE_DIR:
-            raise ValueError(f"Layout '{self.layout_name}' not found in LAYOUT_TO_BASE_DIR mapping")
-        
-        base_dir = Path(LAYOUT_TO_BASE_DIR[self.layout_name])
-        model_dir = base_dir / str(self.run_id)
+        """Load parameters from checkpoint based on the model base dir and run ID."""
+        model_dir = self.model_base_dir / str(self.run_id)
+        if not model_dir.exists():
+            raise FileNotFoundError(f"BC checkpoint not found: {model_dir}")
         
         orbax_checkpointer = ocp.PyTreeCheckpointer()
         ckpt = orbax_checkpointer.restore(model_dir, item=None)
@@ -421,10 +415,8 @@ class BCHState:
 
         return pos_equal & dir_equal
 
-def test_bc_policy(layout_name: str, num_episodes=64, test_mode=True, do_reward_shaping=True):
+def test_bc_policy(layout_name: str, model_base_dir, num_episodes=64, test_mode=True, do_reward_shaping=True):
     """Load and evaluate a BC policy on Overcooked-v1"""
-    assert layout_name in LAYOUT_TO_BASE_DIR, f"Layout {layout_name} not found in LAYOUT_TO_BASE_DIR"
-
     num_timesteps = 400
     seed = 0
     
@@ -448,8 +440,8 @@ def test_bc_policy(layout_name: str, num_episodes=64, test_mode=True, do_reward_
                     })
     # env = OvercookedWrapper(layout=augmented_layouts[layout_name], max_steps=num_timesteps)
     
-    policy0 = BCPolicy(layout_name, using_log_wrapper=False)
-    policy1 = BCPolicy(layout_name, using_log_wrapper=False)
+    policy0 = BCPolicy(layout_name, model_base_dir, using_log_wrapper=False)
+    policy1 = BCPolicy(layout_name, model_base_dir, using_log_wrapper=False)
     
     # Initialize random key
     key = jax.random.PRNGKey(seed)
@@ -564,9 +556,11 @@ def test_bc_policy(layout_name: str, num_episodes=64, test_mode=True, do_reward_
     return mean_reward, std_reward, all_ep_rewards
 
 if __name__ == "__main__":
-    for layout_name in LAYOUT_TO_BASE_DIR.keys():
-        test_bc_policy(layout_name, 
-                       num_episodes=64, 
+    for layout_name in ["cramped_room", "asymm_advantages", "counter_circuit",
+                        "coord_ring", "forced_coord"]:
+        test_bc_policy(layout_name,
+                       model_base_dir=f"eval_teammates/overcooked-v1/{layout_name}/human_proxy/models",
+                       num_episodes=64,
                        test_mode=True,
                        do_reward_shaping=True
                        )
