@@ -22,7 +22,7 @@ POLICY_INPUT_DIM: 20
 RECON_COEF: 1
 partner_agent:
   ippo:
-    path: val_teammates/mini_hanabi/ippo_mlp/default_label/saved_train_run
+    path: val_teammates/mini_hanabi/ippo_mlp/saved_train_run
     actor_type: mlp
     ckpt_key: final_params
     idx_list: [0, 1, 2]

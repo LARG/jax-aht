@@ -154,7 +154,7 @@ heldout_set:
 
   mini-hanabi:
     ippo-mlp:
-      path: val_teammates/mini_hanabi/ippo_mlp/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/ippo_mlp/saved_train_run
       actor_type: mlp
       ckpt_key: final_params
       idx_list:
@@ -166,7 +166,7 @@ heldout_set:
           -   - 0.0
               - 1.2
     brdiv-conf:
-      path: val_teammates/mini_hanabi/brdiv/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/brdiv/saved_train_run
       actor_type: actor_with_conditional_critic
       idx_list:
         -   - 0
@@ -187,7 +187,7 @@ heldout_set:
           -   - 0.0
               - 1.22
     lbrdiv-conf:
-      path: val_teammates/mini_hanabi/lbrdiv/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/lbrdiv/saved_train_run
       actor_type: actor_with_conditional_critic
       idx_list:
         -   - 0
@@ -208,7 +208,7 @@ heldout_set:
           -   - 0.0
               - 5.59
     comedi:
-      path: val_teammates/mini_hanabi/comedi/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/comedi/saved_train_run
       actor_type: actor_with_conditional_critic
       idx_list:
         -   - 0
@@ -237,7 +237,7 @@ heldout_set:
           -   - 0.0
               - 3.42
     trajedi:
-      path: val_teammates/mini_hanabi/trajedi/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/trajedi/saved_train_run
       actor_type: mlp
       ckpt_key: final_params
       idx_list:
@@ -432,7 +432,7 @@ best_response_set:
       test_mode: false
   mini-hanabi:
     ippo-mlp-br:
-      path: val_teammates/mini_hanabi/ippo_mlp/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/ippo_mlp/saved_train_run
       actor_type: mlp
       ckpt_key: final_params
       idx_list:
@@ -440,7 +440,7 @@ best_response_set:
       FC_HIDDEN_DIM: 256
       test_mode: false
     brdiv-br:
-      path: val_teammates/mini_hanabi/brdiv/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/brdiv/saved_train_run
       actor_type: actor_with_conditional_critic
       idx_list:
         -   - 0
@@ -453,7 +453,7 @@ best_response_set:
       POP_SIZE: 3
       test_mode: false
     lbrdiv-br:
-      path: val_teammates/mini_hanabi/lbrdiv/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/lbrdiv/saved_train_run
       actor_type: actor_with_conditional_critic
       idx_list:
         -   - 0
@@ -466,7 +466,7 @@ best_response_set:
       POP_SIZE: 3
       test_mode: false
     comedi-br:
-      path: val_teammates/mini_hanabi/comedi/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/comedi/saved_train_run
       actor_type: actor_with_conditional_critic
       idx_list:
         -   - 0
@@ -483,7 +483,7 @@ best_response_set:
       POP_SIZE: 5
       test_mode: false
     trajedi-br:
-      path: val_teammates/mini_hanabi/trajedi/default_label/saved_train_run
+      path: val_teammates/mini_hanabi/trajedi/saved_train_run
       actor_type: mlp
       ckpt_key: final_params
       idx_list:
