@@ -1,22 +1,10 @@
 '''Implementation of the ROTATE algorithm (Wang et al. 2025)
 https://arxiv.org/abs/2505.23686
 
-The full ROTATE algorithm is consolidated into this single file: the regret-maximizing
-teammate generation (confederate/best-response training) and the open-ended loop that
-trains the ego agent against a persistent population buffer of generated teammates.
+Supports N-agent environments via EGO_INDICES in the task config. Belief-model
+support for partial observability is not included.
 
-Supports N-agent environments via parameter sharing: set EGO_INDICES in the task config
-to assign ego slots; all remaining slots are controlled by the confederate. Observations
-are augmented with a one-hot agent ID when EGO_INDICES is set.
-
-Note: partial observability support via a belief model is NOT supported in this version
-of ROTATE (unlike the continual-aht research implementation, which supports a grounded
-belief model pipeline).
-
-Command to run ROTATE only on LBF: 
-python open_ended_training/run.py algorithm=rotate/lbf/lbf_7x7_nolevels task=lbf label=test_rotate
-
-Suggested debug command: 
+Suggested debug command:
 python open_ended_training/run.py algorithm=rotate/lbf/lbf_7x7_nolevels task=lbf label=test_rotate logger.mode=offline algorithm.NUM_OPEN_ENDED_ITERS=1 algorithm.TIMESTEPS_PER_ITER_PARTNER=1e5 algorithm.TIMESTEPS_PER_ITER_EGO=1e5
 '''
 import copy
