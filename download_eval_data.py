@@ -164,6 +164,12 @@ if __name__ == "__main__":
             "filename": "hanabi",
             "target_directory": "eval_teammates/",
         },
+        "mini_hanabi_val_teammates": {
+            "type": "dir",
+            "filename": "mini_hanabi",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
+        },
         "mini_hanabi_teammates": {
             "type": "dir",
             "filename": "mini_hanabi",
