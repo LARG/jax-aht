@@ -164,6 +164,24 @@ if __name__ == "__main__":
             "filename": "hanabi",
             "target_directory": "eval_teammates/",
         },
+        "lbf_val_teammates": {
+            "type": "dir",
+            "filename": "lbf",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
+        },
+        "lbf_12x12_val_teammates": {
+            "type": "dir",
+            "filename": "lbf_12x12",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
+        },
+        "overcooked-v1_val_teammates": {
+            "type": "dir",
+            "filename": "overcooked-v1",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
+        },
         "mini_hanabi_val_teammates": {
             "type": "dir",
             "filename": "mini_hanabi",
