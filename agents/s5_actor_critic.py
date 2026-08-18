@@ -687,3 +687,53 @@ class S5ActorCritic(nn.Module):
         critic = self.value_decoder(critic)
 
         return hidden, pi, jnp.squeeze(critic, axis=-1)
+
+class S5ActorWithDoubleCritic(S5ActorCritic):
+    def setup(self):
+        super().setup()
+        self.value_body_layers2 = [
+            nn.Dense(self.fc_hidden_dim, kernel_init=orthogonal(2), bias_init=constant(0.0))
+            for _ in range(self.fc_n_layers)
+        ]
+        self.value_decoder2 = nn.Dense(1, kernel_init=orthogonal(1.0), bias_init=constant(0.0))
+
+    def __call__(self, hidden, x):
+        obs, dones, avail_actions = x
+
+        if self.s5_no_reset:
+            dones = jnp.zeros_like(dones)
+        embedding = self.encoder_0(obs)
+        embedding = nn.leaky_relu(embedding)
+        embedding = self.encoder_1(embedding)
+        embedding = nn.leaky_relu(embedding)
+
+        # hidden: (1, num_actors, ssm_hidden_dim / 2)
+        # embedding: (1, num_actors, ssm_hidden_dim)
+        # dones: (1, num_actors)
+        hidden, embedding = self.s5(hidden, embedding, dones)
+
+        actor_mean = embedding
+        for layer in self.action_body_layers:
+            actor_mean = layer(actor_mean)
+            actor_mean = nn.leaky_relu(actor_mean)
+        actor_mean = self.action_decoder(actor_mean)
+
+        unavail_actions = 1 - avail_actions
+        action_logits = actor_mean - (unavail_actions * 1e10)
+
+        pi = distrax.Categorical(logits=action_logits)
+
+        critic = embedding
+        for layer in self.value_body_layers:
+            critic = layer(critic)
+            critic = nn.leaky_relu(critic)
+        critic = self.value_decoder(critic)
+
+        critic2 = embedding
+        for layer in self.value_body_layers2:
+            critic2 = layer(critic2)
+            critic2 = nn.leaky_relu(critic2)
+        critic2 = self.value_decoder2(critic2)
+        return hidden, pi, (jnp.squeeze(critic, axis=-1), jnp.squeeze(critic2, axis=-1))
+
+

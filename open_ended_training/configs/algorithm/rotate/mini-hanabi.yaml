@@ -1,12 +1,12 @@
 defaults:
   - rotate/_base_
-  - _self_
+  - _self_ # values from this file override the values from the base file
 
-# Mini-Hanabi (3c/3r/hand3) ROTATE config.
-TIMESTEPS_PER_ITER_PARTNER: 2e6
+TIMESTEPS_PER_ITER_PARTNER: 2e6 # per iter of open-ended training, divided between conf-br and conf-ego and between all partner seeds
 TIMESTEPS_PER_ITER_EGO: 1e6
 NUM_OPEN_ENDED_ITERS: 20
-REGRET_SP_WEIGHT: 1.0
+LAMBDA_1: 1.0 # weight on the BR return from XP term in the perstep regret loss
+LAMBDA_2: 1.0 # weight on the BR return from SP term in the perstep regret loss
 LR: 5e-4
 CLIP_EPS: 0.2
 ENT_COEF: 0.01
