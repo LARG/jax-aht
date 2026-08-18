@@ -4,17 +4,18 @@ from agents.mlp_actor_critic_agent import MLPActorCriticPolicy, ActorWithDoubleC
     ActorWithConditionalCriticPolicy, PseudoActorWithDoubleCriticPolicy, \
     PseudoActorWithConditionalCriticPolicy
 from agents.rnn_actor_critic_agent import RNNActorCriticPolicy
-from agents.s5_actor_critic_agent import S5ActorCriticPolicy
+from agents.s5_actor_critic_agent import S5ActorCriticPolicy, S5ActorWithDoubleCriticPolicy
 from agents.liam_agent import LIAMPolicy, initialize_liam_encoder_decoder
 from agents.meliba_agent import MeLIBAPolicy, initialize_meliba_encoder_decoder
 
-def initialize_s5_agent(config, env, rng):
+def initialize_s5_agent(config, env, rng, obs_dim_override=None):
     """Initialize an S5 agent with the given config.
 
     Args:
         config: dict, config for the agent
         env: gymnasium environment
         rng: jax.random.PRNGKey, random key for initialization
+        obs_dim_override: if provided, use this obs_dim instead of the config/env value
 
     Returns:
         policy: S5ActorCriticPolicy, the policy object
@@ -23,7 +24,8 @@ def initialize_s5_agent(config, env, rng):
     # Create the S5 policy with direct parameters
     policy = S5ActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        obs_dim=obs_dim_override if obs_dim_override is not None
+            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         d_model=config.get("S5_D_MODEL", 128),
         ssm_size=config.get("S5_SSM_SIZE", 128),
         # d_model=config.get("S5_D_MODEL", 16),
@@ -71,13 +73,14 @@ def initialize_rnn_agent(config, env, rng):
 
     return policy, init_params
 
-def initialize_mlp_agent(config, env, rng):
+def initialize_mlp_agent(config, env, rng, obs_dim_override=None):
     """
     Initialize an MLP agent with the given config.
     """
     policy = MLPActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        obs_dim=obs_dim_override if obs_dim_override is not None
+            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
@@ -86,13 +89,36 @@ def initialize_mlp_agent(config, env, rng):
 
     return policy, init_params
 
-def initialize_actor_with_double_critic(config, env, rng):
+def initialize_actor_with_double_critic(config, env, rng, obs_dim_override=None):
     """Initialize an actor with double critic with the given config."""
     policy = ActorWithDoubleCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        obs_dim=obs_dim_override if obs_dim_override is not None
+            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
+    )
+    rng, init_rng = jax.random.split(rng)
+    init_params = policy.init_params(init_rng)
+
+    return policy, init_params
+
+def initialize_s5_actor_with_double_critic(config, env, rng, obs_dim_override=None):
+    """Initialize an S5 actor with double critic with the given config."""
+    policy = S5ActorWithDoubleCriticPolicy(
+        action_dim=env.action_space(env.agents[0]).n,
+        obs_dim=obs_dim_override if obs_dim_override is not None
+            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        d_model=config.get("S5_D_MODEL", 128),
+        ssm_size=config.get("S5_SSM_SIZE", 128),
+        ssm_n_layers=config.get("S5_N_LAYERS", 2),
+        blocks=config.get("S5_BLOCKS", 1),
+        fc_hidden_dim=config.get("S5_ACTOR_CRITIC_HIDDEN_DIM", 1024),
+        fc_n_layers=config.get("FC_N_LAYERS", 3),
+        s5_activation=config.get("S5_ACTIVATION", "full_glu"),
+        s5_do_norm=config.get("S5_DO_NORM", True),
+        s5_prenorm=config.get("S5_PRENORM", True),
+        s5_do_gtrxl_norm=config.get("S5_DO_GTRXL_NORM", True),
     )
     rng, init_rng = jax.random.split(rng)
     init_params = policy.init_params(init_rng)
