@@ -36,10 +36,8 @@ fi
 echo "Launching ${#ELIGIBLE_GPUS[@]} agent(s) on GPUs: ${ELIGIBLE_GPUS[*]}"
 
 # Launch one agent per eligible GPU
-# ORBAX RACE FIX: cap to 1 agent/node to avoid shared-savedir collisions.
-# Original line: for i in "${ELIGIBLE_GPUS[@]}"; do
-for i in "${ELIGIBLE_GPUS[@]:0:1}"; do
-    # Original line: CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 30 &
+# (savedir collisions fixed by microsecond-precision hydra output dirs)
+for i in "${ELIGIBLE_GPUS[@]}"; do
     CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 30 &
 done
 
