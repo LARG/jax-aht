@@ -262,6 +262,7 @@ def cmd_create(args):
                  else f" --entity {entity} --project {project}")
     print("Next, in a screen:")
     print(f"  PYTHONPATH=. python scripts/hparam_search/sweep_controller.py run {sweep_id}{qualifier}")
+    print("Then, run the param sweep on a compute node:")
     print(f"  bash scripts/hparam_search/run_hparam_sweep.sh {sweep_id}")
     return sweep_id
 
