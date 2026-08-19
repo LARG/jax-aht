@@ -7,5 +7,5 @@
 #SBATCH -t 48:00:00
 #SBATCH -A IRI26004
 
-bash $SCRATCH/jax-aht/scripts/run_hparam_sweep.sh "$SWEEP_SHORT_ID"
+bash $SCRATCH/jax-aht/scripts/hparam_search/run_hparam_sweep.sh "$SWEEP_SHORT_ID"
 sleep infinity # keeps node alive so you can ssh in after job ends.

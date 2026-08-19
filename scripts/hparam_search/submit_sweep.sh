@@ -1,7 +1,7 @@
 #!/bin/bash
 # Wrapper that validates args before submitting the sweep job.
-# Usage: bash scripts/slurm/submit_sweep.sh <sweep_id> [<sweep_id> ...] [extra sbatch args...]
-# Example: bash scripts/slurm/submit_sweep.sh dqsezvy1 abc123
+# Usage: bash scripts/hparam_search/submit_sweep.sh <sweep_id> [<sweep_id> ...] [extra sbatch args...]
+# Example: bash scripts/hparam_search/submit_sweep.sh dqsezvy1 abc123
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <sweep_id> [<sweep_id> ...]"
