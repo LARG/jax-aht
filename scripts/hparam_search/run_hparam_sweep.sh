@@ -40,7 +40,7 @@ echo "Launching ${#ELIGIBLE_GPUS[@]} agent(s) on GPUs: ${ELIGIBLE_GPUS[*]}"
 # Original line: for i in "${ELIGIBLE_GPUS[@]}"; do
 for i in "${ELIGIBLE_GPUS[@]:0:1}"; do
     # Original line: CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 30 &
-    CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 200 &
+    CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 30 &
 done
 
 wait
