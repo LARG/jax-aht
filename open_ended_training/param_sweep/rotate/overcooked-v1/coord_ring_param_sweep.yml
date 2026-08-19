@@ -1,6 +1,6 @@
 program: open_ended_training/run.py
 name: rotate-overcooked-v1-coord_ring
-method: bayes
+method: random
 entity: aht-project
 project: aht-parameter-sweep
 metric:

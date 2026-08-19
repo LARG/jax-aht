@@ -1,6 +1,6 @@
 program: open_ended_training/run.py
 name: rotate-lbf
-method: bayes
+method: random
 entity: aht-project
 project: aht-parameter-sweep
 metric:
