@@ -682,7 +682,7 @@ heldout_set:
       S5_D_MODEL: 128
       S5_SSM_SIZE: 128
       S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
-      FC_N_LAYERS: 2
+      FC_N_LAYERS: 3
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 16.35]]
@@ -694,7 +694,7 @@ heldout_set:
       S5_D_MODEL: 128
       S5_SSM_SIZE: 128
       S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
-      FC_N_LAYERS: 2
+      FC_N_LAYERS: 3
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 18.08]]
@@ -706,7 +706,7 @@ heldout_set:
       S5_D_MODEL: 128
       S5_SSM_SIZE: 128
       S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
-      FC_N_LAYERS: 2
+      FC_N_LAYERS: 3
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 21.34]]
@@ -715,10 +715,10 @@ heldout_set:
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-      FC_N_LAYERS: 2
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+      FC_N_LAYERS: 3
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 12.87]]
@@ -727,10 +727,10 @@ heldout_set:
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-      FC_N_LAYERS: 2
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+      FC_N_LAYERS: 3
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 11.91]]
@@ -739,10 +739,10 @@ heldout_set:
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
-      S5_D_MODEL: 16
-      S5_SSM_SIZE: 16
-      S5_ACTOR_CRITIC_HIDDEN_DIM: 64
-      FC_N_LAYERS: 2
+      S5_D_MODEL: 128
+      S5_SSM_SIZE: 128
+      S5_ACTOR_CRITIC_HIDDEN_DIM: 1024
+      FC_N_LAYERS: 3
       test_mode: false
       performance_bounds:
         returned_episode_returns: [[0.0, 11.11]]
