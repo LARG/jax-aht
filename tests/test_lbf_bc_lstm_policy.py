@@ -48,7 +48,7 @@ def test_lbf_bc_lstm_loader_pads_7x7_observations(tmp_path):
 
     action_7x7, carry_7x7 = policy.get_action(
         None, obs_7x7, done, legal_actions, hstate,
-        jax.random.PRNGKey(1), env_state=None, test_mode=True,
+        jax.random.PRNGKey(1),
     )
     action_12x12, carry_12x12 = policy.get_action(
         None, obs_12x12, done, legal_actions, hstate,

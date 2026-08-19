@@ -52,7 +52,7 @@ class LBFBCLSTMPolicyWrapper(AgentPolicy):
         return obs
 
     def get_action(self, params, obs, done, avail_actions, hstate, rng,
-                   env_state, aux_obs=None, test_mode=False):
+                   aux_obs=None, env_state=None, test_mode=False):
         del params, env_state, aux_obs
         obs = self._prepare_obs(obs)
         if avail_actions is None:
