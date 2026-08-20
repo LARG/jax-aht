@@ -37,13 +37,25 @@ https://wandb.ai/<entity>/<project>/sweeps/<sweep_id>
 
 ## Seeding a Sweep With the Default Hyperparameters
 
-The workflow above uses wandb's cloud controller which does not guarantee that an algorithm's current default hyperparameters
-are among them. [scripts/hparam_search/sweep_controller.py](../scripts/hparam_search/sweep_controller.py) replaces
-the cloud controller with a local one that schedules the defaults as the sweep's first
-run, then falls back to the sweep yaml's own search method for everything after.
+The workflow above uses wandb's cloud controller, which does not guarantee that an
+algorithm's current default hyperparameters are ever tried.
+[scripts/hparam_search/sweep_controller.py](../scripts/hparam_search/sweep_controller.py)
+replaces it with a local controller that schedules the defaults (read from the Hydra
+configs) as the sweep's first run, then falls back to the sweep yaml's own search method.
 
-Agents are unaffected: `wandb agent` polls the backend for scheduled runs
-regardless of who scheduled them, so `scripts/hparam_search/run_hparam_sweep.sh` works unchanged.
+Agents are unaffected: `wandb agent` polls the backend for scheduled runs regardless of
+who scheduled them, so `scripts/hparam_search/run_hparam_sweep.sh` works unchanged.
+
+### Installation
+
+Needs the `wandb[sweeps]` extra:
+
+```bash
+pip install 'wandb[sweeps]==0.19.9' 'narwhals==1.33.0'
+```
+
+The `narwhals` pin matters: without it pip resolves scikit-learn 1.9, which upgrades
+`narwhals` out from under `plotly`. With it the install is purely additive.
 
 ### Usage
 
@@ -55,49 +67,39 @@ PYTHONPATH=. python scripts/hparam_search/sweep_controller.py create \
 # 2. Run the controller. It prints the exact command to use, including
 #    --entity/--project when the sweep is not in aht-project/aht-parameter-sweep.
 screen -S sweepctl
-PYTHONPATH=. python scripts/hparam_search/sweep_controller.py run <sweep_id>
+PYTHONPATH=. python scripts/hparam_search/sweep_controller.py run <sweep_id> --max-pending 8
 # detach with C-a d; reattach with `screen -r sweepctl`
 
 # 3. Launch agents, one per node, exactly as for a cloud-controlled sweep.
 bash scripts/hparam_search/run_hparam_sweep.sh <sweep_id>
 ```
 
-The controller **must** run in a screen or tmux session. It is the only thing scheduling
-runs, so if it dies the agents sit idle. Restarting it is safe (see below).
+The controller **must** run in a screen or tmux session: it is the only thing scheduling
+runs, so if it dies the agents go idle. Restarting it is safe and resumes without
+re-seeding the defaults.
 
-Useful flags on `run`:
+Flags on `run`:
 
+- `--max-pending` — suggestions kept queued for agents (default 4). Set it to roughly your
+  agent count. wandb's own controller caps this at 1, which makes agents wait for each
+  other to reach `wandb.init` — minutes, for a jax-aht run. Only applies to `random`;
+  grid and bayes would return duplicates within a step, so they stay capped at 1.
+- `--schedule-timeout` — seconds before a stuck suggestion is dropped (default 600). A run
+  that dies before leaving `pending` never releases its slot, which permanently shrinks
+  the pool; this reclaims it. Suggestions no agent has claimed yet are not affected.
 - `--poll-interval` — seconds between controller steps (default 15).
-- `--force-seed` — schedule the defaults even if a matching run already exists.
+- `--force-seed` — schedule the defaults even if a matching run already exists. Needed to
+  re-run defaults that crashed, since a match counts regardless of run state.
 - `--seed-only` — seed and exit without entering the scheduling loop.
 
-### Installation
+### If agents are idle
 
-`wandb.controller` needs the `sweeps` package, i.e. the `wandb[sweeps]` extra, which is
-not installed in `bench311`. Without it every entry point exits with an install hint.
+The controller prints its queue depth and run counts each step. Check in this order:
 
-```bash
-pip install 'wandb[sweeps]==0.19.9'
-```
-
-### Pause handling
-
-The canonical wandb controller loop is `while not tuner.done(): tuner.step()`. In wandb
-0.19.9, `_WandbController.done()` returns `False` *only* for the `PREEMPTING`, `PENDING`,
-and `RUNNING` states. A sweep paused from the UI is in `PAUSED`, so `done()` returns
-`True` and the canonical loop **exits** — a pause silently kills scheduling for good.
-
-This script checks the sweep state explicitly instead: `PAUSED` sleeps and keeps polling,
-and only genuinely terminal states (`FINISHED`, `CANCELED`, `CRASHED`, `KILLED`) exit.
-Unrecognised states are treated as "keep polling" and warned about, on the grounds that
-exiting by mistake is the failure mode worth guarding against.
-
-### Restart safety
-
-`_WandbController` rebuilds all of its state from the backend when it is constructed, so
-killing and restarting the controller resumes cleanly. To avoid seeding a *second*
-default run on restart, the seeding step first scans the sweep's existing runs for one
-whose swept parameters already match the defaults, and skips seeding if it finds one.
-
-A run counts as matching regardless of its state, so a default run that crashed is not
-re-seeded automatically. Use `--force-seed` if you want it re-run.
+1. **Are the agents alive?** Most commonly they are not — a slurm job that hit its
+   walltime kills every agent at once. `squeue -u $USER` on the cluster running the
+   agents, not the one running the controller.
+2. **Is the sweep paused?** The controller holds rather than exiting on `PAUSED`, and says
+   so each poll. Resume it in the UI.
+3. **Is the queue full?** Suggestions sitting outstanding with agents alive means the
+   backend is not handing them out; restarting the controller resets the queue.

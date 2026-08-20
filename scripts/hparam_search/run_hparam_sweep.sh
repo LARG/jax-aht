@@ -38,7 +38,7 @@ echo "Launching ${#ELIGIBLE_GPUS[@]} agent(s) on GPUs: ${ELIGIBLE_GPUS[*]}"
 # Launch one agent per eligible GPU
 # (savedir collisions fixed by microsecond-precision hydra output dirs)
 for i in "${ELIGIBLE_GPUS[@]}"; do
-    CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 30 &
+    CUDA_VISIBLE_DEVICES=$i PYTHONPATH=. wandb agent "$SWEEP_ID" --count 35 &
 done
 
 wait
