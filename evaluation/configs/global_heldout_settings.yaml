@@ -113,17 +113,16 @@ heldout_set:
       performance_bounds:
         percent_eaten: [[0.0, 100.00], [0.0, 51.56], [0.0, 100.00], [0.0, 100.00], [0.0, 99.48]]
         returned_episode_returns: [[0.0, 0.50], [0.0, 0.32], [0.0, 0.50], [0.0, 0.50], [0.0, 0.50]]
-    # TODO: enable once the real 7x7 checkpoint is uploaded. The current file at
-    # lbf_7x7/human_proxy on HF is a byte-identical duplicate of the lbf_12x12
-    # checkpoint (obs_dim 24, incompatible with the 7x7 env's 15-dim obs).
-    # human_proxy:
-    #   actor_type: bc_lstm
-    #   weight_file: eval_teammates/lbf_7x7/human_proxy/policy.safetensors
-    #   greedy: true
-    #   test_mode: true
-    #   performance_bounds:
-    #     percent_eaten: [0.0, 100.0]
-    #     returned_episode_returns: [0.0, 0.5]
+    # Pooled BC-LSTM human proxy shared with lbf_12x12 (obs_dim 24); the
+    # wrapper zero-pads the 7x7 env's 15-dim observations to fit.
+    human_proxy:
+      actor_type: bc_lstm
+      weight_file: eval_teammates/lbf_7x7/human_proxy/policy.safetensors
+      greedy: true
+      test_mode: true
+      performance_bounds:
+        percent_eaten: [0.0, 100.0]
+        returned_episode_returns: [0.0, 0.5]
   lbf/lbf_12x12:
     ippo_mlp:
       path: "eval_teammates/lbf_12x12/ippo-lbf-12-levels/saved_train_run"

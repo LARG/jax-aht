@@ -139,7 +139,6 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
         if actor_type == "bc_lstm":
             return LBFBCLSTMPolicyWrapper(
                 weight_file=agent_config["weight_file"],
-                using_log_wrapper=True,
                 greedy=agent_config.get("greedy", True),
             )
         raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
