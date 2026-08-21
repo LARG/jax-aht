@@ -319,58 +319,33 @@ def outstanding_entries(tuner):
     return (tuner._controller or {}).get("schedule") or []
 
 
-def describe_pending(tuner, schedule_id):
-    '''Best-effort explanation of what an outstanding suggestion is waiting for.'''
-    scheduled = (tuner._scheduler or {}).get("scheduled") or []
-    entry = next((s for s in scheduled if s.get("id") == schedule_id), None)
-    if entry is None:
-        return "the backend has not created a run for it yet (no agent has picked it up)"
-    runid = entry.get("runid")
-    run = (tuner._sweep_runs_map or {}).get(runid)
-    if run is None:
-        return f"run {runid} is not in the sweep's run list (deleted, or never created)"
-    return (f"run {runid} is state={run.state!r} with "
-            f"{'no' if not run.summary_metrics else 'some'} summary metrics")
+def drain_scheduled(tuner):
+    '''Release pool slots for every suggestion the backend has already turned into a run.
 
+    The documented protocol is that the client removes a schedule entry once the backend
+    has added the matching scheduler.scheduled entry. _parse_scheduled() additionally
+    requires the run to have left `pending` or reported a summary metric, which it checks
+    against _sweep_runs_map -- and that map is built from the sweep GraphQL query, whose
+    `runs` field is requested with no pagination argument and so returns only the most
+    recent 10 runs.
 
-def is_wedged(tuner, schedule_id):
-    '''True only for a suggestion that can never clear on its own.
+    Past the tenth run of a sweep, then, a perfectly healthy run is simply absent from the
+    map, its entry is never recognised as started, and it holds a pool slot for good. The
+    slots leak one run at a time until the pool is full of dead entries and the agents
+    starve. Matching on scheduler.scheduled alone is independent of that window.
 
-    An entry the backend has not turned into a run yet is *not* wedged -- it is simply
-    waiting for a free agent, which is the normal steady state once the pool is full.
-    The wedged case is an entry whose run exists but will never report: it has vanished,
-    or it is stuck in `pending` with no summary metrics because the process died before
-    reaching wandb.init.
+    Returns the number of slots released.
     '''
-    scheduled = (tuner._scheduler or {}).get("scheduled") or []
-    entry = next((s for s in scheduled if s.get("id") == schedule_id), None)
-    if entry is None:
-        return False
-    run = (tuner._sweep_runs_map or {}).get(entry.get("runid"))
-    if run is None:
-        return True
-    return run.state == "pending" and not run.summary_metrics
-
-
-def drop_entries(tuner, stale_ids):
-    '''Drop wedged suggestions so the pool can refill.
-
-    wandb only clears a suggestion once _parse_scheduled() sees its run leave the
-    `pending` state or report a summary metric. A run that dies before either -- crashing
-    during init, OOM, an evicted node -- leaves the entry in place forever, permanently
-    consuming one of the pool's slots. With the stock one-slot pool that wedges the sweep
-    outright; with a larger pool it silently shrinks the pool instead.
-
-    Restarting the controller clears these only because _start_if_not_started() resets
-    self._controller to {} and syncs it. This does the same thing in-process.
-
-    Dropping a suggestion never loses work: an entry the backend never consumed is simply
-    replaced on the next step, and the search re-derives its next suggestion from the
-    sweep's run history regardless.
-    '''
-    kept = [e for e in outstanding_entries(tuner) if e.get("id") not in stale_ids]
-    tuner._controller["schedule"] = kept
-    tuner._sweep_object_sync_to_backend()
+    scheduled_ids = {
+        e.get("id") for e in (tuner._scheduler or {}).get("scheduled") or []
+    }
+    entries = outstanding_entries(tuner)
+    kept = [e for e in entries if e.get("id") not in scheduled_ids]
+    released = len(entries) - len(kept)
+    if released:
+        tuner._controller["schedule"] = kept
+        tuner._sweep_object_sync_to_backend()
+    return released
 
 
 def schedule_batch(tuner, target):
@@ -470,11 +445,8 @@ def cmd_run(args):
         return
 
     print(f"Entering scheduling loop (poll every {args.poll_interval}s, "
-          f"{args.max_pending} suggestions kept outstanding, stuck-suggestion timeout "
-          f"{args.schedule_timeout}s). "
+          f"{args.max_pending} suggestions kept outstanding). "
           "Ctrl-C to stop; restarting resumes without re-seeding.")
-    # id -> monotonic time first seen outstanding. See drop_entries().
-    watched = {}
     while True:
         state = sweep_state(tuner)
 
@@ -511,24 +483,7 @@ def cmd_run(args):
         tuner.print_status()
         time.sleep(args.poll_interval)
         tuner._step()
-
-        # _step() has just dropped every suggestion the backend consumed. Anything still
-        # here is outstanding; an id that stays outstanding too long is wedged.
-        now = time.monotonic()
-        live = {e.get("id") for e in outstanding_entries(tuner)}
-        watched = {k: v for k, v in watched.items() if k in live}
-        for schedule_id in live:
-            watched.setdefault(schedule_id, now)
-
-        stale = {k for k, seen in watched.items()
-                 if now - seen > args.schedule_timeout and is_wedged(tuner, k)}
-        if stale:
-            for schedule_id in stale:
-                waited = int(now - watched[schedule_id])
-                print(f"WARNING: suggestion {schedule_id} outstanding for {waited}s: "
-                      f"{describe_pending(tuner, schedule_id)}. Dropping it.")
-            drop_entries(tuner, stale)
-            watched = {k: v for k, v in watched.items() if k not in stale}
+        drain_scheduled(tuner)
 
 
 def main():
@@ -566,11 +521,6 @@ def main():
                             "(default: 4). Set it to roughly the number of agents on "
                             "this sweep. wandb's own controller hard-caps this at 1, "
                             "which makes agents wait for each other to start.")
-    p_run.add_argument("--schedule-timeout", type=float, default=600.0,
-                       help="seconds an unstarted suggestion may stay outstanding before "
-                            "the controller clears it (default: 600). Works around a "
-                            "wandb bug where a run that crashes before leaving 'pending' "
-                            "wedges scheduling permanently.")
     p_run.add_argument("--seed-only", action="store_true",
                        help="seed and exit, without entering the scheduling loop")
     p_run.set_defaults(func=cmd_run)

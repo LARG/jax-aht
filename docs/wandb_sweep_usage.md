@@ -84,9 +84,6 @@ Flags on `run`:
   agent count. wandb's own controller caps this at 1, which makes agents wait for each
   other to reach `wandb.init` — minutes, for a jax-aht run. Only applies to `random`;
   grid and bayes would return duplicates within a step, so they stay capped at 1.
-- `--schedule-timeout` — seconds before a stuck suggestion is dropped (default 600). A run
-  that dies before leaving `pending` never releases its slot, which permanently shrinks
-  the pool; this reclaims it. Suggestions no agent has claimed yet are not affected.
 - `--poll-interval` — seconds between controller steps (default 15).
 - `--force-seed` — schedule the defaults even if a matching run already exists. Needed to
   re-run defaults that crashed, since a match counts regardless of run state.
@@ -103,3 +100,8 @@ The controller prints its queue depth and run counts each step. Check in this or
    so each poll. Resume it in the UI.
 3. **Is the queue full?** Suggestions sitting outstanding with agents alive means the
    backend is not handing them out; restarting the controller resets the queue.
+
+Note that the controller's own status line reports at most 10 runs — wandb's sweep query
+does not paginate — so `Runs: 10` says nothing about the size of the sweep. The controller
+does not rely on that view for pool accounting; it releases a queue slot as soon as the
+backend assigns the suggestion a run. 
