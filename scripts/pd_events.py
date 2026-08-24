@@ -73,7 +73,7 @@ LBF_FEATURE_NAMES = [
     # Partner-distance + opportunity.
     "partner_distance_sum",     # cumulative Manhattan distance to partner
     "noop_when_food_visible",   # idled while >= 1 uneaten fruit on map
-    # --- extended vocabulary (all normalized to [0, 1]-ish scales) ---
+    # --- derived vocabulary (all normalized to [0, 1]-ish scales) ---
     # Relative spatial configuration w.r.t. the partner (fraction of steps).
     "rel_north_frac",           # tracked agent strictly north of partner (smaller row)
     "rel_south_frac",

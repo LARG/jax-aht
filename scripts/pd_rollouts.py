@@ -440,7 +440,7 @@ class LBFEpisodeCounts:
     n_late_game_load: int = 0
     partner_distance_sum: int = 0
     n_noop_when_food_visible: int = 0
-    # --- extended vocabulary: raw accumulators (see lbf_episode_to_vector) ---
+    # --- derived vocabulary: raw accumulators (see lbf_episode_to_vector) ---
     n_steps: int = 0                     # number of step updates seen this episode
     n_rel_north: int = 0                 # steps strictly north of partner (smaller row)
     n_rel_south: int = 0
@@ -829,7 +829,7 @@ def lbf_step_update(
     late_thresh = 67     # roughly last third
 
     # ------------------------------------------------------------------
-    # Extended-vocabulary bookkeeping. Runs BEFORE the action-specific
+    # Derived-vocabulary bookkeeping. Runs BEFORE the action-specific
     # branches below, which `return` early.
     # ------------------------------------------------------------------
     counts.n_steps += 1
@@ -1108,7 +1108,7 @@ _OC_PICKUP_FROM_COUNTER = ("pickup_onion_from_X", "pickup_dish_from_X", "pickup_
 class OvercookedEpisodeCounts:
     """per-episode overcooked shaped_infos event counts."""
     counts_by_event: Dict[str, int] = field(default_factory=lambda: {ev: 0 for ev in OVERCOOKED_SHAPED_INFOS})
-    # --- extended vocabulary: raw accumulators ---
+    # --- derived vocabulary: raw accumulators ---
     n_steps: int = 0
     n_handoff_given: int = 0
     n_handoff_received: int = 0
@@ -1339,7 +1339,7 @@ def overcooked_step_update(
     is_table = bool(wm[fy, fx]) if on_grid else False
     moved = not np.array_equal(pos_pre[i], pos_post[i])
 
-    _overcooked_extended_update(
+    _overcooked_derived_update(
         counts, a0, a1, inv_pre, inv_post, pos_pre, pos_post, adir, mm, pad, H, W,
     )
 
@@ -1377,14 +1377,14 @@ def overcooked_step_update(
             ev["IDLE_MOVEMENT"] += 1
 
 
-def _overcooked_extended_update(
+def _overcooked_derived_update(
     counts: OvercookedEpisodeCounts,
     a0: int, a1: int,
     inv_pre: np.ndarray, inv_post: np.ndarray,
     pos_pre: np.ndarray, pos_post: np.ndarray,
     adir: np.ndarray, mm: np.ndarray, pad: int, H: int, W: int,
 ) -> None:
-    """extended-vocabulary bookkeeping for overcooked.
+    """derived-vocabulary bookkeeping for overcooked.
 
     Unlike the shaped_infos reconstruction, this inspects BOTH agents: the
     counter ledger needs to know who put an item down in order to tell a
