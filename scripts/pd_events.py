@@ -119,9 +119,9 @@ OVERCOOKED_SHAPED_INFOS = [
     "IDLE_INTERACT_EMPTY",
 ]
 
-# Extended overcooked vocabulary. Appended AFTER the shaped_infos block so the
-# original 17 columns keep their names and positions.
-OVERCOOKED_EXTENDED_FEATURE_NAMES = [
+# Features computed by our detectors (vs. env-emitted SHAPED_INFOS).
+# Appended after shaped_infos so the original 17 columns keep their positions.
+OVERCOOKED_DERIVED_FEATURE_NAMES = [
     # Handoff: who put what on which counter, and who took it back off.
     "handoff_given",            # tracked agent placed, partner later picked up
     "handoff_received",         # partner placed, tracked agent later picked up
@@ -153,5 +153,5 @@ OVERCOOKED_EXTENDED_FEATURE_NAMES = [
 ]
 
 OVERCOOKED_FEATURE_NAMES = list(OVERCOOKED_SHAPED_INFOS) + list(
-    OVERCOOKED_EXTENDED_FEATURE_NAMES
+    OVERCOOKED_DERIVED_FEATURE_NAMES
 )
