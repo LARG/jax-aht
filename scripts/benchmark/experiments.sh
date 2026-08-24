@@ -12,7 +12,8 @@
 # === Configuration ===
 algos=("trajedi")
 label="neurips:benchmark"
-num_seeds=1
+num_seeds=1 # argument for open-ended and teammate generation
+num_ego_train_seeds=1 # argument for ego agents
 train_seed=$(date +%s)
 num_checkpoints=1   # used for all algorithms except FCP (see below)
 
@@ -46,7 +47,7 @@ get_entry_point() {
     case "$1" in
         fcp|brdiv|lbrdiv|comedi)   echo "teammate_generation" ;;
         rotate|cole|trajedi)        echo "open_ended_training" ;;
-        ppo_ego|liam|meliba)        echo "ego_agent_training" ;;
+        ppo_ego|liam_ego|meliba_ego) echo "ego_agent_training" ;;
         *)                          echo "" ;;
     esac
 }
@@ -144,11 +145,18 @@ for algo in "${algos[@]}"; do
             checkpoint_arg="algorithm.NUM_CHECKPOINTS=${num_checkpoints}"
         fi
 
+        # Ego algorithms use NUM_EGO_TRAIN_SEEDS; all others use NUM_SEEDS.
+        if [ "${entry_point}" = "ego_agent_training" ]; then
+            seeds_arg="algorithm.NUM_EGO_TRAIN_SEEDS=${num_ego_train_seeds}"
+        else
+            seeds_arg="algorithm.NUM_SEEDS=${num_seeds}"
+        fi
+
         if XLA_FLAGS=--xla_disable_hlo_passes=fusion XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${entry_point}/run.py" \
             algorithm="${algo}/${task}" \
             task="${task}" \
             label="${label}" \
-            algorithm.NUM_SEEDS="${num_seeds}" \
+            ${seeds_arg} \
             algorithm.TRAIN_SEED="${train_seed}" \
             ${checkpoint_arg} \
             logger.mode="online" \
