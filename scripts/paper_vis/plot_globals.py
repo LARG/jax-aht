@@ -181,8 +181,8 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "d3e7c0fx", 
         "lbrdiv": "rni853js",
         "comedi": "d1dt0arj", 
-        # "rotate": "slpf9grh", # done but excluded
-        "cole": "pr0fwbdp", 
+        "rotate": "44c1kwu0",
+        "cole": "pr0fwbdp",
         "trajedi": "dqsezvy1",
     },
     "lbf/lbf_12x12": {
@@ -193,8 +193,8 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "fdg6dw1n", 
         "lbrdiv": "y23unh8y",
         "comedi": "7e9yf5zg",
-        # "rotate": "t4hufinh", # done but excluded
-        "cole": "kbvghubr", 
+        "rotate": "csg80xwm",
+        "cole": "kbvghubr",
         "trajedi": "mavnqv7e",
     },
     "overcooked-v1/cramped_room": {
@@ -205,8 +205,8 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "19gmzemf", 
         "lbrdiv": "w8abf056",
         "comedi": "vt0xnwxc",
-        # "rotate": "hrer8x3c",  # done but excluded
-        "cole": "jg6700d6", 
+        "rotate": "aki2rypl",
+        "cole": "jg6700d6",
         "trajedi": "dua855jm",
     },
     "overcooked-v1/coord_ring": {
@@ -217,8 +217,8 @@ HYPERPARAM_SWEEPS = {
         "brdiv": "wgapxysb", 
         "lbrdiv": "eu0g1orm",
         "comedi": "xeikmue5", 
-        # "rotate": "lgqrnsmt", 
-        "cole": "irstlaiv", 
+        "rotate": "df4m613k",
+        "cole": "irstlaiv",
         "trajedi": "j26xa39y",
     },
     "mini-hanabi": {
@@ -228,7 +228,8 @@ HYPERPARAM_SWEEPS = {
         "fcp": "oku0yyg0", 
         "brdiv": "wnnhav1m", 
         "lbrdiv": "uvvpc05r",
-        "comedi": "s745q3lg", 
+        "comedi": "s745q3lg",
+        "rotate": "ehxr5cyx",
         "cole": "158to6y5",
         "trajedi": "4my4n564",
     }

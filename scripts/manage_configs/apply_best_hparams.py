@@ -107,7 +107,8 @@ def update_config_file(config_path: Path, best_hparams: dict[str, str], dry_run:
         print(f"  Set {key}={best_hparams[key]}  →  {config_path}")
 
 
-def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: bool) -> None:
+def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: bool,
+                    max_hparams: int | None = None, seed: int = 0) -> None:
     raw_df, bare_keys = load_sweep_df(task, algorithm, force_recompute)
     sweep_df = build_hparam_df(raw_df, algorithm, bare_keys)
 
@@ -117,6 +118,9 @@ def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: b
         .reset_index()
         .sort_values("_score", ascending=False)
     )
+    if max_hparams is not None and len(grouped) > max_hparams:
+        print(f"Sampling {max_hparams} of {len(grouped)} hparam settings (seed={seed})")
+        grouped = grouped.sample(n=max_hparams, random_state=seed).sort_values("_score", ascending=False)
     best_row = grouped.iloc[0]
     best_hparams = {key: format_value(best_row[key]) for key in bare_keys}
 
@@ -146,6 +150,11 @@ def main() -> None:
                         help="Re-fetch from wandb, ignoring the local cache.")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print what would be written without modifying any files.")
+    parser.add_argument("--max-hparams", type=int, default=None,
+                        help="Maximum number of hparam settings to consider. If the sweep ran more, "
+                             "a random subset of this size is drawn (seeded, for reproducibility).")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="Random seed used when subsampling hparam settings via --max-hparams.")
     args = parser.parse_args()
 
     if args.task not in HYPERPARAM_SWEEPS:
@@ -156,7 +165,8 @@ def main() -> None:
     for algorithm in algorithms:
         if len(algorithms) > 1:
             print(f"\n{'='*60}")
-        apply_algorithm(args.task, algorithm, args.force_recompute, args.dry_run)
+        apply_algorithm(args.task, algorithm, args.force_recompute, args.dry_run,
+                        max_hparams=args.max_hparams, seed=args.seed)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,37 @@
+program: ego_agent_training/run.py
+name: liam_ego-mini-hanabi
+method: random
+run_cap: 150
+entity: aht-project
+project: aht-parameter-sweep
+metric:
+  goal: maximize
+  name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
+
+parameters:
+  algorithm.LR:
+    values: [1e-4, 3e-4, 5e-4]
+  algorithm.ENCODER_DECODER_LR:
+    values: [3e-4, 7e-4, 1e-3]
+  algorithm.ENT_COEF:
+    values: [0.01, 0.001, 0.0001]
+  algorithm.CLIP_EPS:
+    values: [0.1, 0.2]
+  algorithm.RECON_COEF:
+    values: [0.1, 0.5, 1.0]
+  algorithm.ENCODER_OUTPUT_DIM:
+    values: [10, 20, 32]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=mini-hanabi
+  - algorithm=liam_ego/mini-hanabi
+  - run_heldout_eval=true
+  - logger.log_train_out=false
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - label="param_sweep"
+  - algorithm.TOTAL_TIMESTEPS=7e6
+  - ${args_no_hyphens}

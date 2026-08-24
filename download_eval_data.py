@@ -1,10 +1,11 @@
+import argparse
 import os
-from huggingface_hub import hf_hub_download, snapshot_download
+from huggingface_hub import hf_hub_download, list_repo_files, snapshot_download
 import zipfile
 import shutil
 import tempfile
 
-def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str):
+def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str, force: bool = False):
     """
     Downloads a file from a Hugging Face dataset repository, and moves its contents to the destination directory.
 
@@ -12,6 +13,8 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
         repo_id (str): The Hugging Face repository ID (e.g., "jaxaht/eval-teammates").
         filename (str): The name of the file to download from the repository.
         destination_dir (str): The directory where the file should be unzipped.
+        force (bool): If True, re-extract and overwrite files that already exist locally.
+                      If False (default), only files missing from destination_dir are written.
     Returns:
         bool: True if successful, False otherwise.
     """
@@ -57,6 +60,7 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
         print(f"Processing and moving files from '{source_path_for_moving}' to '{destination_dir}'...")
         
         files_moved_count = 0
+        files_skipped_count = 0
         # os.walk will iterate through all files and directories in source_path_for_moving
         for root, _, files_in_dir in os.walk(source_path_for_moving):
             for filename in files_in_dir:
@@ -72,13 +76,21 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
                 os.makedirs(dst_file_parent_dir, exist_ok=True)
 
                 if os.path.isfile(dst_file_full_path):
+                    if not force:
+                        files_skipped_count += 1
+                        continue
                     print(f"Warning: Overwriting existing file '{dst_file_full_path}'.")
 
                 shutil.move(src_file_full_path, dst_file_full_path)
                 files_moved_count += 1
-        
+
+        if files_skipped_count > 0:
+            print(f"Skipped {files_skipped_count} file(s) already present in {destination_dir}.")
+
         if files_moved_count > 0:
             print(f"Successfully moved {files_moved_count} file(s) to {destination_dir}.")
+        elif files_skipped_count > 0:
+            print(f"Nothing to do: all extracted files are already present in {destination_dir}.")
         else:
             # Provide a more specific note if no files were moved.
             if not extracted_items: # Nothing was extracted from the zip initially
@@ -105,7 +117,7 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
             shutil.rmtree(temp_dir_for_extraction)
 
 
-def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
+def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, force: bool = False):
     """
     Downloads a directory from a Hugging Face dataset repository to a local directory,
     preserving the remote directory structure under destination_dir.
@@ -115,19 +127,60 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
         remote_dir (str): The directory in the HF repo to download (e.g., "lbf_7x7").
         destination_dir (str): Local directory to download into; remote_dir becomes a
                                subdirectory of this (e.g., destination_dir/lbf/...).
+        force (bool): If True, re-download every file in remote_dir. If False (default),
+                      only files that are not already present locally are downloaded.
     Returns:
         bool: True if successful, False otherwise.
     """
     print(f"Starting download: {repo_id}/{remote_dir} -> {destination_dir}/{remote_dir}")
     os.makedirs(destination_dir, exist_ok=True)
 
+    if force:
+        try:
+            snapshot_download(
+                repo_id=repo_id,
+                repo_type="dataset",
+                local_dir=destination_dir,
+                allow_patterns=f"{remote_dir}/**",
+                force_download=True,
+            )
+            print(f"Successfully downloaded {remote_dir} to {destination_dir}.")
+            return True
+        except Exception as e:
+            print(f"Error downloading {repo_id}/{remote_dir}: {e}")
+            return False
+
+    # Incremental: only fetch the files that are missing locally.
     try:
-        snapshot_download(
-            repo_id=repo_id,
-            repo_type="dataset",
-            local_dir=destination_dir,
-            allow_patterns=f"{remote_dir}/**",
-        )
+        repo_files = [
+            f for f in list_repo_files(repo_id=repo_id, repo_type="dataset")
+            if f == remote_dir or f.startswith(f"{remote_dir}/")
+        ]
+    except Exception as e:
+        print(f"Error listing files in {repo_id}/{remote_dir}: {e}")
+        return False
+
+    if not repo_files:
+        print(f"Warning: no files found under {repo_id}/{remote_dir}.")
+        return True
+
+    missing = [f for f in repo_files if not os.path.exists(os.path.join(destination_dir, f))]
+    n_present = len(repo_files) - len(missing)
+    if n_present > 0:
+        print(f"Skipping {n_present} file(s) already present in {destination_dir}.")
+    if not missing:
+        print(f"Nothing to do: {remote_dir} is already fully downloaded.")
+        return True
+
+    print(f"Downloading {len(missing)} missing file(s) from {repo_id}/{remote_dir}...")
+    try:
+        for f in missing:
+            hf_hub_download(
+                repo_id=repo_id,
+                repo_type="dataset",
+                filename=f,
+                local_dir=destination_dir,
+            )
         print(f"Successfully downloaded {remote_dir} to {destination_dir}.")
         return True
     except Exception as e:
@@ -136,6 +189,17 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Download evaluation/validation teammate data from Hugging Face. "
+                    "By default, files already present locally are skipped."
+    )
+    parser.add_argument(
+        "-f", "--force",
+        action="store_true",
+        help="Re-download everything, overwriting files that are already present locally.",
+    )
+    args = parser.parse_args()
+
     default_repo_id = "jaxaht/eval-teammates"
 
     data_files = {
@@ -202,12 +266,14 @@ if __name__ == "__main__":
                 repo_id=repo_id,
                 filename=data_info["filename"],
                 destination_dir=data_info["target_directory"],
+                force=args.force,
             )
         else:
             success = download_hf_directory(
                 repo_id=repo_id,
                 remote_dir=data_info["filename"],
                 destination_dir=data_info["target_directory"],
+                force=args.force,
             )
 
         if success:

@@ -1,0 +1,35 @@
+program: open_ended_training/run.py
+name: rotate-mini-hanabi
+method: random
+run_cap: 150
+entity: aht-project
+project: aht-parameter-sweep
+metric:
+  goal: maximize
+  name: HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean
+
+parameters:
+  algorithm.LAMBDA_1:
+    values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  algorithm.LAMBDA_2:
+    values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  algorithm.LR:
+    values: [1e-5, 5e-5, 1e-4, 5e-4, 0.001]
+  algorithm.ENT_COEF:
+    values: [0.1, 0.05, 0.03, 0.01, 0.005]
+  algorithm.CLIP_EPS:
+    values: [0.01, 0.05, 0.1, 0.2, 0.3, 0.5]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - task=mini-hanabi
+  - algorithm=rotate/mini-hanabi
+  - run_heldout_eval=true
+  - logger.mode=online
+  - logger.log_train_out=false
+  - local_logger.save_train_out=false
+  - local_logger.save_eval_out=false
+  - label="param_sweep"
+  - ${args_no_hyphens}

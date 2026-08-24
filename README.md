@@ -120,6 +120,8 @@ Directories containing both data can be obtained by running the provided data do
 ```bash
 python download_eval_data.py
 ```
+
+Re-running the script only downloads files that are missing locally; pass `--force` to re-download everything.
 ## ▶️ Getting Started:
 For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
