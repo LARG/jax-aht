@@ -57,7 +57,7 @@ LOG="$RESULTS_DIR/summary.log"
 COMMON_FLAGS="logger.mode=offline logger.log_train_out=false logger.log_eval_out=false local_logger.save_train_out=false local_logger.save_eval_out=false"
 
 # Path to a pre-trained IPPO partner checkpoint (required by ego-training algos).
-PARTNER_PATH="eval_teammates/lbf/ippo/ippo-lbf-7-levels/saved_train_run/"
+PARTNER_PATH="eval_teammates/lbf_7x7/ippo/ippo-lbf-7-levels/saved_train_run/"
 
 # =============================================================================
 # ─── Job definitions ──────────────────────────────────────────────────────────

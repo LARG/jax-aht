@@ -10,6 +10,7 @@ from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, 
 from agents.lbf.agent_policy_wrappers import (
     LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper,
     LBFEntitledPolicyWrapper, LBFGreedyHeuristicPolicyWrapper,
+    LBFBCLSTMPolicyWrapper,
 )
 from agents.overcooked.agent_policy_wrappers import (
     OvercookedRandomPolicyWrapper, OvercookedIndependentPolicyWrapper,
@@ -135,6 +136,11 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
                 heuristic=heuristic,
                 using_log_wrapper=True,
             )
+        if actor_type == "bc_lstm":
+            return LBFBCLSTMPolicyWrapper(
+                weight_file=agent_config["weight_file"],
+                greedy=agent_config.get("greedy", True),
+            )
         raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
 
     if 'overcooked-v1' in task_name:
@@ -165,8 +171,10 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
             )
         if actor_type == "bc_proxy":
             from agents.overcooked.bc_agent import BCPolicy, BCProxyPartnerWrapper
+            assert "path" in agent_config, "bc_proxy agents must provide 'path' (BC model base dir)."
             bc = BCPolicy(
                 layout_name=env_kwargs["layout"],
+                model_base_dir=_validate_teammate_path(agent_config["path"]),
                 using_log_wrapper=True,
                 run_id=agent_config.get("run_id", 0),
             )
