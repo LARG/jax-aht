@@ -6,19 +6,22 @@ TIMESTEPS_PER_ITER_EGO: 1e6
 NUM_OPEN_ENDED_ITERS: 30
 NUM_CHECKPOINTS: 2 # per iter of open-ended training
 PARTNER_POP_SIZE: 1 # true pop size is PARTNER_POP_SIZE * NUM_CHECKPOINTS per iter of open-ended training
-SP_WEIGHT: 1.0 # weight on conf-br (SP) loss
-REGRET_SP_WEIGHT: 1.0 # weight on the SP term in the perstep regret loss
-CONF_OBJ_TYPE: sreg-xp_sreg-sp_ret-sxp # choices: per_state_regret, per_state_regret_target, traj_level_regret, sreg-xp_sreg-sp_ret-sxp, sreg-xp_ret-sp_ret-sxp
+LAMBDA_1: 1.0 # weight on the BR return on XP term in the perstep regret loss
+LAMBDA_2: 1.0 # weight on the BR return on SP term in the perstep regret loss
+CONF_OBJ_TYPE: gae_ps_regret_ts_weighted # choices: gae_ps_regret_ts_weighted, traj_regret
 REINIT_CONF: true # whether to reinitialize the confederate policy each iteration of open-ended training
 REINIT_BR_TO_BR: true # whether to reinitialize the br policy each iteration of open-ended training
 REINIT_BR_TO_EGO: false # whether to reinitialize the br policy to the ego params each iteration of open-ended training
 EGO_TEAMMATE: final # choices: [final, all] # whether to use the final conf params as the teammate for the ego agent, or all ckpts
+EGO_ARGS:
+  ACTOR_TYPE: s5 # ego actor architecture; choices: [s5, mlp]
+PARTNER_ACTOR_TYPE: mlp # choices: [mlp, s5] # architecture of the confederate and BR policies
 
 # buffer args
 SAMPLING_STRATEGY: uniform # 'plr' or 'uniform'
 STALENESS_COEF: 0.3 # used only for 'plr' sampling strategy
 SCORE_TEMP: 1.0 # used only for 'plr' sampling strategy, currently ineffective
-NUM_ENVS: 16
+NUM_ENVS: 64
 LR: 1.e-4
 UPDATE_EPOCHS: 20
 NUM_MINIBATCHES: 4

@@ -40,6 +40,9 @@ class BaseAgent:
         Returns:
             action, AgentState
         """
-        lbf_env_state = env_state.env_state # extract LBFEnvState from the Jumanji wrapped env state
+        if hasattr(env_state, 'env_state'):
+            lbf_env_state = env_state.env_state  # extract LBFEnvState from the Jumanji wrapped env state
+        else:
+            lbf_env_state = env_state  # env_state is already the Jumanji state
         action, agent_state = self._get_action(obs, lbf_env_state, agent_state, rng)
         return action, agent_state

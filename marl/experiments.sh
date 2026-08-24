@@ -1,29 +1,27 @@
 #!/bin/bash
 
 # Algorithm to run
-algo="comedi"
-label="heldout_teammates"
-num_seeds=1
-save_local_outs=true
-save_online_outs=false
-wandb_mode=online
+algo="ippo"
+label="eval_teammates"
+num_seeds=3
+seed=39852
+wandb_mode="online"
 
 # Create log directory if it doesn't exist
-mkdir -p results/teammate_generation_logs/${algo}/${label}
+mkdir -p results/marl_logs/${algo}/${label}
 
 # Get current timestamp for log file
 timestamp=$(date +"%Y%m%d_%H%M%S")
-log_file="results/teammate_generation_logs/${algo}/${label}/experiment_${timestamp}.log"
+log_file="results/marl_logs/${algo}/${label}/experiment_${timestamp}.log"
 
 # Tasks to run
 tasks=(
-    # "overcooked-v1/asymm_advantages"
-    # "overcooked-v1/coord_ring"
-    # "overcooked-v1/counter_circuit"
-    # "overcooked-v1/cramped_room"
-    # "overcooked-v1/forced_coord"
-    # "lbf/lbf_7x7_nolevels"
-    "lbf/lbf_12x12"
+    "overcooked-v1/asymm_advantages"
+    "overcooked-v1/coord_ring"
+    "overcooked-v1/counter_circuit"
+    "overcooked-v1/cramped_room"
+    "overcooked-v1/forced_coord"
+    "lbf"
 )
 
 # Function to log messages
@@ -41,15 +39,11 @@ failure_count=0
 for task in "${tasks[@]}"; do
     log "Starting task: ${algo}/${task}"
     
-    if python teammate_generation/run.py algorithm="${algo}/${task}" task="${task}" \
-    label="${label}" \
-    algorithm.NUM_SEEDS="${num_seeds}" \
-    logger.mode="${wandb_mode}" \
-    logger.log_train_out="${save_online_outs}" \
-    logger.log_eval_out="${save_online_outs}" \
-    local_logger.save_train_out="${save_local_outs}" \
-    local_logger.save_eval_out="${save_local_outs}" \
-    2>> "${log_file}"; then
+    if python marl/run.py algorithm="${algo}/${task}" task="${task}" label="${label}" \
+        algorithm.NUM_SEEDS="${num_seeds}" \
+        algorithm.TRAIN_SEED="${seed}" \
+        logger.mode="${wandb_mode}" \
+        2>> "${log_file}"; then
         log "✅ Successfully completed task: ${algo}/${task}"
         ((success_count++))
     else

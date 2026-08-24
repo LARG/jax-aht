@@ -87,7 +87,9 @@ def run_heldout_xp_evaluation(config, print_metrics=False):
     # Create only one environment instance
     env = make_env(config["ENV_NAME"], config["ENV_KWARGS"])
     env = LogWrapper(env)
-    
+    metric_names = get_metric_names(config["ENV_NAME"])
+    print("METRIC NAMES ARE: ", metric_names)
+
     rng = jax.random.PRNGKey(config["global_heldout_settings"]["EVAL_SEED"])
     rng, heldout_init_rng, br_init_rng, eval_rng = jax.random.split(rng, 4)
     
@@ -111,8 +113,16 @@ def run_heldout_xp_evaluation(config, print_metrics=False):
         metric_names = get_metric_names(config["ENV_NAME"])
         heldout_names = list(heldout_agents.keys())
         br_names = list(br_agents.keys())
+        save_heatmap = config.get("xp_matrix_outputs", {}).get("save_heatmap", False)
         for metric_name in metric_names:
-            print_metrics_table(eval_metrics, metric_name, heldout_names, br_names, 
-            config["global_heldout_settings"]["AGGREGATE_STAT"], 
-            config["global_heldout_settings"]["NORMALIZE_RETURNS"], save=True)
+            print_metrics_table(
+                eval_metrics,
+                metric_name,
+                heldout_names,
+                br_names,
+                config["global_heldout_settings"]["AGGREGATE_STAT"],
+                config["global_heldout_settings"]["NORMALIZE_RETURNS"],
+                save=True,
+                save_heatmap=save_heatmap,
+            )
     return eval_metrics

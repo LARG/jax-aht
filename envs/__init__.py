@@ -76,7 +76,12 @@ def make_env(env_name: str, env_kwargs: dict = {}):
         else:
             env = LBFWrapper(env, share_rewards=True)
 
-    elif env_name == 'overcooked-v1':
+    elif env_name == 'overcooked-v1' or env_name.startswith('overcooked-v1/'):
+        if '/' in env_name:
+            layout_from_name = env_name.split('/', 1)[1]
+            env_kwargs = dict(copy.deepcopy(env_kwargs))
+            env_kwargs.setdefault('layout', layout_from_name)
+
         default_env_kwargs = {
             "random_reset": True,
             "random_obj_state": False,

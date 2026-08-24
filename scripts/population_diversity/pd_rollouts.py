@@ -12,7 +12,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from scripts.pd_events import (
+from scripts.population_diversity.pd_events import (
     HANABI_BASE_FEATURE_NAMES,
     hanabi_feature_names,
     HANABI_FEATURE_NAMES,
@@ -31,6 +31,19 @@ def _unwrap_hanabi_state(env_state):
     while hasattr(s, "env_state"):
         s = s.env_state
     return s
+
+
+def _true_post_state(env, pre_state, env_act, key):
+    # env.step auto-resets on done; get the real post-step state from the inner env (no reset)
+    wrapper = env._env
+    inner = wrapper.env
+    inner_pre = _unwrap_hanabi_state(pre_state)
+    if hasattr(inner, "step_env"):
+        _obs, post, _r, _d, _i = inner.step_env(key, inner_pre, env_act)   # jaxmarl: dict acts + key
+    else:
+        actions_array = jnp.array([env_act[a] for a in wrapper.agents], dtype=jnp.int32)
+        post, _timestep = inner.step(inner_pre, actions_array)             # jumanji: act array, no key
+    return post
 
 
 def state_info_tokens(env_state) -> int:
@@ -322,10 +335,12 @@ def rollout_hanabi_two_policy(
             step_reward = float(reward["agent_0"])
             episode_score += step_reward
 
+            # on the last step, read deltas off the true terminal state, not the auto-reset
+            post_state = _true_post_state(env, env_state_pre, env_act, step_rng) if bool(done["__all__"]) else env_state
             # post-step deltas: play_legal / play_bomb / play_completes_color / life_lost
-            new_info_tokens = int(state_info_tokens(env_state))
-            new_life_tokens = int(state_life_tokens(env_state))
-            new_fireworks_sum = int(state_fireworks_sum(env_state))
+            new_info_tokens = int(state_info_tokens(post_state))
+            new_life_tokens = int(state_life_tokens(post_state))
+            new_fireworks_sum = int(state_fireworks_sum(post_state))
             fireworks_inc = new_fireworks_sum > old_fireworks_sum
             life_dec = new_life_tokens < old_life_tokens
 
@@ -658,7 +673,9 @@ def rollout_two_policy(
             obs, env_state, reward, done, info = env.step(step_rng, env_state, env_act)
             r0 = float(reward["agent_0"])
             r1 = float(reward["agent_1"])
-            feature_update(counts, act_0, act_1, r0, r1, env_state_pre, env_state, info)
+            # on the last step, use the true post-step state, not the auto-reset
+            state_post = _true_post_state(env, env_state_pre, env_act, step_rng) if bool(done["__all__"]) else env_state
+            feature_update(counts, act_0, act_1, r0, r1, env_state_pre, state_post, info)
             episode_return += r0
             done_prev = done
 
@@ -737,7 +754,9 @@ def rollout_simple_self_play(
             obs, env_state, reward, done, info = env.step(step_rng, env_state, env_act)
             r0 = float(reward["agent_0"])
             r1 = float(reward["agent_1"])
-            feature_update(counts, act_0, act_1, r0, r1, env_state_pre, env_state, info)
+            # on the last step, use the true post-step state, not the auto-reset
+            state_post = _true_post_state(env, env_state_pre, env_act, step_rng) if bool(done["__all__"]) else env_state
+            feature_update(counts, act_0, act_1, r0, r1, env_state_pre, state_post, info)
             episode_return += r0
             done_prev = done
 
@@ -803,6 +822,7 @@ def lbf_step_update(
     state_pre,
     state_post,
     info: Dict,
+    horizon: int = 100,
 ) -> None:
     """update lbf event counts for the teammate being characterized (agent_1).
 
@@ -825,8 +845,8 @@ def lbf_step_update(
 
     # real env step index of the pre-state, for early/late-game tempo bins
     cur_step = _lbf_step_index(state_pre)
-    early_thresh = 33    # roughly first third of a 100-step LBF episode
-    late_thresh = 67     # roughly last third
+    early_thresh = horizon // 3
+    late_thresh = 2 * horizon // 3
 
     # ------------------------------------------------------------------
     # Derived-vocabulary bookkeeping. Runs BEFORE the action-specific
@@ -1349,8 +1369,10 @@ def overcooked_step_update(
             ev["pickup_onion_from_O" if obj == ONION_PILE else "pickup_onion_from_X"] += 1
         elif inv0 == EMPTY and inv1 == PLATE:
             ev["pickup_dish_from_D" if obj == PLATE_PILE else "pickup_dish_from_X"] += 1
-            nonempty_pot = bool(((mm[..., 0] == POT) & (mm[..., 2] != POT_EMPTY)).any())
-            if nonempty_pot:
+            num_notempty_pots = int(((mm[..., 0] == POT) & (mm[..., 2] != POT_EMPTY)).sum())
+            num_plates_held = int((inv_pre == PLATE).sum())
+            no_plates_on_counters = int((mm == PLATE).sum()) == 0
+            if num_plates_held < num_notempty_pots and no_plates_on_counters:
                 ev["USEFUL_DISH_PICKUP"] += 1
         elif inv0 == EMPTY and inv1 == DISH:
             ev["pickup_soup_from_X"] += 1

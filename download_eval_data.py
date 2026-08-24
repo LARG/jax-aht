@@ -112,7 +112,7 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
 
     Args:
         repo_id (str): The Hugging Face repository ID (e.g., "jaxaht/eval-teammates").
-        remote_dir (str): The directory in the HF repo to download (e.g., "lbf").
+        remote_dir (str): The directory in the HF repo to download (e.g., "lbf_7x7").
         destination_dir (str): Local directory to download into; remote_dir becomes a
                                subdirectory of this (e.g., destination_dir/lbf/...).
     Returns:
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         },
         "lbf_teammates": {
             "type": "dir",
-            "filename": "lbf",
+            "filename": "lbf_7x7",
             "target_directory": "eval_teammates/",
         },
         "lbf_12x12_teammates": {
@@ -163,6 +163,30 @@ if __name__ == "__main__":
             "type": "dir",
             "filename": "hanabi",
             "target_directory": "eval_teammates/",
+        },
+        "lbf_val_teammates": {
+            "type": "dir",
+            "filename": "lbf",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
+        },
+        "lbf_12x12_val_teammates": {
+            "type": "dir",
+            "filename": "lbf_12x12",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
+        },
+        "overcooked-v1_val_teammates": {
+            "type": "dir",
+            "filename": "overcooked-v1",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
+        },
+        "mini_hanabi_val_teammates": {
+            "type": "dir",
+            "filename": "mini_hanabi",
+            "target_directory": "val_teammates/",
+            "repo_id": "jaxaht/val-teammates",
         },
         "mini_hanabi_teammates": {
             "type": "dir",

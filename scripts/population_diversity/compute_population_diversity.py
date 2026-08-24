@@ -22,19 +22,19 @@ if str(REPO_ROOT) not in sys.path:
 from envs import make_env
 from envs.log_wrapper import LogWrapper
 
-from scripts.pd_events import (
+from scripts.population_diversity.pd_events import (
     HANABI_FEATURE_NAMES,
     LBF_FEATURE_NAMES,
     OVERCOOKED_FEATURE_NAMES,
     hanabi_feature_names,
 )
-from scripts.pd_plots import (
+from scripts.population_diversity.pd_plots import (
     population_diversity,
     pca_2d,
     save_pca_plot,
     save_cosine_heatmap,
 )
-from scripts.pd_rollouts import (
+from scripts.population_diversity.pd_rollouts import (
     HanabiActionLayout,
     HanabiEpisodeCounts,
     hanabi_episode_to_vector,
@@ -166,6 +166,7 @@ LBF_VARIANTS = {
 
 
 def env_config_for_lbf(variant: str = "lbf_7x7_nolevels") -> EnvConfig:
+    from functools import partial
     if variant not in LBF_VARIANTS:
         raise ValueError(f"unknown lbf variant {variant!r}; expected one of {list(LBF_VARIANTS)}")
     cfg = LBF_VARIANTS[variant]
@@ -181,14 +182,16 @@ def env_config_for_lbf(variant: str = "lbf_7x7_nolevels") -> EnvConfig:
         return agents, None
 
     def _rollout(env, policy, layout, num_eps, seed, params=None):
+        hz = min(int(getattr(getattr(env._env, "env", None), "time_limit", 128)), 128)
         return rollout_simple_self_play(
-            env, policy, num_eps, seed, LBFEpisodeCounts, lbf_step_update, max_steps=128, params=params,
+            env, policy, num_eps, seed, LBFEpisodeCounts, partial(lbf_step_update, horizon=hz), max_steps=128, params=params,
         )
 
     def _rollout_two_policy(env, policy_a, params_a, policy_b, params_b, layout, num_eps, seed):
+        hz = min(int(getattr(getattr(env._env, "env", None), "time_limit", 128)), 128)
         return rollout_two_policy(
             env, policy_a, params_a, policy_b, params_b,
-            num_eps, seed, LBFEpisodeCounts, lbf_step_update, max_steps=128,
+            num_eps, seed, LBFEpisodeCounts, partial(lbf_step_update, horizon=hz), max_steps=128,
         )
 
     return EnvConfig(
@@ -325,9 +328,11 @@ def compute_pd_for_env(
     theta_rows: List[np.ndarray] = []
     agent_names: List[str] = []
     per_agent_records: List[Dict[str, Any]] = []
+    pairing_modes: List[str] = []
 
     for agent_name, (policy, params) in agents.items():
         partner_label = "BR" if (br_paired and agent_name in brs) else "self-play"
+        pairing_modes.append(partner_label)
         log.info("  rollouts: %s (%s)", agent_name, partner_label)
         if br_paired and agent_name in brs:
             br_policy, br_params = brs[agent_name]
@@ -347,6 +352,7 @@ def compute_pd_for_env(
             dict(
                 agent=agent_name,
                 env=env_cfg.name,
+                pairing=partner_label,
                 num_episodes=num_episodes,
                 **{
                     name: float(theta[i]) for i, name in enumerate(env_cfg.feature_names)
@@ -357,6 +363,13 @@ def compute_pd_for_env(
         )
 
     theta = np.stack(theta_rows)
+    if len(set(pairing_modes)) > 1:
+        n_br = pairing_modes.count("BR")
+        log.warning(
+            "PD theta mixes %d BR rows with %d self-play rows in one det(K); they are not comparable "
+            "(missing BRs fell back to self-play). See the per-row 'pairing' field.",
+            n_br, len(pairing_modes) - n_br,
+        )
     pd_payload = population_diversity(theta)
 
     csv_path = output_dir / "features.csv"
@@ -372,6 +385,7 @@ def compute_pd_for_env(
         "seed": seed,
         "feature_names": env_cfg.feature_names,
         "agent_names": agent_names,
+        "pairing": pairing_modes,
         "theta": theta.tolist(),
         "pd": pd_payload,
     }

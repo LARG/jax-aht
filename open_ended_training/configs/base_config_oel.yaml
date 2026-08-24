@@ -9,6 +9,8 @@ ENV_NAME: ${task.ENV_NAME}
 ENV_KWARGS: ${task.ENV_KWARGS}
 ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
 TASK_NAME: ${task.TASK_NAME}
+# Ego agent slot indices for N-agent parameter sharing (null = classic 2-agent AHT: ego=agent 0)
+EGO_INDICES: ${oc.select:task.EGO_INDICES,null}
 
 # whether to run a heldout evaluation of the ego agent
 run_heldout_eval: true
@@ -21,6 +23,7 @@ algorithm:
   ENV_NAME: ${ENV_NAME}
   ENV_KWARGS: ${ENV_KWARGS}
   ROLLOUT_LENGTH: ${ROLLOUT_LENGTH}
+  EGO_INDICES: ${EGO_INDICES}
 
 label: "default_label"
 name: ${TASK_NAME}/${algorithm.ALG}/${label}
@@ -36,8 +39,8 @@ logger:
     - ${label}
   mode: offline # options: online, offline, disabled
   verbose: false
-  log_train_out: false # whether to log the out dictionary
-  log_eval_out: false # whether to log the eval metrics
+  log_train_out: true # whether to log the out dictionary
+  log_eval_out: true # whether to log the eval metrics
 
 # Local logger
 local_logger:

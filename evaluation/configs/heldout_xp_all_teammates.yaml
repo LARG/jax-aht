@@ -1,0 +1,16 @@
+defaults:
+  - task: lbf
+  - global_heldout_settings
+  - global_heldout_br
+  - hydra: hydra_simple
+  - _self_
+
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+TASK_NAME: ${task.TASK_NAME}
+
+label: ""
+name: ${TASK_NAME}/heldout_xp_matrix/${label}
+
+xp_matrix_outputs:
+  save_heatmap: true
