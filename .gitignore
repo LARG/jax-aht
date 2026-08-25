@@ -30,3 +30,4 @@ build/
 CLAUDE.md
 .claude/
 .vscode/
+hparam_search_train_teammates/
