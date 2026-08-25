@@ -57,4 +57,9 @@ command:
   - local_logger.save_eval_out=false
   - algorithm.NUM_ENVS=1024
   - label="param_sweep"
+  - algorithm.partner_agent.ippo.path=/work2/08090/clw4542/stampede3/hparam_search_train_teammates/overcooked-v1/forced_coord/comedi/hparam_search_train_teammates/2026-08-23_23-18-34/saved_train_run
+  - algorithm.partner_agent.ippo.actor_type=actor_with_conditional_critic
+  - algorithm.partner_agent.ippo.ckpt_key=final_params_conf
+  - algorithm.partner_agent.ippo.idx_list=null
+  - +algorithm.partner_agent.ippo.POP_SIZE=10
   - ${args_no_hyphens}
