@@ -58,23 +58,15 @@ def eval_2d_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_par
                                heldout_policy=heldout_policy,
                                heldout_test_mode=heldout_test_mode)
 
-        # Inner vmap: Maps over the 'num_oel_iters' dimension.
-        # Operates on the partially applied function `eval_partial`.
-        vmap_over_iters = jax.vmap(
-            func_to_vmap,
-            in_axes=(0, 0) # Map over axis 0 of single_ego_params and rng_for_ego
-        )
-
-        # Outer vmap: Maps the 'vmap_over_iters' function over the 'num_seeds' dimension.
-        vmap_over_seeds_and_iters = jax.vmap(
-            vmap_over_iters,
-            in_axes=(0, 0) # Map over axis 0 of ego_params and ego_rngs
-        )
-        # Execute the nested vmap
-        results_for_this_partner = vmap_over_seeds_and_iters(
-            ego_rngs, # shape (num_seeds, num_oel_iters, 2)
-            ego_params # shape (num_seeds, num_oel_iters, ...)
-        )
+        # vmap over seeds only, looping over iters: vmapping over both OOMs for long runs.
+        vmap_over_seeds = jax.jit(jax.vmap(func_to_vmap, in_axes=(0, 0)))
+        per_iter_results = []
+        for iter_idx in range(num_ego_iters):
+            iter_params = jax.tree.map(lambda x: x[:, iter_idx], ego_params)
+            per_iter_results.append(vmap_over_seeds(ego_rngs[:, iter_idx], iter_params))
+        # (num_oel_iters, num_seeds, ...) -> (num_seeds, num_oel_iters, ...)
+        results_for_this_partner = jax.tree.map(
+            lambda x: x.swapaxes(0, 1), tree_stack(per_iter_results))
         # results_for_this_partner shape: (num_seeds, num_oel_iters, num_episodes, ...)
         if config["global_heldout_settings"]["NORMALIZE_RETURNS"]:
             if heldout_performance_bounds is not None:
