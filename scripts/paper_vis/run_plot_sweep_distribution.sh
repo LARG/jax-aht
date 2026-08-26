@@ -9,7 +9,7 @@ TASKS=(
 )
 
 for task in "${TASKS[@]}"; do
-    for algo_type in ego unified; do
+    for algo_type in ego teammate_gen unified; do
         echo "=== task=${task}  algo-type=${algo_type} ==="
         PYTHONPATH=. python scripts/paper_vis/plot_sweep_distribution.py \
             --algo-type "${algo_type}" \

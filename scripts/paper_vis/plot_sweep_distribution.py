@@ -82,7 +82,7 @@ def plot_distribution(
 ) -> None:
     algos = list(scores_by_algo.keys())
     n = len(algos)
-    ncols = min(n, 3)
+    ncols = min(n, 4)
     nrows = (n + ncols - 1) // ncols
 
     fig, axes = plt.subplots(
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Plot performance distribution across all hyperparameter settings."
     )
-    parser.add_argument("--algo-type", choices=["ego", "unified"], required=True,
+    parser.add_argument("--algo-type", choices=["ego", "teammate_gen", "unified"], required=True,
                         help="Which sweep family to visualize.")
     parser.add_argument("--task", required=True,
                         help="Task name (e.g. lbf/lbf_7x7_nolevels).")
@@ -162,10 +162,15 @@ if __name__ == "__main__":
     FORCE_RECOMPUTE = args.force_recompute
     MAX_NUM_TO_VISUALIZE = args.max_hparams
 
+    ALGO_TYPE_TO_ENTRY_POINT = {
+        "ego": "ego_agent_training",
+        "teammate_gen": "teammate_generation",
+        "unified": "open_ended_training",
+    }
     all_task_sweeps = HYPERPARAM_SWEEPS[TASK]
     task_sweeps = {
         algo: sid for algo, sid in all_task_sweeps.items()
-        if (ALGO_TO_ENTRY_POINT.get(algo) == "ego_agent_training") == (ALGO_TYPE == "ego")
+        if ALGO_TO_ENTRY_POINT.get(algo) == ALGO_TYPE_TO_ENTRY_POINT[ALGO_TYPE]
     }
 
     scores_by_algo: dict[str, np.ndarray] = {}
