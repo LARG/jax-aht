@@ -10,9 +10,9 @@
 # Configure the algorithms, tasks, and label in the section below.
 
 # === Configuration ===
-algos=("trajedi")
+algos=("rotate")
 label="neurips:benchmark"
-num_seeds=1 # argument for open-ended and teammate generation
+num_seeds=5 # argument for open-ended and teammate generation
 num_ego_train_seeds=1 # argument for ego agents
 train_seed=$(date +%s)
 num_checkpoints=1   # used for all algorithms except FCP (see below)
@@ -32,12 +32,12 @@ skip_algos_ego="ppo_br"
 skip_algos_teammate=""
 
 tasks=(
-    # "lbf/lbf_7x7_nolevels"
-    # "lbf/lbf_12x12"
-    # "overcooked-v1/coord_ring"
+    "lbf/lbf_7x7_nolevels"
+    "lbf/lbf_12x12"
+    "overcooked-v1/coord_ring"
     # "overcooked-v1/asymm_advantages"
     # "overcooked-v1/counter_circuit"
-    # "overcooked-v1/cramped_room"
+    "overcooked-v1/cramped_room"
     # "overcooked-v1/forced_coord"
     "mini-hanabi"
 )
@@ -160,6 +160,8 @@ for algo in "${algos[@]}"; do
             algorithm.TRAIN_SEED="${train_seed}" \
             ${checkpoint_arg} \
             logger.mode="online" \
+            local_logger.save_train_out=false \
+            local_logger.save_eval_out=false \
             2>> "${log_file}"; then
             log "✅ Completed: ${algo}/${task}"
             ((success_count++))
