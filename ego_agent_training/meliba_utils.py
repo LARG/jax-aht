@@ -48,7 +48,7 @@ class DecoderScannedRNN(nn.Module):
         new_rnn_state, y = nn.GRUCell(features=ins.shape[1])(rnn_state, ins)
         return new_rnn_state, y
 
-def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False):
+def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False, start_indices=None):
     """
     Transform array from (timestep, feat) to (k_batch, timesteps, feat)
 
@@ -59,10 +59,12 @@ def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False):
         array: jnp.array, array of shape (timesteps, feat) where timesteps go from 0 to H
         pad_value: float, Value to use for padding shorter sequences (default: 0.0)
         return_mask: bool, If True, also return a mask indicating valid positions (default: False)
+        start_indices: jnp.array, optional subset of start indices to build subsequences for;
+            defaults to all starts [0, ..., H-2]
 
     Returns:
-        result: jnp.array, array of shape (H-1, H, feat)
-        mask (optional): jnp.array, array of shape (H-1, H) with True for valid positions, False for padding
+        result: jnp.array, array of shape (K, H, feat) where K = len(start_indices) (H-1 by default)
+        mask (optional): jnp.array, array of shape (K, H) with True for valid positions, False for padding
     """
     H_timestep, _ = array.shape
     H_timestep_minus_1 = H_timestep - 1
@@ -99,8 +101,9 @@ def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False):
         else:
             return result
 
-    # Create starting indices [0, 1, 2, ..., H-1]
-    start_indices = jnp.arange(H_timestep_minus_1)
+    if start_indices is None:
+        # Create starting indices [0, 1, 2, ..., H-2]
+        start_indices = jnp.arange(H_timestep_minus_1)
 
     # Use vmap to apply the function to each starting index
     if return_mask:

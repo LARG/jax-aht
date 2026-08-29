@@ -259,7 +259,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                         done=traj_batch.done,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
-                        rng=jax.random.PRNGKey(0), # only used for action sampling, which is unused here
+                        rng=jax.random.fold_in(jax.random.PRNGKey(0), train_state.step), # fresh ELBO subsample per gradient step
                         aux_obs=(None, traj_batch.joint_act_onehot, traj_batch.reward),
                         partner_action=traj_batch.partner_action
                     )
