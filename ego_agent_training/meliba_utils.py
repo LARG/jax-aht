@@ -81,7 +81,7 @@ def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False, start
             mask (optional): jnp.array, array of shape (H,) with True for valid positions, False for padding
         """
         # Create indices for this subsequence
-        # [start_idx, start_idx+1, ..., start_idx+H]
+        # [start_idx, start_idx+1, ..., start_idx+H-1]
         indices = jnp.arange(H_timestep) + start_idx
 
         # Create mask for valid positions (within original array bounds)
@@ -91,7 +91,7 @@ def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False, start
         safe_indices = jnp.clip(indices, 0, H_timestep - 1)
 
         # Gather values
-        gathered = array[safe_indices]  # Shape: (H+1, feat)
+        gathered = array[safe_indices]  # Shape: (H, feat)
 
         # Apply padding where mask is False
         result = jnp.where(valid_mask[:, None], gathered, pad_value)

@@ -11,4 +11,3 @@ CLIP_EPS: 0.1
 ANNEAL_LR: false
 UPDATE_EPOCHS: 5
 POLICY_OPTIMIZER: adam
-DECODER_OUTPUT_DIM: 21  # match Hanabi action_space.n
