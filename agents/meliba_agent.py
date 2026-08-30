@@ -1,4 +1,5 @@
 import functools
+import warnings
 
 import jax
 import jax.numpy as jnp
@@ -154,12 +155,15 @@ class DecoderRNNNetwork(nn.Module):
         state_embed_dim: int, dimension of the state embedding
         agent_character_embed_dim: int, dimension of the agent character embedding
         hidden_dim: int, dimension of the hidden layers
-        output_dim: int, dimension of the output layer
+        output_dim: int, dimension of the output layer (partner action dim)
+        num_elbo_subsamples: int, number of start indices subsampled for the
+            reconstruction term (0 = use all H-1 starts)
     """
     state_embed_dim: int
     agent_character_embed_dim: int
     hidden_dim: int
     output_dim: int
+    num_elbo_subsamples: int = 0
 
     @nn.compact
     def __call__(self, x):
@@ -179,13 +183,14 @@ class DecoderRNNNetwork(nn.Module):
                - mental_state: jnp.array, shape (time, batch, mental_state_dim)
                - partner_actions: jnp.array, shape (time, batch)
                - dones: jnp.array, shape (time, batch)
+               - prng_key: jax.random.PRNGKey, key for subsampling ELBO start indices
 
         Returns:
             kl_loss: jnp.array, KL divergence loss
             recon_loss: jnp.array, reconstruction loss (negative log likelihood of partner actions)
         """
         # Shapes are (time, batch, dim), except partner_actions and dones which are (time, batch)
-        state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t, agent_character, mental_state, partner_actions, dones = x
+        state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t, agent_character, mental_state, partner_actions, dones, prng_key = x
 
         # Compute KL divergence
         latent_mean_all = jnp.concatenate((latent_mean, latent_mean_t), axis=-1)
@@ -203,7 +208,7 @@ class DecoderRNNNetwork(nn.Module):
         logS = all_logvars[:-1]
         kl_loss = 0.5 * (jnp.sum(logS, axis=-1) - jnp.sum(logE, axis=-1) - gauss_dim + jnp.sum(
             1 / jnp.exp(logS) * jnp.exp(logE), axis=-1) + ((m - mu) / jnp.exp(logS) * (m - mu)).sum(axis=-1))
-        kl_loss = kl_loss.sum(axis=0)
+        # Sum over time, mean over batch so DECODER_KL_WEIGHT is invariant to minibatch size
         kl_loss = kl_loss.sum(axis=0).mean()
 
         # MeLIBA decoder
@@ -221,9 +226,28 @@ class DecoderRNNNetwork(nn.Module):
         hidden = jnp.concatenate((agent_character_embed, mental_state), axis=-1)
         hidden = nn.Dense(self.hidden_dim)(hidden)
 
+        # VariBAD-style ELBO subsampling: K stratified start indices per env instance
+        # (one uniform draw per equal-width stratum, so each index is marginally uniform)
+        # give an unbiased O(K*H) estimate of the exact O(H^2) reconstruction term
+        H_time, batch_size = state.shape[0], state.shape[1]
+        if self.num_elbo_subsamples > 0 and self.num_elbo_subsamples < H_time - 1:
+            stratum_width = (H_time - 1) / self.num_elbo_subsamples
+            strata = jnp.arange(self.num_elbo_subsamples) * stratum_width
+            offsets = jax.random.uniform(
+                prng_key, (batch_size, self.num_elbo_subsamples)) * stratum_width
+            start_indices = jnp.floor(strata + offsets).astype(jnp.int32)
+            recon_scale = (H_time - 1) / self.num_elbo_subsamples
+        else:
+            if self.num_elbo_subsamples > 0 and H_time > 1:
+                warnings.warn(
+                    f"num_elbo_subsamples={self.num_elbo_subsamples} >= H-1={H_time - 1}; "
+                    "falling back to the exact O(H^2) reconstruction over all starts.")
+            start_indices = jnp.broadcast_to(jnp.arange(H_time - 1), (batch_size, H_time - 1))
+            recon_scale = 1.0
+
         # The batch dimension is the second dimension, we want to vmap over that.
         # The batch refers to the different env instances.
-        def handle_batch(state_agent_embed, hidden, dones, partner_actions):
+        def handle_batch(state_agent_embed, hidden, dones, partner_actions, start_indices):
             """
             vmap over the batch dimension.
 
@@ -234,19 +258,20 @@ class DecoderRNNNetwork(nn.Module):
                 hidden: jnp.array, shape (time, hidden_dim,)
                 dones: jnp.array, shape (time, 1)
                 partner_actions: jnp.array, shape (time, 1)
+                start_indices: jnp.array, shape (K,), subsequence start indices for this env instance
 
             Returns:
-                log_prob_sum: jnp.array, shape (1,), sum of negative log probabilities of partner actions
+                log_prob_sum: jnp.array, shape (time,), negative log probabilities of partner
+                actions summed over start indices
             """
             # Construct k trajectories
-            k_state_agent_embed, valid_mask = transform_timestep_to_k_batch(state_agent_embed, pad_value=0.0, return_mask=True)
-            k_hidden = transform_timestep_to_k_batch(hidden, pad_value=0.0, return_mask=False)
-            k_dones = transform_timestep_to_k_batch(dones, pad_value=0.0, return_mask=False)
-            k_partner_actions = transform_timestep_to_k_batch(partner_actions, pad_value=0.0, return_mask=False)
+            k_state_agent_embed, valid_mask = transform_timestep_to_k_batch(state_agent_embed, pad_value=0.0, return_mask=True, start_indices=start_indices)
+            k_hidden = transform_timestep_to_k_batch(hidden, pad_value=0.0, return_mask=False, start_indices=start_indices)
+            k_dones = transform_timestep_to_k_batch(dones, pad_value=0.0, return_mask=False, start_indices=start_indices)
+            k_partner_actions = transform_timestep_to_k_batch(partner_actions, pad_value=0.0, return_mask=False, start_indices=start_indices)
             k_partner_actions = jnp.squeeze(k_partner_actions, axis=-1)
 
             # Mask to only consider elements before the first done
-            # Shape (127, 128)
             episode_mask = fill_to_first_true(jnp.squeeze(k_dones, axis=-1))
 
             def handle_k_trajectories(state_agent_embed, hidden, dones):
@@ -270,19 +295,16 @@ class DecoderRNNNetwork(nn.Module):
                 _, embedding = DecoderScannedRNN()(jnp.expand_dims(hidden[0], axis=0), rnn_in)
 
                 # Squeeze the batch dimension
-                # Shape: (128, 1, 32) -> (128, 32)
                 out = nn.Dense(self.output_dim)(embedding)
                 out = jnp.squeeze(out, axis=1)
 
                 return out
 
-            # Shape (127, 128, 32)
             vmap_handle_k_trajectories = jax.vmap(handle_k_trajectories, (0, 0, 0), 0)
             out = vmap_handle_k_trajectories(k_state_agent_embed, k_hidden, k_dones)
 
             # Log likelihood
             pi = distrax.Categorical(logits=out)
-            # Shape (127, 128)
             # Maximize the log prob of the partner actions
             # so we minimize the negative log prob
             log_prob = pi.log_prob(k_partner_actions) * -1
@@ -294,14 +316,12 @@ class DecoderRNNNetwork(nn.Module):
             # mask out everything after the first done
             log_prob_em = log_prob_pm * episode_mask
 
-            # Shape (128,)
-            log_prob_sum = jnp.sum(log_prob_em, axis=0)
+            log_prob_sum = jnp.sum(log_prob_em, axis=0) * recon_scale
 
             return log_prob_sum
 
-        # Shape (128, 2, 32)
-        vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1, 1), 1)
-        recon_loss = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1), jnp.expand_dims(partner_actions, axis=-1))
+        vmap_handle_batch = jax.vmap(handle_batch, (1, 1, 1, 1, 0), 1)
+        recon_loss = vmap_handle_batch(state_agent_embed, hidden, jnp.expand_dims(dones, axis=-1), jnp.expand_dims(partner_actions, axis=-1), start_indices)
 
         return kl_loss, recon_loss
 
@@ -372,18 +392,13 @@ class Decoder():
 
     def __init__(self, state_dim, state_embed_dim, agent_character_embed_dim, latent_mean_dim, latent_logvar_dim,
                  latent_mean_t_dim, latent_logvar_t_dim, agent_character_dim, mental_state_dim, partner_action_dim,
-                 hidden_dim, output_dim, loss_coeff, kl_weight):
-        """
-        Args:
-            obs_dim: int, dimension of the observation space
-            action_dim: int, dimension of the action space
-            obs_dim: int, dimension of the observation space
-            embedding_dim: int, dimension of the embedding space
-            hidden_dim: int, dimension of the decoder hidden layers
-            output_dim1: int, dimension of the decoder output
-            output_dim2: int, dimension of the decoder probs
-        """
-        self.model = DecoderRNNNetwork(state_embed_dim, agent_character_embed_dim, hidden_dim, output_dim)
+                 hidden_dim, loss_coeff, kl_weight, num_elbo_subsamples=0):
+        self.model = DecoderRNNNetwork(
+            state_embed_dim=state_embed_dim,
+            agent_character_embed_dim=agent_character_embed_dim,
+            hidden_dim=hidden_dim,
+            output_dim=partner_action_dim,
+            num_elbo_subsamples=num_elbo_subsamples)
 
         self.state_dim = state_dim
         self.state_embed_dim = state_embed_dim
@@ -396,7 +411,6 @@ class Decoder():
         self.mental_state_dim = mental_state_dim
         self.partner_action_dim = partner_action_dim
         self.hidden_dim = hidden_dim
-        self.output_dim = output_dim
         self.loss_coeff = loss_coeff
         self.kl_weight = kl_weight
 
@@ -417,20 +431,20 @@ class Decoder():
 
         dummy_x = (dummy_state, dummy_latent_mean, dummy_latent_logvar, dummy_latent_mean_t,
                    dummy_latent_logvar_t, dummy_agent_character, dummy_mental_state,
-                   dummy_partner_actions, dummy_done)
+                   dummy_partner_actions, dummy_done, jax.random.PRNGKey(0))
 
         # Initialize model
         return self.model.init(prng, dummy_x)
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def compute_losses(self, params, state, latent_mean, latent_logvar, latent_mean_t, latent_logvar_t,
-                       agent_character, mental_state, partner_action, done):
+                       agent_character, mental_state, partner_action, done, rng):
 
         """Evaluate the decoder model with given parameters and inputs."""
         kl_loss, recon_loss = self.model.apply(params, (state, latent_mean, latent_logvar,
                                                            latent_mean_t, latent_logvar_t,
                                                            agent_character, mental_state,
-                                                           partner_action, done))
+                                                           partner_action, done, rng))
 
         return kl_loss, recon_loss.mean()
 
@@ -473,9 +487,9 @@ def initialize_meliba_encoder_decoder(config, env, rng):
         mental_state_dim=config.get("ENCODER_LATENT_DIM", 64),
         partner_action_dim=env.action_space(env.agents[1]).n,
         hidden_dim=config.get("DECODER_HIDDEN_DIM", 64),
-        output_dim=config.get("DECODER_OUTPUT_DIM", 64),
         loss_coeff=config.get("DECODER_LOSS_COEFF", 1.0),
-        kl_weight=config.get("DECODER_KL_WEIGHT", 0.05)
+        kl_weight=config.get("DECODER_KL_WEIGHT", 0.05),
+        num_elbo_subsamples=int(config.get("DECODER_NUM_ELBO_SAMPLES", 0))
     )
 
     rng, init_rng_encoder, init_rng_decoder  = jax.random.split(rng, 3)
@@ -668,7 +682,7 @@ class MeLIBAPolicy(AgentPolicy):
         """
         _, joint_act, reward = aux_obs
 
-        rng, policy_rng, sample_key  = jax.random.split(rng, 3)
+        rng, policy_rng, sample_key, decoder_rng = jax.random.split(rng, 4)
 
         latent_sample, latent_mean, latent_logvar, latent_sample_t, latent_mean_t, latent_logvar_t, new_encoder_hstate = self.encoder.compute_embedding(
             params=params['encoder'],
@@ -702,7 +716,8 @@ class MeLIBAPolicy(AgentPolicy):
             agent_character=latent_sample,
             mental_state=latent_sample_t,
             partner_action=partner_action,
-            done=done
+            done=done,
+            rng=decoder_rng
         )
 
         return action, val, pi, kl_loss, recon_loss, (new_encoder_hstate, new_policy_hstate)

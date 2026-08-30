@@ -246,7 +246,8 @@ def train_meliba_ego_agent(config, env, train_rng,
                 return advantages, advantages + traj_batch.value
 
             def _update_minbatch(init_state, batch_info):
-                train_state, encoder_decoder_train_state = init_state
+                train_state, encoder_decoder_train_state, rng = init_state
+                rng, loss_rng = jax.random.split(rng)
                 init_ego_hstate, traj_batch, advantages, returns = batch_info
                 def _loss_fn(params, encoder_decoder_params, init_ego_hstate, traj_batch, gae, target_v):
 
@@ -259,7 +260,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                         done=traj_batch.done,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
-                        rng=jax.random.PRNGKey(0), # only used for action sampling, which is unused here
+                        rng=loss_rng,
                         aux_obs=(None, traj_batch.joint_act_onehot, traj_batch.reward),
                         partner_action=traj_batch.partner_action
                     )
@@ -319,14 +320,14 @@ def train_meliba_ego_agent(config, env, train_rng,
                 decoder_n_elements = len(jax.tree.leaves(decoder_grad_l2_norms))
                 decoder_avg_grad_norm = decoder_sum_of_grad_norms / decoder_n_elements
 
-                return (train_state, encoder_decoder_train_state), (loss_val, aux_vals, avg_grad_norm, encoder_avg_grad_norm, decoder_avg_grad_norm)
+                return (train_state, encoder_decoder_train_state, rng), (loss_val, aux_vals, avg_grad_norm, encoder_avg_grad_norm, decoder_avg_grad_norm)
 
             def _update_epoch(update_state, unused):
                 train_state, encoder_decoder_train_state, init_ego_hstate, traj_batch, advantages, targets, rng = update_state
-                rng, perm_rng = jax.random.split(rng)
+                rng, perm_rng, minbatch_rng = jax.random.split(rng, 3)
                 minibatches = _create_minibatches(traj_batch, advantages, targets, init_ego_hstate, config["NUM_CONTROLLED_ACTORS"], config["NUM_MINIBATCHES"], perm_rng)
-                (train_state, encoder_decoder_train_state), losses_and_grads = jax.lax.scan(
-                    _update_minbatch, (train_state, encoder_decoder_train_state), minibatches
+                (train_state, encoder_decoder_train_state, _), losses_and_grads = jax.lax.scan(
+                    _update_minbatch, (train_state, encoder_decoder_train_state, minbatch_rng), minibatches
                 )
                 update_state = (train_state, encoder_decoder_train_state, init_ego_hstate, traj_batch, advantages, targets, rng)
                 return update_state, losses_and_grads
@@ -539,11 +540,6 @@ def run_ego_training(config, wandb_logger):
     # Set the policy input dimension for the meliba policy
     # (Latent dim * 4) + observation dimension
     algorithm_config['POLICY_INPUT_DIM'] = (algorithm_config['ENCODER_LATENT_DIM'] * 4) + env.observation_space(env.agents[0]).shape[0]
-
-    # Derive DECODER_OUTPUT_DIM from the partner's action space at runtime
-    # so the reconstruction head matches the env. The previous default of
-    # 32 silently mismatched envs whose action_space.n != 32.
-    algorithm_config['DECODER_OUTPUT_DIM'] = env.action_space(env.agents[1]).n
 
     rng = jax.random.PRNGKey(algorithm_config["TRAIN_SEED"])
     rng, init_partner_rng, init_ego_rng, train_rng = jax.random.split(rng, 4)
