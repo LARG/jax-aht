@@ -750,7 +750,9 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
 
                     mask = traj_batch_xp.info.get("returned_episode", jnp.ones_like(traj_batch_xp.reward))
                     metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_xp.info)
-                    metric["update_steps"] = update_steps
+                    # Global step across generations so wandb curves don't overlap:
+                    # num_prev_trained_agents is 1 for the first trained generation.
+                    metric["update_steps"] = (num_prev_trained_agents - 1) * config["NUM_UPDATES"] + update_steps
                     metric["value_loss_xp"] = value_loss_xp.mean()
                     metric["value_loss_sp"] = value_loss_sp.mean()
 
@@ -1173,16 +1175,18 @@ def log_final_metrics(config, outs, logger, metric_names: tuple):
 
     for num_add_policies in range(trained_pop_size):
         for update_step in eval_steps:
+            # Global step across generations so wandb curves don't overlap
+            global_step = num_add_policies * num_updates + update_step
             logger.log_item(
-                "Eval/AvgSPReturnCurve", 
-                sp_return_curve[num_add_policies, update_step], 
-                train_step=update_step
+                "Eval/AvgSPReturnCurve",
+                sp_return_curve[num_add_policies, update_step],
+                train_step=global_step
                 )
             mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
             logger.log_item(
-                "Eval/AvgXPReturnCurve", 
-                mean_xp_returns[update_step], 
-                train_step=update_step
+                "Eval/AvgXPReturnCurve",
+                mean_xp_returns[update_step],
+                train_step=global_step
                 )
     logger.commit()
 
