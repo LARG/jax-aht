@@ -2,6 +2,7 @@
 Warning: ActorCritic agents that rely on auxiliary information to compute actions are not currently supported.
 '''
 import jax
+import jax.numpy as jnp
 import numpy as np
 from prettytable import PrettyTable
 from functools import partial
@@ -150,6 +151,8 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
 
     num_ego_agents = jax.tree.leaves(ego_params)[0].shape[0]
     num_partner_total = len(heldout_agent_list)
+    # vmapping over all egos at once can OOM, so vmap over chunks of egos
+    ego_chunk_size = min(config["global_heldout_settings"].get("EGO_CHUNK_SIZE", 8), num_ego_agents)
 
     def _eval_ego_vs_one_partner(single_ego_policy, single_ego_params, rng_for_ego,
                                      heldout_policy, heldout_params, heldout_test_mode):
@@ -177,11 +180,18 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
                                heldout_params=heldout_params,
                                heldout_test_mode=heldout_test_mode)
 
-        # vmap over the stacked ego agents and their RNGs
-        results_for_this_partner = jax.vmap(
+        vmap_over_egos = jax.jit(jax.vmap(
             func_to_vmap,
-            in_axes=(None, 0, 0) # Map over axis 0 of ego_policies, ego_params, ego_rngs
-        )(ego_policy, ego_params, ego_rngs)
+            in_axes=(None, 0, 0) # Map over axis 0 of ego_params, ego_rngs
+        ))
+        per_chunk_results = []
+        for chunk_start in range(0, num_ego_agents, ego_chunk_size):
+            chunk_end = min(chunk_start + ego_chunk_size, num_ego_agents)
+            chunk_params = jax.tree.map(lambda x: x[chunk_start:chunk_end], ego_params)
+            per_chunk_results.append(
+                vmap_over_egos(ego_policy, chunk_params, ego_rngs[chunk_start:chunk_end]))
+        results_for_this_partner = jax.tree.map(
+            lambda *xs: jnp.concatenate(xs, axis=0), *per_chunk_results)
 
         # results_for_this_partner shape: (num_ego_agents, num_episodes, ...)
         if config["global_heldout_settings"]["NORMALIZE_RETURNS"]:
