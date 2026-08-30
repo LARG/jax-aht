@@ -177,10 +177,9 @@ def heldout_metrics_1d(config, logger, eval_metrics,
 
     for metric_name in metric_names:
         # shape of eval_metrics[metric_name] is (num_seeds, num_heldout_agents, num_eval_episodes, num_agents_per_game)
-        # we first take the mean over the num_agents_per_game dimension
-        data = eval_metrics[metric_name].mean(axis=-1
-               ).transpose(0, 2, 1
-               ).reshape(-1, num_heldout_agents) # final shape (num_seeds*num_eval_episodes, num_heldout_agents)
+        # average out the episode and agents-per-game dims so that seeds are the
+        # bootstrap replication unit and heldout agents are the tasks
+        data = eval_metrics[metric_name].mean(axis=(-1, -2)) # final shape (num_seeds, num_heldout_agents)
         data = np.array(data)
         # compute per-heldout-agent aggregate stat+CIs
         point_est_per_task, interval_ests_per_task = compute_aggregate_stat_and_ci_per_task(data, aggregate_stat, return_interval_est=True)
@@ -215,10 +214,9 @@ def heldout_metrics_2d(config, logger, eval_metrics,
         # shape of eval_metrics[metric_name] is
         # (num_seeds, num_oel_iter, num_heldout_agents, num_eval_episodes, num_agents_per_game)
         for i in range(num_oel_iter):
-            # we first take the mean over the num_agents_per_game dimension
-            data = eval_metrics[metric_name][:, i].mean(axis=-1
-                ).transpose(0, 2, 1
-                ).reshape(-1, num_heldout_agents) # final shape (num_seeds*num_eval_episodes, num_heldout_agents)
+            # average out the episode and agents-per-game dims so that seeds are the
+            # bootstrap replication unit and heldout agents are the tasks
+            data = eval_metrics[metric_name][:, i].mean(axis=(-1, -2)) # final shape (num_seeds, num_heldout_agents)
             data = np.array(data)
             point_est = aggregate_stat_fn(data)
             # log curve aggregated over all heldout agents
