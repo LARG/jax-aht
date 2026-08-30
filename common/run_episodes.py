@@ -133,9 +133,8 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
 @lru_cache(maxsize=128)
 def _compiled_run_episodes(env, agent_0_policy, agent_1_policy, max_episode_steps,
                            agent_0_test_mode, agent_1_test_mode):
-    '''Memoized so repeated calls reuse one XLA compilation. Agent params are runtime
-    arguments rather than closed-over constants, so two agents sharing a policy (e.g.
-    members of one heldout population) do not each trigger a recompile.'''
+    '''Memoized, with params as arguments rather than closed-over constants, so agents
+    sharing a policy reuse one XLA compilation instead of each triggering a recompile.'''
     @jax.jit
     def _run(ep_rngs, agent_0_param, agent_1_param):
         return jax.vmap(lambda ep_rng: run_single_episode(

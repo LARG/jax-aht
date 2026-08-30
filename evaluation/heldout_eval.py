@@ -45,8 +45,7 @@ def eval_2d_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_par
     all_metrics_for_partners = []
     partner_rngs = jax.random.split(rng, num_partner_total)
     start_time = time.time()
-    # One compiled fn per distinct heldout policy: compilation dominates this loop, so
-    # partners sharing a policy (e.g. members of one population) must reuse it.
+    # Compilation dominates this loop, so cache one compiled fn per heldout policy.
     compiled_per_policy = {}
 
     for partner_idx in range(num_partner_total):
@@ -61,8 +60,7 @@ def eval_2d_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_par
                                    single_ego_policy=ego_policy,
                                    heldout_policy=heldout_policy,
                                    heldout_test_mode=heldout_test_mode)
-            # vmap over seeds only, looping over iters: vmapping over both OOMs for long
-            # runs. Heldout params are an argument (in_axes=None), not a baked-in constant.
+            # vmap over seeds only, looping over iters: vmapping over both OOMs for long runs.
             compiled_per_policy[policy_key] = jax.jit(
                 jax.vmap(func_to_vmap, in_axes=(0, 0, None)))
 

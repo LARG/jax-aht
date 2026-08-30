@@ -189,8 +189,7 @@ def run_n_agent_single_episode(
 def _compiled_run_n_agent_episodes(env, ego_policy, teammate_policy, ego_indices,
                                    teammate_indices, max_episode_steps,
                                    ego_test_mode, teammate_test_mode):
-    '''Memoized so repeated calls reuse one XLA compilation. See the equivalent
-    helper in common/run_episodes.py.'''
+    '''See the equivalent helper in common/run_episodes.py.'''
     @jax.jit
     def _run(ep_rngs, ego_param, teammate_param):
         return jax.vmap(lambda ep_rng: run_n_agent_single_episode(
