@@ -31,7 +31,7 @@ DECODER_AGENT_CHARACTER_EMBED_DIM: 32
 DECODER_HIDDEN_DIM: 64
 
 DECODER_LOSS_COEFF: 1.0
-DECODER_KL_WEIGHT: 0.05
+DECODER_KL_WEIGHT: 0.1
 # Start indices subsampled for the decoder recon loss; 0 = all H-1 starts (exact but O(H^2))
 DECODER_NUM_ELBO_SAMPLES: 16
 

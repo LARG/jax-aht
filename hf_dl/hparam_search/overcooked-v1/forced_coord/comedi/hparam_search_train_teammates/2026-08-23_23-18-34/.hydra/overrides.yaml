@@ -1,0 +1,9 @@
+- algorithm=comedi/overcooked-v1/forced_coord
+- task=overcooked-v1/forced_coord
+- label=hparam_search_train_teammates
+- algorithm.PARTNER_POP_SIZE=10
+- algorithm.NUM_SEEDS=1
+- algorithm.TRAIN_SEED=30217
+- train_ego=false
+- run_heldout_eval=false
+- logger.mode=online
