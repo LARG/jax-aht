@@ -67,20 +67,19 @@ def initialize_agent(actor_type, config, env, rng):
 
 def compute_total_updates(config):
     '''Compute the total number of updates and updates per iter.
+
+    TOTAL_TIMESTEPS_PER_ITERATION counts training rollout steps only
+    (evaluation episodes are not budgeted), matching the convention used
+    by the other open-ended trainers (e.g. rotate).
     '''
-    # XP matrix evaluation episodes: XP_EVAL_ROLLOUT_EPS per agent pair.
-    xp_eval_steps = (
-        config["XP_EVAL_ROLLOUT_EPS"] 
-        * config["ROLLOUT_LENGTH"] 
-        * config["PARTNER_POP_SIZE"] ** 2
-    )
     # Training rollouts (SP, XP) per update
     training_steps_per_update = 2 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
     num_updates_per_iter = int(
-        (config["TOTAL_TIMESTEPS_PER_ITERATION"] - xp_eval_steps) 
-        // training_steps_per_update
+        config["TOTAL_TIMESTEPS_PER_ITERATION"] // training_steps_per_update
     )
-    total_num_updates = num_updates_per_iter * config["PARTNER_POP_SIZE"]
+    # Slot 0 holds the seeded random agent, so only PARTNER_POP_SIZE - 1
+    # agents are trained.
+    total_num_updates = num_updates_per_iter * (config["PARTNER_POP_SIZE"] - 1)
     return num_updates_per_iter, total_num_updates
 
 def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=None):
