@@ -29,10 +29,11 @@ ENCODER_LATENT_DIM: 64 # Latent dimension
 DECODER_STATE_EMBED_DIM: 64
 DECODER_AGENT_CHARACTER_EMBED_DIM: 32
 DECODER_HIDDEN_DIM: 64
-DECODER_OUTPUT_DIM: 32
 
 DECODER_LOSS_COEFF: 1.0
-DECODER_KL_WEIGHT: 0.05
+DECODER_KL_WEIGHT: 0.1
+# Start indices subsampled for the decoder recon loss; 0 = all H-1 starts (exact but O(H^2))
+DECODER_NUM_ELBO_SAMPLES: 16
 
 partner_agent: # partner config for ppo_ego
   # Only specify ONE partner agent type. Must be RL-based.
