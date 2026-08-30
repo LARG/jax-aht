@@ -560,33 +560,16 @@ def train_trajedi_partners(config, env, partner_rng):
                     init_hstate_conf_sp2, traj_batch_conf_sp2, gae_conf_sp2, target_v_conf_sp2 = minbatch_conf_sp2
 
                     def _loss_fn_policy(
-                        params, init_hstate_conf_sp1, traj_batch_conf_sp1, 
-                        gae_conf_sp1, target_v_conf_sp1, 
-                        init_hstate_conf_sp2, traj_batch_conf_sp2, 
+                        params, init_hstate_conf_sp1, traj_batch_conf_sp1,
+                        gae_conf_sp1, target_v_conf_sp1,
+                        init_hstate_conf_sp2, traj_batch_conf_sp2,
                         gae_conf_sp2, target_v_conf_sp2,
-                        init_hstate_conf_xp, 
-                        traj_batch_conf_xp, gae_conf_xp, target_v_conf_xp,
-                        agent_id
+                        init_hstate_conf_xp,
+                        traj_batch_conf_xp, gae_conf_xp, target_v_conf_xp
                     ):
-                        # get policy and value of confederate for xp (vs ego) and sp (vs confederate) interactions
-
-                        is_relevant_sp1 = jnp.equal(
-                            jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1),
-                            agent_id
-                        )
-                        loss_weights_sp1 = jnp.where(is_relevant_sp1, 1, 0).astype(jnp.float32)
-
-                        is_relevant_sp2 = jnp.equal(
-                            jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1),
-                            agent_id
-                        )
-                        loss_weights_sp2 = jnp.where(is_relevant_sp2, 1, 0).astype(jnp.float32)
-
-                        is_relevant_xp = jnp.equal(
-                            jnp.argmax(traj_batch_conf_xp.agent_onehot_id, axis=-1),
-                            agent_id
-                        )
-                        loss_weights_xp = jnp.where(is_relevant_xp, 1, 0).astype(jnp.float32)
+                        # get policy and value of confederate for xp (vs ego) and sp (vs confederate) interactions.
+                        # All forward passes and per-sample loss tensors below are shared across population
+                        # members; per-agent masking happens once at the end in _per_agent_losses.
 
                         def compute_mean_weighted_losses(loss_tensor, weights):
                             return jax.lax.cond(
@@ -765,7 +748,8 @@ def train_trajedi_partners(config, env, partner_rng):
                             copied_mult2_weight = jnp.tile(log_mult2_weight[None, ...], (config["PARTNER_POP_SIZE"], 1, 1))
 
                             def logmeanexp(inp_array, axis=0):
-                                return jnp.log(jnp.mean(jnp.exp(inp_array), axis=axis))
+                                # max-shifted logsumexp for numerical stability with large-magnitude log probs
+                                return jax.nn.logsumexp(inp_array, axis=axis) - jnp.log(inp_array.shape[axis])
                             
                             traj_log_prob_sp1 = jnp.sum(all_sp_log_probs_sp1*copied_weight_sp1, axis=1)
                             traj_log_prob_sp2 = jnp.sum(all_sp_log_probs_sp2*copied_weight_sp2, axis=1)
@@ -809,8 +793,9 @@ def train_trajedi_partners(config, env, partner_rng):
                         pol_ratios2_sp1 = jnp.exp(log_traj_pi_sp1-log_traj_ori_pi_sp1)
                         pol_ratios2_sp2 = jnp.exp(log_traj_pi_sp2-log_traj_ori_pi_sp2)
 
-                        pi_multiplier_sp1 = jax.lax.stop_gradient(pol_ratios2_sp1*(delta_hat_traj_sp1 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp1)))
-                        pi_multiplier_sp2 = jax.lax.stop_gradient(pol_ratios2_sp2*(delta_hat_traj_sp2 - ((1.0/config["PARTNER_POP_SIZE"]) * log_delta_i_t_sp2)))
+                        # Both terms of the JSD gradient multiplier must be in probability space
+                        pi_multiplier_sp1 = jax.lax.stop_gradient(pol_ratios2_sp1*(delta_hat_traj_sp1 - ((1.0/config["PARTNER_POP_SIZE"]) * delta_i_traj_sp1)))
+                        pi_multiplier_sp2 = jax.lax.stop_gradient(pol_ratios2_sp2*(delta_hat_traj_sp2 - ((1.0/config["PARTNER_POP_SIZE"]) * delta_i_traj_sp2)))
 
                         delta_multiplier_sp1 = jax.lax.stop_gradient(pol_ratios_sp1 * delta_i_traj_sp1)
                         delta_multiplier_sp2 = jax.lax.stop_gradient(pol_ratios_sp2 * delta_i_traj_sp2)
@@ -818,32 +803,21 @@ def train_trajedi_partners(config, env, partner_rng):
                         trajedi_loss_sp1 = pi_multiplier_sp1 * log_traj_pi_sp1 + delta_multiplier_sp1 * log_delta_i_t_sp1
                         trajedi_loss_sp2 = pi_multiplier_sp2 * log_traj_pi_sp2 + delta_multiplier_sp2 * log_delta_i_t_sp2
 
-                        trajedi_loss_sp1 = compute_mean_weighted_losses(trajedi_loss_sp1, loss_weights_sp1)
-                        trajedi_loss_sp2 = compute_mean_weighted_losses(trajedi_loss_sp2, loss_weights_sp2)
-
-
-                        # Value loss for interaction with ego agent
+                        # Per-sample (unmasked) value loss tensors
                         value_pred_conf_xp_clipped = traj_batch_conf_xp.value + (
                             value_conf_xp - traj_batch_conf_xp.value
                             ).clip(-config["CLIP_EPS"], config["CLIP_EPS"])
                         value_losses_conf_xp = jnp.square(value_conf_xp - target_v_conf_xp)
                         value_losses_clipped_conf_xp = jnp.square(value_pred_conf_xp_clipped - target_v_conf_xp)
-                        value_loss_conf_xp = compute_mean_weighted_losses(
-                            jnp.maximum(value_losses_conf_xp, value_losses_clipped_conf_xp),
-                            loss_weights_xp
-                        )
+                        value_loss_tensor_xp = jnp.maximum(value_losses_conf_xp, value_losses_clipped_conf_xp)
 
-                        # Value loss for self-play (confederate vs confederate)
                         value_pred_conf_sp1_clipped = traj_batch_conf_sp1.value + (
                             value_conf_sp1 - traj_batch_conf_sp1.value
                             ).clip(
                             -config["CLIP_EPS"], config["CLIP_EPS"])
                         value_losses_conf_sp1 = jnp.square(value_conf_sp1 - target_v_conf_sp1)
                         value_losses_clipped_conf_sp1 = jnp.square(value_pred_conf_sp1_clipped - target_v_conf_sp1)
-                        value_loss_conf_sp1 = compute_mean_weighted_losses(
-                            jnp.maximum(value_losses_conf_sp1, value_losses_clipped_conf_sp1),
-                            loss_weights_sp1
-                        )
+                        value_loss_tensor_sp1 = jnp.maximum(value_losses_conf_sp1, value_losses_clipped_conf_sp1)
 
                         value_pred_conf_sp2_clipped = traj_batch_conf_sp2.value + (
                             value_conf_sp2 - traj_batch_conf_sp2.value
@@ -851,12 +825,9 @@ def train_trajedi_partners(config, env, partner_rng):
                             -config["CLIP_EPS"], config["CLIP_EPS"])
                         value_losses_conf_sp2 = jnp.square(value_conf_sp2 - target_v_conf_sp2)
                         value_losses_clipped_conf_sp2 = jnp.square(value_pred_conf_sp2_clipped - target_v_conf_sp2)
-                        value_loss_conf_sp2 = compute_mean_weighted_losses(
-                            jnp.maximum(value_losses_conf_sp2, value_losses_clipped_conf_sp2),
-                            loss_weights_sp2
-                        )
+                        value_loss_tensor_sp2 = jnp.maximum(value_losses_conf_sp2, value_losses_clipped_conf_sp2)
 
-                        # Policy gradient loss for interaction with ego agent
+                        # Per-sample (unmasked) policy gradient loss tensors
                         ratio_conf_xp = jnp.exp(log_prob_conf_xp - traj_batch_conf_xp.log_prob)
                         gae_norm_conf_xp = (gae_conf_xp - gae_conf_xp.mean()) / (gae_conf_xp.std() + 1e-8)
                         pg_loss_1_conf_xp = ratio_conf_xp * gae_norm_conf_xp
@@ -864,12 +835,8 @@ def train_trajedi_partners(config, env, partner_rng):
                             ratio_conf_xp,
                             1.0 - config["CLIP_EPS"],
                             1.0 + config["CLIP_EPS"]) * gae_norm_conf_xp
-                        pg_loss_conf_xp = compute_mean_weighted_losses(
-                            -jnp.minimum(pg_loss_1_conf_xp, pg_loss_2_conf_xp),
-                            loss_weights_xp
-                        )
+                        pg_loss_tensor_xp = -jnp.minimum(pg_loss_1_conf_xp, pg_loss_2_conf_xp)
 
-                        # Policy gradient loss for self-play (confederate vs confederate)
                         ratio_conf_sp1 = jnp.exp(log_prob_conf_sp1 - traj_batch_conf_sp1.log_prob)
                         gae_norm_conf_sp1 = (gae_conf_sp1 - gae_conf_sp1.mean()) / (gae_conf_sp1.std() + 1e-8)
                         pg_loss_1_conf_sp1 = ratio_conf_sp1 * gae_norm_conf_sp1
@@ -877,10 +844,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             ratio_conf_sp1,
                             1.0 - config["CLIP_EPS"],
                             1.0 + config["CLIP_EPS"]) * gae_norm_conf_sp1
-                        pg_loss_conf_sp1 = compute_mean_weighted_losses(
-                            -jnp.minimum(pg_loss_1_conf_sp1, pg_loss_2_conf_sp1),
-                            loss_weights_sp1
-                        )
+                        pg_loss_tensor_sp1 = -jnp.minimum(pg_loss_1_conf_sp1, pg_loss_2_conf_sp1)
 
                         ratio_conf_sp2 = jnp.exp(log_prob_conf_sp2 - traj_batch_conf_sp2.log_prob)
                         gae_norm_conf_sp2 = (gae_conf_sp2 - gae_conf_sp2.mean()) / (gae_conf_sp2.std() + 1e-8)
@@ -889,51 +853,58 @@ def train_trajedi_partners(config, env, partner_rng):
                             ratio_conf_sp2,
                             1.0 - config["CLIP_EPS"],
                             1.0 + config["CLIP_EPS"]) * gae_norm_conf_sp2
-                        pg_loss_conf_sp2 = compute_mean_weighted_losses(
-                            -jnp.minimum(pg_loss_1_conf_sp2, pg_loss_2_conf_sp2),
-                            loss_weights_sp2
-                        )
+                        pg_loss_tensor_sp2 = -jnp.minimum(pg_loss_1_conf_sp2, pg_loss_2_conf_sp2)
 
-                        # Entropy for interaction with ego agent
-                        entropy_conf_xp = compute_mean_weighted_losses(
-                            entropy_conf_xp,
-                            loss_weights_xp
-                        )
-                        # Entropy for self-play (confederate vs confederate)
-                        entropy_conf_sp1 = compute_mean_weighted_losses(
-                            entropy_conf_sp1,
-                            loss_weights_sp1
-                        )
-                        entropy_conf_sp2 = compute_mean_weighted_losses(
-                            entropy_conf_sp1,
-                            loss_weights_sp2
-                        )
-                        
-                        # We negate the pg_loss_conf_ego to minimize the ego agent's objective
-                        conf_xp_loss = pg_loss_conf_xp + config["VF_COEF"] * value_loss_conf_xp - config["ENT_COEF"] * entropy_conf_xp
-                        conf_sp_loss = pg_loss_conf_sp1 + pg_loss_conf_sp2 + config["VF_COEF"] * (value_loss_conf_sp1 + value_loss_conf_sp2) - config["ENT_COEF"] * (entropy_conf_sp1 + entropy_conf_sp2) + config["TRAJEDI_COEF"] * (trajedi_loss_sp1 + trajedi_loss_sp2)
-                        
-                        total_loss = conf_xp_loss + conf_sp_loss
+                        def _per_agent_losses(agent_id):
+                            # Masked losses for one population member. Since the shared tensors above do
+                            # not depend on agent_id, grad(sum over agents) here equals the sum of the
+                            # per-agent grads that the previous vmap-of-value_and_grad computed.
+                            loss_weights_sp1 = jnp.equal(
+                                jnp.argmax(traj_batch_conf_sp1.agent_onehot_id, axis=-1), agent_id
+                            ).astype(jnp.float32)
+                            loss_weights_sp2 = jnp.equal(
+                                jnp.argmax(traj_batch_conf_sp2.agent_onehot_id, axis=-1), agent_id
+                            ).astype(jnp.float32)
+                            loss_weights_xp = jnp.equal(
+                                jnp.argmax(traj_batch_conf_xp.agent_onehot_id, axis=-1), agent_id
+                            ).astype(jnp.float32)
 
-                        return total_loss, (value_loss_conf_xp, value_loss_conf_sp1+value_loss_conf_sp2, pg_loss_conf_xp, pg_loss_conf_sp1+pg_loss_conf_sp2, entropy_conf_xp, entropy_conf_sp1+entropy_conf_sp2, trajedi_loss_sp1+trajedi_loss_sp2)
+                            trajedi_loss_agent_sp1 = compute_mean_weighted_losses(trajedi_loss_sp1, loss_weights_sp1)
+                            trajedi_loss_agent_sp2 = compute_mean_weighted_losses(trajedi_loss_sp2, loss_weights_sp2)
+
+                            value_loss_conf_xp = compute_mean_weighted_losses(value_loss_tensor_xp, loss_weights_xp)
+                            value_loss_conf_sp1 = compute_mean_weighted_losses(value_loss_tensor_sp1, loss_weights_sp1)
+                            value_loss_conf_sp2 = compute_mean_weighted_losses(value_loss_tensor_sp2, loss_weights_sp2)
+
+                            pg_loss_conf_xp = compute_mean_weighted_losses(pg_loss_tensor_xp, loss_weights_xp)
+                            pg_loss_conf_sp1 = compute_mean_weighted_losses(pg_loss_tensor_sp1, loss_weights_sp1)
+                            pg_loss_conf_sp2 = compute_mean_weighted_losses(pg_loss_tensor_sp2, loss_weights_sp2)
+
+                            entropy_agent_xp = compute_mean_weighted_losses(entropy_conf_xp, loss_weights_xp)
+                            entropy_agent_sp1 = compute_mean_weighted_losses(entropy_conf_sp1, loss_weights_sp1)
+                            entropy_agent_sp2 = compute_mean_weighted_losses(entropy_conf_sp2, loss_weights_sp2)
+
+                            # We negate the pg_loss_conf_ego to minimize the ego agent's objective
+                            conf_xp_loss = pg_loss_conf_xp + config["VF_COEF"] * value_loss_conf_xp - config["ENT_COEF"] * entropy_agent_xp
+                            conf_sp_loss = pg_loss_conf_sp1 + pg_loss_conf_sp2 + config["VF_COEF"] * (value_loss_conf_sp1 + value_loss_conf_sp2) - config["ENT_COEF"] * (entropy_agent_sp1 + entropy_agent_sp2) + config["TRAJEDI_COEF"] * (trajedi_loss_agent_sp1 + trajedi_loss_agent_sp2)
+
+                            total_loss = conf_xp_loss + conf_sp_loss
+
+                            return total_loss, (value_loss_conf_xp, value_loss_conf_sp1+value_loss_conf_sp2, pg_loss_conf_xp, pg_loss_conf_sp1+pg_loss_conf_sp2, entropy_agent_xp, entropy_agent_sp1+entropy_agent_sp2, trajedi_loss_agent_sp1+trajedi_loss_agent_sp2)
+
+                        per_agent_total, per_agent_aux = jax.vmap(_per_agent_losses)(
+                            jnp.arange(config["PARTNER_POP_SIZE"])
+                        )
+                        return per_agent_total.sum(), (per_agent_total, per_agent_aux)
 
                     grad_fn = jax.value_and_grad(_loss_fn_policy, has_aux=True)
-
-                    def gather_conf_params_and_return_grads(agent_id):
-                        (loss_val_conf, aux_vals_conf), grads_conf = grad_fn(
-                            train_state_conf.params, 
-                            init_hstate_conf_sp1, traj_batch_conf_sp1, gae_conf_sp1, target_v_conf_sp1, 
-                            init_hstate_conf_sp2, traj_batch_conf_sp2, gae_conf_sp2, target_v_conf_sp2,
-                            init_hstate_conf_xp, traj_batch_conf_xp, gae_conf_xp, target_v_conf_xp,
-                            agent_id
-                        )
-                        return (loss_val_conf, aux_vals_conf), grads_conf
-
-                    possible_agent_ids = jnp.expand_dims(jnp.arange(config["PARTNER_POP_SIZE"]), 1)
-                    (loss_val_conf, aux_vals_conf), grads_conf = jax.vmap(gather_conf_params_and_return_grads)(possible_agent_ids)
-                    #grads_conf_new = jax.tree.map(lambda x: jnp.squeeze(x, 1), grads_conf)
-                    
-                    train_state_conf = train_state_conf.apply_gradients(grads=jax.tree.map(lambda x: jnp.sum(x, axis=0), grads_conf))
+                    (_, (loss_val_conf, aux_vals_conf)), grads_conf = grad_fn(
+                        train_state_conf.params,
+                        init_hstate_conf_sp1, traj_batch_conf_sp1, gae_conf_sp1, target_v_conf_sp1,
+                        init_hstate_conf_sp2, traj_batch_conf_sp2, gae_conf_sp2, target_v_conf_sp2,
+                        init_hstate_conf_xp, traj_batch_conf_xp, gae_conf_xp, target_v_conf_xp
+                    )
+                    train_state_conf = train_state_conf.apply_gradients(grads=grads_conf)
                     return train_state_conf, (loss_val_conf, aux_vals_conf)
 
                 def _update_minbatch_ego(train_state_ego, batch_info):
@@ -1281,6 +1252,8 @@ def train_trajedi_partners(config, env, partner_rng):
                 metric["average_rewards_conf_xp"] = jnp.mean(traj_batch_conf_xp.reward) 
                 metric["average_rewards_ego_sp"] = (jnp.mean(traj_batch_br_sp_p1.reward) + jnp.mean(traj_batch_br_sp_p2.reward))/2.0
                 metric["average_rewards_br"] = jnp.mean(traj_batch_br_xp.reward)
+
+                update_steps = update_steps + 1
 
                 new_runner_state = (
                     all_train_state_conf, train_state_ego,
@@ -1649,7 +1622,7 @@ def run_trajedi(config, wandb_logger):
     with jax.disable_jit(DEBUG):
         outs = train_trajedi_partners(algorithm_config, env, train_rng)
     end_time = time.time()
-    log.info(f"PAIRED training completed in {end_time - start_time} seconds.")
+    log.info(f"TrajeDi training completed in {end_time - start_time} seconds.")
 
     # Prepare return values for heldout evaluation
     env = make_env(algorithm_config["ENV_NAME"], algorithm_config["ENV_KWARGS"])
