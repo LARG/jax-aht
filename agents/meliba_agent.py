@@ -226,14 +226,16 @@ class DecoderRNNNetwork(nn.Module):
         hidden = jnp.concatenate((agent_character_embed, mental_state), axis=-1)
         hidden = nn.Dense(self.hidden_dim)(hidden)
 
-        # VariBAD-style ELBO subsampling: K uniform start indices per env instance give an
-        # unbiased O(K*H) estimate of the exact O(H^2) reconstruction term
+        # VariBAD-style ELBO subsampling: K stratified start indices per env instance
+        # (one uniform draw per equal-width stratum, so each index is marginally uniform)
+        # give an unbiased O(K*H) estimate of the exact O(H^2) reconstruction term
         H_time, batch_size = state.shape[0], state.shape[1]
         if self.num_elbo_subsamples > 0 and self.num_elbo_subsamples < H_time - 1:
-            start_indices = jax.vmap(
-                lambda key: jax.random.choice(
-                    key, H_time - 1, shape=(self.num_elbo_subsamples,), replace=False)
-            )(jax.random.split(prng_key, batch_size))
+            stratum_width = (H_time - 1) / self.num_elbo_subsamples
+            strata = jnp.arange(self.num_elbo_subsamples) * stratum_width
+            offsets = jax.random.uniform(
+                prng_key, (batch_size, self.num_elbo_subsamples)) * stratum_width
+            start_indices = jnp.floor(strata + offsets).astype(jnp.int32)
             recon_scale = (H_time - 1) / self.num_elbo_subsamples
         else:
             if self.num_elbo_subsamples > 0 and H_time > 1:
