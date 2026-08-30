@@ -151,8 +151,8 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
     num_ego_agents = jax.tree.leaves(ego_params)[0].shape[0]
     num_partner_total = len(heldout_agent_list)
 
-    def _eval_ego_vs_one_partner(single_ego_policy, single_ego_params, rng_for_ego,
-                                     heldout_policy, heldout_params, heldout_test_mode):
+    def _eval_ego_vs_one_partner(single_ego_params, rng_for_ego, heldout_params,
+                                     single_ego_policy, heldout_policy, heldout_test_mode):
         return run_episodes(rng_for_ego, env,
                             agent_0_policy=single_ego_policy, agent_0_param=single_ego_params,
                             agent_1_policy=heldout_policy, agent_1_param=heldout_params,
@@ -166,22 +166,28 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
     rng, sub_rng = jax.random.split(rng)
     partner_rngs = jax.random.split(sub_rng, num_partner_total)
     start_time = time.time()
+    # One compiled fn per distinct heldout policy: compilation dominates this loop, so
+    # partners sharing a policy (e.g. members of one population) must reuse it.
+    compiled_per_policy = {}
 
     for partner_idx in range(num_partner_total):
         heldout_policy, heldout_params, heldout_test_mode, heldout_performance_bounds = heldout_agent_list[partner_idx]
         ego_rngs = jax.random.split(partner_rngs[partner_idx], num_ego_agents)
 
-        # Use partial to fix the heldout agent for the function being vmapped
-        func_to_vmap = partial(_eval_ego_vs_one_partner,
-                               heldout_policy=heldout_policy,
-                               heldout_params=heldout_params,
-                               heldout_test_mode=heldout_test_mode)
+        policy_key = (id(heldout_policy), heldout_test_mode)
+        if policy_key not in compiled_per_policy:
+            # Use partial to fix the policies for the function being vmapped
+            func_to_vmap = partial(_eval_ego_vs_one_partner,
+                                   single_ego_policy=ego_policy,
+                                   heldout_policy=heldout_policy,
+                                   heldout_test_mode=heldout_test_mode)
+            # vmap over the stacked ego agents and their RNGs; heldout params are an
+            # argument (in_axes=None) rather than a baked-in constant.
+            compiled_per_policy[policy_key] = jax.jit(
+                jax.vmap(func_to_vmap, in_axes=(0, 0, None)))
 
-        # vmap over the stacked ego agents and their RNGs
-        results_for_this_partner = jax.vmap(
-            func_to_vmap,
-            in_axes=(None, 0, 0) # Map over axis 0 of ego_policies, ego_params, ego_rngs
-        )(ego_policy, ego_params, ego_rngs)
+        results_for_this_partner = compiled_per_policy[policy_key](
+            ego_params, ego_rngs, heldout_params)
 
         # results_for_this_partner shape: (num_ego_agents, num_episodes, ...)
         if config["global_heldout_settings"]["NORMALIZE_RETURNS"]:

@@ -2,6 +2,8 @@
 This file contains the code for running evaluation episodes with an ego agent and a partner agent.
 Does not currently support actors that require aux_obs.
 '''
+from functools import lru_cache
+
 import jax
 import jax.numpy as jnp
 
@@ -128,6 +130,21 @@ def run_single_episode(rng, env, agent_0_param, agent_0_policy,
     # Return the final info (which includes the episode return via LogWrapper).
     return final_carry[-1]
 
+@lru_cache(maxsize=128)
+def _compiled_run_episodes(env, agent_0_policy, agent_1_policy, max_episode_steps,
+                           agent_0_test_mode, agent_1_test_mode):
+    '''Memoized so repeated calls reuse one XLA compilation. Agent params are runtime
+    arguments rather than closed-over constants, so two agents sharing a policy (e.g.
+    members of one heldout population) do not each trigger a recompile.'''
+    @jax.jit
+    def _run(ep_rngs, agent_0_param, agent_1_param):
+        return jax.vmap(lambda ep_rng: run_single_episode(
+            ep_rng, env, agent_0_param, agent_0_policy,
+            agent_1_param, agent_1_policy, max_episode_steps,
+            agent_0_test_mode, agent_1_test_mode
+        ))(ep_rngs)
+    return _run
+
 def run_episodes(rng, env, agent_0_param, agent_0_policy,
                  agent_1_param, agent_1_policy,
                  max_episode_steps, num_eps, agent_0_test_mode=False, agent_1_test_mode=False):
@@ -136,14 +153,9 @@ def run_episodes(rng, env, agent_0_param, agent_0_policy,
     rngs = jax.random.split(rng, num_eps + 1)
     ep_rngs = rngs[1:]
 
-    # Vectorize run_single_episode over the first argument (rng)
-    vmap_run_single_episode = jax.jit(jax.vmap(
-        lambda ep_rng: run_single_episode(
-            ep_rng, env, agent_0_param, agent_0_policy,
-            agent_1_param, agent_1_policy, max_episode_steps,
-            agent_0_test_mode, agent_1_test_mode
-        )
-    ))
+    vmap_run_single_episode = _compiled_run_episodes(
+        env, agent_0_policy, agent_1_policy, max_episode_steps,
+        agent_0_test_mode, agent_1_test_mode)
     # Run episodes in parallel
-    all_outs = vmap_run_single_episode(ep_rngs)
+    all_outs = vmap_run_single_episode(ep_rngs, agent_0_param, agent_1_param)
     return all_outs  # each leaf has shape (num_eps, ...)

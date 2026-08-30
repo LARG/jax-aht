@@ -14,7 +14,7 @@ heldout evaluation of trained ego agents.
 Output format is identical to LogWrapper / run_episodes so existing logging
 helpers remain compatible.
 '''
-from functools import partial
+from functools import lru_cache, partial
 from typing import List
 
 import jax
@@ -185,6 +185,24 @@ def run_n_agent_single_episode(
     return final_carry[-1]  # final info dict
 
 
+@lru_cache(maxsize=128)
+def _compiled_run_n_agent_episodes(env, ego_policy, teammate_policy, ego_indices,
+                                   teammate_indices, max_episode_steps,
+                                   ego_test_mode, teammate_test_mode):
+    '''Memoized so repeated calls reuse one XLA compilation. See the equivalent
+    helper in common/run_episodes.py.'''
+    @jax.jit
+    def _run(ep_rngs, ego_param, teammate_param):
+        return jax.vmap(lambda ep_rng: run_n_agent_single_episode(
+            ep_rng, env,
+            ego_policy, ego_param,
+            teammate_policy, teammate_param,
+            ego_indices, teammate_indices,
+            max_episode_steps,
+            ego_test_mode, teammate_test_mode,
+        ))(ep_rngs)
+    return _run
+
 def run_n_agent_episodes(
     rng,
     env,
@@ -209,14 +227,8 @@ def run_n_agent_episodes(
     '''
     rngs = jax.random.split(rng, num_eps)
 
-    vmap_episode = jax.jit(jax.vmap(
-        lambda ep_rng: run_n_agent_single_episode(
-            ep_rng, env,
-            ego_policy, ego_param,
-            teammate_policy, teammate_param,
-            ego_indices, teammate_indices,
-            max_episode_steps,
-            ego_test_mode, teammate_test_mode,
-        )
-    ))
-    return vmap_episode(rngs)
+    vmap_episode = _compiled_run_n_agent_episodes(
+        env, ego_policy, teammate_policy,
+        tuple(ego_indices), tuple(teammate_indices),
+        max_episode_steps, ego_test_mode, teammate_test_mode)
+    return vmap_episode(rngs, ego_param, teammate_param)

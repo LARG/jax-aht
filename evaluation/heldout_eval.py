@@ -31,8 +31,8 @@ def eval_2d_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_par
     tot_ego_agents = num_ego_seeds * num_ego_iters
     num_partner_total = len(heldout_agent_list)
 
-    def _eval_ego_vs_one_partner(rng_for_ego, single_ego_params, single_ego_policy,
-                                 heldout_params, heldout_policy, heldout_test_mode):
+    def _eval_ego_vs_one_partner(rng_for_ego, single_ego_params, heldout_params,
+                                 single_ego_policy, heldout_policy, heldout_test_mode):
         return run_episodes(rng_for_ego, env,
                             agent_0_policy=single_ego_policy, agent_0_param=single_ego_params,
                             agent_1_policy=heldout_policy, agent_1_param=heldout_params,
@@ -45,25 +45,32 @@ def eval_2d_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_par
     all_metrics_for_partners = []
     partner_rngs = jax.random.split(rng, num_partner_total)
     start_time = time.time()
+    # One compiled fn per distinct heldout policy: compilation dominates this loop, so
+    # partners sharing a policy (e.g. members of one population) must reuse it.
+    compiled_per_policy = {}
 
     for partner_idx in range(num_partner_total):
         heldout_policy, heldout_params, heldout_test_mode, heldout_performance_bounds = heldout_agent_list[partner_idx]
         ego_rngs = jax.random.split(partner_rngs[partner_idx], tot_ego_agents)
         ego_rngs = ego_rngs.reshape(num_ego_seeds, num_ego_iters, 2)
 
-        # Use partial to fix the heldout agent for the function being vmapped
-        func_to_vmap = partial(_eval_ego_vs_one_partner,
-                               single_ego_policy=ego_policy,
-                               heldout_params=heldout_params,
-                               heldout_policy=heldout_policy,
-                               heldout_test_mode=heldout_test_mode)
+        policy_key = (id(heldout_policy), heldout_test_mode)
+        if policy_key not in compiled_per_policy:
+            # Use partial to fix the policies for the function being vmapped
+            func_to_vmap = partial(_eval_ego_vs_one_partner,
+                                   single_ego_policy=ego_policy,
+                                   heldout_policy=heldout_policy,
+                                   heldout_test_mode=heldout_test_mode)
+            # vmap over seeds only, looping over iters: vmapping over both OOMs for long
+            # runs. Heldout params are an argument (in_axes=None), not a baked-in constant.
+            compiled_per_policy[policy_key] = jax.jit(
+                jax.vmap(func_to_vmap, in_axes=(0, 0, None)))
 
-        # vmap over seeds only, looping over iters: vmapping over both OOMs for long runs.
-        vmap_over_seeds = jax.jit(jax.vmap(func_to_vmap, in_axes=(0, 0)))
+        vmap_over_seeds = compiled_per_policy[policy_key]
         per_iter_results = []
         for iter_idx in range(num_ego_iters):
             iter_params = jax.tree.map(lambda x: x[:, iter_idx], ego_params)
-            per_iter_results.append(vmap_over_seeds(ego_rngs[:, iter_idx], iter_params))
+            per_iter_results.append(vmap_over_seeds(ego_rngs[:, iter_idx], iter_params, heldout_params))
         # (num_oel_iters, num_seeds, ...) -> (num_seeds, num_oel_iters, ...)
         results_for_this_partner = jax.tree.map(
             lambda x: x.swapaxes(0, 1), tree_stack(per_iter_results))
