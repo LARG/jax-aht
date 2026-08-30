@@ -145,7 +145,8 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                     log_prob=logp_0,
                     obs=obs_0,
                     info=info_0,
-                    avail_actions=avail_actions_0
+                    avail_actions=avail_actions_0,
+                    prev_done=last_dones["agent_0"]
                 )
                 new_runner_state = (train_state_conf, env_state_next, obs_next, done, new_conf_h, new_ego_h, rng)
                 return new_runner_state, transition
@@ -184,7 +185,7 @@ def train_minimax_partners(config, ego_params, ego_policy, env, partner_rng):
                         _, value_ego, pi_ego, _ = confederate_policy.get_action_value_policy(
                             params=params,
                             obs=traj_batch_ego.obs,
-                            done=traj_batch_ego.done,
+                            done=traj_batch_ego.prev_done,
                             avail_actions=traj_batch_ego.avail_actions,
                             hstate=init_conf_hstate,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here

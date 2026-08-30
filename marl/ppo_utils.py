@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from typing import NamedTuple
 
 class Transition(NamedTuple):
-    done: jnp.ndarray
+    done: jnp.ndarray  # done at t+1 (post-step); used for GAE bootstrapping
     action: jnp.ndarray
     value: jnp.ndarray
     reward: jnp.ndarray
@@ -11,6 +11,7 @@ class Transition(NamedTuple):
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
+    prev_done: jnp.ndarray = None  # done at t (pre-step); RNN reset signal for replay
 
 def batchify(x: dict, agent_list, num_actors):
     x = jnp.stack([x[a] for a in agent_list])

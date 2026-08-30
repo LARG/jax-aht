@@ -380,7 +380,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                             log_prob=logp_0,
                             obs=last_obs["agent_0"],
                             info=info_0,
-                            avail_actions=avail_actions_0
+                            avail_actions=avail_actions_0,
+                            prev_done=last_dones["agent_0"]
                         )
                         new_runner_state = (train_state, pop_buffer, partner_indices,
                                             env_state_next, obs_next, done,
@@ -453,7 +454,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                             log_prob=logp_0,
                             obs=last_obs["agent_0"],
                             info=info_0,
-                            avail_actions=avail_actions_0
+                            avail_actions=avail_actions_0,
+                            prev_done=last_dones["agent_0"]
                         )
                         # Store agent_1 data in transition
                         transition_1 = Transition(
@@ -464,7 +466,8 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                             log_prob=logp_1,
                             obs=last_obs["agent_1"],
                             info=info_1,
-                            avail_actions=avail_actions_1
+                            avail_actions=avail_actions_1,
+                            prev_done=last_dones["agent_1"]
                         )
                         new_runner_state = (train_state, env_state_next, obs_next, done,
                                             new_ego_hstate_sp0, new_ego_hstate_sp1, rng)
@@ -604,7 +607,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                                 _, value_xp, pi_xp, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_xp.obs,
-                                    done=traj_batch_xp.done,
+                                    done=traj_batch_xp.prev_done,
                                     avail_actions=traj_batch_xp.avail_actions,
                                     hstate=init_hstate_xp,
                                     rng=jax.random.PRNGKey(0),
@@ -614,7 +617,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                                 _, value_sp0, pi_sp0, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_sp0.obs,
-                                    done=traj_batch_sp0.done,
+                                    done=traj_batch_sp0.prev_done,
                                     avail_actions=traj_batch_sp0.avail_actions,
                                     hstate=init_hstate_sp0,
                                     rng=jax.random.PRNGKey(0),
@@ -624,7 +627,7 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                                 _, value_sp1, pi_sp1, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_sp1.obs,
-                                    done=traj_batch_sp1.done,
+                                    done=traj_batch_sp1.prev_done,
                                     avail_actions=traj_batch_sp1.avail_actions,
                                     hstate=init_hstate_sp1,
                                     rng=jax.random.PRNGKey(0),

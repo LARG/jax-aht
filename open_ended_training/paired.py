@@ -181,7 +181,8 @@ def train_paired(config, env, partner_rng):
                     log_prob=logp_0,
                     obs=obs_0,
                     info=info_0,
-                    avail_actions=avail_actions_0
+                    avail_actions=avail_actions_0,
+                    prev_done=last_dones["agent_0"]
                 )
 
                 # Store agent_1 (ego) data in transition
@@ -193,7 +194,8 @@ def train_paired(config, env, partner_rng):
                     log_prob=logp_1,
                     obs=obs_1,
                     info=info_1,
-                    avail_actions=avail_actions_1
+                    avail_actions=avail_actions_1,
+                    prev_done=last_dones["agent_1"]
                 )
 
                 new_runner_state = (train_state_conf, train_state_ego, env_state_next, obs_next, done, new_conf_h, new_ego_h, rng)
@@ -266,7 +268,8 @@ def train_paired(config, env, partner_rng):
                     log_prob=logp_0,
                     obs=obs_0,
                     info=info_0,
-                    avail_actions=avail_actions_0
+                    avail_actions=avail_actions_0,
+                    prev_done=last_dones["agent_0"]
                 )
                 # Store agent_1 (best response) data in transition
                 transition_1 = Transition(
@@ -277,7 +280,8 @@ def train_paired(config, env, partner_rng):
                     log_prob=logp_1,
                     obs=obs_1,
                     info=info_1,
-                    avail_actions=avail_actions_1
+                    avail_actions=avail_actions_1,
+                    prev_done=last_dones["agent_1"]
                 )
                 new_runner_state = (train_state_conf, train_state_br, env_state_next, obs_next, done, new_conf_h, new_br_h, rng)
                 return new_runner_state, (transition_0, transition_1)
@@ -323,7 +327,7 @@ def train_paired(config, env, partner_rng):
                         _, (value_conf_ego, _), pi_conf_ego, _ = confederate_policy.get_action_value_policy(
                             params=params,
                             obs=traj_batch_conf_ego.obs,
-                            done=traj_batch_conf_ego.done,
+                            done=traj_batch_conf_ego.prev_done,
                             avail_actions=traj_batch_conf_ego.avail_actions,
                             hstate=init_hstate_conf_ego,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
@@ -331,7 +335,7 @@ def train_paired(config, env, partner_rng):
                         _, (_, value_conf_br), pi_conf_br, _ = confederate_policy.get_action_value_policy(
                             params=params,
                             obs=traj_batch_conf_br.obs,
-                            done=traj_batch_conf_br.done,
+                            done=traj_batch_conf_br.prev_done,
                             avail_actions=traj_batch_conf_br.avail_actions,
                             hstate=init_hstate_conf_br,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
@@ -404,7 +408,7 @@ def train_paired(config, env, partner_rng):
                         _, value, pi, _ = br_policy.get_action_value_policy(
                             params=params,
                             obs=traj_batch_br.obs,
-                            done=traj_batch_br.done,
+                            done=traj_batch_br.prev_done,
                             avail_actions=traj_batch_br.avail_actions,
                             hstate=init_hstate_br,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
@@ -448,7 +452,7 @@ def train_paired(config, env, partner_rng):
                         _, value, pi, _ = ego_policy.get_action_value_policy(
                             params=params, # (64,)
                             obs=traj_batch_ego.obs, # (512, 15)
-                            done=traj_batch_ego.done, # (512,)
+                            done=traj_batch_ego.prev_done, # (512,)
                             avail_actions=traj_batch_ego.avail_actions, # (512, 6)
                             hstate=init_hstate_ego, # (1, 16, 8)
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here

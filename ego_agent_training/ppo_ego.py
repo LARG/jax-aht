@@ -183,7 +183,8 @@ def train_ppo_ego_agent(config, env, train_rng,
                     log_prob=logp_0,
                     obs=prev_obs["agent_0"],
                     info=info_0,
-                    avail_actions=avail_actions_0
+                    avail_actions=avail_actions_0,
+                    prev_done=prev_done["agent_0"]
                 )
                 new_runner_state = (train_state, env_state_next, obs_next, done_next, 
                                     new_ego_hstate, new_partner_hstate, updated_partner_indices, rng)
@@ -220,7 +221,7 @@ def train_ppo_ego_agent(config, env, train_rng,
                     _, value, pi, _ = ego_policy.get_action_value_policy(
                         params=params, 
                         obs=traj_batch.obs,
-                        done=traj_batch.done,
+                        done=traj_batch.prev_done,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
                         rng=jax.random.PRNGKey(0) # only used for action sampling, which is unused here

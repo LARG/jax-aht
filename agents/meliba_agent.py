@@ -271,8 +271,16 @@ class DecoderRNNNetwork(nn.Module):
             k_partner_actions = transform_timestep_to_k_batch(partner_actions, pad_value=0.0, return_mask=False, start_indices=start_indices)
             k_partner_actions = jnp.squeeze(k_partner_actions, axis=-1)
 
-            # Mask to only consider elements before the first done
-            episode_mask = fill_to_first_true(jnp.squeeze(k_dones, axis=-1))
+            # Mask to only consider elements belonging to the window's first episode.
+            # `dones` carries pre-step (prev) dones: a True at position j marks a reset
+            # *before* step j, i.e. step j starts a new episode. A True at position 0
+            # marks a reset into the window's first step, not a boundary within the
+            # window, so ignore it; steps strictly before the first later True belong
+            # to the same episode (this includes the terminal step, matching the old
+            # post-step-done masking).
+            k_dones_sq = jnp.squeeze(k_dones, axis=-1)
+            boundaries = k_dones_sq.at[:, 0].set(0)
+            episode_mask = jnp.cumsum(boundaries, axis=1) == 0
 
             def handle_k_trajectories(state_agent_embed, hidden, dones):
                 """

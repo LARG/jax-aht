@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 class XPTransition(NamedTuple):
-    done: jnp.ndarray
+    done: jnp.ndarray  # done at t+1 (post-step); used for GAE
     action: jnp.ndarray
     value: jnp.ndarray
     self_onehot_id: jnp.ndarray
@@ -43,6 +43,7 @@ class XPTransition(NamedTuple):
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
+    prev_done: jnp.ndarray = None  # done at t (pre-step); RNN reset signal for replay
 
 def _get_all_ids(pop_size):
     cross_product = np.meshgrid(
@@ -274,7 +275,8 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     log_prob=logp_0,
                     obs=last_obs["agent_0"],
                     info=info_0,
-                    avail_actions=avail_actions_0
+                    avail_actions=avail_actions_0,
+                    prev_done=last_done["agent_0"]
                 )
 
                 transition_1 = XPTransition(
@@ -287,7 +289,8 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     log_prob=logp_1,
                     obs=last_obs["agent_1"],
                     info=info_1,
-                    avail_actions=avail_actions_1
+                    avail_actions=avail_actions_1,
+                    prev_done=last_done["agent_1"]
                 )
                 new_runner_state = (all_train_state_conf, all_train_state_br, updated_conf_ids, updated_br_ids,
                                     env_state_next, obs_next, done, new_conf_h, new_br_h, rng)
@@ -349,7 +352,7 @@ def train_brdiv_partners(train_rng, env, config, conf_policy, br_policy):
                         _, value, pi, _ = agent_policy.get_action_value_policy(
                             params=squeezed_param,
                             obs=traj_batch.obs,
-                            done=traj_batch.done,
+                            done=traj_batch.prev_done,
                             avail_actions=traj_batch.avail_actions,
                             hstate=init_hstate,
                             rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here

@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import flax.linen as nn
 
 class Transition(NamedTuple):
-    done: jnp.ndarray
+    done: jnp.ndarray  # done at t+1 (post-step); used for GAE bootstrapping
     action: jnp.ndarray
     value: jnp.ndarray
     reward: jnp.ndarray
@@ -20,6 +20,7 @@ class Transition(NamedTuple):
     prev_action_onehot: jnp.ndarray
     partner_action: jnp.ndarray
     partner_action_onehot: jnp.ndarray
+    prev_done: jnp.ndarray = None  # done at t (pre-step); RNN reset signal for replay
 
 class DecoderScannedRNN(nn.Module):
     """

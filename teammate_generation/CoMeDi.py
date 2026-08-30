@@ -285,7 +285,8 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                             log_prob=logp_0,
                             obs=obs_0,
                             info=info_0,
-                            avail_actions=avail_actions_0
+                            avail_actions=avail_actions_0,
+                            prev_done=last_dones["agent_0"]
                         )
                         new_runner_state = (train_state, xp_param, xp_id, env_state_next, obs_next, done, rng)
                         return new_runner_state, transition
@@ -409,7 +410,8 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                             log_prob=logp_0,
                             obs=obs_0,
                             info=info_0,
-                            avail_actions=avail_actions_0
+                            avail_actions=avail_actions_0,
+                            prev_done=dones_0
                         )
                         # Store agent_1 (best response) data in transition
                         transition_1 = Transition(
@@ -420,7 +422,8 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                             log_prob=logp_1,
                             obs=obs_1,
                             info=info_1,
-                            avail_actions=avail_actions_1
+                            avail_actions=avail_actions_1,
+                            prev_done=dones_1
                         )
                         # Pass reset_traj_batch and init_br_hstate through unchanged in the state tuple
                         new_runner_state = (train_state, env_state_next, obs_next, done, rng, current_trained_pop_id, reset_traj_batch)
@@ -681,7 +684,7 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                                 _, value_xp, pi_xp, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_xp.obs,
-                                    done=traj_batch_xp.done,
+                                    done=traj_batch_xp.prev_done,
                                     avail_actions=traj_batch_xp.avail_actions,
                                     hstate=None,
                                     rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
@@ -693,7 +696,7 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                                 _, value_sp, pi_sp, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_sp.obs,
-                                    done=traj_batch_sp.done,
+                                    done=traj_batch_sp.prev_done,
                                     avail_actions=traj_batch_sp.avail_actions,
                                     hstate=None,
                                     rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
@@ -703,7 +706,7 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                                 _, value_sp2, pi_sp2, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_sp2.obs,
-                                    done=traj_batch_sp2.done,
+                                    done=traj_batch_sp2.prev_done,
                                     avail_actions=traj_batch_sp2.avail_actions,
                                     hstate=None,
                                     rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
@@ -713,7 +716,7 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                                 _, value_mp, pi_mp, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_mp.obs,
-                                    done=traj_batch_mp.done,
+                                    done=traj_batch_mp.prev_done,
                                     avail_actions=traj_batch_mp.avail_actions,
                                     hstate=None,
                                     rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
@@ -723,7 +726,7 @@ def train_comedi_partners(train_rng, wandb_logger, env, config):
                                 _, value_mp2, pi_mp2, _ = policy.get_action_value_policy(
                                     params=params,
                                     obs=traj_batch_mp2.obs,
-                                    done=traj_batch_mp2.done,
+                                    done=traj_batch_mp2.prev_done,
                                     avail_actions=traj_batch_mp2.avail_actions,
                                     hstate=None,
                                     rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here

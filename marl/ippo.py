@@ -131,7 +131,8 @@ def make_train(config, env, logger, progress_callback=None):
                     log_prob,
                     last_obs_batch,
                     info,
-                    avail_actions
+                    avail_actions,
+                    last_done_batch.squeeze(),
                 )
                 runner_state = (train_state, new_env_state, new_obs, new_done, new_hstate, rng)
                 return runner_state, transition
@@ -194,7 +195,7 @@ def make_train(config, env, logger, progress_callback=None):
                         _, value, pi, _ = policy.get_action_value_policy(
                             params=params,
                             obs=traj_batch.obs,
-                            done=traj_batch.done,
+                            done=traj_batch.prev_done,
                             avail_actions=traj_batch.avail_actions,
                             hstate=init_hstate,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is unused here

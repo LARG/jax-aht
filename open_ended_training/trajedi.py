@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 class Transition(NamedTuple):
-    done: jnp.ndarray
+    done: jnp.ndarray  # done at t+1 (post-step); used for GAE
     action: jnp.ndarray
     value: jnp.ndarray
     agent_onehot_id: jnp.ndarray
@@ -36,9 +36,10 @@ class Transition(NamedTuple):
     avail_actions: jnp.ndarray
     episode_id: jnp.ndarray
     time_id: jnp.ndarray
+    prev_done: jnp.ndarray = None  # done at t (pre-step); RNN reset signal for replay
 
 class TransitionEgo(NamedTuple):
-    done: jnp.ndarray
+    done: jnp.ndarray  # done at t+1 (post-step); used for GAE
     action: jnp.ndarray
     value: jnp.ndarray
     reward: jnp.ndarray
@@ -46,6 +47,7 @@ class TransitionEgo(NamedTuple):
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
+    prev_done: jnp.ndarray = None  # done at t (pre-step); RNN reset signal for replay
 
 def gather_params(partner_params_pytree, idx_vec):
     """
@@ -269,7 +271,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     info=info_0,
                     avail_actions=avail_actions_0,
                     episode_id=last_eps_counter,
-                    time_id=last_timestep_counter
+                    time_id=last_timestep_counter,
+                    prev_done=last_done["agent_0"]
                 )
 
                 transition_1 = Transition(
@@ -283,7 +286,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     info=info_1,
                     avail_actions=avail_actions_1,
                     episode_id=last_eps_counter,
-                    time_id=last_timestep_counter
+                    time_id=last_timestep_counter,
+                    prev_done=last_done["agent_1"]
                 )
 
                 last_eps_counter = last_eps_counter + done["agent_0"].astype(int)
@@ -401,8 +405,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     info=info_0,
                     avail_actions=avail_actions_0,
                     episode_id=jnp.zeros_like(done["agent_0"].astype(int)),
-                    time_id=jnp.zeros_like(done["agent_0"].astype(int))
-
+                    time_id=jnp.zeros_like(done["agent_0"].astype(int)),
+                    prev_done=last_done["agent_0"]
                 )
 
                 transition_1 = Transition(
@@ -416,7 +420,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     info=info_1,
                     avail_actions=avail_actions_1,
                     episode_id=jnp.zeros_like(done["agent_1"].astype(int)),
-                    time_id=jnp.zeros_like(done["agent_1"].astype(int))
+                    time_id=jnp.zeros_like(done["agent_1"].astype(int)),
+                    prev_done=last_done["agent_1"]
                 )
 
                 new_runner_state = (all_train_state_conf, train_state_ego,
@@ -501,7 +506,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     log_prob=logp_0,
                     obs=last_obs_br_sp["agent_0"],
                     info=info_0,
-                    avail_actions=avail_actions_0
+                    avail_actions=avail_actions_0,
+                    prev_done=last_done_br_sp["agent_0"]
                 )
 
                 transition_1 = TransitionEgo(
@@ -512,7 +518,8 @@ def train_trajedi_partners(config, env, partner_rng):
                     log_prob=logp_1,
                     obs=last_obs_br_sp["agent_1"],
                     info=info_1,
-                    avail_actions=avail_actions_1
+                    avail_actions=avail_actions_1,
+                    prev_done=last_done_br_sp["agent_1"]
                 )
 
                 (
@@ -586,7 +593,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             _, (vals_sp1, _), pi_conf_sp1, _ = confederate_policy.get_action_value_policy(
                                 params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                                 obs=traj_batch_conf_sp1.obs,
-                                done=traj_batch_conf_sp1.done,
+                                done=traj_batch_conf_sp1.prev_done,
                                 avail_actions=traj_batch_conf_sp1.avail_actions,
                                 hstate=init_hstate_conf_sp1,
                                 rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
@@ -594,7 +601,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             _, (vals_sp2, _), pi_conf_sp2, _ = confederate_policy.get_action_value_policy(
                                 params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                                 obs=traj_batch_conf_sp2.obs,
-                                done=traj_batch_conf_sp2.done,
+                                done=traj_batch_conf_sp2.prev_done,
                                 avail_actions=traj_batch_conf_sp2.avail_actions,
                                 hstate=init_hstate_conf_sp2,
                                 rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
@@ -613,7 +620,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             _, (_, value_conf_xp), pi_conf_xp, _ = confederate_policy.get_action_value_policy(
                                 params=jax.tree.map(lambda x: jnp.squeeze(x, axis=0), param),
                                 obs=traj_batch_conf_xp.obs,
-                                done=traj_batch_conf_xp.done,
+                                done=traj_batch_conf_xp.prev_done,
                                 avail_actions=traj_batch_conf_xp.avail_actions,
                                 hstate=init_hstate_conf_xp,
                                 rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here
@@ -922,7 +929,7 @@ def train_trajedi_partners(config, env, partner_rng):
                             _, value, pi, _ = ego_policy.get_action_value_policy(
                                 params=params, # (64,)
                                 obs=traj_batch_ego.obs, # (512, 15)
-                                done=traj_batch_ego.done, # (512,)
+                                done=traj_batch_ego.prev_done, # (512,)
                                 avail_actions=traj_batch_ego.avail_actions, # (512, 6)
                                 hstate=init_hstate_ego, # (1, 16, 8)
                                 rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here

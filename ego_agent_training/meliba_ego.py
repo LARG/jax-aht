@@ -214,7 +214,8 @@ def train_meliba_ego_agent(config, env, train_rng,
                     joint_act_onehot=jnp.concatenate((env_act_onehot["agent_0"], env_act_onehot["agent_1"]), axis=-1),
                     prev_action_onehot=prev_act_onehot["agent_0"],
                     partner_action=act_1,
-                    partner_action_onehot=env_act_onehot["agent_1"]
+                    partner_action_onehot=env_act_onehot["agent_1"],
+                    prev_done=prev_done["agent_0"],
                 )
                 new_runner_state = (train_state, encoder_decoder_train_state, env_state_next, obs_next, done_next, reward, env_act_onehot,
                                     new_ego_hstate, new_partner_hstate, updated_partner_indices, rng)
@@ -257,7 +258,7 @@ def train_meliba_ego_agent(config, env, train_rng,
                                 "decoder": encoder_decoder_params["decoder"],
                                 "policy": params},
                         obs=traj_batch.obs,
-                        done=traj_batch.done,
+                        done=traj_batch.prev_done,
                         avail_actions=traj_batch.avail_actions,
                         hstate=init_ego_hstate,
                         rng=loss_rng,

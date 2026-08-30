@@ -92,6 +92,7 @@ class ConfTransition(NamedTuple):
     obs: jnp.ndarray
     info: jnp.ndarray
     avail_actions: jnp.ndarray
+    prev_done: jnp.ndarray = None  # done at t (pre-step); RNN reset signal for replay
 
 def compute_partner_num_updates(cfg):
     return int(
@@ -360,7 +361,8 @@ def train_regret_maximizing_partners(config, env,
                     log_prob=logp_conf,         # (NUM_UNCONTROLLED_ACTORS,)
                     obs=obs_conf,               # (NUM_UNCONTROLLED_ACTORS, aug_obs_dim)
                     info=info_conf,
-                    avail_actions=avail_actions_conf  # (NUM_UNCONTROLLED_ACTORS, n_actions)
+                    avail_actions=avail_actions_conf,  # (NUM_UNCONTROLLED_ACTORS, n_actions)
+                    prev_done=dones_conf               # (NUM_UNCONTROLLED_ACTORS,) pre-step done
                 )
                 reset_transition = ResetTransition(
                     env_state=env_state,
@@ -465,7 +467,8 @@ def train_regret_maximizing_partners(config, env,
                     log_prob=logp_conf,
                     obs=obs_conf,
                     info=info_conf,
-                    avail_actions=avail_actions_conf
+                    avail_actions=avail_actions_conf,
+                    prev_done=dones_conf  # (NUM_UNCONTROLLED_ACTORS,) pre-step done
                 )
                 br_done_stacked = augment_done(done, ego_indices, config["NUM_ENVS"])  # (NUM_CONTROLLED_ACTORS,)
                 transition_br = Transition(
@@ -476,7 +479,8 @@ def train_regret_maximizing_partners(config, env,
                     log_prob=logp_br,
                     obs=obs_br,
                     info=info_br,
-                    avail_actions=avail_actions_br
+                    avail_actions=avail_actions_br,
+                    prev_done=dones_br  # (NUM_CONTROLLED_ACTORS,) pre-step done
                 )
                 reset_transition = ResetTransition(
                     env_state=env_state,
@@ -582,7 +586,7 @@ def train_regret_maximizing_partners(config, env,
                         _, (value_xp_on_xp_data, value_sp_on_xp_data), pi_xp, _ = confederate_policy.get_action_value_policy(
                             params=params, 
                             obs=traj_batch_xp.obs, 
-                            done=traj_batch_xp.done,
+                            done=traj_batch_xp.prev_done,
                             avail_actions=traj_batch_xp.avail_actions,
                             hstate=init_conf_hstate,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here 
@@ -590,7 +594,7 @@ def train_regret_maximizing_partners(config, env,
                         _, (value_xp_on_sp_data, value_sp_on_sp_data), pi_sp, _ = confederate_policy.get_action_value_policy(
                             params=params, 
                             obs=traj_batch_sp.obs, 
-                            done=traj_batch_sp.done,
+                            done=traj_batch_sp.prev_done,
                             avail_actions=traj_batch_sp.avail_actions,
                             hstate=init_conf_hstate,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here 
@@ -599,7 +603,7 @@ def train_regret_maximizing_partners(config, env,
                         _, (value_xp_on_xsp_data, value_sp_on_xsp_data), pi_xsp, _ = confederate_policy.get_action_value_policy(
                             params=params, 
                             obs=traj_batch_xsp.obs, 
-                            done=traj_batch_xsp.done,
+                            done=traj_batch_xsp.prev_done,
                             avail_actions=traj_batch_xsp.avail_actions,
                             hstate=init_conf_hstate,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here 
@@ -608,7 +612,7 @@ def train_regret_maximizing_partners(config, env,
                         _, (value_xp_on_sxp_data, value_sp_on_sxp_data), pi_sxp, _ = confederate_policy.get_action_value_policy(
                             params=params, 
                             obs=traj_batch_sxp.obs, 
-                            done=traj_batch_sxp.done,
+                            done=traj_batch_sxp.prev_done,
                             avail_actions=traj_batch_sxp.avail_actions,
                             hstate=init_conf_hstate,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here 
@@ -687,7 +691,7 @@ def train_regret_maximizing_partners(config, env,
                         _, value, pi, _ = br_policy.get_action_value_policy(
                             params=params, 
                             obs=traj_batch.obs, 
-                            done=traj_batch.done,
+                            done=traj_batch.prev_done,
                             avail_actions=traj_batch.avail_actions,
                             hstate=init_br_hstate_merged,
                             rng=jax.random.PRNGKey(0) # only used for action sampling, which is not used here 
