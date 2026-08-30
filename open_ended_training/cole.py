@@ -239,16 +239,20 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
 
                     if config["METASOLVE_MODE"] == "shapley":
                         # Min-max normalise the XP matrix locally so all edge weights
-                        # are in [0, 1] for PageRank
-                        xp_min = jnp.min(xp_matrix)
-                        xp_max = jnp.max(xp_matrix)
+                        # are in [0, 1] for PageRank. Restrict to the trained sub-matrix:
+                        # untrained slots hold junk returns (vs. random-init params) that
+                        # would otherwise skew the normalisation range.
+                        valid_2d = valid_mask[:, None] & valid_mask[None, :]
+                        xp_min = jnp.min(jnp.where(valid_2d, xp_matrix, jnp.inf))
+                        xp_max = jnp.max(jnp.where(valid_2d, xp_matrix, -jnp.inf))
                         xp_range = jnp.maximum(xp_max - xp_min, 1e-8)
-                        xp_norm = (xp_matrix - xp_min) / xp_range
+                        xp_norm = jnp.where(valid_2d, (xp_matrix - xp_min) / xp_range, 0.0)
 
                         N = config["POP_SIZE"]
                         phi = shapley_values(
                             rng, xp_norm,
                             N=N,
+                            valid_mask=valid_mask,
                             max_iter=config["SHAPLEY_MAX_ITER"],
                             damping=config["SHAPLEY_PAGERANK_DAMPING"],
                             pagerank_max_iter=config["SHAPLEY_PAGERANK_ITER"],
@@ -478,9 +482,12 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                         needs_resample_xp, sampled_indices_all, partner_indices_xp
                     )
 
-                    # Update sampling distribution using UCB logic
+                    # Update sampling distribution using UCB logic. Scores are logits,
+                    # so add the UCB bonus in log space: the sampled distribution is
+                    # proportional to p_i * exp(bonus_i), keeping the metasolver term
+                    # on a comparable scale instead of being swamped by the bonus.
                     sum_counts = partner_visit_counts.sum()
-                    ucb_scores = init_sampling_dist + config["C_UCT"] * jnp.sqrt(sum_counts / (1 + partner_visit_counts))
+                    ucb_scores = init_log_sampling_dist + config["C_UCT"] * jnp.sqrt(sum_counts / (1 + partner_visit_counts))
                     pop_buffer = partner_population.update_scores(
                         pop_buffer, jnp.arange(config["POP_SIZE"]), ucb_scores
                     )
@@ -786,8 +793,12 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 init_sampling_dist = metasolve_game_graph(
                     xp_matrix, num_existing_agents, metasolve_rng
                 )
+                # The buffer's softmax sampling strategy treats scores as logits, so
+                # store log-probabilities: softmax(log p) = p recovers the metasolver
+                # distribution exactly (temp=1).
+                init_log_sampling_dist = jnp.log(init_sampling_dist + 1e-8)
                 pop_buffer = partner_population.update_scores(
-                    pop_buffer, jnp.arange(config["POP_SIZE"]), init_sampling_dist
+                    pop_buffer, jnp.arange(config["POP_SIZE"]), init_log_sampling_dist
                 )
 
                 update_steps = 0
