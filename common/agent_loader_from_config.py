@@ -6,7 +6,7 @@ from omegaconf import OmegaConf
 
 from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, \
     initialize_rnn_agent, initialize_actor_with_double_critic, \
-    initialize_actor_with_conditional_critic
+    initialize_actor_with_conditional_critic, initialize_meliba_agent
 from agents.lbf.agent_policy_wrappers import (
     LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper,
     LBFEntitledPolicyWrapper, LBFGreedyHeuristicPolicyWrapper,
@@ -318,6 +318,13 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         policy, init_params = initialize_actor_with_double_critic(agent_config, env, init_rng)
     elif agent_config["actor_type"] == "actor_with_conditional_critic":
         policy, init_params = initialize_actor_with_conditional_critic(agent_config, env, init_rng)
+    elif agent_config["actor_type"] == "meliba":
+        meliba_config = dict(agent_config)
+        meliba_config.setdefault("EGO_ACTOR_TYPE", "mlp")
+        meliba_config.setdefault(
+            "POLICY_INPUT_DIM",
+            meliba_config.get("ENCODER_LATENT_DIM", 64) * 4 + env.observation_space(env.agents[0]).shape[0])
+        policy, init_params = initialize_meliba_agent(meliba_config, env, init_rng)
     else:
         raise ValueError(f"Invalid actor type: {agent_config['actor_type']}")
 
