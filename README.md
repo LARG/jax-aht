@@ -94,6 +94,11 @@ pip install -e .
 
 On macOS, the platform-specific dependency path automatically installs CPU JAX instead of the CUDA build.
 
+Verify the install with:
+```bash
+python scripts/verify_install.py
+```
+
 Evaluating trained agents against the heldout evaluation set requires downloading the evaluation agents.
 We also provide the best returns achieved against each evaluation agent in our experiments.
 Directories containing both data can be obtained by running the provided data download script:
