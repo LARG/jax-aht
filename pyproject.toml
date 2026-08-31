@@ -9,7 +9,7 @@ description = "JAX-based benchmark for Ad Hoc Teamwork research"
 authors = [{name = "Learning Agents Research Group"}]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 keywords = ["reinforcement-learning", "multi-agent", "jax", "ad-hoc-teamwork", "benchmark"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -22,8 +22,7 @@ classifiers = [
 
 dependencies = [
     # JAX AI stack v2025.2.5
-    "jax[cuda12]==0.5.3; platform_system == 'Linux'",
-    "jax==0.5.3; platform_system == 'Darwin'",
+    "jax==0.5.3",
     "chex==0.1.88",
     "flax==0.10.2",
     "ml_dtypes==0.4.0",
@@ -51,6 +50,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+cuda12 = [
+    "jax[cuda12]==0.5.3; platform_system == 'Linux'",
+]
 test = [
     "flask>=2.3.0",
     "flask-cors>=4.0.0",
