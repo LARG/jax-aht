@@ -77,3 +77,6 @@ include = ["agents*", "common*", "envs*", "evaluation*", "ego_agent_training*", 
 markers = [
     "eval_data: requires locally downloaded eval teammate checkpoints",
 ]
+
+[tool.ruff]
+target-version = "py311"
