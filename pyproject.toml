@@ -50,6 +50,14 @@ dependencies = [
     "jaxmarl==0.0.7",
 ]
 
+[project.optional-dependencies]
+test = [
+    "flask>=2.3.0",
+    "flask-cors>=4.0.0",
+    "pytest>=8,<10",
+    "ruff>=0.11,<0.17",
+]
+
 [project.urls]
 Homepage = "https://github.com/LARG/jax-aht"
 Repository = "https://github.com/LARG/jax-aht"
@@ -62,3 +70,8 @@ include = ["agents*", "common*", "envs*", "evaluation*", "ego_agent_training*", 
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.yml", "*.json", "*.md"]
+
+[tool.pytest.ini_options]
+markers = [
+    "eval_data: requires locally downloaded eval teammate checkpoints",
+]
