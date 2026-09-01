@@ -3,8 +3,8 @@ defaults:
   - _self_ # values from this file override the values from the base file
 
 TOTAL_TIMESTEPS_PER_ITERATION: 1.82e7
-PARTNER_POP_SIZE: 18
-LR: 5e-4
+PARTNER_POP_SIZE: 20
+LR: 1e-3
 UPDATE_EPOCHS: 15
 CLIP_EPS: 0.05
 ENT_COEF: 0.01
@@ -13,3 +13,5 @@ ego_train_algorithm:
   LR: 1e-3
   ENT_COEF: 0.01
   CLIP_EPS: 0.05
+COMEDI_ALPHA: 0.6
+COMEDI_BETA: 0.9

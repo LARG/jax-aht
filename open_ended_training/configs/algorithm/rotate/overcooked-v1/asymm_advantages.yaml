@@ -5,12 +5,12 @@ defaults:
 TIMESTEPS_PER_ITER_PARTNER: 5.22e6 # per iter of open-ended training, divided between conf-br and conf-ego and between all partner seeds
 TIMESTEPS_PER_ITER_EGO: 2e6
 NUM_OPEN_ENDED_ITERS: 27
-LAMBDA_1: 9.0 # weight on the BR return from XP term in the perstep regret loss
-LAMBDA_2: 0.0 # weight on the BR return from SP term in the perstep regret loss
-LR: 5e-05
+LAMBDA_1: 2 # weight on the BR return from XP term in the perstep regret loss
+LAMBDA_2: 1 # weight on the BR return from SP term in the perstep regret loss
+LR: 5e-4
 NUM_MINIBATCHES: 8
-CLIP_EPS: 0.5
-ENT_COEF: 0.05
+CLIP_EPS: 0.05
+ENT_COEF: 0.1
 ANNEAL_LR: false
 EGO_ARGS:
   LR: 5e-5
