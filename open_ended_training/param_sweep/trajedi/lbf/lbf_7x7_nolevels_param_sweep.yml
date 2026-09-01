@@ -1,6 +1,7 @@
 program: open_ended_training/run.py
 name: trajedi-lbf
-method: bayes
+method: random
+run_cap: 140
 entity: aht-project
 project: aht-parameter-sweep
 metric:
