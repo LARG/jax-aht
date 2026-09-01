@@ -1,14 +1,14 @@
 """Main entry point for running ego agent training algorithms against a fixed partner population."""
 
 import hydra
-from liam_ego import run_ego_training as run_ego_liam_training
-from meliba_ego import run_ego_training as run_ego_meliba_training
 from omegaconf import OmegaConf
-from ppo_ego import run_ego_training as run_ego_ppo_training
 
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
+from ego_agent_training.liam_ego import run_ego_training as run_ego_liam_training
+from ego_agent_training.meliba_ego import run_ego_training as run_ego_meliba_training
 from ego_agent_training.ppo_br import run_br_training
+from ego_agent_training.ppo_ego import run_ego_training as run_ego_ppo_training
 from evaluation.heldout_runner import log_heldout_metrics, run_heldout_evaluation
 
 

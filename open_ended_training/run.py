@@ -2,12 +2,12 @@
 
 import hydra
 from omegaconf import OmegaConf
-from open_ended_minimax import run_minimax
 
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
 from evaluation.heldout_runner import log_heldout_metrics, run_heldout_evaluation
 from open_ended_training.cole import run_cole
+from open_ended_training.open_ended_minimax import run_minimax
 from open_ended_training.paired import run_paired
 from open_ended_training.rotate import run_rotate
 from open_ended_training.trajedi import run_trajedi
