@@ -126,6 +126,24 @@ def fetch_sweep_bare_keys(sweep_id: str, entity: str, project: str) -> list[str]
     return [k.removeprefix("algorithm.") for k in sweep.config.get("parameters", {}).keys()]
 
 
+def fetch_sweep_last_run_date(sweep_id: str, entity: str, project: str) -> str | None:
+    """Return the created_at timestamp of the sweep's most recent run (ISO-8601 UTC).
+
+    Used to tell whether a sweep predates a given code change. Returns None for an
+    empty sweep.
+    """
+    api = wandb.Api()
+    runs = api.runs(
+        f"{entity}/{project}",
+        filters={"sweep": sweep_id},
+        order="-created_at",
+        per_page=1,
+    )
+    for run in runs:
+        return run.created_at
+    return None
+
+
 def load_sweep_df(
     task: str,
     algorithm: str,

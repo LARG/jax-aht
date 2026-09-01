@@ -14,9 +14,13 @@ import re
 from pathlib import Path
 
 from scripts.manage_configs.helpers import format_value, resolve_algo_config
-from scripts.paper_vis.plot_globals import HYPERPARAM_SWEEPS
+from scripts.paper_vis.plot_globals import (
+    HYPERPARAM_SWEEPS, ENTITY, HYPERPARAM_PROJECT,
+)
 from scripts.utils import ALGO_TO_ENTRY_POINT
-from scripts.wandb_utils.wandb_cache import load_sweep_df, build_hparam_df
+from scripts.wandb_utils.wandb_cache import (
+    load_sweep_df, build_hparam_df, fetch_sweep_last_run_date,
+)
 
 
 REPO_ROOT = Path(__file__).parent.parent.parent
@@ -42,20 +46,35 @@ def _config_path(task: str, algorithm: str) -> Path:
     return REPO_ROOT / root / "configs" / "algorithm" / config_name / task_family / f"{task_name}.yaml"
 
 
-# MeLIBA's KL loss is now summed over time and *averaged* over the batch, whereas the
-# hyperparameter sweeps were run before that fix, when it was summed over the batch too.
-# The sweep's DECODER_KL_WEIGHT therefore has to be scaled by the minibatch size
-# (NUM_ENVS / NUM_MINIBATCHES) to reproduce the same effective KL weighting.
+# MeLIBA's KL loss is now summed over time and *averaged* over the batch. Sweeps that
+# ran before that fix summed over the batch too, so their DECODER_KL_WEIGHT has to be
+# scaled by the minibatch size (NUM_ENVS / NUM_MINIBATCHES) to reproduce the same
+# effective KL weighting. Sweeps run on or after the cutoff already use the new
+# normalization and are left alone.
 _MELIBA_KL_KEY = "DECODER_KL_WEIGHT"
+_MELIBA_KL_FIX_DATE = "2026-08-30"
 
 # Swept keys that must never be written back into an algorithm config.
 _NON_HPARAM_KEYS = {"TOTAL_TIMESTEPS"}
 
 
-def _scale_meliba_kl_weight(task: str, best_hparams: dict, config_path: Path) -> None:
-    """In-place: rescale MeLIBA's swept KL weight to the post-fix loss normalization."""
+def _scale_meliba_kl_weight(task: str, best_hparams: dict, config_path: Path,
+                            sweep_id: str) -> None:
+    """In-place: rescale MeLIBA's swept KL weight to the post-fix loss normalization.
+
+    Only applied to sweeps whose most recent run predates _MELIBA_KL_FIX_DATE.
+    """
     if _MELIBA_KL_KEY not in best_hparams:
         print(f"  WARNING: {_MELIBA_KL_KEY} not in the sweep for {task}; no KL rescaling applied.")
+        return
+
+    last_run = fetch_sweep_last_run_date(sweep_id, ENTITY, HYPERPARAM_PROJECT)
+    if last_run is None:
+        print(f"  WARNING: could not date sweep {sweep_id}; no KL rescaling applied.")
+        return
+    if last_run[:10] >= _MELIBA_KL_FIX_DATE:
+        print(f"  MeLIBA KL rescale skipped: sweep last ran {last_run[:10]}, "
+              f"on/after the {_MELIBA_KL_FIX_DATE} loss-normalization fix.")
         return
 
     algo_configs_root = config_path.parent
@@ -170,7 +189,8 @@ def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: b
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
     if algorithm == "meliba":
-        _scale_meliba_kl_weight(task, raw_hparams, config_path)
+        _scale_meliba_kl_weight(task, raw_hparams, config_path,
+                                HYPERPARAM_SWEEPS[task][algorithm])
 
     best_hparams = {key: format_value(val) for key, val in raw_hparams.items()}
 
