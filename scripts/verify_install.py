@@ -1,4 +1,4 @@
-"""Check that the installation can actually run GPU training.
+"""Check that JAX can run the operations used during training.
 
 Usage: python scripts/verify_install.py
 """
@@ -6,9 +6,9 @@ Usage: python scripts/verify_install.py
 import sys
 import traceback
 
+import flax.linen as nn
 import jax
 import jax.numpy as jnp
-import flax.linen as nn
 from flax.linen.initializers import orthogonal
 
 
@@ -32,12 +32,12 @@ def orthogonal_init():
 
 CHECKS = [
     ("devices", devices),
-    ("matmul (cuBLAS)", matmul),
-    ("QR decomposition (cuSolver)", qr),
+    ("matrix multiplication", matmul),
+    ("QR decomposition", qr),
     ("orthogonal init (as used by agents/)", orthogonal_init),
 ]
 
-HINT = """
+GPU_HINT = """
 A segfault or a cuSolver/cuBLAS error here usually means a system CUDA toolkit on
 LD_LIBRARY_PATH is being mixed with the pip-installed CUDA libraries. See the
 troubleshooting section of docs/install_instructions.md.
@@ -48,10 +48,11 @@ def main():
     for name, fn in CHECKS:
         try:
             fn()
-        except Exception:
+        except Exception:  # noqa: BLE001 - report any backend check failure cleanly
             traceback.print_exc()
             print(f"[FAIL] {name}")
-            print(HINT)
+            if jax.default_backend() == "gpu":
+                print(GPU_HINT)
             return 1
         print(f"[ok] {name}")
     print("All checks passed.")

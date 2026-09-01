@@ -49,6 +49,7 @@ class LBFWrapper(BaseEnv):
         self._jit_key = (
             self.num_agents,
             self.share_rewards,
+            self.env.time_limit,
             type(gen).__name__,
             getattr(gen, 'grid_size', None),
             getattr(gen, 'num_food', None),

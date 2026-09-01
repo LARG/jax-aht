@@ -8,8 +8,7 @@
 # pip install -e .
 
 # from jax ai stack v2025.2.5
-jax[cuda12]==0.5.3; platform_system == "Linux"
-jax==0.5.3; platform_system == "Darwin"
+jax==0.5.3
 chex==0.1.88
 flax==0.10.2
 ml_dtypes==0.4.0
