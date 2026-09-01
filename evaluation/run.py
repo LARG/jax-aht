@@ -1,9 +1,10 @@
-import hydra
-from omegaconf import OmegaConf
 import logging
 
-from evaluation.heldout_runner import run_heldout_evaluation_from_config
+import hydra
+from omegaconf import OmegaConf
+
 from evaluation.generate_xp_matrix import run_heldout_xp_evaluation
+from evaluation.heldout_runner import run_heldout_evaluation_from_config
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -11,10 +12,10 @@ logging.basicConfig(level=logging.INFO)
 
 @hydra.main(version_base=None, config_path="configs", config_name="heldout_xp")
 def run_evaluation(cfg):
-    '''Run evaluation. 
+    """Run evaluation.
     All evaluators assume that the path to the ego agent is provided at config["ego_agent"]["path"]
     and that all information necessary to properly initialize the ego agent is provided at config["ego_agent"]
-    '''
+    """
     print(OmegaConf.to_yaml(cfg, resolve=True))
 
     if "heldout_ego" in cfg["name"] or "validation_ego" in cfg["name"]:
@@ -26,5 +27,6 @@ def run_evaluation(cfg):
     else:
         raise ValueError(f"Evaluator {cfg['name']} not found.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_evaluation()
