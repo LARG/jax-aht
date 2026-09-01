@@ -25,7 +25,7 @@ from agents.lbf import SequentialFruitAgent
 from agents.lbf import GreedyHeuristicAgent
 from agents.lbf import EntitledAgent
 from common.agent_loader_from_config import initialize_rl_agent_from_config
-from evaluation.heldout_evaluator import extract_params
+from evaluation.heldout_core import extract_params
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(32).hex())

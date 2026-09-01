@@ -1,5 +1,5 @@
 # Hanabi: evaluation task config.
-# Full 2-player Hanabi. Used by evaluation/heldout_eval.py with task=hanabi.
+# Full 2-player Hanabi. Used by evaluation/heldout_runner.py with task=hanabi.
 ENV_NAME: hanabi
 ROLLOUT_LENGTH: 128
 ENV_KWARGS:

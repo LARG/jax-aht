@@ -2,6 +2,7 @@
 Warning: ActorCritic agents that rely on auxiliary information to compute actions are not currently supported.
 '''
 import jax
+import jax.numpy as jnp
 import numpy as np
 from prettytable import PrettyTable
 from functools import partial
@@ -141,14 +142,22 @@ def normalize_metrics(metrics, performance_bounds):
 
 
 def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params,
-                          heldout_agent_list, heldout_agent_names=None, ego_test_mode=False):
-    '''Evaluate all ego agents against all heldout partners using vmap over egos.
-    Ego_params must be a pytree of shape (num_ego_agents, ...)
+                          heldout_agent_list, heldout_agent_names=None, ego_test_mode=False,
+                          num_ego_axes=1):
+    '''Evaluate all ego agents against all heldout partners.
+    Ego_params must be a pytree with num_ego_axes leading ego axes: (num_ego_agents, ...)
+    for num_ego_axes=1, or (num_seeds, num_oel_iters, ...) for num_ego_axes=2.
+    Returns a pytree of shape (*ego_axes, num_partners, num_episodes, num_agents_per_env).
     '''
     num_agents = env.num_agents
     assert num_agents == 2, "This eval code assumes exactly 2 agents."
+    assert num_ego_axes in (1, 2), "Only 1 or 2 leading ego axes are supported."
 
-    num_ego_agents = jax.tree.leaves(ego_params)[0].shape[0]
+    ego_axis_sizes = jax.tree.leaves(ego_params)[0].shape[:num_ego_axes]
+    # We vmap over the first ego axis and loop over the second (if present): vmapping
+    # over both OOMs for long runs.
+    num_vmapped_egos = ego_axis_sizes[0]
+    tot_ego_agents = int(np.prod(ego_axis_sizes))
     num_partner_total = len(heldout_agent_list)
 
     def _eval_ego_vs_one_partner(single_ego_params, rng_for_ego, heldout_params,
@@ -157,21 +166,25 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
                             agent_0_policy=single_ego_policy, agent_0_param=single_ego_params,
                             agent_1_policy=heldout_policy, agent_1_param=heldout_params,
                             max_episode_steps=config["global_heldout_settings"]["MAX_EPISODE_STEPS"],
-                            num_eps=num_episodes, 
+                            num_eps=num_episodes,
                             agent_0_test_mode=ego_test_mode,
                             agent_1_test_mode=heldout_test_mode)
 
     # Outer Python loop over heterogeneous heldout partners
     all_metrics_for_partners = []
-    rng, sub_rng = jax.random.split(rng)
-    partner_rngs = jax.random.split(sub_rng, num_partner_total)
+    if num_ego_axes == 1:
+        # Preserves the RNG stream this path has always used, so 1d eval numbers stay
+        # comparable with previously published runs.
+        _, rng = jax.random.split(rng)
+    partner_rngs = jax.random.split(rng, num_partner_total)
     start_time = time.time()
     # Compilation dominates this loop, so cache one compiled fn per heldout policy.
     compiled_per_policy = {}
 
     for partner_idx in range(num_partner_total):
         heldout_policy, heldout_params, heldout_test_mode, heldout_performance_bounds = heldout_agent_list[partner_idx]
-        ego_rngs = jax.random.split(partner_rngs[partner_idx], num_ego_agents)
+        ego_rngs = jax.random.split(partner_rngs[partner_idx], tot_ego_agents)
+        ego_rngs = ego_rngs.reshape(ego_axis_sizes + ego_rngs.shape[1:])
 
         policy_key = (id(heldout_policy), heldout_test_mode)
         if policy_key not in compiled_per_policy:
@@ -183,11 +196,21 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
             # Map over ego agents and their RNGs; heldout params are an argument.
             compiled_per_policy[policy_key] = jax.jit(
                 jax.vmap(func_to_vmap, in_axes=(0, 0, None)))
+        vmap_over_egos = compiled_per_policy[policy_key]
 
-        results_for_this_partner = compiled_per_policy[policy_key](
-            ego_params, ego_rngs, heldout_params)
+        if num_ego_axes == 1:
+            results_for_this_partner = vmap_over_egos(ego_params, ego_rngs, heldout_params)
+        else:
+            per_iter_results = []
+            for iter_idx in range(ego_axis_sizes[1]):
+                iter_params = jax.tree.map(lambda x: x[:, iter_idx], ego_params)
+                per_iter_results.append(
+                    vmap_over_egos(iter_params, ego_rngs[:, iter_idx], heldout_params))
+            # (num_oel_iters, num_seeds, ...) -> (num_seeds, num_oel_iters, ...)
+            results_for_this_partner = jax.tree.map(
+                lambda x: x.swapaxes(0, 1), tree_stack(per_iter_results))
 
-        # results_for_this_partner shape: (num_ego_agents, num_episodes, ...)
+        # results_for_this_partner shape: (*ego_axes, num_episodes, ...)
         if config["global_heldout_settings"]["NORMALIZE_RETURNS"]:
             if heldout_performance_bounds is not None:
                 results_for_this_partner = normalize_metrics(results_for_this_partner, heldout_performance_bounds)
@@ -199,51 +222,11 @@ def eval_egos_vs_heldouts(config, env, rng, num_episodes, ego_policy, ego_params
     end_time = time.time()
     print(f"Time taken for vmap evaluation loop: {end_time - start_time:.2f} seconds")
 
-    # Result shape: (num_partners, num_egos, num_episodes, ...)
+    # (num_partners, *ego_axes, ...) -> (*ego_axes, num_partners, ...)
     final_metrics = tree_stack(all_metrics_for_partners)
-    # Transpose to (num_egos, num_partners, num_episodes, ...)
-    final_metrics = jax.tree.map(lambda x: x.transpose(1, 0, 2, 3), final_metrics)
+    final_metrics = jax.tree.map(lambda x: jnp.moveaxis(x, 0, num_ego_axes), final_metrics)
 
     return final_metrics
-
-def run_heldout_evaluation(config, print_metrics=False):
-    '''Run heldout evaluation'''
-    # Create only one environment instance
-    env = make_env(config["ENV_NAME"], config["ENV_KWARGS"])
-    env = LogWrapper(env)
-    
-    rng = jax.random.PRNGKey(config["global_heldout_settings"]["EVAL_SEED"])
-    rng, ego_init_rng, heldout_init_rng, eval_rng = jax.random.split(rng, 4)
-    
-    # load ego agents
-    ego_agent_config = dict(config["ego_agent"])
-    ego_test_mode = ego_agent_config.get("test_mode", False)
-    ego_policy, ego_params, init_ego_params, ego_idx_labels = initialize_rl_agent_from_config(ego_agent_config, "ego", env, ego_init_rng)
-    # flatten ego params and idx labels
-    ego_idx_labels = np.array(ego_idx_labels).reshape(-1) # flatten the list of ego agent labels 
-    flattened_ego_params = jax.tree.map(lambda x, y: x.reshape((-1,) + y.shape), ego_params, init_ego_params)        
-    
-    # load heldout agents
-    heldout_cfg = config["heldout_set"][config["TASK_NAME"]]
-    heldout_agents = load_heldout_set(heldout_cfg, env, config["TASK_NAME"], config["ENV_KWARGS"], heldout_init_rng)
-    heldout_agent_names = list(heldout_agents.keys())
-    heldout_agent_list = list(heldout_agents.values())
-
-    # run evaluation
-    eval_metrics = eval_egos_vs_heldouts(
-        config, env, eval_rng, config["global_heldout_settings"]["NUM_EVAL_EPISODES"],
-        ego_policy, flattened_ego_params, heldout_agent_list, heldout_agent_names, ego_test_mode)
-
-    if print_metrics:
-        # each leaf of eval_metrics has shape (num_ego_agents, num_heldout_agents, num_eval_episodes, num_agents_per_env)
-        metric_names = get_metric_names(config["ENV_NAME"])
-        aggregate_stat = config["global_heldout_settings"]["AGGREGATE_STAT"]
-        ego_names = [f"ego ({label})" for label in ego_idx_labels]
-        heldout_names = list(heldout_agents.keys())
-        for metric_name in metric_names:
-            print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names, 
-                aggregate_stat, config["global_heldout_settings"]["NORMALIZE_RETURNS"])
-    return eval_metrics
 
 def print_metrics_table(eval_metrics, metric_name, ego_names, heldout_names,
                         aggregate_stat: str, normalized_metrics: bool,

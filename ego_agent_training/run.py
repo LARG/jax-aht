@@ -4,7 +4,7 @@ from omegaconf import OmegaConf
 
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
-from evaluation.heldout_eval import run_heldout_evaluation, log_heldout_metrics
+from evaluation.heldout_runner import run_heldout_evaluation, log_heldout_metrics
 from ppo_ego import run_ego_training as run_ego_ppo_training
 from liam_ego import run_ego_training as run_ego_liam_training
 from meliba_ego import run_ego_training as run_ego_meliba_training

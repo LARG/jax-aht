@@ -2,7 +2,7 @@
 import hydra
 from omegaconf import OmegaConf
 
-from evaluation.heldout_eval import run_heldout_evaluation, log_heldout_metrics
+from evaluation.heldout_runner import run_heldout_evaluation, log_heldout_metrics
 from common.plot_utils import get_metric_names
 from common.wandb_visualizations import Logger
 from open_ended_training.rotate import run_rotate

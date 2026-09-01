@@ -9,7 +9,7 @@ from common.tree_utils import tree_stack
 from common.plot_utils import get_metric_names
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from evaluation.heldout_evaluator import load_heldout_set, print_metrics_table, normalize_metrics
+from evaluation.heldout_core import load_heldout_set, print_metrics_table, normalize_metrics
 
 def heldout_crossplay(config, env, rng, num_episodes, heldout_agents, br_agents):
     '''Evaluate all heldout agents against each other

@@ -2,7 +2,7 @@ import hydra
 from omegaconf import OmegaConf
 import logging
 
-from heldout_evaluator import run_heldout_evaluation
+from evaluation.heldout_runner import run_heldout_evaluation_from_config
 from evaluation.generate_xp_matrix import run_heldout_xp_evaluation
 
 log = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ def run_evaluation(cfg):
     print(OmegaConf.to_yaml(cfg, resolve=True))
 
     if "heldout_ego" in cfg["name"] or "validation_ego" in cfg["name"]:
-        run_heldout_evaluation(cfg, print_metrics=True)
+        run_heldout_evaluation_from_config(cfg, print_metrics=True)
 
     elif "heldout_xp" in cfg["name"]:
         run_heldout_xp_evaluation(cfg, print_metrics=True)
