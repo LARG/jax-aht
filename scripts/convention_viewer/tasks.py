@@ -1,4 +1,5 @@
 """Task registry shared by the convention viewer scripts."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,11 +7,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class TaskSpec:
-    slug: str            # short id used in file/dir names and the site URLs
-    label: str           # human-readable name shown in the viewer
-    env: str             # 'lbf' or 'overcooked'
-    variant: str         # lbf/overcooked layout variant
-    yaml_key: str        # key into heldout_set / best_response_set
+    slug: str  # short id used in file/dir names and the site URLs
+    label: str  # human-readable name shown in the viewer
+    env: str  # 'lbf' or 'overcooked'
+    variant: str  # lbf/overcooked layout variant
+    yaml_key: str  # key into heldout_set / best_response_set
 
     @property
     def env_name(self) -> str:
@@ -24,12 +25,48 @@ class TaskSpec:
 TASKS = {
     t.slug: t
     for t in [
-        TaskSpec("lbf_7x7", "Level-Based Foraging (7x7)", "lbf", "lbf_7x7_nolevels", "lbf/lbf_7x7_nolevels"),
-        TaskSpec("cramped_room", "Overcooked: Cramped Room", "overcooked", "cramped_room", "overcooked-v1/cramped_room"),
-        TaskSpec("asymm_advantages", "Overcooked: Asymmetric Advantages", "overcooked", "asymm_advantages", "overcooked-v1/asymm_advantages"),
-        TaskSpec("counter_circuit", "Overcooked: Counter Circuit", "overcooked", "counter_circuit", "overcooked-v1/counter_circuit"),
-        TaskSpec("coord_ring", "Overcooked: Coordination Ring", "overcooked", "coord_ring", "overcooked-v1/coord_ring"),
-        TaskSpec("forced_coord", "Overcooked: Forced Coordination", "overcooked", "forced_coord", "overcooked-v1/forced_coord"),
+        TaskSpec(
+            "lbf_7x7",
+            "Level-Based Foraging (7x7)",
+            "lbf",
+            "lbf_7x7_nolevels",
+            "lbf/lbf_7x7_nolevels",
+        ),
+        TaskSpec(
+            "cramped_room",
+            "Overcooked: Cramped Room",
+            "overcooked",
+            "cramped_room",
+            "overcooked-v1/cramped_room",
+        ),
+        TaskSpec(
+            "asymm_advantages",
+            "Overcooked: Asymmetric Advantages",
+            "overcooked",
+            "asymm_advantages",
+            "overcooked-v1/asymm_advantages",
+        ),
+        TaskSpec(
+            "counter_circuit",
+            "Overcooked: Counter Circuit",
+            "overcooked",
+            "counter_circuit",
+            "overcooked-v1/counter_circuit",
+        ),
+        TaskSpec(
+            "coord_ring",
+            "Overcooked: Coordination Ring",
+            "overcooked",
+            "coord_ring",
+            "overcooked-v1/coord_ring",
+        ),
+        TaskSpec(
+            "forced_coord",
+            "Overcooked: Forced Coordination",
+            "overcooked",
+            "forced_coord",
+            "overcooked-v1/forced_coord",
+        ),
     ]
 }
 

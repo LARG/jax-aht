@@ -9,6 +9,7 @@ browser land directly in the repo. The page auto-detects this endpoint
 Usage:
   python scripts/convention_viewer/label_server.py [--port 8000]
 """
+
 import argparse
 import json
 import re
@@ -35,7 +36,9 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(404)
             return
         try:
-            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+            body = json.loads(
+                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            )
             task, key = body["task"], body["key"]
             label = str(body.get("label", "")).strip()
             if not NAME_RE.match(task) or not NAME_RE.match(key):
@@ -64,13 +67,19 @@ class Handler(SimpleHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8000)
-    ap.add_argument("--site-dir", type=Path, default=DEFAULT_SITE_DIR,
-                    help="directory to serve (default: scripts/convention_viewer/site)")
+    ap.add_argument(
+        "--site-dir",
+        type=Path,
+        default=DEFAULT_SITE_DIR,
+        help="directory to serve (default: scripts/convention_viewer/site)",
+    )
     args = ap.parse_args()
     global SITE_DIR
     SITE_DIR = args.site_dir.resolve()
     handler = partial(Handler, directory=str(SITE_DIR))
-    print(f"Serving {SITE_DIR} on http://localhost:{args.port} (labels saved to repo JSONs)")
+    print(
+        f"Serving {SITE_DIR} on http://localhost:{args.port} (labels saved to repo JSONs)"
+    )
     ThreadingHTTPServer(("127.0.0.1", args.port), handler).serve_forever()
 
 

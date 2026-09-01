@@ -10,6 +10,7 @@ Requires a GPU for orbax deserialization. From the repo root:
 
   PYTHONPATH=. python scripts/convention_viewer/generate_videos.py --task coord_ring
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,7 +19,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -41,7 +42,9 @@ BR_CFG = REPO_ROOT / "evaluation" / "configs" / "global_heldout_br.yaml"
 def build_env(task: TaskSpec):
     """Env + env_kwargs matching the population-diversity rollout settings."""
     if task.env == "lbf":
-        from scripts.population_diversity.compute_population_diversity import LBF_VARIANTS
+        from scripts.population_diversity.compute_population_diversity import (
+            LBF_VARIANTS,
+        )
 
         cfg = LBF_VARIANTS[task.variant]
         env_kwargs = {
@@ -67,7 +70,7 @@ def build_env(task: TaskSpec):
     return make_env(task.env_name, env_kwargs), env_kwargs
 
 
-def _existing_paths_only(block: Dict[str, Any]) -> Tuple[Dict[str, Any], list]:
+def _existing_paths_only(block: dict[str, Any]) -> tuple[dict[str, Any], list]:
     """Drop config entries whose checkpoints aren't present locally."""
     from common.save_load_utils import REPO_PATH
 
@@ -89,40 +92,64 @@ def _existing_paths_only(block: Dict[str, Any]) -> Tuple[Dict[str, Any], list]:
     return kept, skipped
 
 
-def load_teammates(task: TaskSpec, env, env_kwargs, seed: int) -> Dict[str, tuple]:
+def load_teammates(task: TaskSpec, env, env_kwargs, seed: int) -> dict[str, tuple]:
     with HELDOUT_CFG.open() as fh:
         heldout_set = yaml.safe_load(fh)["heldout_set"]
     if task.yaml_key not in heldout_set:
         raise KeyError(f"heldout_set.{task.yaml_key} not in {HELDOUT_CFG}")
     block, skipped = _existing_paths_only(heldout_set[task.yaml_key])
     if skipped:
-        log.warning("skipping %d teammates without local checkpoints: %s", len(skipped), ", ".join(skipped))
-    return load_heldout_set(block, env, task.yaml_key, env_kwargs, jax.random.PRNGKey(seed))
+        log.warning(
+            "skipping %d teammates without local checkpoints: %s",
+            len(skipped),
+            ", ".join(skipped),
+        )
+    return load_heldout_set(
+        block, env, task.yaml_key, env_kwargs, jax.random.PRNGKey(seed)
+    )
 
 
-def load_brs(task: TaskSpec, env, env_kwargs, seed: int) -> Dict[str, tuple]:
+def load_brs(task: TaskSpec, env, env_kwargs, seed: int) -> dict[str, tuple]:
     """Map sanitized teammate key -> (policy, params, test_mode)."""
     with BR_CFG.open() as fh:
         br_set = yaml.safe_load(fh).get("best_response_set", {})
     if task.yaml_key not in br_set:
-        log.warning("no best_response_set block for %s; all teammates fall back to self-play", task.yaml_key)
+        log.warning(
+            "no best_response_set block for %s; all teammates fall back to self-play",
+            task.yaml_key,
+        )
         return {}
     block, skipped = _existing_paths_only(br_set[task.yaml_key])
     if skipped:
-        log.warning("skipping %d BRs without local checkpoints: %s", len(skipped), ", ".join(skipped))
+        log.warning(
+            "skipping %d BRs without local checkpoints: %s",
+            len(skipped),
+            ", ".join(skipped),
+        )
     if not block:
         return {}
-    loaded = load_heldout_set(block, env, task.yaml_key, env_kwargs, jax.random.PRNGKey(seed + 1))
+    loaded = load_heldout_set(
+        block, env, task.yaml_key, env_kwargs, jax.random.PRNGKey(seed + 1)
+    )
     out = {}
     for label, entry in loaded.items():
         base = label.split(" (")[0]  # 'br_for_x (0)' -> 'br_for_x'
-        key = base[len("br_for_") :] if base.startswith("br_for_") else base
+        key = base.removeprefix("br_for_")
         out[sanitize(key)] = (entry[0], entry[1], entry[2])
     return out
 
 
-def rollout_states(env, policy_0, params_0, test_mode_0,
-                   policy_1, params_1, test_mode_1, max_steps: int, rng):
+def rollout_states(
+    env,
+    policy_0,
+    params_0,
+    test_mode_0,
+    policy_1,
+    params_1,
+    test_mode_1,
+    max_steps: int,
+    rng,
+):
     """Run one episode, returning the list of env states and the team return."""
     rng, reset_rng = jax.random.split(rng)
     obs, env_state = env.reset(reset_rng)
@@ -136,14 +163,26 @@ def rollout_states(env, policy_0, params_0, test_mode_0,
         avail = jax.lax.stop_gradient(env.get_avail_actions(env_state))
         rng, a0_rng, a1_rng, step_rng = jax.random.split(rng, 4)
         act_0, hstate_0 = policy_0.get_action(
-            params=params_0, obs=obs["agent_0"].reshape(1, 1, -1),
-            done=done["agent_0"].reshape(1, 1), avail_actions=avail["agent_0"].astype(jnp.float32),
-            hstate=hstate_0, rng=a0_rng, aux_obs=None, env_state=env_state, test_mode=test_mode_0,
+            params=params_0,
+            obs=obs["agent_0"].reshape(1, 1, -1),
+            done=done["agent_0"].reshape(1, 1),
+            avail_actions=avail["agent_0"].astype(jnp.float32),
+            hstate=hstate_0,
+            rng=a0_rng,
+            aux_obs=None,
+            env_state=env_state,
+            test_mode=test_mode_0,
         )
         act_1, hstate_1 = policy_1.get_action(
-            params=params_1, obs=obs["agent_1"].reshape(1, 1, -1),
-            done=done["agent_1"].reshape(1, 1), avail_actions=avail["agent_1"].astype(jnp.float32),
-            hstate=hstate_1, rng=a1_rng, aux_obs=None, env_state=env_state, test_mode=test_mode_1,
+            params=params_1,
+            obs=obs["agent_1"].reshape(1, 1, -1),
+            done=done["agent_1"].reshape(1, 1),
+            avail_actions=avail["agent_1"].astype(jnp.float32),
+            hstate=hstate_1,
+            rng=a1_rng,
+            aux_obs=None,
+            env_state=env_state,
+            test_mode=test_mode_1,
         )
         env_act = {"agent_0": int(act_0.squeeze()), "agent_1": int(act_1.squeeze())}
         obs, env_state, reward, done, _ = env.step(step_rng, env_state, env_act)
@@ -160,11 +199,17 @@ def render(task: TaskSpec, env, states, out_path: Path):
         anim = env.animate(states, interval=150)
         anim.save(str(out_path), writer="ffmpeg")
     else:
-        from envs.overcooked.adhoc_overcooked_visualizer import AdHocOvercookedVisualizer
+        from envs.overcooked.adhoc_overcooked_visualizer import (
+            AdHocOvercookedVisualizer,
+        )
 
         AdHocOvercookedVisualizer().animate_mp4(
-            [s.env_state for s in states], env.agent_view_size,
-            highlight_agent_idx=0, filename=str(out_path), pixels_per_tile=32, fps=25,
+            [s.env_state for s in states],
+            env.agent_view_size,
+            highlight_agent_idx=0,
+            filename=str(out_path),
+            pixels_per_tile=32,
+            fps=25,
         )
 
 
@@ -172,7 +217,9 @@ def update_manifest(manifest_path: Path, task: TaskSpec, entry: dict):
     manifest = {"tasks": {}}
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text())
-    block = manifest["tasks"].setdefault(task.slug, {"label": task.label, "teammates": []})
+    block = manifest["tasks"].setdefault(
+        task.slug, {"label": task.label, "teammates": []}
+    )
     block["label"] = task.label
     block["env"] = task.env_name
     tms = block["teammates"]
@@ -182,8 +229,14 @@ def update_manifest(manifest_path: Path, task: TaskSpec, entry: dict):
     manifest_path.write_text(json.dumps(manifest, indent=1))
 
 
-def generate_for_task(task: TaskSpec, out_dir: Path, num_eps: int, seed: int,
-                      only: Optional[set], overwrite: bool):
+def generate_for_task(
+    task: TaskSpec,
+    out_dir: Path,
+    num_eps: int,
+    seed: int,
+    only: set | None,
+    overwrite: bool,
+):
     env, env_kwargs = build_env(task)
     log.info("loading teammates for %s", task.yaml_key)
     teammates = load_teammates(task, env, env_kwargs, seed)
@@ -215,46 +268,87 @@ def generate_for_task(task: TaskSpec, out_dir: Path, num_eps: int, seed: int,
         for ep in range(num_eps):
             rng, ep_rng = jax.random.split(rng)
             ep_states, ep_return = rollout_states(
-                env, policy, params, test_mode, br_policy, br_params, br_test,
-                task.max_steps, ep_rng,
+                env,
+                policy,
+                params,
+                test_mode,
+                br_policy,
+                br_params,
+                br_test,
+                task.max_steps,
+                ep_rng,
             )
             states.extend(ep_states)
             returns.append(ep_return)
         render(task, env, states, out_path)
         mean_return = sum(returns) / len(returns)
-        update_manifest(manifest_path, task, {
-            "key": key,
-            "name": label,
-            "partner": partner,
-            "num_episodes": num_eps,
-            "mean_return": round(mean_return, 3),
-            "file": f"videos/{task.slug}/{key}.mp4",
-        })
-        log.info("done %s/%s (partner=%s, mean return %.2f)", task.slug, key, partner, mean_return)
+        update_manifest(
+            manifest_path,
+            task,
+            {
+                "key": key,
+                "name": label,
+                "partner": partner,
+                "num_episodes": num_eps,
+                "mean_return": round(mean_return, 3),
+                "file": f"videos/{task.slug}/{key}.mp4",
+            },
+        )
+        log.info(
+            "done %s/%s (partner=%s, mean return %.2f)",
+            task.slug,
+            key,
+            partner,
+            mean_return,
+        )
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--task", default="all", choices=["all", *TASKS],
-                    help="task slug to render (default: all)")
-    ap.add_argument("--out-dir", default=str(Path(__file__).resolve().parent / "site"),
-                    help="site directory that holds videos/ and manifest.json")
-    ap.add_argument("--num-eps", type=int, default=None,
-                    help="episodes per teammate (default: 2 for LBF, 1 for Overcooked)")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--task",
+        default="all",
+        choices=["all", *TASKS],
+        help="task slug to render (default: all)",
+    )
+    ap.add_argument(
+        "--out-dir",
+        default=str(Path(__file__).resolve().parent / "site"),
+        help="site directory that holds videos/ and manifest.json",
+    )
+    ap.add_argument(
+        "--num-eps",
+        type=int,
+        default=None,
+        help="episodes per teammate (default: 2 for LBF, 1 for Overcooked)",
+    )
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--agents", default=None,
-                    help="comma-separated teammate keys to render (default: all)")
-    ap.add_argument("--overwrite", action="store_true", help="re-render videos that already exist")
+    ap.add_argument(
+        "--agents",
+        default=None,
+        help="comma-separated teammate keys to render (default: all)",
+    )
+    ap.add_argument(
+        "--overwrite", action="store_true", help="re-render videos that already exist"
+    )
     args = ap.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", force=True)
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", force=True
+    )
     out_dir = Path(args.out_dir)
     only = {s.strip() for s in args.agents.split(",")} if args.agents else None
     slugs = list(TASKS) if args.task == "all" else [args.task]
 
     for slug in slugs:
         task = TASKS[slug]
-        num_eps = args.num_eps if args.num_eps is not None else (2 if task.env == "lbf" else 1)
+        num_eps = (
+            args.num_eps
+            if args.num_eps is not None
+            else (2 if task.env == "lbf" else 1)
+        )
         generate_for_task(task, out_dir, num_eps, args.seed, only, args.overwrite)
     return 0
 
