@@ -575,7 +575,7 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                         _, value_xp_vary_conf, _, _ = br_policy.get_action_value_policy(
                             params=param,
                             obs=batch.obs,
-                            done=batch.done,
+                            done=batch.prev_done,
                             avail_actions=batch.avail_actions,
                             hstate=init_br_hstate,
                             rng=jax.random.PRNGKey(0),
@@ -623,7 +623,7 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                         _, value_xp_vary_br, _, _ = br_policy.get_action_value_policy(
                             params=param,
                             obs=batch.obs,
-                            done=batch.done,
+                            done=batch.prev_done,
                             avail_actions=batch.avail_actions,
                             hstate=init_br_hstate,
                             rng=jax.random.PRNGKey(0), # only used for action sampling, which is not used here
@@ -701,7 +701,7 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     _, value_sp_pop_is_br, _, _ = br_policy.get_action_value_policy(
                         params=param_br_id,
                         obs=batch.obs,
-                        done=batch.done,
+                        done=batch.prev_done,
                         avail_actions=batch.avail_actions,
                         hstate=init_br_hstate,
                         rng=jax.random.PRNGKey(0),
@@ -712,7 +712,7 @@ def train_lbrdiv_partners(train_rng, env, config, conf_policy, br_policy):
                     _, value_sp_pop_is_not_br, _, _ = br_policy.get_action_value_policy(
                         params=param_conf_id,
                         obs=batch.obs,
-                        done=batch.done,
+                        done=batch.prev_done,
                         avail_actions=batch.avail_actions,
                         hstate=init_br_hstate,
                         rng=jax.random.PRNGKey(0),
