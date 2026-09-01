@@ -15,8 +15,8 @@ GAMMA: 0.999
 GAE_LAMBDA: 0.9
 MAX_GRAD_NORM: 0.5
 POLICY_OPTIMIZER: adam
-DECODER_OUTPUT_DIM: 13  # match mini-Hanabi action_space.n
 ENCODER_LATENT_DIM: 64
+DECODER_KL_WEIGHT: 1.6
 partner_agent:
   ippo:
     path: val_teammates/mini_hanabi/ippo_mlp/saved_train_run

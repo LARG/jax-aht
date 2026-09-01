@@ -1,9 +1,10 @@
-'''Main entry point for running MARL algorithms.'''
+"""Main entry point for running MARL algorithms."""
+
 import hydra
 from omegaconf import OmegaConf
 
 from common.wandb_visualizations import Logger
-from ippo import run_ippo
+from marl.ippo import run_ippo
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="base_config_marl")
@@ -15,8 +16,9 @@ def main(config):
         run_ippo(config, wandb_logger)
     else:
         raise NotImplementedError(f"Algorithm {config['ALG']} not implemented.")
-        
+
     wandb_logger.close()
+
 
 if __name__ == "__main__":
     main()

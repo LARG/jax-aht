@@ -1,5 +1,5 @@
 # Instructions
-Instructions were tested on 9/4/25 with a fresh install w/Python 3.11.
+These instructions target Python 3.11.
 
 1. Create a conda environment: 
 
@@ -21,21 +21,34 @@ conda activate your_env_name
 3. Navigate to the repository directory and install in development mode:
 ```bash
 cd /path/to/jax-aht
-pip install -e .
+python -m pip install -e .
 ```
 
-This installs the default cross-platform dependency set from `pyproject.toml` and sets up the package for development.
+This installs the CPU-compatible dependency set from `pyproject.toml` and sets up the package for development.
 
-4. Verify that JAX is available by running `import jax; jax.devices()` in the Python interpreter.
-On Linux machines with NVIDIA GPUs and CUDA 12, the default install should show something like:
-```
-[CudaDevice(id=0)]
+On Linux machines with NVIDIA GPUs and CUDA 12, install the CUDA extra instead:
+```bash
+python -m pip install -e ".[cuda12]"
 ```
 
-On macOS, the platform-specific dependency path installs CPU JAX automatically, so you should see:
+4. Verify the installation:
+```bash
+python scripts/verify_install.py
 ```
-[CpuDevice(id=0)]
+
+This reports the devices JAX can see and runs the array operations the training
+code relies on. The output should end with `All checks passed.`. A default CPU
+installation looks like:
 ```
+jax 0.5.3, backend cpu, [CpuDevice(id=0)]
+[ok] devices
+[ok] matrix multiplication
+[ok] QR decomposition
+[ok] orthogonal init (as used by agents/)
+All checks passed.
+```
+With the CUDA extra installed, the backend should be `gpu` and the devices should
+be listed as `CudaDevice` entries.
 
 5. Download evaluation data to get the evaluation agents:
 ```bash
@@ -55,7 +68,9 @@ python marl/run.py task=lbf/lbf_7x7_nolevels algorithm=ippo/lbf/lbf_7x7_nolevels
 If you prefer the manual setup or encounter issues with the pip installation:
 
 1. Follow steps 1-2 above
-2. Install packages manually: `pip install -r requirements.txt`
+2. Install packages manually: `python -m pip install -r requirements.txt`
+
+   On Linux machines with NVIDIA GPUs and CUDA 12, also run `python -m pip install "jax[cuda12]==0.5.3"`.
 3. Add project path to PYTHONPATH as a conda env var:
 ```bash
 conda env config vars set PYTHONPATH=/path/to/repository/directory
@@ -98,9 +113,12 @@ python -m pip install "setuptools<81" --force-reinstall
 python -m pip install -e .
 ```
 
-## If the installed CUDA library is not found
+## CUDA library conflicts
 
-You may have a CUDA library installed elsewhere, check with `echo $LD_LIBRARY_PATH`. 
+If you installed the `cuda12` extra, pip installed its own CUDA 12 libraries. If a
+system CUDA toolkit is also on the library search path, the two can be mixed at
+runtime, which causes segfaults or cuBLAS/cuSolver errors after `jax.devices()`
+already reports a GPU. Check with `echo $LD_LIBRARY_PATH`.
 If the output is not empty, use:
 ```bash
 export LD_LIBRARY_PATH="" #so that it defaults to the pip-installed CUDA.

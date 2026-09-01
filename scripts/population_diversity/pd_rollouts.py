@@ -1579,7 +1579,7 @@ def load_full_heldout_for_pd(
         log.warning("skipping %d heldout entries whose checkpoints aren't local: %s",
                     len(skipped), ", ".join(skipped))
 
-    from evaluation.heldout_evaluator import load_heldout_set
+    from evaluation.heldout_core import load_heldout_set
 
     rng = jax.random.PRNGKey(seed)
     heldout_agents = load_heldout_set(filtered, env, task_name, env_kwargs, rng)
@@ -1712,7 +1712,7 @@ def load_brs_for_pd(
 ) -> Dict[str, Tuple[Any, Any]]:
     """load best-response policies for each held-out partner."""
     from common.save_load_utils import REPO_PATH
-    from evaluation.heldout_evaluator import load_heldout_set
+    from evaluation.heldout_core import load_heldout_set
 
     rng = jax.random.PRNGKey(seed)
     out: Dict[str, Tuple[Any, Any]] = {}

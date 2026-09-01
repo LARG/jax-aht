@@ -67,20 +67,19 @@ def initialize_agent(actor_type, config, env, rng):
 
 def compute_total_updates(config):
     '''Compute the total number of updates and updates per iter.
+
+    TOTAL_TIMESTEPS_PER_ITERATION counts training rollout steps only
+    (evaluation episodes are not budgeted), matching the convention used
+    by the other open-ended trainers (e.g. rotate).
     '''
-    # XP matrix evaluation episodes: XP_EVAL_ROLLOUT_EPS per agent pair.
-    xp_eval_steps = (
-        config["XP_EVAL_ROLLOUT_EPS"] 
-        * config["ROLLOUT_LENGTH"] 
-        * config["PARTNER_POP_SIZE"] ** 2
-    )
     # Training rollouts (SP, XP) per update
     training_steps_per_update = 2 * config["ROLLOUT_LENGTH"] * config["NUM_ENVS"]
     num_updates_per_iter = int(
-        (config["TOTAL_TIMESTEPS_PER_ITERATION"] - xp_eval_steps) 
-        // training_steps_per_update
+        config["TOTAL_TIMESTEPS_PER_ITERATION"] // training_steps_per_update
     )
-    total_num_updates = num_updates_per_iter * config["PARTNER_POP_SIZE"]
+    # Slot 0 holds the seeded random agent, so only PARTNER_POP_SIZE - 1
+    # agents are trained.
+    total_num_updates = num_updates_per_iter * (config["PARTNER_POP_SIZE"] - 1)
     return num_updates_per_iter, total_num_updates
 
 def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=None):
@@ -239,16 +238,20 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
 
                     if config["METASOLVE_MODE"] == "shapley":
                         # Min-max normalise the XP matrix locally so all edge weights
-                        # are in [0, 1] for PageRank
-                        xp_min = jnp.min(xp_matrix)
-                        xp_max = jnp.max(xp_matrix)
+                        # are in [0, 1] for PageRank. Restrict to the trained sub-matrix:
+                        # untrained slots hold junk returns (vs. random-init params) that
+                        # would otherwise skew the normalisation range.
+                        valid_2d = valid_mask[:, None] & valid_mask[None, :]
+                        xp_min = jnp.min(jnp.where(valid_2d, xp_matrix, jnp.inf))
+                        xp_max = jnp.max(jnp.where(valid_2d, xp_matrix, -jnp.inf))
                         xp_range = jnp.maximum(xp_max - xp_min, 1e-8)
-                        xp_norm = (xp_matrix - xp_min) / xp_range
+                        xp_norm = jnp.where(valid_2d, (xp_matrix - xp_min) / xp_range, 0.0)
 
                         N = config["POP_SIZE"]
                         phi = shapley_values(
                             rng, xp_norm,
                             N=N,
+                            valid_mask=valid_mask,
                             max_iter=config["SHAPLEY_MAX_ITER"],
                             damping=config["SHAPLEY_PAGERANK_DAMPING"],
                             pagerank_max_iter=config["SHAPLEY_PAGERANK_ITER"],
@@ -478,9 +481,12 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                         needs_resample_xp, sampled_indices_all, partner_indices_xp
                     )
 
-                    # Update sampling distribution using UCB logic
+                    # Update sampling distribution using UCB logic. Scores are logits,
+                    # so add the UCB bonus in log space: the sampled distribution is
+                    # proportional to p_i * exp(bonus_i), keeping the metasolver term
+                    # on a comparable scale instead of being swamped by the bonus.
                     sum_counts = partner_visit_counts.sum()
-                    ucb_scores = init_sampling_dist + config["C_UCT"] * jnp.sqrt(sum_counts / (1 + partner_visit_counts))
+                    ucb_scores = init_log_sampling_dist + config["C_UCT"] * jnp.sqrt(sum_counts / (1 + partner_visit_counts))
                     pop_buffer = partner_population.update_scores(
                         pop_buffer, jnp.arange(config["POP_SIZE"]), ucb_scores
                     )
@@ -743,7 +749,9 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
 
                     mask = traj_batch_xp.info.get("returned_episode", jnp.ones_like(traj_batch_xp.reward))
                     metric = jax.tree.map(lambda x: mask_and_mean(x, mask), traj_batch_xp.info)
-                    metric["update_steps"] = update_steps
+                    # Global step across generations so wandb curves don't overlap:
+                    # num_prev_trained_agents is 1 for the first trained generation.
+                    metric["update_steps"] = (num_prev_trained_agents - 1) * config["NUM_UPDATES"] + update_steps
                     metric["value_loss_xp"] = value_loss_xp.mean()
                     metric["value_loss_sp"] = value_loss_sp.mean()
 
@@ -786,8 +794,12 @@ def train_cole_partners(train_rng, wandb_logger, env, config, progress_callback=
                 init_sampling_dist = metasolve_game_graph(
                     xp_matrix, num_existing_agents, metasolve_rng
                 )
+                # The buffer's softmax sampling strategy treats scores as logits, so
+                # store log-probabilities: softmax(log p) = p recovers the metasolver
+                # distribution exactly (temp=1).
+                init_log_sampling_dist = jnp.log(init_sampling_dist + 1e-8)
                 pop_buffer = partner_population.update_scores(
-                    pop_buffer, jnp.arange(config["POP_SIZE"]), init_sampling_dist
+                    pop_buffer, jnp.arange(config["POP_SIZE"]), init_log_sampling_dist
                 )
 
                 update_steps = 0
@@ -1162,16 +1174,18 @@ def log_final_metrics(config, outs, logger, metric_names: tuple):
 
     for num_add_policies in range(trained_pop_size):
         for update_step in eval_steps:
+            # Global step across generations so wandb curves don't overlap
+            global_step = num_add_policies * num_updates + update_step
             logger.log_item(
-                "Eval/AvgSPReturnCurve", 
-                sp_return_curve[num_add_policies, update_step], 
-                train_step=update_step
+                "Eval/AvgSPReturnCurve",
+                sp_return_curve[num_add_policies, update_step],
+                train_step=global_step
                 )
             mean_xp_returns = xp_return_curve[num_add_policies, :, :(num_add_policies+1)].mean(axis=-1)
             logger.log_item(
-                "Eval/AvgXPReturnCurve", 
-                mean_xp_returns[update_step], 
-                train_step=update_step
+                "Eval/AvgXPReturnCurve",
+                mean_xp_returns[update_step],
+                train_step=global_step
                 )
     logger.commit()
 
