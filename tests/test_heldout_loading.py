@@ -10,7 +10,7 @@ import yaml
 
 from envs import make_env
 from envs.log_wrapper import LogWrapper
-from evaluation.heldout_evaluator import load_heldout_set
+from evaluation.heldout_core import load_heldout_set
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HELDOUT_CONFIG = REPO_ROOT / "evaluation/configs/global_heldout_settings.yaml"
