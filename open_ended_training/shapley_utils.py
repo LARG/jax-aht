@@ -182,6 +182,7 @@ def shapley_values(
     pagerank_max_iter: int = 100,
     tol: float = 1e-6,
     sigma_temperature: float = 10.0,
+    valid_mask: jnp.ndarray = None,
 ) -> jnp.ndarray:
     """Monte-Carlo Shapley value estimator over a population, given XP matrix.
 
@@ -216,10 +217,20 @@ def shapley_values(
         pagerank_max_iter: Maximum PageRank power iterations.
         tol:               PageRank convergence tolerance.
         sigma_temperature: Temperature for the difficulty-weight softmax.
+        valid_mask:        (N,) boolean — True for players that are part of the
+                           game. Invalid players are excluded from every sampled
+                           coalition and the Shapley weights use the number of
+                           valid players as the effective game size; their phi
+                           is returned as 0. None means all N players are valid.
 
     Returns:
         phi: (N,) float — Shapley value estimate for each player.
     """
+    if valid_mask is None:
+        valid_mask = jnp.ones(N, dtype=bool)
+    # Effective game size: coalitions are drawn from the valid players only.
+    n_valid = jnp.sum(valid_mask).astype(jnp.float32)
+
     # Split one key per player so each player's samples are independent.
     player_keys = jax.random.split(key, N)    # (N, 2)
 
@@ -230,8 +241,8 @@ def shapley_values(
         sample_keys = jax.random.split(player_key, max_iter)   # (max_iter, 2)
 
         def one_sample(sample_key):
-            # Sample S ⊆ players \ {i} via Bernoulli(0.5)
-            base_mask = jax.random.bernoulli(sample_key, p=0.5, shape=(N,))
+            # Sample S ⊆ valid players \ {i} via Bernoulli(0.5)
+            base_mask = jax.random.bernoulli(sample_key, p=0.5, shape=(N,)) & valid_mask
             s_mask = base_mask.at[i].set(False)   # S excludes player i
             s_with_i = s_mask.at[i].set(True)     # S ∪ {i}
 
@@ -253,14 +264,15 @@ def shapley_values(
 
             marginal = v_s_with_i - v_s
 
-            # ── Shapley weight w(|S|) = |S|! · (N−|S|−1)! / N! ─────────────
-            # Computed in log-space to handle large N without overflow.
+            # ── Shapley weight w(|S|) = |S|! · (n−|S|−1)! / n! over the n
+            # valid players. Computed in log-space to handle large n without
+            # overflow.
             s_size = jnp.sum(s_mask).astype(jnp.float32)   # |S|
             log_weight = (
-                (N - 1) * jnp.log(2.0)                      # log(2^{N-1}) to correct for uniform subset sampling
+                (n_valid - 1) * jnp.log(2.0)                # log(2^{n-1}) to correct for uniform subset sampling
                 + jsp.special.gammaln(s_size + 1)           # log(|S|!)
-                + jsp.special.gammaln(N - s_size)           # log((N−|S|−1)!)
-                - jsp.special.gammaln(N + 1)                # log(N!)
+                + jsp.special.gammaln(n_valid - s_size)     # log((n−|S|−1)!)
+                - jsp.special.gammaln(n_valid + 1)          # log(n!)
             )
             weight = jnp.exp(log_weight)
 
@@ -271,7 +283,7 @@ def shapley_values(
 
         return jnp.mean(samples)
 
-    # Vectorise over all N players simultaneously.
+    # Vectorise over all N players simultaneously; invalid players get phi = 0.
     players = jnp.arange(N)
     phi = jax.vmap(phi_for_player)(players, player_keys)
-    return phi
+    return jnp.where(valid_mask, phi, 0.0)

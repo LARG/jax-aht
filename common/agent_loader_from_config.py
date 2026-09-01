@@ -6,10 +6,11 @@ from omegaconf import OmegaConf
 
 from agents.initialize_agents import initialize_s5_agent, initialize_mlp_agent, \
     initialize_rnn_agent, initialize_actor_with_double_critic, \
-    initialize_actor_with_conditional_critic
+    initialize_actor_with_conditional_critic, initialize_meliba_agent
 from agents.lbf.agent_policy_wrappers import (
     LBFRandomPolicyWrapper, LBFSequentialFruitPolicyWrapper,
     LBFEntitledPolicyWrapper, LBFGreedyHeuristicPolicyWrapper,
+    LBFBCLSTMPolicyWrapper,
 )
 from agents.overcooked.agent_policy_wrappers import (
     OvercookedRandomPolicyWrapper, OvercookedIndependentPolicyWrapper,
@@ -135,6 +136,11 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
                 heuristic=heuristic,
                 using_log_wrapper=True,
             )
+        if actor_type == "bc_lstm":
+            return LBFBCLSTMPolicyWrapper(
+                weight_file=agent_config["weight_file"],
+                greedy=agent_config.get("greedy", True),
+            )
         raise ValueError(f"Unrecognized actor type for {task_name}: '{actor_type}' ({agent_name})")
 
     if 'overcooked-v1' in task_name:
@@ -165,8 +171,10 @@ def initialize_heuristic_agent_from_config(agent_config, agent_name, task_name, 
             )
         if actor_type == "bc_proxy":
             from agents.overcooked.bc_agent import BCPolicy, BCProxyPartnerWrapper
+            assert "path" in agent_config, "bc_proxy agents must provide 'path' (BC model base dir)."
             bc = BCPolicy(
                 layout_name=env_kwargs["layout"],
+                model_base_dir=_validate_teammate_path(agent_config["path"]),
                 using_log_wrapper=True,
                 run_id=agent_config.get("run_id", 0),
             )
@@ -310,6 +318,13 @@ def initialize_rl_agent_from_config(agent_config, agent_name, env, rng):
         policy, init_params = initialize_actor_with_double_critic(agent_config, env, init_rng)
     elif agent_config["actor_type"] == "actor_with_conditional_critic":
         policy, init_params = initialize_actor_with_conditional_critic(agent_config, env, init_rng)
+    elif agent_config["actor_type"] == "meliba":
+        meliba_config = dict(agent_config)
+        meliba_config.setdefault("EGO_ACTOR_TYPE", "mlp")
+        meliba_config.setdefault(
+            "POLICY_INPUT_DIM",
+            meliba_config.get("ENCODER_LATENT_DIM", 64) * 4 + env.observation_space(env.agents[0]).shape[0])
+        policy, init_params = initialize_meliba_agent(meliba_config, env, init_rng)
     else:
         raise ValueError(f"Invalid actor type: {agent_config['actor_type']}")
 

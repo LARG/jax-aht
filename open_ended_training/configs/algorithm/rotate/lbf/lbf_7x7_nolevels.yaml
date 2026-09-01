@@ -2,14 +2,14 @@ defaults:
   - rotate/_base_
   - _self_ # values from this file override the values from the base file
 
-TIMESTEPS_PER_ITER_PARTNER: 1e7 # per iter of open-ended training, divided between conf-br and conf-ego and between all partner seeds
+TIMESTEPS_PER_ITER_PARTNER: 7.29e6 # per iter of open-ended training, divided between conf-br and conf-ego and between all partner seeds
 TIMESTEPS_PER_ITER_EGO: 2e6
-NUM_OPEN_ENDED_ITERS: 30
-LAMBDA_1: 7.0 # weight on the BR return from XP term in the perstep regret loss
-LAMBDA_2: 10.0 # weight on the BR return from SP term in the perstep regret loss
-LR: 0.001
-CLIP_EPS: 0.1
-ENT_COEF: 0.01
+NUM_OPEN_ENDED_ITERS: 21
+LAMBDA_1: 7 # weight on the BR return from XP term in the perstep regret loss
+LAMBDA_2: 8 # weight on the BR return from SP term in the perstep regret loss
+LR: 5e-4
+CLIP_EPS: 0.2
+ENT_COEF: 0.05
 ANNEAL_LR: true
 EGO_ARGS:
   LR: 5e-5

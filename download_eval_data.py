@@ -124,7 +124,7 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, f
 
     Args:
         repo_id (str): The Hugging Face repository ID (e.g., "jaxaht/eval-teammates").
-        remote_dir (str): The directory in the HF repo to download (e.g., "lbf").
+        remote_dir (str): The directory in the HF repo to download (e.g., "lbf_7x7").
         destination_dir (str): Local directory to download into; remote_dir becomes a
                                subdirectory of this (e.g., destination_dir/lbf/...).
         force (bool): If True, re-download every file in remote_dir. If False (default),
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         },
         "lbf_teammates": {
             "type": "dir",
-            "filename": "lbf",
+            "filename": "lbf_7x7",
             "target_directory": "eval_teammates/",
         },
         "lbf_12x12_teammates": {
