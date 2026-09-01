@@ -7,9 +7,12 @@ the step (prev_done); the nets reset the carry before processing input t. The
 PPO replay must therefore also be fed prev_done, not the post-step done stored
 for GAE.
 """
+
 import os
 
-os.environ.setdefault("JAX_PLATFORMS", "cpu")  # deterministic numerics for exact comparison
+os.environ.setdefault(
+    "JAX_PLATFORMS", "cpu"
+)  # deterministic numerics for exact comparison
 
 import jax
 import jax.numpy as jnp
@@ -60,10 +63,13 @@ def _replay(policy, params, obs, done, avail):
     return v, pi.logits
 
 
-@pytest.mark.parametrize("policy_cls,kwargs", [
-    (RNNActorCriticPolicy, {}),
-    (S5ActorCriticPolicy, {}),
-])
+@pytest.mark.parametrize(
+    "policy_cls,kwargs",
+    [
+        (RNNActorCriticPolicy, {}),
+        (S5ActorCriticPolicy, {}),
+    ],
+)
 def test_replay_with_prev_done_matches_rollout(policy_cls, kwargs):
     policy, params = _make(policy_cls, **kwargs)
     rng = jax.random.PRNGKey(1)
@@ -76,7 +82,9 @@ def test_replay_with_prev_done_matches_rollout(policy_cls, kwargs):
         float(jnp.abs(roll_v - replay_v).max()),
         float(jnp.abs(roll_logits - replay_logits).max()),
     )
-    assert good_diff < 1e-5, f"replay with prev_done diverges from rollout (max diff {good_diff})"
+    assert good_diff < 1e-5, (
+        f"replay with prev_done diverges from rollout (max diff {good_diff})"
+    )
 
     # The old behavior (replaying with post-step done) resets one step early
     # and must diverge at/after the episode boundary.

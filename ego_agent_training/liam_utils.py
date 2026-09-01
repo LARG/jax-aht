@@ -2,6 +2,7 @@ from typing import NamedTuple
 
 import jax.numpy as jnp
 
+
 class Transition(NamedTuple):
     done: jnp.ndarray  # done at t+1 (post-step); used for GAE bootstrapping
     action: jnp.ndarray
