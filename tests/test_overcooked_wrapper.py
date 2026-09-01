@@ -1,53 +1,41 @@
 import jax
-from envs.log_wrapper import LogWrapper
-from jaxmarl.environments.overcooked import overcooked_layouts
+
 from envs import make_env
 
-# Instantiate the Overcooked environment via factory
-env = make_env(env_name='overcooked-v1', env_kwargs={
-    'layout': 'cramped_room',
-    'random_reset': True,
-    'max_steps': 400,
-})
-wrapper = LogWrapper(env)
 
-NUM_EPISODES = 2
-key = jax.random.PRNGKey(20394)
+def test_overcooked_wrapper_reset_and_step():
+    env = make_env(
+        "overcooked-v1",
+        {
+            "layout": "cramped_room",
+            "random_reset": True,
+            "max_steps": 1,
+        },
+    )
+    key = jax.random.PRNGKey(0)
+    key, reset_key = jax.random.split(key)
+    observations, state = env.reset(reset_key)
 
-# reset outside of for loop over episodes to test auto-reset behavior
-key, subkey = jax.random.split(key)
-obs, state = wrapper.reset(subkey)
+    assert set(observations) == set(env.agents)
+    assert all(observations[agent].ndim == 1 for agent in env.agents)
 
-for episode in range(NUM_EPISODES):
-    done = {agent: False for agent in wrapper.agents}
-    done['__all__'] = False
-    total_rewards = {agent: 0.0 for agent in wrapper.agents}
-    num_steps = 0
-    while not done['__all__']:
-        # Sample actions for each agent
-        actions = {}
-        for agent in wrapper.agents:
-            action_space = wrapper.action_space(agent)
-            key, action_key = jax.random.split(key)
-            action = int(action_space.sample(action_key))
-            actions[agent] = action
-        
-        key, subkey = jax.random.split(key)
-        obs, state, rewards, done, info = wrapper.step(subkey, state, actions)
+    actions = {}
+    for agent in env.agents:
+        key, action_key = jax.random.split(key)
+        actions[agent] = env.action_space(agent).sample(action_key)
 
-        # Process observations, rewards, dones, and info as needed
-        for agent in wrapper.agents:
-            total_rewards[agent] += rewards[agent]
+    key, step_key = jax.random.split(key)
+    observations, state, rewards, dones, info = env.step(step_key, state, actions)
 
-            print(f"\nEpisode {episode}, agent {agent}, timestep {wrapper.get_step_count(state.env_state)}")
+    assert set(observations) == set(env.agents)
+    assert set(rewards) == set(env.agents)
+    assert set(dones) == {*env.agents, "__all__"}
+    assert bool(dones["__all__"])
+    assert int(env.get_step_count(state)) == 0
+    assert "base_return" in info
+    assert env.get_avail_actions(state).keys() == observations.keys()
 
-            print("obs shape is ", obs[agent].shape, "type", type(obs[agent]))
-            print("action is ", actions[agent])
-            print("rewards", rewards[agent], "type", type(rewards[agent]))
-            print("info", info, "type", type(info))
-            print("avail actions are ", wrapper.get_avail_actions(state.env_state)[agent])
-            print("dones", done[agent], "type", type(done[agent]))
-
-        num_steps += 1
-
-    print(f"Episode {episode} finished. Total rewards: {total_rewards}. Num steps: {num_steps}")
+    key, step_key = jax.random.split(key)
+    _, state, _, dones, _ = env.step(step_key, state, actions)
+    assert bool(dones["__all__"])
+    assert int(env.get_step_count(state)) == 0

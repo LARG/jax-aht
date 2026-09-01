@@ -38,7 +38,7 @@ If you find this repository useful for your research, please cite,
 
 ## Design Philosophy
 
-<img src="assets/design-philosophy.png" alt="Design Philosophy" width="400" />
+<img src="docs/resources/jaxaht_workflow.png" alt="JaxAHT teammate generation, ego agent training, and heldout evaluation workflow" width="900" />
 
 The JaxAHT library is designed to (1) facilitate research across the entire lifecycle of ad hoc teamwork, and (2) ease the evaluation of ad hoc agents (ego agents) for commonly used AHT benchmark tasks. As such, the benchmark includes:
 - AHT algorithms
@@ -74,8 +74,12 @@ Our modularization is restricted to environments, agents, and populations, which
 | | CoMeDi | Generates diverse teammates by optimizing mixed-play. | [Sarkar et al. 2023](https://arxiv.org/pdf/2310.15414) |
 | **MARL** | IPPO | Multi-agent reinforcement learning using independent PPO agents with parameter sharing | [Yu et al. 2022](https://arxiv.org/abs/2103.01955) |
 | **Open-Ended Training** | ROTATE | Open-ended training using cooperative regret maximization | [Wang et al. 2025](https://arxiv.org/abs/2505.23686) |
+| | COLE | Builds a cooperative policy pool using cross-play performance and prioritized partner sampling. | [Li et al. 2023](https://proceedings.mlr.press/v202/li23au.html) |
+| | TrajeDi | Trains a diverse confederate population using self-play, cross-play, and trajectory diversity. | - |
 | | PAIRED | Open-ended training based on the PAIRED algorithm from the unsupervised environment design literature. | [Dennis et al. 2020](https://arxiv.org/abs/2012.02096) |
 | | Open-Ended Minimax | Open-ended training baseline using minimax return optimization. | - |
+
+The CPU smoke suite currently runs IPPO, FCP, BRDiv, LBRDiv, CoMeDi, PPO Ego, LIAM Ego, MeLIBA Ego, ROTATE, COLE, and TrajeDi. PAIRED and Open-Ended Minimax implementations and configs are present but are not yet included in the smoke suite.
 
 ### Supported Environments
 
@@ -83,11 +87,16 @@ Our modularization is restricted to environments, agents, and populations, which
 |-------------|--------|-------------|----------|----------------------|
 | **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | lbf_7x7_nolevels (7x7, 3 food, no levels), lbf_12x12 (12x12, 6 food, with levels) | ✅ |
 | **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | ✅  |
+| **Hanabi** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Two-player cooperative card game with partial observability and implicit communication | 5 colors, 5 ranks | ✅ |
+| **Mini-Hanabi** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Smaller Hanabi task for faster experiments | 3 colors, 3 ranks | ✅ |
 
 
-##  Table of Contents
+## Table of Contents
+
 - [🚀 Installation Guide](#-installation-guide)
+- [📦 Evaluation Data](#-evaluation-data)
 - [▶️ Getting Started](#️-getting-started)
+- [🧪 Testing](#-testing)
 - [📝 Code Overview](#-code-overview)
   - [🎨 Code Style](#-code-style)
   - [✔️ Code Assumptions](#️-code-assumptions)
@@ -98,8 +107,9 @@ Our modularization is restricted to environments, agents, and populations, which
   - [🤖 Agents](#-agents)
   - [🚶Loading Teammates](#-loading-teammates)
   - [🌳 Environments](#-environments)
-    - [Level-Based Foraging (LBF)](#lbf)
+    - [Level-Based Foraging (LBF)](#level-based-foraging-lbf)
     - [Overcooked-v1](#overcooked-v1)
+    - [Hanabi](#hanabi)
 - [📄 License](#-license)
 - [🔗 See Also](#-see-also)
 
@@ -107,27 +117,38 @@ Our modularization is restricted to environments, agents, and populations, which
 ## 🚀 Installation Guide
 
 Follow instructions at [docs/install_instructions.md](docs/install_instructions.md) to install the necessary libraries.
-The default install path remains Linux/CUDA-first:
+JaxAHT currently supports Python 3.11.
+The default install supports CPU-only Linux and macOS environments:
 ```bash
-pip install -e .
+python -m pip install -e .
 ```
 
-On macOS, the platform-specific dependency path automatically installs CPU JAX instead of the CUDA build.
+On Linux machines with NVIDIA GPUs and CUDA 12, install the CUDA extra:
+```bash
+python -m pip install -e ".[cuda12]"
+```
 
 Verify the install with:
 ```bash
 python scripts/verify_install.py
 ```
 
+## 📦 Evaluation Data
+
 Evaluating trained agents against the heldout evaluation set requires downloading the evaluation agents.
-We also provide the best returns achieved against each evaluation agent in our experiments.
-Directories containing both data can be obtained by running the provided data download script:
+The public [jaxaht/eval-teammates dataset](https://huggingface.co/datasets/jaxaht/eval-teammates) contains the LBF, Overcooked-v1, Hanabi, and Mini-Hanabi policies referenced by `evaluation/configs/global_heldout_settings.yaml`, along with the best heldout returns used for normalization.
+
+Download the complete evaluation set from the repository root:
 ```bash
 python download_eval_data.py
 ```
 
+The script places policies under `eval_teammates/` and the best-return data under `results/`.
 Re-running the script only downloads files that are missing locally; pass `--force` to re-download everything.
-## ▶️ Getting Started:
+Routine CPU tests validate the heldout configuration without downloading these artifacts.
+
+## ▶️ Getting Started
+
 For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
 Algorithms are sorted into four main directories in this codebase.
@@ -166,9 +187,9 @@ The project structure is described here. Additional notes about some folders are
 - `evaluation/`: Evaluation and visualization scripts.
 - `ego_agent_training/`: All ego agent learning implementations (PPO, LIAM, and MeLIBA).
 - `marl/`: MARL algorithm implementations. Currently only supports IPPO.
-- `open_ended_training/`: Open-ended learning methods (ROTATE, PAIRED, Minimax Return).
+- `open_ended_training/`: Open-ended learning methods (ROTATE, COLE, TrajeDi, PAIRED, Minimax Return).
 - `teammate_generation/`: Teammate generation algorithms (BRDiv, FCP, LBRDiv, CoMeDi).
-- `tests/`: Test scripts used during development.
+- `tests/`: CPU-safe unit, wrapper, configuration, and heldout-loading tests.
 
 ### 💡Algorithm Implementations
 
@@ -228,14 +249,13 @@ The `agents/` directory contains:
 - Various actor-critic architectures.
 - Population and agent interfaces for RL agents.
 
-You can test the Overcooked heuristic agents by running, `python tests/test_overcooked_agents.py`,
-and the LBF heuristic agents by running, `python tests/test_lbf_agents.py`.
+The automated tests cover the bounded LBF and Overcooked wrapper behavior. Use `python -m pytest -q` rather than executing the exploratory agent scripts directly.
 
 ### 🚶 Loading Teammates
 
 Certain workflows within this project (namely, ego agent training, heldout evaluation) require teammate policies as inputs. The user may provide these teammate policies by specifying a *partner config* that may point to heuristic or RL-based partner policies.
 
-By default, the heldout evaluation workflow uses the downloaded evaluation teammates, and the corresponding partner config is specified at `evaluation/configs/global_heldout_settings.yaml`, so no intervention from the user is necessary to perform heldout evaluations.
+By default, the heldout evaluation workflow uses the downloaded evaluation teammates. The corresponding partner config is specified at `evaluation/configs/global_heldout_settings.yaml`.
 
 However, the ego agent training workflow **requires** the user to specify a partner agent config.
 A quick example of how to run an ego agent training algorithm with particular partner config is provided in our tutorial notebook.
@@ -254,14 +274,48 @@ see [docs/evaluation_xp_heatmaps.md](docs/evaluation_xp_heatmaps.md).
 
 
 ### 🌳 Environments
+
 #### Level-Based Foraging (LBF)
+
 This codebase uses the Jumanji LBF implementation. The wrapper for the Jumanji LBF environment is stored in the `envs/` directory, at `envs/lbf/lbf_wrapper.py`. A corresponding test script is stored at `tests/test_lbf_wrapper.py`.
 
 #### Overcooked-v1
+
 We made some modifications to the JaxMARL Overcooked environment to improve the functionality and ensure environments are solvable.
 
 - **Initialization randomization**: Previously, setting `random_reset` would lead to random initial agent positions, and randomized initial object states (e.g. pot might be initialized with onions already in it, agents might be initialized holding plates, etc.). We separate the functionality of the argument `random_reset` into two arguments: `random_reset` and `random_obj_state`, where `random_reset` only controls the initial positions of the two agents.
 - **Agent initial positions**: previously, in a map with disconnected components, it was possible for two agents to be spawned in the same component, making it impossible to solve the task. The Overcooked-v1 environment initializes agents such that one is always spawned on each side of the map.
+
+#### Hanabi
+
+The Hanabi wrapper supports both the full two-player task and the smaller Mini-Hanabi variant through task-specific Hydra configs.
+
+## 🧪 Testing
+
+Install the test dependencies and run the CPU-safe pytest suite:
+
+```bash
+python -m pip install -e ".[test]"
+python -m pytest -q
+```
+
+Run one bounded LBF 7x7 training update for every algorithm currently included in the CPU smoke suite:
+
+```bash
+bash scripts/test_algos.sh --device cpu
+```
+
+The larger GPU smoke mode requires the downloaded evaluation data and a local NVIDIA machine with at least 20 GB of free GPU memory:
+
+```bash
+bash scripts/test_algos.sh --device gpu
+```
+
+After downloading the evaluation data, run the explicit heldout loading and action integration test with:
+
+```bash
+JAX_AHT_RUN_HELDOUT_LOADING=1 python -m pytest -q -m eval_data tests/test_heldout_loading.py
+```
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
