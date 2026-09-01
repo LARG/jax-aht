@@ -86,3 +86,8 @@ target-version = "py311"
 # control: CI clones into a directory named "jax-aht", and the hyphen is not
 # a valid identifier.
 "**/__init__.py" = ["N999"]
+# Legacy capitalized module names predate the lint rules; renaming them is out
+# of scope for incremental lint.
+"teammate_generation/BRDiv.py" = ["N999"]
+"teammate_generation/CoMeDi.py" = ["N999"]
+"teammate_generation/LBRDiv.py" = ["N999"]
