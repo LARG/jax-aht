@@ -104,7 +104,7 @@ if echo "${check_output}" | grep -q "DRY RUN"; then
     echo "timesteps. Lines marked 'DRY RUN' above show what would"
     echo "change. Notify colleagues that the benchmark configs"
     echo "are out of date and fix them by running"
-    echo "the corresponding update_timesteps.py scripts,",
+    echo "the corresponding update_timesteps.py scripts,"
     echo "then re-run this script and push updated configs."
     echo "========================================================"
     exit 1
@@ -114,11 +114,45 @@ echo "All timestep configs are up to date."
 echo ""
 
 # ============================================================
-# Step 2: Run experiments
+# Step 2: Heldout evaluation preflight
+# ============================================================
+
+echo ""
+echo "========================================================"
+echo "Step 2: Validating heldout eval configs and checkpoints"
+echo "========================================================"
+echo ""
+
+# Collect the entry points actually exercised by this run, so we only check
+# the base configs that will be loaded.
+entry_points=()
+for algo in "${algos[@]}"; do
+    ep=$(get_entry_point "${algo}")
+    if [[ ! " ${entry_points[*]} " =~ " ${ep} " ]]; then
+        entry_points+=("${ep}")
+    fi
+done
+
+if ! PYTHONPATH=. python scripts/benchmark/check_heldout_paths.py \
+        --entry-points "${entry_points[@]}" \
+        --tasks "${tasks[@]}"; then
+    echo ""
+    echo "========================================================"
+    echo "ERROR: Heldout evaluation preflight failed. Fix the base"
+    echo "config targets and/or fetch the missing eval_teammates"
+    echo "checkpoints before running benchmark experiments."
+    echo "========================================================"
+    exit 1
+fi
+
+echo ""
+
+# ============================================================
+# Step 3: Run experiments
 # ============================================================
 
 log "========================================================"
-log "Step 2: Running experiments"
+log "Step 3: Running experiments"
 log "Algorithms: ${algos[*]}"
 log "Tasks:      ${tasks[*]}"
 log "Log file:   ${log_file}"
@@ -160,6 +194,8 @@ for algo in "${algos[@]}"; do
             algorithm.TRAIN_SEED="${train_seed}" \
             ${checkpoint_arg} \
             logger.mode="online" \
+            logger.log_train_out=true \
+            logger.log_eval_out=true \
             local_logger.save_train_out=false \
             local_logger.save_eval_out=false \
             2>> "${log_file}"; then
