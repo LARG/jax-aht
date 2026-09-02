@@ -11,7 +11,7 @@
 
 # === Configuration ===
 algos=("rotate")
-label="neurips:benchmark"
+label="iclr26:benchmark"
 num_seeds=5 # argument for open-ended and teammate generation
 num_ego_train_seeds=5 # argument for ego agents
 train_seed=$(date +%s)
