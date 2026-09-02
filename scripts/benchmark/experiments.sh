@@ -13,7 +13,7 @@
 algos=("rotate")
 label="neurips:benchmark"
 num_seeds=5 # argument for open-ended and teammate generation
-num_ego_train_seeds=1 # argument for ego agents
+num_ego_train_seeds=5 # argument for ego agents
 train_seed=$(date +%s)
 num_checkpoints=1   # used for all algorithms except FCP (see below)
 
@@ -186,11 +186,19 @@ for algo in "${algos[@]}"; do
             seeds_arg="algorithm.NUM_SEEDS=${num_seeds}"
         fi
 
+        # Teammate generation trains an ego agent per teammate-generation seed,
+        # so pin its inner ego training to 1 seed.
+        ego_seeds_arg=""
+        if [ "${entry_point}" = "teammate_generation" ]; then
+            ego_seeds_arg="algorithm.ego_train_algorithm.NUM_EGO_TRAIN_SEEDS=1"
+        fi
+
         if XLA_FLAGS=--xla_disable_hlo_passes=fusion XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${entry_point}/run.py" \
             algorithm="${algo}/${task}" \
             task="${task}" \
             label="${label}" \
             ${seeds_arg} \
+            ${ego_seeds_arg} \
             algorithm.TRAIN_SEED="${train_seed}" \
             ${checkpoint_arg} \
             logger.mode="online" \
