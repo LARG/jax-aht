@@ -1,14 +1,14 @@
 import functools
-import numpy as np
-
 from typing import NamedTuple
 
+import flax.linen as nn
 import jax
 import jax.numpy as jnp
-import flax.linen as nn
+import numpy as np
+
 
 class Transition(NamedTuple):
-    done: jnp.ndarray
+    done: jnp.ndarray  # done at t+1 (post-step); used for GAE bootstrapping
     action: jnp.ndarray
     value: jnp.ndarray
     reward: jnp.ndarray
@@ -20,6 +20,8 @@ class Transition(NamedTuple):
     prev_action_onehot: jnp.ndarray
     partner_action: jnp.ndarray
     partner_action_onehot: jnp.ndarray
+    prev_done: jnp.ndarray = None  # done at t (pre-step); RNN reset signal for replay
+
 
 class DecoderScannedRNN(nn.Module):
     """
@@ -28,6 +30,7 @@ class DecoderScannedRNN(nn.Module):
     It resets its state based on the `dones` signal and
     resets to the provided `hiddens` state when `done` is True.
     """
+
     @functools.partial(
         nn.scan,
         variable_broadcast="params",
@@ -48,7 +51,10 @@ class DecoderScannedRNN(nn.Module):
         new_rnn_state, y = nn.GRUCell(features=ins.shape[1])(rnn_state, ins)
         return new_rnn_state, y
 
-def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False, start_indices=None):
+
+def transform_timestep_to_k_batch(
+    array, pad_value=0.0, return_mask=False, start_indices=None
+):
     """
     Transform array from (timestep, feat) to (k_batch, timesteps, feat)
 
@@ -113,6 +119,7 @@ def transform_timestep_to_k_batch(array, pad_value=0.0, return_mask=False, start
         results = jax.vmap(get_subsequence_for_start_idx)(start_indices)
         return results
 
+
 def shift_padding_to_front_vectorized(data, mask):
     """
     Shift padding in data to the front based on the mask.
@@ -165,16 +172,13 @@ def shift_padding_to_front_vectorized(data, mask):
 
     # Gather the data
     # (batch, seq_len, feat_dim)
-    gathered_data = jnp.take_along_axis(
-        data, source_positions[..., None], axis=1
-    )
+    gathered_data = jnp.take_along_axis(data, source_positions[..., None], axis=1)
 
     # Zero out padding positions
-    shifted_data = jnp.where(
-        new_mask[..., None], gathered_data, 0.0
-    )
+    shifted_data = jnp.where(new_mask[..., None], gathered_data, 0.0)
 
     return shifted_data, new_mask
+
 
 def fill_to_first_true(array):
     """

@@ -13,10 +13,14 @@ import argparse
 import re
 from pathlib import Path
 
-from scripts.manage_configs.helpers import format_value
-from scripts.paper_vis.plot_globals import HYPERPARAM_SWEEPS
+from scripts.manage_configs.helpers import format_value, resolve_algo_config
+from scripts.paper_vis.plot_globals import (
+    HYPERPARAM_SWEEPS, ENTITY, HYPERPARAM_PROJECT,
+)
 from scripts.utils import ALGO_TO_ENTRY_POINT
-from scripts.wandb_utils.wandb_cache import load_sweep_df, build_hparam_df
+from scripts.wandb_utils.wandb_cache import (
+    load_sweep_df, build_hparam_df, fetch_sweep_last_run_date,
+)
 
 
 REPO_ROOT = Path(__file__).parent.parent.parent
@@ -40,6 +44,54 @@ def _config_path(task: str, algorithm: str) -> Path:
     task_family = "/".join(parts[:-1])
     task_name = parts[-1]
     return REPO_ROOT / root / "configs" / "algorithm" / config_name / task_family / f"{task_name}.yaml"
+
+
+# MeLIBA's KL loss is now summed over time and *averaged* over the batch. Sweeps that
+# ran before that fix summed over the batch too, so their DECODER_KL_WEIGHT has to be
+# scaled by the minibatch size (NUM_ENVS / NUM_MINIBATCHES) to reproduce the same
+# effective KL weighting. Sweeps run on or after the cutoff already use the new
+# normalization and are left alone.
+_MELIBA_KL_KEY = "DECODER_KL_WEIGHT"
+_MELIBA_KL_FIX_DATE = "2026-08-30"
+
+# Swept keys that must never be written back into an algorithm config.
+_NON_HPARAM_KEYS = {"TOTAL_TIMESTEPS"}
+
+
+def _scale_meliba_kl_weight(task: str, best_hparams: dict, config_path: Path,
+                            sweep_id: str) -> None:
+    """In-place: rescale MeLIBA's swept KL weight to the post-fix loss normalization.
+
+    Only applied to sweeps whose most recent run predates _MELIBA_KL_FIX_DATE.
+    """
+    if _MELIBA_KL_KEY not in best_hparams:
+        print(f"  WARNING: {_MELIBA_KL_KEY} not in the sweep for {task}; no KL rescaling applied.")
+        return
+
+    last_run = fetch_sweep_last_run_date(sweep_id, ENTITY, HYPERPARAM_PROJECT)
+    if last_run is None:
+        print(f"  WARNING: could not date sweep {sweep_id}; no KL rescaling applied.")
+        return
+    if last_run[:10] >= _MELIBA_KL_FIX_DATE:
+        print(f"  MeLIBA KL rescale skipped: sweep last ran {last_run[:10]}, "
+              f"on/after the {_MELIBA_KL_FIX_DATE} loss-normalization fix.")
+        return
+
+    algo_configs_root = config_path.parent
+    while algo_configs_root.name != "algorithm":
+        algo_configs_root = algo_configs_root.parent
+    resolved = resolve_algo_config(config_path, algo_configs_root)
+
+    # A swept value takes precedence over the config value.
+    num_envs = float(best_hparams.get("NUM_ENVS", resolved["NUM_ENVS"]))
+    num_minibatches = float(best_hparams.get("NUM_MINIBATCHES", resolved["NUM_MINIBATCHES"]))
+    scale = num_envs / num_minibatches
+
+    raw = float(best_hparams[_MELIBA_KL_KEY])
+    best_hparams[_MELIBA_KL_KEY] = raw * scale
+    print(f"  MeLIBA KL rescale: {_MELIBA_KL_KEY} {raw:g} * "
+          f"(NUM_ENVS {num_envs:g} / NUM_MINIBATCHES {num_minibatches:g} = {scale:g}) "
+          f"-> {raw * scale:g}")
 
 
 def _set_top_level_key(content: str, key: str, new_val: str) -> str:
@@ -110,6 +162,14 @@ def update_config_file(config_path: Path, best_hparams: dict[str, str], dry_run:
 def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: bool,
                     max_hparams: int | None = None, seed: int = 0) -> None:
     raw_df, bare_keys = load_sweep_df(task, algorithm, force_recompute)
+    # Some sweep YAMLs pin the (reduced) sweep training budget under `parameters` rather
+    # than in the `command` block, so it comes back as a single-valued "swept" key. It is
+    # not a hyperparameter — writing it would clobber the benchmark budget set by
+    # update_timesteps.py — so drop it before choosing/applying the best setting.
+    dropped = [k for k in bare_keys if k in _NON_HPARAM_KEYS]
+    if dropped:
+        print(f"  Ignoring non-hyperparameter swept key(s): {', '.join(dropped)}")
+        bare_keys = [k for k in bare_keys if k not in _NON_HPARAM_KEYS]
     sweep_df = build_hparam_df(raw_df, algorithm, bare_keys)
 
     grouped = (
@@ -122,18 +182,24 @@ def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: b
         print(f"Sampling {max_hparams} of {len(grouped)} hparam settings (seed={seed})")
         grouped = grouped.sample(n=max_hparams, random_state=seed).sort_values("_score", ascending=False)
     best_row = grouped.iloc[0]
-    best_hparams = {key: format_value(best_row[key]) for key in bare_keys}
+    raw_hparams = {key: best_row[key] for key in bare_keys}
+
+    config_path = _config_path(task, algorithm)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+
+    if algorithm == "meliba":
+        _scale_meliba_kl_weight(task, raw_hparams, config_path,
+                                HYPERPARAM_SWEEPS[task][algorithm])
+
+    best_hparams = {key: format_value(val) for key, val in raw_hparams.items()}
 
     print(f"Best hyperparameters for {task}/{algorithm}:")
     for k, v in best_hparams.items():
         print(f"  {k}: {v}")
     print(f"  mean score: {best_row['_score']:.4f}")
 
-    config_path = _config_path(task, algorithm)
     print(f"\nConfig file: {config_path}")
-
-    if not config_path.exists():
-        raise FileNotFoundError(f"Config file not found: {config_path}")
 
     print()
     update_config_file(config_path, best_hparams, dry_run=dry_run)
