@@ -188,7 +188,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "d1dt0arj", 
         "rotate": "44c1kwu0",
         "cole": "pr0fwbdp",
-        "trajedi": "dqsezvy1",
+        "trajedi": "13umuekr",
     },
     "lbf/lbf_12x12": {
         "ppo_ego": "k2giuu4l", 
@@ -200,7 +200,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "7e9yf5zg",
         "rotate": "csg80xwm",
         "cole": "kbvghubr",
-        "trajedi": "mavnqv7e",
+        "trajedi": "ik9juu5l",
     },
     "overcooked-v1/cramped_room": {
         "ppo_ego": "vexvuss8", 
@@ -212,7 +212,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "vt0xnwxc",
         "rotate": "aki2rypl",
         "cole": "jg6700d6",
-        "trajedi": "dua855jm",
+        "trajedi": "okerlren",
     },
     "overcooked-v1/coord_ring": {
         "ppo_ego": "qeafl8r7", 
@@ -224,7 +224,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "xeikmue5", 
         "rotate": "df4m613k",
         "cole": "irstlaiv",
-        "trajedi": "j26xa39y",
+        "trajedi": "awdjju8b",
     },
     "overcooked-v1/asymm_advantages": {
         "ppo_ego": "w2iy974t",
@@ -236,6 +236,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "z3prs3tb",
         "rotate": "4euj1b9o",
         "cole": "gsy9hwi6",
+        "trajedi": "geyaapnl",
     },
     "overcooked-v1/counter_circuit": {
         # no ppo_ego / liam / meliba sweeps were run for this task
@@ -245,6 +246,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "2lf5fd8x",
         "rotate": "bgxh7r5y",
         "cole": "mso4wpns",
+        "trajedi": "ujckbg0k",
     },
     "overcooked-v1/forced_coord": {
         "ppo_ego": "gg5rax9p",
@@ -256,6 +258,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "4zysz591",
         "rotate": "fx48ltux",
         "cole": "hqdudasd",
+        "trajedi": "nze0cuft",
     },
     "mini-hanabi": {
         "ppo_ego": "y2w21bej",
@@ -267,7 +270,7 @@ HYPERPARAM_SWEEPS = {
         "comedi": "s745q3lg",
         "rotate": "ehxr5cyx",
         "cole": "158to6y5",
-        "trajedi": "4my4n564",
+        "trajedi": "4uw6liu5",
     }
 }
 
