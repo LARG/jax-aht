@@ -33,6 +33,9 @@ from scripts.paper_vis.plot_globals import (
 
 HEURISTIC_KEY = "heuristic"
 
+# High-contrast styling so overlapping traces stay distinguishable.
+METHOD_MARKERS = ['o', 's', '^', 'D', 'v', 'P', 'X', '*']
+
 AGENT_TYPE_DISPLAY = {
     "comedi": "CoMeDi",
     "lbrdiv": "LBRDiv",
@@ -99,8 +102,8 @@ def draw_radar_on_ax(
         max_value = max(max_value, max(values))
         closed_values = values + values[:1]
 
-        ax.plot(angles, closed_values, 'o-', linewidth=2, color=colors[i], label=method_name)
-        ax.fill(angles, closed_values, alpha=0.15, color=colors[i])
+        ax.plot(angles, closed_values, linewidth=2, color=colors[i], label=method_name,
+                marker=METHOD_MARKERS[i % len(METHOD_MARKERS)], markersize=6, alpha=0.85)
 
     ax.plot(angles, [1.0] * len(angles), '--', color='dimgray', linewidth=1.5,
             label='_nolegend_')
@@ -175,7 +178,7 @@ def plot_tasks(
     n_tasks = len(task_data)
     ncols = n_tasks
     nrows = 1
-    colors = plt.cm.Set2(np.arange(len(all_method_names)) / 10)
+    colors = plt.cm.tab10(np.arange(len(all_method_names)) % 10)
 
     fig = plt.figure(figsize=(ncols * 6, 6))
 
@@ -195,7 +198,8 @@ def plot_tasks(
 
     if show_legend and all_method_names:
         handles = [
-            plt.Line2D([0], [0], color=colors[i], linewidth=2, marker='o', label=name)
+            plt.Line2D([0], [0], color=colors[i], linewidth=2,
+                       marker=METHOD_MARKERS[i % len(METHOD_MARKERS)], label=name)
             for i, name in enumerate(all_method_names)
         ]
         fig.legend(
