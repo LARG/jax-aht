@@ -3,75 +3,86 @@
 Uses locally cached wandb artifact pickles (eval metrics + run configs) when
 available; only downloads from wandb for runs that have not been cached yet.
 
+Best returns are matched across runs by partner name, so runs with and without
+the human proxy partner are combined in one file (see ``heldout_partners``).
+
 Run from repo root: python scripts/paper_vis/recompute_best_returns.py [--tasks ...]
 """
-import argparse
-import json
-from pathlib import Path
 
-from scripts.paper_vis.compute_best_returns import compute_best_returns, load_best_returns
+import argparse
+
+from scripts.paper_vis.compute_best_returns import load_best_returns
 from scripts.paper_vis.plot_globals import (
-    ENTITY, BENCHMARK_PROJECT,
-    EGO_BENCHMARK_RUNS, UNIFIED_BENCHMARK_RUNS, BC_BENCHMARK_RUNS,
-    METHOD_TO_DISPLAY_NAME, OEL_METHODS,
+    BC_BENCHMARK_RUNS,
+    BENCHMARK_PROJECT,
+    EGO_BENCHMARK_RUNS,
+    ENTITY,
+    METHOD_TO_DISPLAY_NAME,
+    OEL_METHODS,
+    UNIFIED_BENCHMARK_RUNS,
 )
 from scripts.wandb_utils.wandb_cache import DEFAULT_CACHE_DIR
+
+
+def _display_name(method_name: str, teammate_type: str | None = None) -> str:
+    name = METHOD_TO_DISPLAY_NAME.get(method_name, method_name)
+    return f"{name} ({teammate_type})" if teammate_type else name
 
 
 def build_run_specs(task_name: str) -> list[tuple[str, str | list[str], bool]]:
     """Collect all (display_name, run_id, is_oel) tuples for a task.
 
     Combines unified-benchmark and ego-benchmark runs so that best returns
-    are computed across every available method.  Runs evaluated against a
-    different-sized heldout set are skipped with a warning inside
-    compute_best_returns.
+    are computed across every available method.
     """
     specs: list[tuple] = []
     seen_run_ids: set[str] = set()
 
-    def _add(method_name: str, run_id):
+    def _add(method_name: str, run_id, teammate_type: str | None = None):
         if not run_id:
             return
         key = "+".join(run_id if isinstance(run_id, list) else [run_id])
         if key in seen_run_ids:
             return
         seen_run_ids.add(key)
-        specs.append((
-            METHOD_TO_DISPLAY_NAME.get(method_name, method_name),
-            run_id,
-            method_name in OEL_METHODS,
-        ))
+        specs.append(
+            (
+                _display_name(method_name, teammate_type),
+                run_id,
+                method_name in OEL_METHODS,
+            )
+        )
 
     for method_name, run_id in UNIFIED_BENCHMARK_RUNS.get(task_name, {}).items():
         _add(method_name, run_id)
 
     for method_name, teammate_runs in EGO_BENCHMARK_RUNS.get(task_name, {}).items():
-        for run_id in teammate_runs.values():
-            _add(method_name, run_id)
+        for teammate_type, run_id in teammate_runs.items():
+            _add(method_name, run_id, teammate_type)
 
     return specs
 
 
 def build_bc_run_specs(task_name: str) -> list[tuple[str, str, bool]]:
-    """Collect (display_name, run_id, is_oel) tuples from BC_BENCHMARK_RUNS for a task.
+    """Collect (display_name, bc_run_id, is_oel) tuples from BC_BENCHMARK_RUNS.
 
-    Each cell evaluates one ego against the BC partner(s) for that task. All
-    cells share the same heldout-set (the bc_proxy entry), so their eval-metric
-    artifacts have the same partner axis and can be aggregated by the standard
-    compute_best_returns pipeline.
+    Display names must match those produced by ``build_run_specs`` so the
+    loader can pair each benchmark run with its separate BC evaluation. Only
+    runs whose own heldout set lacks the human proxy actually use them.
     """
     specs: list[tuple] = []
-    seen: set[str] = set()
-    for method_name, teammate_runs in BC_BENCHMARK_RUNS.get(task_name, {}).items():
-        for run_id in teammate_runs.values():
-            if not run_id or run_id in seen:
+    for method_name, entry in BC_BENCHMARK_RUNS.get(task_name, {}).items():
+        items = entry.items() if isinstance(entry, dict) else [(None, entry)]
+        for teammate_type, run_id in items:
+            if not run_id:
                 continue
-            seen.add(run_id)
-            specs.append((
-                METHOD_TO_DISPLAY_NAME.get(method_name, method_name),
-                run_id,
-                method_name in OEL_METHODS,
-            ))
+            specs.append(
+                (
+                    _display_name(method_name, teammate_type),
+                    run_id,
+                    method_name in OEL_METHODS,
+                )
+            )
     return specs
 
 
@@ -80,15 +91,16 @@ def main():
         description="Recompute best-returns cache from local wandb artifact pickles"
     )
     parser.add_argument(
-        "--tasks", nargs="+",
+        "--tasks",
+        nargs="+",
         help="Tasks to recompute (default: all tasks with benchmark runs)",
     )
     parser.add_argument(
-        "--include_bc", action="store_true",
-        help="In default mode, also compute best_returns from BC_BENCHMARK_RUNS "
-             "and append them to the per-metric arrays so the bounds-gap plot "
-             "shows BC partners at the end of each task panel (matching the "
-             "live yaml's bc_proxy entry order).",
+        "--include_bc",
+        action="store_true",
+        help="Also merge the separate BC heldout evals (BC_BENCHMARK_RUNS) into runs "
+        "whose own heldout set lacks the human proxy, so the human_proxy entry "
+        "of the best returns covers every method.",
     )
     args = parser.parse_args()
 
@@ -100,11 +112,14 @@ def main():
         if not run_specs:
             print(f"No benchmark runs configured for '{task_name}', skipping.")
             continue
-        print(f"\n{'='*60}")
+        bc_specs = build_bc_run_specs(task_name) if args.include_bc else None
+        print(f"\n{'=' * 60}")
         print(f"Recomputing best returns for: {task_name}")
         print(f"  {len(run_specs)} run spec(s): {[s[0] for s in run_specs]}")
+        if bc_specs:
+            print(f"  {len(bc_specs)} BC eval run(s) available for merging")
         safe = task_name.replace("/", "__")
-        old_br = load_best_returns(
+        best_returns = load_best_returns(
             task_name,
             run_specs,
             entity=ENTITY,
@@ -112,32 +127,16 @@ def main():
             cache_dir=DEFAULT_CACHE_DIR,
             force_recompute=True,
             cache_filename=f"{safe}.json",
+            bc_run_specs=bc_specs,
         )
-
-        if args.include_bc:
-            bc_specs = build_bc_run_specs(task_name)
-            if not bc_specs:
-                print(f"  --include_bc: no BC runs registered for '{task_name}', leaving as-is.")
+        labels = best_returns["_labels"]
+        for metric, values in best_returns.items():
+            if metric.startswith("_"):
                 continue
-            print(f"  --include_bc: appending BC best_returns from {len(bc_specs)} run(s)")
-            bc_br = compute_best_returns(
-                task_name, bc_specs, entity=ENTITY,
-                project=BENCHMARK_PROJECT, cache_dir=DEFAULT_CACHE_DIR,
-            )
-            # Restrict to bc_run_0 only for overcooked (5 BC partners → 1).
-            if "overcooked" in task_name:
-                bc_br = {k: v[:1] for k, v in bc_br.items()}
-            merged = {}
-            for metric in set(old_br) | set(bc_br):
-                old_vals = list(old_br.get(metric, []))
-                bc_vals = list(bc_br.get(metric, []))
-                merged[metric] = old_vals + bc_vals
-            merged_path = Path(DEFAULT_CACHE_DIR) / "best_returns" / f"{safe}.json"
-            with open(merged_path, "w") as f:
-                json.dump(merged, f, indent=2)
-            lens = {m: len(v) for m, v in merged.items()}
-            print(f"  wrote merged (old+BC) best returns -> {merged_path}  "
-                  f"(per-metric lengths: {lens})")
+            missing = [lbl for lbl, v in zip(labels, values) if v is None]
+            if missing:
+                print(f"  WARNING: no best return for {metric} partners {missing}")
+        print(f"  {len(labels)} partners: {labels}")
 
 
 if __name__ == "__main__":

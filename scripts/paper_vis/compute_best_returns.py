@@ -9,86 +9,36 @@ Normalization pipeline:
      so that 1.0 corresponds to the best observed performance.
 
 Performance bounds are read from each run's wandb config (not from the live
-codebase) to ensure reproducibility across config changes.
+codebase) to ensure reproducibility across config changes. Partners are matched
+across runs *by name* (see ``heldout_partners``), so runs evaluated against
+different-sized heldout sets (e.g. with/without the human proxy) contribute to
+the same per-partner maxima. The cached JSON lists best returns in the live
+yaml's partner order (``_labels`` key) so that older consumers indexing by
+position keep working.
 """
+
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from scripts.paper_vis.plot_globals import BENCHMARK_PROJECT, ENTITY
-from scripts.wandb_utils.wandb_cache import (
-    DEFAULT_CACHE_DIR,
-    fetch_run_config_cached,
-    fetch_run_eval_metrics_cached,
+from scripts.paper_vis.heldout_partners import (
+    canonical_task_labels,
+    load_run_eval_metrics,
 )
-
-
-# ---------------------------------------------------------------------------
-# Performance-bounds helpers
-# ---------------------------------------------------------------------------
-
-def get_performance_bounds_from_run_config(run_config: dict, task_name: str) -> List[Optional[dict]]:
-    """Extract per-heldout-agent performance bounds from a wandb run config.
-
-    Iterates over the heldout set config in the same order that
-    ``load_heldout_set`` would, producing one bounds-dict per individual agent
-    (i.e. one entry per model checkpoint for RL agents, one entry for each
-    heuristic agent).
-
-    Returns:
-        List of dicts ``{metric_name: [lower, upper]}``, one per heldout agent,
-        in the same order as the heldout-agent dimension of the eval metrics.
-        Entries are ``None`` when no bounds are defined.
-    """
-    heldout_set_config = run_config.get("heldout_set", {}).get(task_name, {})
-    if not heldout_set_config:
-        raise ValueError(
-            f"No heldout_set config found for task '{task_name}' in run config. "
-            f"Available tasks: {list(run_config.get('heldout_set', {}).keys())}"
-        )
-
-    bounds_list = []
-    for agent_config in heldout_set_config.values():
-        performance_bounds = agent_config.get("performance_bounds", None)
-
-        if "path" in agent_config:
-            # RL agent — one entry per model checkpoint
-            idx_list = agent_config.get("idx_list", [])
-            n_models = len(idx_list)
-
-            if performance_bounds is None:
-                bounds_list.extend([None] * n_models)
-                continue
-
-            # Detect whether bounds are per-model (list-of-lists) or shared
-            first_val = next(iter(performance_bounds.values()))
-            per_model = isinstance(first_val[0], (list, tuple))
-
-            for i in range(n_models):
-                if per_model:
-                    bounds_list.append({k: v[i] for k, v in performance_bounds.items()})
-                else:
-                    bounds_list.append({k: v for k, v in performance_bounds.items()})
-        else:
-            # Heuristic agent — single entry
-            bounds_list.append(
-                {k: v for k, v in performance_bounds.items()} if performance_bounds else None
-            )
-
-    return bounds_list
-
+from scripts.paper_vis.plot_globals import BENCHMARK_PROJECT, ENTITY
+from scripts.wandb_utils.wandb_cache import DEFAULT_CACHE_DIR
 
 # ---------------------------------------------------------------------------
 # Per-run returns extraction
 # ---------------------------------------------------------------------------
 
+
 def extract_returns_for_run(
     eval_metrics: dict,
-    perf_bounds: List[Optional[dict]],
+    perf_bounds: list[dict | None],
     is_oel: bool,
-) -> Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+) -> dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """Unnormalize eval metrics and compute the best mean return per heldout agent.
 
     Returns:
@@ -105,7 +55,9 @@ def extract_returns_for_run(
 
         if is_oel:
             if data.ndim != 5:
-                print(f"Warning: expected 5-D OEL data for {metric_name}, got {data.ndim}-D. Skipping.")
+                print(
+                    f"Warning: expected 5-D OEL data for {metric_name}, got {data.ndim}-D. Skipping."
+                )
                 continue
             num_heldout = data.shape[2]
 
@@ -152,7 +104,9 @@ def extract_returns_for_run(
                 mean_returns[h] = mean_over_eps[s, h]
                 best_seed_idx[h] = s
         else:
-            print(f"Warning: unexpected data shape {data.shape} for {metric_name}. Skipping.")
+            print(
+                f"Warning: unexpected data shape {data.shape} for {metric_name}. Skipping."
+            )
             continue
 
         results[metric_name] = (mean_returns, best_seed_idx, best_iter_idx)
@@ -164,118 +118,117 @@ def extract_returns_for_run(
 # Best-returns computation and caching
 # ---------------------------------------------------------------------------
 
+
 def compute_best_returns(
     task_name: str,
-    all_run_specs: List[Tuple[str, str, bool]],
+    all_run_specs: list[tuple[str, str, bool]],
     entity: str = ENTITY,
     project: str = BENCHMARK_PROJECT,
     cache_dir: Path = DEFAULT_CACHE_DIR,
+    bc_run_specs: list[tuple[str, str, bool]] | None = None,
 ) -> dict:
-    """Compute the best unnormalized return per heldout agent across all runs.
+    """Compute the best unnormalized return per heldout partner across all runs.
 
-    The best returns are guaranteed to be at least as high as each agent's
+    Partners are matched by name across runs, so a run that lacks the human
+    proxy simply contributes nothing to that partner's maximum. ``bc_run_specs``
+    (display_name -> BC eval run id) lets runs without a built-in human proxy
+    contribute their separate BC evaluation.
+
+    The best returns are guaranteed to be at least as high as each partner's
     original upper bound (so that re-normalization never makes results look
     worse than the original normalization).
 
     Returns:
-        Dict mapping metric_name -> list of best returns (one per heldout agent)
+        Dict mapping metric_name -> list of best returns, in the order given by
+        the ``_labels`` entry (the live yaml's canonical partner order).
     """
-    best_returns: Dict[str, np.ndarray] = {}
-    original_upper_bounds: Dict[str, List[float]] = {}
+    bc_by_name = {dn: rid for dn, rid, _ in (bc_run_specs or [])}
+    best: dict[str, dict[str, float]] = {}
+    original_upper: dict[str, dict[str, float]] = {}
 
     for display_name, run_id, is_oel in all_run_specs:
         if not run_id:
             continue
-
         run_ids = run_id if isinstance(run_id, list) else [run_id]
         print(f"\nProcessing {display_name} (run {'+'.join(run_ids)}) ...")
-        parts = [fetch_run_eval_metrics_cached(rid, entity, project, cache_dir) for rid in run_ids]
-        if len(parts) == 1:
-            eval_metrics = parts[0]
-        else:
-            eval_metrics = {
-                k: np.concatenate([p[k] for p in parts], axis=0)
-                for k in parts[0]
-            }
-        run_config = fetch_run_config_cached(run_ids[0], entity, project, cache_dir)
-        perf_bounds = get_performance_bounds_from_run_config(run_config, task_name)
+        eval_metrics, labels, perf_bounds, _ = load_run_eval_metrics(
+            task_name,
+            run_id,
+            is_oel,
+            cache_dir=cache_dir,
+            bc_run_id=bc_by_name.get(display_name),
+        )
 
-        # Record maximum upper bound per agent across all runs
-        for h, bounds in enumerate(perf_bounds):
-            if bounds:
-                for metric_name, (lo, hi) in bounds.items():
-                    if metric_name not in original_upper_bounds:
-                        original_upper_bounds[metric_name] = []
-                    if h >= len(original_upper_bounds[metric_name]):
-                        original_upper_bounds[metric_name].append(hi)
-                    else:
-                        original_upper_bounds[metric_name][h] = max(
-                            original_upper_bounds[metric_name][h], hi
-                        )
+        for label, bounds in zip(labels, perf_bounds):
+            if not bounds:
+                continue
+            for metric_name, (_lo, hi) in bounds.items():
+                cur = original_upper.setdefault(metric_name, {})
+                cur[label] = max(cur.get(label, hi), hi)
 
         returns_data = extract_returns_for_run(eval_metrics, perf_bounds, is_oel)
-
-        # Determine reference heldout count from the first metric of this run
-        if returns_data:
-            sample_metric = next(iter(returns_data))
-            run_n_heldout = len(returns_data[sample_metric][0])
-            if best_returns:
-                ref_n_heldout = len(next(iter(best_returns.values())))
-                if run_n_heldout != ref_n_heldout:
-                    print(
-                        f"  WARNING: skipping {display_name} — heldout agent count "
-                        f"{run_n_heldout} != expected {ref_n_heldout} "
-                        f"(run was evaluated against a different heldout set)"
-                    )
-                    continue
-
         for metric_name, (cur_returns, _, _) in returns_data.items():
-            if metric_name not in best_returns:
-                best_returns[metric_name] = cur_returns.copy()
-            else:
-                best_returns[metric_name] = np.maximum(best_returns[metric_name], cur_returns)
+            cur = best.setdefault(metric_name, {})
+            for label, value in zip(labels, cur_returns):
+                cur[label] = max(cur.get(label, -np.inf), float(value))
 
-    if not best_returns:
+    if not best:
         raise ValueError(f"No valid returns found for task '{task_name}'.")
 
     # Ensure best returns are at least as high as the original upper bounds
-    for metric_name, values in best_returns.items():
-        uppers = original_upper_bounds.get(metric_name, [])
-        for i in range(min(len(values), len(uppers))):
-            if values[i] < uppers[i]:
+    for metric_name, values in best.items():
+        for label, hi in original_upper.get(metric_name, {}).items():
+            if label in values and values[label] < hi:
                 print(
-                    f"Clamping best return for heldout agent {i}, {metric_name}: "
-                    f"{values[i]:.4f} → {uppers[i]:.4f}"
+                    f"Clamping best return for heldout agent {label}, {metric_name}: "
+                    f"{values[label]:.4f} -> {hi:.4f}"
                 )
-                values[i] = uppers[i]
+                values[label] = hi
 
-    return {k: v.tolist() for k, v in best_returns.items()}
+    canonical = canonical_task_labels(task_name)
+    extra = sorted({lbl for v in best.values() for lbl in v} - set(canonical))
+    if extra:
+        print(f"WARNING: partners not in live yaml for {task_name}: {extra}")
+    labels_out = canonical + extra
+    out = {
+        metric_name: [values.get(lbl) for lbl in labels_out]
+        for metric_name, values in best.items()
+    }
+    out["_labels"] = labels_out
+    return out
 
 
-def _run_specs_fingerprint(all_run_specs: List[Tuple[str, str, bool]]) -> str:
-    """Stable short hash over the run IDs in all_run_specs.
+def _run_specs_fingerprint(
+    all_run_specs: list[tuple[str, str, bool]],
+    bc_run_specs: list[tuple[str, str, bool]] | None = None,
+) -> str:
+    """Stable short hash over the run IDs in all_run_specs (and BC run IDs).
 
     Ego and unified plots pass different run_specs for the same task, so the
     best-returns cache must be keyed on run IDs as well as task name to avoid
     cross-contamination between plot types.
     """
     import hashlib
+
     run_ids_str = "|".join(
         ("+".join(rid) if isinstance(rid, list) else rid)
         for _, rid, _ in all_run_specs
         if rid
     )
+    if bc_run_specs:
+        run_ids_str += "|bc:" + "|".join(rid for _, rid, _ in bc_run_specs if rid)
     return hashlib.md5(run_ids_str.encode()).hexdigest()[:8]
 
 
 def load_best_returns(
     task_name: str,
-    all_run_specs: List[Tuple[str, str, bool]],
+    all_run_specs: list[tuple[str, str, bool]],
     entity: str = ENTITY,
     project: str = BENCHMARK_PROJECT,
     cache_dir: Path = DEFAULT_CACHE_DIR,
     force_recompute: bool = False,
-    cache_filename: Optional[str] = None,
+    cache_filename: str | None = None,
+    bc_run_specs: list[tuple[str, str, bool]] | None = None,
 ) -> dict:
     """Return cached best returns, computing and caching them if necessary.
 
@@ -287,15 +240,22 @@ def load_best_returns(
     if cache_filename:
         cache_path = Path(cache_dir) / "best_returns" / cache_filename
     else:
-        fingerprint = _run_specs_fingerprint(all_run_specs)
-        cache_path = Path(cache_dir) / "best_returns" / f"{safe_task}__{fingerprint}.json"
+        fingerprint = _run_specs_fingerprint(all_run_specs, bc_run_specs)
+        cache_path = (
+            Path(cache_dir) / "best_returns" / f"{safe_task}__{fingerprint}.json"
+        )
 
     if not force_recompute and cache_path.exists():
-        print(f"Loading best returns from cache: {cache_path}")
         with open(cache_path, "r") as f:
-            return json.load(f)
+            cached = json.load(f)
+        if "_labels" in cached:
+            print(f"Loading best returns from cache: {cache_path}")
+            return cached
+        print(f"Best-returns cache {cache_path} predates named partners; recomputing.")
 
-    best_returns = compute_best_returns(task_name, all_run_specs, entity, project, cache_dir)
+    best_returns = compute_best_returns(
+        task_name, all_run_specs, entity, project, cache_dir, bc_run_specs=bc_run_specs
+    )
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_path, "w") as f:
         json.dump(best_returns, f, indent=2)
@@ -308,7 +268,9 @@ def load_best_returns(
         for f in stale_files:
             f.unlink()
         if stale_files:
-            print(f"Deleted {len(stale_files)} stale renorm cache file(s) in {stale_dir}")
+            print(
+                f"Deleted {len(stale_files)} stale renorm cache file(s) in {stale_dir}"
+            )
 
     return best_returns
 
@@ -317,22 +279,26 @@ def load_best_returns(
 # Renormalization
 # ---------------------------------------------------------------------------
 
+
 def renormalize_eval_metrics(
     eval_metrics: dict,
-    perf_bounds: List[Optional[dict]],
+    perf_bounds: list[dict | None],
     best_returns: dict,
+    labels: list[str],
 ) -> dict:
     """Unnormalize eval metrics then renormalize by best observed returns.
 
     Args:
         eval_metrics: raw (already normalized) arrays from wandb artifact
-        perf_bounds: per-heldout-agent bounds from ``get_performance_bounds_from_run_config``
-        best_returns: dict metric_name -> list of best returns per agent
+        perf_bounds: per-partner bounds aligned with ``labels``
+        best_returns: output of ``compute_best_returns`` (has a ``_labels`` key)
+        labels: partner labels along the artifact's partner axis
 
     Returns:
         dict with the same keys as eval_metrics, values rescaled so that 1.0
-        corresponds to the best observed return for each heldout agent.
+        corresponds to the best observed return for each heldout partner.
     """
+    br_labels = best_returns["_labels"]
     renorm = {}
 
     for metric_name, data in eval_metrics.items():
@@ -340,13 +306,13 @@ def renormalize_eval_metrics(
         out = np.copy(data)
 
         if data.ndim == 5:
-            num_heldout = data.shape[2]
             heldout_dim = 2
         elif data.ndim == 4:
-            num_heldout = data.shape[1]
             heldout_dim = 1
         else:
-            print(f"Warning: unexpected shape {data.shape} for {metric_name}. Keeping original.")
+            print(
+                f"Warning: unexpected shape {data.shape} for {metric_name}. Keeping original."
+            )
             renorm[metric_name] = data
             continue
 
@@ -354,18 +320,23 @@ def renormalize_eval_metrics(
             renorm[metric_name] = data
             continue
 
-        br = best_returns[metric_name]
-        agents_to_process = min(num_heldout, len(perf_bounds), len(br))
+        br = dict(zip(br_labels, best_returns[metric_name]))
+        num_heldout = data.shape[heldout_dim]
+        if num_heldout != len(labels):
+            raise ValueError(
+                f"{metric_name}: {num_heldout} partners in data but {len(labels)} labels"
+            )
 
-        for h in range(agents_to_process):
-            bounds = perf_bounds[h]
+        for h, (label, bounds) in enumerate(zip(labels, perf_bounds)):
             if not bounds or metric_name not in bounds:
                 continue
-            lo, hi = bounds[metric_name]
-            best = br[h]
-            if best <= 0:
-                print(f"Warning: best_return={best} for {metric_name} agent {h}. Keeping original.")
+            best = br.get(label)
+            if best is None or best <= 0:
+                print(
+                    f"Warning: no usable best_return for {metric_name} partner '{label}'. Keeping original."
+                )
                 continue
+            lo, hi = bounds[metric_name]
 
             if heldout_dim == 2:
                 raw = data[:, :, h, :, :] * (hi - lo) + lo

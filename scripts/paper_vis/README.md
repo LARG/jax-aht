@@ -27,13 +27,25 @@ PYTHONPATH=. python scripts/paper_vis/benchmark_bar_charts.py --plot_type ego --
 
 **Key flags:**
 - `--use_best_returns_normalization` (default true) — renormalize by the best observed return per heldout agent instead of the original per-agent bounds
-- `--include_bc` (default false) — include BC evaluation results (where available) in the benchmark
+- `--include_bc` (default false) — ensure the human proxy (BC) teammate is part of every method's heldout set. iclr26-era runs already evaluate against `human_proxy` as part of the heldout set; for older runs that lack it, the separate BC eval run listed in `BC_BENCHMARK_RUNS` is appended at plot time. The script prints a per-cell coverage report (`builtin` / `bc_merge` / `MISSING`) at the end
 - `--filter_failed_seeds` (default false) — filter out failed seeds
 - `--tasks lbf/lbf_7x7_nolevels overcooked-v1/cramped_room` — restrict to specific tasks
-- `--force_recompute` — recompute summary stats from cached wandb artifacts (does not re-download from wandb)
+- `--force_recompute` — re-download eval artifacts from wandb and recompute best returns and summary stats (normally unnecessary: caches are keyed by run IDs and invalidated automatically)
 - `--save_dir PATH` — override output directory (default: `results/figures/`)
 
 Figures are saved as PDFs to `results/figures/`.
+
+### Heldout partner alignment
+
+Runs may differ in their heldout sets (e.g. 17 vs 18 partners when `human_proxy`
+was added), and the wandb run config does not preserve the heldout-set order, so
+partners are identified **by name** rather than by index. The partner order for
+each run is read from its logged `HeldoutEval/FinalEgoVsHeldout-*-CI` table
+(cached under `results/figures/cache/run_heldout_names/`), and per-partner
+bounds are looked up by name in the run config. See
+[heldout_partners.py](heldout_partners.py). Best returns, renormalization, and
+BC merging all operate on these named partners, so runs with different heldout
+sets can be compared as long as their common partners share names.
 
 ---
 
@@ -58,8 +70,10 @@ best-seen BR exceeds it.
 Performance bounds stored in `global_heldout_settings.yaml` are the original
 normalization maxima used at evaluation time. `compute_best_returns.py` scans
 all benchmark runs for each task and computes the highest return actually
-observed for each heldout agent, caching results in
-`results/figures/cache/best_returns/<task>.json`.
+observed for each heldout agent (by name), caching results in
+`results/figures/cache/best_returns/<task>.json` together with a `_labels`
+list giving the partner order. Pass `--include_bc` to also scan the separate
+BC eval runs for methods whose heldout set lacks `human_proxy`.
 
 To force recomputation from locally cached wandb artifacts (re-downloads from
 wandb only for runs not yet cached locally):
