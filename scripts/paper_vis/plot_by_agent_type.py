@@ -269,7 +269,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tasks",
         nargs="+",
-        help="Tasks to plot (default: unified-run tasks minus PAPER_EXCLUDED_TASKS)",
+        help="Tasks to plot (default: PAPER_TASKS)",
     )
     parser.add_argument(
         "--use_best_returns_normalization",

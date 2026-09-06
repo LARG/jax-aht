@@ -355,21 +355,23 @@ FILTERED_HYPERPARAMETER_KV = {
 }
 
 ####### PLOTTING SETTINGS #######
-# Tasks held out of this paper revision's figures (kept in the run tables above so
-# they can be re-enabled later). Pass --tasks explicitly to plot them anyway.
-PAPER_EXCLUDED_TASKS = {
-    "overcooked-v1/asymm_advantages",
-    "overcooked-v1/counter_circuit",
-    "overcooked-v1/forced_coord",
-}
+# Tasks included in this paper revision's figures (the NeurIPS task set). Runs for other
+# tasks stay in the tables above; pass --tasks explicitly to plot them.
+PAPER_TASKS = [
+    "lbf/lbf_12x12",
+    "lbf/lbf_7x7_nolevels",
+    "mini-hanabi",
+    "overcooked-v1/coord_ring",
+    "overcooked-v1/cramped_room",
+]
 
 
 def paper_tasks(*run_tables):
-    """Sorted tasks present in any of the given run tables, minus PAPER_EXCLUDED_TASKS."""
-    tasks = set()
+    """PAPER_TASKS (in order) that appear in at least one of the given run tables."""
+    available = set()
     for table in run_tables:
-        tasks |= set(table)
-    return sorted(tasks - PAPER_EXCLUDED_TASKS)
+        available |= set(table)
+    return [t for t in PAPER_TASKS if t in available]
 
 
 TASK_TO_PLOT_TITLE = {

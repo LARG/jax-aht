@@ -94,7 +94,7 @@ def main():
     parser.add_argument(
         "--tasks",
         nargs="+",
-        help="Tasks to recompute (default: benchmark tasks minus PAPER_EXCLUDED_TASKS)",
+        help="Tasks to recompute (default: PAPER_TASKS)",
     )
     parser.add_argument(
         "--include_bc",

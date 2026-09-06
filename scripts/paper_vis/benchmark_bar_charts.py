@@ -388,7 +388,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tasks",
         nargs="+",
-        help="Tasks to plot. Defaults to all tasks with benchmark runs except PAPER_EXCLUDED_TASKS.",
+        help="Tasks to plot. Defaults to PAPER_TASKS.",
     )
     parser.add_argument(
         "--force_recompute",
@@ -422,7 +422,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Tasks with at least one benchmark run, minus this revision's excluded tasks
+    # This revision's paper tasks that have benchmark runs
     task_list = (
         args.tasks
         if args.tasks
