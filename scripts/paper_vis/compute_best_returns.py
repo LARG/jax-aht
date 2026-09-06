@@ -216,7 +216,11 @@ def _run_specs_fingerprint(
         if rid
     )
     if bc_run_specs:
-        run_ids_str += "|bc:" + "|".join(rid for _, rid, _ in bc_run_specs if rid)
+        run_ids_str += "|bc:" + "|".join(
+            ("+".join(rid) if isinstance(rid, list) else rid)
+            for _, rid, _ in bc_run_specs
+            if rid
+        )
     return hashlib.md5(run_ids_str.encode()).hexdigest()[:8]
 
 

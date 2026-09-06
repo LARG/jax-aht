@@ -23,6 +23,7 @@ import numpy as np
 from scripts.paper_vis.heldout_partners import is_human_proxy
 from scripts.paper_vis.plot_globals import (
     AXIS_LABEL_FONTSIZE,
+    BC_BENCHMARK_RUNS,
     GLOBAL_HELDOUT_CONFIG,
     LEGEND_FONTSIZE,
     METHOD_TO_DISPLAY_NAME,
@@ -155,16 +156,17 @@ def plot_tasks(
     all_method_names = None
     for task_name in task_list:
         run_specs = []
+        bc_run_specs = []
         for method_name, run_id in UNIFIED_BENCHMARK_RUNS.get(task_name, {}).items():
             if not run_id:
                 continue
-            run_specs.append(
-                (
-                    METHOD_TO_DISPLAY_NAME.get(method_name, method_name),
-                    run_id,
-                    method_name in OEL_METHODS,
-                )
-            )
+            display_name = METHOD_TO_DISPLAY_NAME.get(method_name, method_name)
+            is_oel = method_name in OEL_METHODS
+            run_specs.append((display_name, run_id, is_oel))
+            # Separate human-proxy eval for runs whose own heldout set lacks it
+            bc_run_id = BC_BENCHMARK_RUNS.get(task_name, {}).get(method_name)
+            if bc_run_id and not isinstance(bc_run_id, dict):
+                bc_run_specs.append((display_name, bc_run_id, is_oel))
 
         if not run_specs:
             print(f"No runs found for task {task_name}, skipping.")
@@ -175,6 +177,7 @@ def plot_tasks(
             run_specs,
             force_recompute=force_recompute,
             renormalize_metrics=use_best_returns_normalization,
+            bc_run_specs=bc_run_specs,
         )
 
         metric_name = TASK_TO_METRIC_NAME.get(task_name, "returned_episode_returns")

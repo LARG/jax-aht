@@ -1,24 +1,31 @@
 """Stores hard-coded variables for paper plots."""
+
 import omegaconf
 
 SAVE_DIR = "results/figures"
 ENTITY = "aht-project"
-####### AGENT TYPE SUBSTRINGS #### 
+####### AGENT TYPE SUBSTRINGS ####
 HEURISTIC_AGENTS = [
     # LBF
-    "seq_agent*", "entitled_agent", "greedy_",
+    "seq_agent*",
+    "entitled_agent",
+    "greedy_",
     # Overcooked
-    "independent", "onion", "plate", 
+    "independent",
+    "onion",
+    "plate",
     # Hanabi
-    "iggi", "piers", "flawed", "outer", "van_den_bergh", 
-    "smartbot", "cautious", "internal"
+    "iggi",
+    "piers",
+    "flawed",
+    "outer",
+    "van_den_bergh",
+    "smartbot",
+    "cautious",
+    "internal",
 ]
-RL_AGENTS = [
-    "comedi", "lbrdiv", "ippo", "brdiv", "obl"
-]
-HUMAN_PROXY_AGENTS = [
-    "human_proxy"
-]
+RL_AGENTS = ["comedi", "lbrdiv", "ippo", "brdiv", "obl"]
+HUMAN_PROXY_AGENTS = ["human_proxy"]
 ####### BENCHMARK RUNS #######
 BENCHMARK_PROJECT = "aht-benchmark"
 # Run ids by campaign wandb tag (project aht-benchmark), refreshed 2026-09-06.
@@ -37,7 +44,11 @@ EGO_BENCHMARK_RUNS = {
         },
         "meliba": {
             "fcp_teammates": ["ernydfeu", "isx6v5kf", "m04si2f5"],  # iclr26, 10 seeds
-            "comedi_teammates": ["2gs98nrk", "sadapb3o", "pxsx1ahd"],  # iclr26, 10 seeds
+            "comedi_teammates": [
+                "2gs98nrk",
+                "sadapb3o",
+                "pxsx1ahd",
+            ],  # iclr26, 10 seeds
         },
     },
     "lbf/lbf_12x12": {
@@ -51,7 +62,11 @@ EGO_BENCHMARK_RUNS = {
         },
         "meliba": {
             "fcp_teammates": ["t8v125ba", "2swcrf3y", "af08h0sw"],  # iclr26, 10 seeds
-            "comedi_teammates": ["lw7cmntl", "gxk4t9ee", "xgi1oqro"],  # iclr26, 10 seeds
+            "comedi_teammates": [
+                "lw7cmntl",
+                "gxk4t9ee",
+                "xgi1oqro",
+            ],  # iclr26, 10 seeds
         },
     },
     "overcooked-v1/cramped_room": {
@@ -65,7 +80,11 @@ EGO_BENCHMARK_RUNS = {
         },
         "meliba": {
             "fcp_teammates": ["sjkmr2co", "9kvtltg8", "7gqbc2gd"],  # iclr26, 10 seeds
-            "comedi_teammates": ["ikbqpjaq", "6hyan548", "5mx43y3q"],  # iclr26, 10 seeds
+            "comedi_teammates": [
+                "ikbqpjaq",
+                "6hyan548",
+                "5mx43y3q",
+            ],  # iclr26, 10 seeds
         },
     },
     "overcooked-v1/coord_ring": {
@@ -79,7 +98,11 @@ EGO_BENCHMARK_RUNS = {
         },
         "meliba": {
             "fcp_teammates": ["vjvs7uug", "0b27ry3j", "8bpn86ss"],  # iclr26, 10 seeds
-            "comedi_teammates": ["vt2edaa7", "p0rv1ege", "ins39ls1"],  # iclr26, 10 seeds
+            "comedi_teammates": [
+                "vt2edaa7",
+                "p0rv1ege",
+                "ins39ls1",
+            ],  # iclr26, 10 seeds
         },
     },
     "overcooked-v1/asymm_advantages": {
@@ -121,21 +144,50 @@ EGO_BENCHMARK_RUNS = {
         },
         "meliba": {
             "fcp_teammates": ["obtdbm9y", "z7pmvhj7", "tv16ua4v"],  # iclr26, 10 seeds
-            "comedi_teammates": ["r5e8vlp7", "giim6lb3", "gnocl630"],  # iclr26, 10 seeds
+            "comedi_teammates": [
+                "r5e8vlp7",
+                "giim6lb3",
+                "gnocl630",
+            ],  # iclr26, 10 seeds
         },
     },
     "mini-hanabi": {
         "ppo_ego": {
-            "fcp_teammates": ["hkoidsa0", "rflrtlzo", "719okso0", "6s91gqf5"],  # neurips, 5 seeds
-            "comedi_teammates": ["g61afu52", "7rpmb6ie", "70d2c8v2", "38pn9msz"],  # neurips
+            "fcp_teammates": [
+                "hkoidsa0",
+                "rflrtlzo",
+                "719okso0",
+                "6s91gqf5",
+            ],  # neurips, 5 seeds
+            "comedi_teammates": [
+                "g61afu52",
+                "7rpmb6ie",
+                "70d2c8v2",
+                "38pn9msz",
+            ],  # neurips
         },
         "liam": {
-            "fcp_teammates": ["gr03b106", "5ab05qxj", "0hwgmfj3", "lwpl8w6x"],  # neurips, 5 seeds
-            "comedi_teammates": ["x0ckfnlv", "b2by5off", "72at5w6x", "tq4fcjh4", "6sig81om"],  # neurips
+            "fcp_teammates": [
+                "gr03b106",
+                "5ab05qxj",
+                "0hwgmfj3",
+                "lwpl8w6x",
+            ],  # neurips, 5 seeds
+            "comedi_teammates": [
+                "x0ckfnlv",
+                "b2by5off",
+                "72at5w6x",
+                "tq4fcjh4",
+                "6sig81om",
+            ],  # neurips
         },
         "meliba": {
             "fcp_teammates": ["3pu1t8gw", "azrmgwkw", "es6t0hbh"],  # iclr26, 10 seeds
-            "comedi_teammates": ["lza9gtk4", "mtx7yx4l", "9vh5ul08"],  # iclr26, 10 seeds
+            "comedi_teammates": [
+                "lza9gtk4",
+                "mtx7yx4l",
+                "9vh5ul08",
+            ],  # iclr26, 10 seeds
         },
     },
 }
@@ -146,27 +198,44 @@ EGO_BENCHMARK_RUNS = {
 # the BC partner(s) for its task: 5 BC partners (overcooked) or 1 (LBF).
 # When --include-bc is passed to benchmark_bar_charts.py, these artifacts are
 # merged with the standard heldout-eval ones before the reducer runs.
-# Generated 2026-05-06 via evaluation/run_heldout_ego_bc.py at NUM_EVAL_EPISODES=64.
+# Ego-method cells (ppo_ego/liam/meliba, keyed by teammate type) were generated
+# 2026-05-06 via evaluation/run_heldout_ego_bc.py at NUM_EVAL_EPISODES=64.
+# Teammate-generation cells (fcp/brdiv/lbrdiv/comedi, plain ids) were generated
+# 2026-09-06 via evaluation/run_heldout_ego_human_proxy.py for the neurips-era
+# UNIFIED_BENCHMARK_RUNS whose heldout set predates `human_proxy`; a list entry
+# pairs one eval per pooled source run, in the same order.
 BC_BENCHMARK_RUNS = {
     "lbf/lbf_7x7_nolevels": {
         "ppo_ego": {"fcp_teammates": "shov7vtt", "comedi_teammates": "5bzzvtvr"},
-        "liam":    {"fcp_teammates": "rodfedo5", "comedi_teammates": "kbmgv1qy"},
-        "meliba":  {"fcp_teammates": "yfqq4r7c", "comedi_teammates": "d66eh0tt"},
+        "liam": {"fcp_teammates": "rodfedo5", "comedi_teammates": "kbmgv1qy"},
+        "meliba": {"fcp_teammates": "yfqq4r7c", "comedi_teammates": "d66eh0tt"},
+        "fcp": "wfx1j0s9",  # human_proxy eval of 1bhjc1ri
+        "lbrdiv": "fakllgwc",  # human_proxy eval of jj2ycq8o
+        "comedi": "w9i929ds",  # human_proxy eval of us4jl8ch
     },
     "lbf/lbf_12x12": {
         "ppo_ego": {"fcp_teammates": "lgqum8kt", "comedi_teammates": "t7idtlm9"},
-        "liam":    {"fcp_teammates": "dhr9hjgo", "comedi_teammates": "pwuy5p46"},
-        "meliba":  {"fcp_teammates": "u5yu6xvn", "comedi_teammates": "ij48l33l"},
+        "liam": {"fcp_teammates": "dhr9hjgo", "comedi_teammates": "pwuy5p46"},
+        "meliba": {"fcp_teammates": "u5yu6xvn", "comedi_teammates": "ij48l33l"},
+        "fcp": ["nsf9pl09", "tg0pevb8"],  # human_proxy evals of 1c0um2ls, 52wp5amm
+        "brdiv": "qg089f9c",  # human_proxy eval of b3xozodw
+        "lbrdiv": "hnvvgr0g",  # human_proxy eval of dft2f0do
+        "comedi": "h0d82bxk",  # human_proxy eval of 7qizaam5
     },
     "overcooked-v1/coord_ring": {
         "ppo_ego": {"fcp_teammates": "v8x87epc", "comedi_teammates": "1k2kz0ge"},
-        "liam":    {"fcp_teammates": "4k8zkd5e", "comedi_teammates": "p3a0x1gb"},
-        "meliba":  {"fcp_teammates": "gna0budi", "comedi_teammates": "0eqejvkm"},
+        "liam": {"fcp_teammates": "4k8zkd5e", "comedi_teammates": "p3a0x1gb"},
+        "meliba": {"fcp_teammates": "gna0budi", "comedi_teammates": "0eqejvkm"},
+        "fcp": "3c8cwkhv",  # human_proxy eval of ikrlj1qe
+        "lbrdiv": "tuvmnert",  # human_proxy eval of x012q7qc
     },
     "overcooked-v1/cramped_room": {
         "ppo_ego": {"fcp_teammates": "durax862", "comedi_teammates": "86yovjo6"},
-        "liam":    {"fcp_teammates": "9ni4tvq3", "comedi_teammates": "tsfrosfr"},
-        "meliba":  {"fcp_teammates": "b612ne9c", "comedi_teammates": "kvygcmqc"},
+        "liam": {"fcp_teammates": "9ni4tvq3", "comedi_teammates": "tsfrosfr"},
+        "meliba": {"fcp_teammates": "b612ne9c", "comedi_teammates": "kvygcmqc"},
+        "fcp": "atgl2e6k",  # human_proxy eval of n1mplxeg
+        "lbrdiv": "93uq3pq7",  # human_proxy eval of kfiwwxbu
+        "comedi": ["ou97oaxs", "1jaobbqz"],  # human_proxy evals of 8k97saxv, fqw407x0
     },
 }
 
@@ -181,7 +250,10 @@ UNIFIED_BENCHMARK_RUNS = {
         "trajedi": "733qoihr",  # iclr26, 5 seeds
     },
     "lbf/lbf_12x12": {
-        "fcp": ["1c0um2ls", "52wp5amm"],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
+        "fcp": [
+            "1c0um2ls",
+            "52wp5amm",
+        ],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
         "brdiv": "b3xozodw",  # neurips
         "lbrdiv": "dft2f0do",  # neurips
         "comedi": "7qizaam5",  # neurips
@@ -193,7 +265,10 @@ UNIFIED_BENCHMARK_RUNS = {
         "fcp": "n1mplxeg",  # neurips
         "brdiv": "u1hihvk2",  # iclr26, 5 seeds
         "lbrdiv": "kfiwwxbu",  # neurips
-        "comedi": ["8k97saxv", "fqw407x0"],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
+        "comedi": [
+            "8k97saxv",
+            "fqw407x0",
+        ],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
         "rotate": "egwn4951",  # neurips
         "cole": "mj2zzmzq",  # iclr26, 5 seeds
         "trajedi": "4ubrdpio",  # iclr26, 5 seeds
@@ -210,7 +285,13 @@ UNIFIED_BENCHMARK_RUNS = {
     "overcooked-v1/asymm_advantages": {
         "fcp": "waolda91",  # iclr26, 5 seeds
         "brdiv": "zmnouxfd",  # iclr26, 5 seeds
-        "lbrdiv": ["e7ui3d6b", "ua0spahs", "95xkc9e3", "6q6ixj7x", "1pr9nuhi"],  # iclr26, 5 seeds
+        "lbrdiv": [
+            "e7ui3d6b",
+            "ua0spahs",
+            "95xkc9e3",
+            "6q6ixj7x",
+            "1pr9nuhi",
+        ],  # iclr26, 5 seeds
         "comedi": "zeuzmm3p",  # iclr26, 5 seeds
         "rotate": "l9q0kchn",  # iclr26, 5 seeds
         "cole": "162sq4py",  # iclr26, 5 seeds
@@ -228,7 +309,13 @@ UNIFIED_BENCHMARK_RUNS = {
     "overcooked-v1/counter_circuit": {
         "fcp": "5v7kd2ok",  # iclr26, 5 seeds
         "brdiv": "f8tvok12",  # iclr26, 5 seeds
-        "lbrdiv": ["5iyo3iw6", "2r9gen4f", "jcg3b9c0", "ct5luwgo", "u021qxlz"],  # iclr26, 5 seeds
+        "lbrdiv": [
+            "5iyo3iw6",
+            "2r9gen4f",
+            "jcg3b9c0",
+            "ct5luwgo",
+            "u021qxlz",
+        ],  # iclr26, 5 seeds
         "comedi": "um47gdei",  # iclr26, 5 seeds
         "rotate": "8nsgv1wk",  # iclr26, 5 seeds
         "cole": "upb63g1n",  # iclr26, 5 seeds
@@ -237,7 +324,10 @@ UNIFIED_BENCHMARK_RUNS = {
     "mini-hanabi": {
         "fcp": "c5kukiyx",  # neurips
         "brdiv": "0az0sa6t",  # neurips
-        "lbrdiv": ["wv7j92rh", "fig22cpk"],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
+        "lbrdiv": [
+            "wv7j92rh",
+            "fig22cpk",
+        ],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
         "comedi": "acp6wglt",  # neurips
         "rotate": "mw1jdo7s",  # neurips
         "cole": "ffb5g4tu",  # iclr26, 5 seeds
@@ -246,28 +336,30 @@ UNIFIED_BENCHMARK_RUNS = {
 }
 
 ####### HYPERPARAMETER SWEEPS #######
-HYPERPARAM_DEFAULT_METRIC = "HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean"
+HYPERPARAM_DEFAULT_METRIC = (
+    "HeldoutEval/FinalEgoVsHeldout/returned_episode_returns/mean"
+)
 HYPERPARAM_PROJECT = "aht-parameter-sweep"
 
 HYPERPARAM_SWEEPS = {
     "lbf/lbf_7x7_nolevels": {
-        "ppo_ego": "yje7een6", 
-        "liam": "xqiaed80", 
+        "ppo_ego": "yje7een6",
+        "liam": "xqiaed80",
         "meliba": "y4ddadn8",
-        "fcp": "22cojezv", 
-        "brdiv": "d3e7c0fx", 
+        "fcp": "22cojezv",
+        "brdiv": "d3e7c0fx",
         "lbrdiv": "rni853js",
-        "comedi": "d1dt0arj", 
+        "comedi": "d1dt0arj",
         "rotate": "44c1kwu0",
         "cole": "pr0fwbdp",
         "trajedi": "13umuekr",
     },
     "lbf/lbf_12x12": {
-        "ppo_ego": "k2giuu4l", 
-        "liam": "yibcruuz", 
+        "ppo_ego": "k2giuu4l",
+        "liam": "yibcruuz",
         "meliba": "6jdo5rjv",
-        "fcp": "nivg4xvf", 
-        "brdiv": "fdg6dw1n", 
+        "fcp": "nivg4xvf",
+        "brdiv": "fdg6dw1n",
         "lbrdiv": "y23unh8y",
         "comedi": "7e9yf5zg",
         "rotate": "csg80xwm",
@@ -275,11 +367,11 @@ HYPERPARAM_SWEEPS = {
         "trajedi": "ik9juu5l",
     },
     "overcooked-v1/cramped_room": {
-        "ppo_ego": "vexvuss8", 
-        "liam": "zz9lkwdz", 
+        "ppo_ego": "vexvuss8",
+        "liam": "zz9lkwdz",
         "meliba": "dva0ffdq",
-        "fcp": "e23khyjt", 
-        "brdiv": "19gmzemf", 
+        "fcp": "e23khyjt",
+        "brdiv": "19gmzemf",
         "lbrdiv": "w8abf056",
         "comedi": "vt0xnwxc",
         "rotate": "aki2rypl",
@@ -287,13 +379,13 @@ HYPERPARAM_SWEEPS = {
         "trajedi": "okerlren",
     },
     "overcooked-v1/coord_ring": {
-        "ppo_ego": "qeafl8r7", 
-        "liam": "pbq863zp", 
+        "ppo_ego": "qeafl8r7",
+        "liam": "pbq863zp",
         "meliba": "i532vemb",
-        "fcp": "fubwmomo", 
-        "brdiv": "wgapxysb", 
+        "fcp": "fubwmomo",
+        "brdiv": "wgapxysb",
         "lbrdiv": "eu0g1orm",
-        "comedi": "xeikmue5", 
+        "comedi": "xeikmue5",
         "rotate": "df4m613k",
         "cole": "irstlaiv",
         "trajedi": "awdjju8b",
@@ -334,25 +426,21 @@ HYPERPARAM_SWEEPS = {
     },
     "mini-hanabi": {
         "ppo_ego": "y2w21bej",
-        "liam": "8t2so38u", 
+        "liam": "8t2so38u",
         "meliba": "q4z3szuh",
-        "fcp": "oku0yyg0", 
-        "brdiv": "wnnhav1m", 
+        "fcp": "oku0yyg0",
+        "brdiv": "wnnhav1m",
         "lbrdiv": "uvvpc05r",
         "comedi": "s745q3lg",
         "rotate": "ehxr5cyx",
         "cole": "158to6y5",
         "trajedi": "4uw6liu5",
-    }
+    },
 }
 
 # values that were mistakenly included in the
 # hyperparameter sweep that now need to be excluded
-FILTERED_HYPERPARAMETER_KV = {
-    "trajedi": {
-        "TRAJEDI_COEF": [0.0]
-    }
-}
+FILTERED_HYPERPARAMETER_KV = {"trajedi": {"TRAJEDI_COEF": [0.0]}}
 
 ####### PLOTTING SETTINGS #######
 # Tasks included in this paper revision's figures (the NeurIPS task set). Runs for other
@@ -394,7 +482,7 @@ TASK_TO_AXIS_DISPLAY_NAME = {
     "overcooked-v1/forced_coord": "FC",
     "overcooked-v1/counter_circuit": "CC",
     "overcooked-v1/coord_ring": "CoR",
-    "mini-hanabi": "Mini Hanabi"
+    "mini-hanabi": "Mini Hanabi",
 }
 
 METHOD_TO_DISPLAY_NAME = {
@@ -422,7 +510,7 @@ TASK_TO_DISPLAY_NAME = {
     "overcooked-v1/asymm_advantages": "Asymmetric Advantages (Overcooked)",
     "overcooked-v1/forced_coord": "Forced Coordination (Overcooked)",
     "overcooked-v1/counter_circuit": "Counter Circuit (Overcooked)",
-    "mini-hanabi": "Mini Hanabi"
+    "mini-hanabi": "Mini Hanabi",
 }
 
 TASK_TO_ENV_NAME = {
@@ -433,7 +521,7 @@ TASK_TO_ENV_NAME = {
     "overcooked-v1/forced_coord": "overcooked-v1",
     "overcooked-v1/counter_circuit": "overcooked-v1",
     "overcooked-v1/coord_ring": "overcooked-v1",
-    "mini-hanabi": "hanabi"
+    "mini-hanabi": "hanabi",
 }
 
 TASK_TO_METRIC_NAME = {
@@ -451,7 +539,9 @@ TASK_TO_METRIC_NAME = {
 # shape (num_seeds, num_oel_iter, num_heldout_agents, num_eval_episodes, num_agents_per_game)
 OEL_METHODS = ["rotate"]
 
-GLOBAL_HELDOUT_CONFIG = omegaconf.OmegaConf.load("evaluation/configs/global_heldout_settings.yaml")
+GLOBAL_HELDOUT_CONFIG = omegaconf.OmegaConf.load(
+    "evaluation/configs/global_heldout_settings.yaml"
+)
 CACHE_FILENAME = "cached_summary_metrics.pkl"
 HELDOUT_CURVES_CACHE_FILENAME = "cached_heldout_curves.pkl"
 TITLE_FONTSIZE = 20
@@ -459,13 +549,13 @@ AXIS_LABEL_FONTSIZE = 18
 LEGEND_FONTSIZE = 14
 
 # def get_heldout_agents(task_name, task_config_path):
-    # rng = jax.random.PRNGKey(0)
-    # heldout_cfg = GLOBAL_HELDOUT_CONFIG["heldout_set"][task_name]
-    # env_config = omegaconf.OmegaConf.load(task_config_path)
-    # env_name = env_config["ENV_NAME"]
-    # env_kwargs = env_config["ENV_KWARGS"]
+# rng = jax.random.PRNGKey(0)
+# heldout_cfg = GLOBAL_HELDOUT_CONFIG["heldout_set"][task_name]
+# env_config = omegaconf.OmegaConf.load(task_config_path)
+# env_name = env_config["ENV_NAME"]
+# env_kwargs = env_config["ENV_KWARGS"]
 
-    # env = make_env(env_name, env_kwargs)
-    # heldout_agents = load_heldout_set(heldout_cfg, env, task_name, env_kwargs, rng)
+# env = make_env(env_name, env_kwargs)
+# heldout_agents = load_heldout_set(heldout_cfg, env, task_name, env_kwargs, rng)
 
-    # return heldout_agents
+# return heldout_agents

@@ -167,7 +167,7 @@ def load_run_eval_metrics(
     is_oel: bool,
     cache_dir: Path = DEFAULT_CACHE_DIR,
     force_recompute: bool = False,
-    bc_run_id: str | None = None,
+    bc_run_id: str | list[str] | None = None,
 ) -> tuple[dict, list[str], list[dict | None], HumanProxySource]:
     """Load a run's heldout eval metrics with named, bounds-aligned partners.
 
@@ -176,7 +176,9 @@ def load_run_eval_metrics(
 
     If the run's own heldout set contains no human proxy and ``bc_run_id`` is
     given, the canonical partner of that separate BC evaluation is appended to
-    the partner axis (labelled ``human_proxy``) with its own bounds.
+    the partner axis (labelled ``human_proxy``) with its own bounds. For pooled
+    ``run_id`` lists, ``bc_run_id`` must be a list of the same length (one BC
+    eval per source run, in the same order) so seeds line up.
 
     Returns:
         (eval_metrics, labels, bounds, human_proxy_source) where
@@ -218,10 +220,32 @@ def load_run_eval_metrics(
     if bc_run_id is None:
         return eval_metrics, labels, bounds, None
 
-    bc_metrics = fetch_run_eval_metrics_cached(
-        bc_run_id, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute
+    bc_run_ids = bc_run_id if isinstance(bc_run_id, list) else [bc_run_id]
+    if len(bc_run_ids) != len(run_ids):
+        raise ValueError(
+            f"{'+'.join(run_ids)} ({task_name}): {len(run_ids)} pooled run(s) but "
+            f"{len(bc_run_ids)} BC eval run(s) given: {bc_run_ids}"
+        )
+    bc_parts = [
+        fetch_run_eval_metrics_cached(
+            rid, ENTITY, BENCHMARK_PROJECT, cache_dir, force_recompute
+        )
+        for rid in bc_run_ids
+    ]
+    bc_metrics = (
+        bc_parts[0]
+        if len(bc_parts) == 1
+        else {k: np.concatenate([p[k] for p in bc_parts], axis=0) for k in bc_parts[0]}
     )
-    bc_labels, bc_bounds = get_run_partners(bc_run_id, task_name, cache_dir)
+    bc_labels, bc_bounds = get_run_partners(bc_run_ids[0], task_name, cache_dir)
+    for rid in bc_run_ids[1:]:
+        other_labels, _ = get_run_partners(rid, task_name, cache_dir)
+        if other_labels != bc_labels:
+            raise ValueError(
+                f"Pooled BC evals {bc_run_ids[0]} and {rid} have different partners "
+                f"for {task_name}:\n  {bc_labels}\n  {other_labels}"
+            )
+    bc_run_id = "+".join(bc_run_ids)
     bc_idx = next(
         (i for i, lbl in enumerate(bc_labels) if lbl in BC_RUN_CANONICAL_KEYS), 0
     )

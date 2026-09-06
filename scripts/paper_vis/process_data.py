@@ -114,7 +114,8 @@ def load_results_for_task(
         bc_id = bc_by_name.get(display_name)
 
         safe_name = display_name.replace("/", "_").replace(" ", "_")
-        suffix = f"__bc_{bc_id}" if bc_id else ""
+        bc_id_str = "+".join(bc_id) if isinstance(bc_id, list) else bc_id
+        suffix = f"__bc_{bc_id_str}" if bc_id else ""
         suffix += "_renorm" if renormalize_metrics else ""
         if filter_failed_seeds:
             suffix += f"_filtered{failed_seed_relative_threshold}x{failed_seed_breadth_threshold}"
