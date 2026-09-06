@@ -20,6 +20,7 @@ from scripts.paper_vis.plot_globals import (
     METHOD_TO_DISPLAY_NAME,
     OEL_METHODS,
     UNIFIED_BENCHMARK_RUNS,
+    paper_tasks,
 )
 from scripts.wandb_utils.wandb_cache import DEFAULT_CACHE_DIR
 
@@ -93,7 +94,7 @@ def main():
     parser.add_argument(
         "--tasks",
         nargs="+",
-        help="Tasks to recompute (default: all tasks with benchmark runs)",
+        help="Tasks to recompute (default: benchmark tasks minus PAPER_EXCLUDED_TASKS)",
     )
     parser.add_argument(
         "--include_bc",
@@ -104,8 +105,11 @@ def main():
     )
     args = parser.parse_args()
 
-    all_tasks = sorted(set(UNIFIED_BENCHMARK_RUNS) | set(EGO_BENCHMARK_RUNS))
-    task_list = args.tasks if args.tasks else all_tasks
+    task_list = (
+        args.tasks
+        if args.tasks
+        else paper_tasks(UNIFIED_BENCHMARK_RUNS, EGO_BENCHMARK_RUNS)
+    )
 
     for task_name in task_list:
         run_specs = build_run_specs(task_name)

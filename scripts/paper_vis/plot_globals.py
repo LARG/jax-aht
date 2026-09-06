@@ -355,6 +355,23 @@ FILTERED_HYPERPARAMETER_KV = {
 }
 
 ####### PLOTTING SETTINGS #######
+# Tasks held out of this paper revision's figures (kept in the run tables above so
+# they can be re-enabled later). Pass --tasks explicitly to plot them anyway.
+PAPER_EXCLUDED_TASKS = {
+    "overcooked-v1/asymm_advantages",
+    "overcooked-v1/counter_circuit",
+    "overcooked-v1/forced_coord",
+}
+
+
+def paper_tasks(*run_tables):
+    """Sorted tasks present in any of the given run tables, minus PAPER_EXCLUDED_TASKS."""
+    tasks = set()
+    for table in run_tables:
+        tasks |= set(table)
+    return sorted(tasks - PAPER_EXCLUDED_TASKS)
+
+
 TASK_TO_PLOT_TITLE = {
     "lbf/lbf_7x7_nolevels": "LBF 7x7",
     "lbf/lbf_12x12": "LBF 12x12",

@@ -33,6 +33,7 @@ from scripts.paper_vis.plot_globals import (
     TASK_TO_METRIC_NAME,
     TITLE_FONTSIZE,
     UNIFIED_BENCHMARK_RUNS,
+    paper_tasks,
 )
 from scripts.paper_vis.process_data import load_results_for_task
 
@@ -268,7 +269,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tasks",
         nargs="+",
-        help="Tasks to plot (default: all tasks with unified benchmark runs)",
+        help="Tasks to plot (default: unified-run tasks minus PAPER_EXCLUDED_TASKS)",
     )
     parser.add_argument(
         "--use_best_returns_normalization",
@@ -293,7 +294,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    task_list = args.tasks if args.tasks else sorted(UNIFIED_BENCHMARK_RUNS)
+    task_list = args.tasks if args.tasks else paper_tasks(UNIFIED_BENCHMARK_RUNS)
     plot_tasks(
         task_list=task_list,
         save_dir=args.save_dir,

@@ -10,6 +10,7 @@ from scripts.paper_vis.plot_globals import (
     TASK_TO_AXIS_DISPLAY_NAME,
     TASK_TO_METRIC_NAME,
     TITLE_FONTSIZE,
+    paper_tasks,
 )
 from scripts.paper_vis.process_data import load_results_for_task
 
@@ -387,7 +388,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tasks",
         nargs="+",
-        help="Tasks to plot. Defaults to all tasks with benchmark runs.",
+        help="Tasks to plot. Defaults to all tasks with benchmark runs except PAPER_EXCLUDED_TASKS.",
     )
     parser.add_argument(
         "--force_recompute",
@@ -421,11 +422,12 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Collect tasks that have at least one benchmark run defined
-    all_tasks = sorted(
-        set(EGO_BENCHMARK_RUNS.keys()) | set(UNIFIED_BENCHMARK_RUNS.keys())
+    # Tasks with at least one benchmark run, minus this revision's excluded tasks
+    task_list = (
+        args.tasks
+        if args.tasks
+        else paper_tasks(EGO_BENCHMARK_RUNS, UNIFIED_BENCHMARK_RUNS)
     )
-    task_list = args.tasks if args.tasks else all_tasks
 
     if args.include_bc:
         norm_suffix = "with_bc"
