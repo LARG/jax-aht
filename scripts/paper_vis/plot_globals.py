@@ -21,78 +21,123 @@ HUMAN_PROXY_AGENTS = [
 ]
 ####### BENCHMARK RUNS #######
 BENCHMARK_PROJECT = "aht-benchmark"
+# Run ids by campaign wandb tag (project aht-benchmark), refreshed 2026-09-06.
+# Seed counts are DISTINCT seeds: distinct (TRAIN_SEED, seed_index) pairs across
+# the listed runs. jax.random.split is prefix-stable, so chunks sharing a
+# TRAIN_SEED overlap and chunk sizes must not be summed.
 EGO_BENCHMARK_RUNS = {
     "lbf/lbf_7x7_nolevels": {
         "ppo_ego": {
-            "fcp_teammates": "d411alba",
-            "comedi_teammates": "2e5x3uko"
-        }, 
+            "fcp_teammates": "lerlzvpv",  # iclr26, 5 seeds
+            "comedi_teammates": "i124n1hl",  # iclr26, 5 seeds
+        },
         "liam": {
-            "fcp_teammates": "zq6yx6kf",
-            "comedi_teammates": "0kh751xl"
-        }, 
+            "fcp_teammates": "3byp3td0",  # iclr26, 5 seeds
+            "comedi_teammates": "2opu8s3x",  # iclr26, 5 seeds
+        },
         "meliba": {
-            "fcp_teammates": "47gw238c",
-            "comedi_teammates": "bc1legak"
-        }, 
+            "fcp_teammates": ["ernydfeu", "isx6v5kf", "m04si2f5"],  # iclr26, 10 seeds
+            "comedi_teammates": ["2gs98nrk", "sadapb3o", "pxsx1ahd"],  # iclr26, 10 seeds
+        },
     },
     "lbf/lbf_12x12": {
         "ppo_ego": {
-            "fcp_teammates": "otxy993u",
-            "comedi_teammates": "jna0irje"
-        }, 
+            "fcp_teammates": "otxy993u",  # neurips
+            "comedi_teammates": "jna0irje",  # neurips
+        },
         "liam": {
-            "fcp_teammates": "j9adbki8",
-            "comedi_teammates": "3h6fcrni"
-        }, 
+            "fcp_teammates": "j9adbki8",  # neurips
+            "comedi_teammates": "3h6fcrni",  # neurips
+        },
         "meliba": {
-            "fcp_teammates": "pifmvl5o",
-            "comedi_teammates": "pwvgckir"
-        }, 
+            "fcp_teammates": ["t8v125ba", "2swcrf3y", "af08h0sw"],  # iclr26, 10 seeds
+            "comedi_teammates": ["lw7cmntl", "gxk4t9ee", "xgi1oqro"],  # iclr26, 10 seeds
+        },
     },
     "overcooked-v1/cramped_room": {
         "ppo_ego": {
-            "fcp_teammates": "rm5bx4ui",
-            "comedi_teammates": "7jhrdpxc"
-        }, 
+            "fcp_teammates": "rm5bx4ui",  # neurips
+            "comedi_teammates": "7jhrdpxc",  # neurips
+        },
         "liam": {
-            "fcp_teammates": "xuvmlpmi",
-            "comedi_teammates": "8486vdnp"
-        }, 
+            "fcp_teammates": "xuvmlpmi",  # neurips
+            "comedi_teammates": "8486vdnp",  # neurips
+        },
         "meliba": {
-            "fcp_teammates": ["lghgomp3", "v5ey4lkt"],
-            "comedi_teammates": ["en1wbqt4", "3e6wffoi"]
-        }, 
+            "fcp_teammates": ["sjkmr2co", "9kvtltg8", "7gqbc2gd"],  # iclr26, 10 seeds
+            "comedi_teammates": ["ikbqpjaq", "6hyan548", "5mx43y3q"],  # iclr26, 10 seeds
+        },
     },
     "overcooked-v1/coord_ring": {
         "ppo_ego": {
-            "fcp_teammates": "0wzr6nbv",
-            "comedi_teammates": "5njknt2q"
-        }, 
+            "fcp_teammates": "we10tivv",  # iclr26, 5 seeds
+            "comedi_teammates": "1tq4878f",  # iclr26, 5 seeds
+        },
         "liam": {
-            "fcp_teammates": "e8y4gy49",
-            "comedi_teammates": "pmm9u33p"
-        }, 
+            "fcp_teammates": "a7usto7b",  # iclr26, 5 seeds
+            "comedi_teammates": "qsjbzty8",  # iclr26, 5 seeds
+        },
         "meliba": {
-            "fcp_teammates": "x6gmp9uc",
-            "comedi_teammates": ["7a19mtio", "bd6w70tr"]
+            "fcp_teammates": ["vjvs7uug", "0b27ry3j", "8bpn86ss"],  # iclr26, 10 seeds
+            "comedi_teammates": ["vt2edaa7", "p0rv1ege", "ins39ls1"],  # iclr26, 10 seeds
+        },
+    },
+    "overcooked-v1/asymm_advantages": {
+        "ppo_ego": {
+            "fcp_teammates": "nydruntw",  # iclr26, 5 seeds
+            "comedi_teammates": "5z39jj4k",  # iclr26, 5 seeds
+        },
+        "liam": {
+            "fcp_teammates": "ryq0tsxe",  # iclr26, 5 seeds
+            "comedi_teammates": "iwu9233c",  # iclr26, 5 seeds
+        },
+        "meliba": {
+            "fcp_teammates": "4m8tmxj3",  # iclr26, 5 seeds
+            "comedi_teammates": "kekiners",  # iclr26, 5 seeds
+        },
+    },
+    "overcooked-v1/forced_coord": {
+        "ppo_ego": {
+            "fcp_teammates": "tf6xkzpu",  # iclr26, 5 seeds
+            "comedi_teammates": "5x1rtnii",  # iclr26, 5 seeds
+        },
+        "liam": {
+            "fcp_teammates": "vuwcr5yh",  # iclr26, 5 seeds
+            "comedi_teammates": "seepwt80",  # iclr26, 5 seeds
+        },
+        "meliba": {
+            "fcp_teammates": "1d2kx3tq",  # iclr26, 5 seeds
+            "comedi_teammates": "0cd2w1ec",  # iclr26, 5 seeds
+        },
+    },
+    "overcooked-v1/counter_circuit": {
+        "ppo_ego": {
+            "fcp_teammates": "9wekrbxo",  # iclr26, 5 seeds
+            "comedi_teammates": "udklgvdq",  # iclr26, 5 seeds
+        },
+        "liam": {
+            "fcp_teammates": "4rwoutix",  # iclr26, 5 seeds
+            "comedi_teammates": "vyxn9dxp",  # iclr26, 5 seeds
+        },
+        "meliba": {
+            "fcp_teammates": ["obtdbm9y", "z7pmvhj7", "tv16ua4v"],  # iclr26, 10 seeds
+            "comedi_teammates": ["r5e8vlp7", "giim6lb3", "gnocl630"],  # iclr26, 10 seeds
         },
     },
     "mini-hanabi": {
         "ppo_ego": {
-            "fcp_teammates": ["hkoidsa0", "rflrtlzo", "719okso0"],
-            "comedi_teammates": ["g61afu52", "7rpmb6ie", "70d2c8v2", "38pn9msz"]
+            "fcp_teammates": ["hkoidsa0", "rflrtlzo", "719okso0", "6s91gqf5"],  # neurips, 5 seeds
+            "comedi_teammates": ["g61afu52", "7rpmb6ie", "70d2c8v2", "38pn9msz"],  # neurips
         },
         "liam": {
-            "fcp_teammates": ["gr03b106", "5ab05qxj", "0hwgmfj3"],
-            "comedi_teammates": ["x0ckfnlv", "b2by5off", "72at5w6x", "tq4fcjh4", "6sig81om"]
+            "fcp_teammates": ["gr03b106", "5ab05qxj", "0hwgmfj3", "lwpl8w6x"],  # neurips, 5 seeds
+            "comedi_teammates": ["x0ckfnlv", "b2by5off", "72at5w6x", "tq4fcjh4", "6sig81om"],  # neurips
         },
         "meliba": {
-            "fcp_teammates": ["canru355", "cob5rucj", "fdt0n0jq"],
-            "comedi_teammates": ["zppuzci6", "buj9lvwp", "usfsicq8", "gw2b4uz1", "8scr8vhv"]
+            "fcp_teammates": ["3pu1t8gw", "azrmgwkw", "es6t0hbh"],  # iclr26, 10 seeds
+            "comedi_teammates": ["lza9gtk4", "mtx7yx4l", "9vh5ul08"],  # iclr26, 10 seeds
         },
     },
-
 }
 
 # BC heldout-eval wandb runs (64-eps variant — eps count matches the training-time
@@ -127,50 +172,77 @@ BC_BENCHMARK_RUNS = {
 
 UNIFIED_BENCHMARK_RUNS = {
     "lbf/lbf_7x7_nolevels": {
-        "fcp": "1bhjc1ri", 
-        "brdiv": "3i68f80z", 
-        "lbrdiv": "jj2ycq8o",
-        "comedi": "us4jl8ch",
-        "rotate": "0vt39b0r",
-        "cole": "9mmd6r45",
-        "trajedi": "ilklfw2f",
+        "fcp": "1bhjc1ri",  # neurips
+        "brdiv": "nqbhn0x8",  # iclr26, 5 seeds
+        "lbrdiv": "jj2ycq8o",  # neurips
+        "comedi": "us4jl8ch",  # neurips
+        "rotate": "0vt39b0r",  # neurips
+        "cole": "k7uf5ndx",  # iclr26, 5 seeds
+        "trajedi": "733qoihr",  # iclr26, 5 seeds
     },
     "lbf/lbf_12x12": {
-        "fcp": ["1c0um2ls", "52wp5amm"],
-        "brdiv": "b3xozodw", 
-        "lbrdiv": "dft2f0do",
-        "comedi": "7qizaam5",
-        "rotate": "9a280lft",
-        "cole": "wom49daz",
-        "trajedi": "ipsuzp4z",
+        "fcp": ["1c0um2ls", "52wp5amm"],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
+        "brdiv": "b3xozodw",  # neurips
+        "lbrdiv": "dft2f0do",  # neurips
+        "comedi": "7qizaam5",  # neurips
+        "rotate": "9a280lft",  # neurips
+        "cole": "62dhrovw",  # iclr26, 5 seeds
+        "trajedi": "mbz2pbmy",  # iclr26, 5 seeds
     },
     "overcooked-v1/cramped_room": {
-        "fcp": "n1mplxeg", 
-        "brdiv": "0ruf65cb", 
-        "lbrdiv": "kfiwwxbu",
-        "comedi": ["8k97saxv", "fqw407x0"],
-        "rotate": "egwn4951",
-        "cole": "ga4gg8bs",
-        "trajedi": "2xtvi3x6",
+        "fcp": "n1mplxeg",  # neurips
+        "brdiv": "u1hihvk2",  # iclr26, 5 seeds
+        "lbrdiv": "kfiwwxbu",  # neurips
+        "comedi": ["8k97saxv", "fqw407x0"],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
+        "rotate": "egwn4951",  # neurips
+        "cole": "mj2zzmzq",  # iclr26, 5 seeds
+        "trajedi": "4ubrdpio",  # iclr26, 5 seeds
     },
     "overcooked-v1/coord_ring": {
-        "fcp": "ikrlj1qe", 
-        "brdiv": "r4a3ncl2", 
-        "lbrdiv": "x012q7qc",
-        "comedi": "ehz0njkk",
-        "rotate": "x7cynboy",
-        "cole": "zxwuozip",
-        "trajedi": "u7ssnuyi",
+        "fcp": "ikrlj1qe",  # neurips
+        "brdiv": "1yag7vj1",  # iclr26, 5 seeds
+        "lbrdiv": "x012q7qc",  # neurips
+        "comedi": "ont3iesc",  # iclr26, 5 seeds
+        "rotate": "x7cynboy",  # neurips
+        "cole": "zrc2agdk",  # iclr26, 5 seeds
+        "trajedi": ["r55lnqcb", "p8lnwq93"],  # iclr26, 5 seeds
+    },
+    "overcooked-v1/asymm_advantages": {
+        "fcp": "waolda91",  # iclr26, 5 seeds
+        "brdiv": "zmnouxfd",  # iclr26, 5 seeds
+        "lbrdiv": ["e7ui3d6b", "ua0spahs", "95xkc9e3", "6q6ixj7x", "1pr9nuhi"],  # iclr26, 5 seeds
+        "comedi": "zeuzmm3p",  # iclr26, 5 seeds
+        "rotate": "l9q0kchn",  # iclr26, 5 seeds
+        "cole": "162sq4py",  # iclr26, 5 seeds
+        "trajedi": ["1v1ofunu", "p6uvw44b"],  # iclr26, 5 seeds
+    },
+    "overcooked-v1/forced_coord": {
+        "fcp": "n57xsw4x",  # iclr26, 5 seeds
+        "brdiv": "1aj5wy5a",  # iclr26, 5 seeds
+        "lbrdiv": ["otb5ba9q", "4al8en97"],  # iclr26, 5 seeds
+        "comedi": "e6p1h9f5",  # iclr26, 5 seeds
+        "rotate": "ci72un83",  # iclr26, 5 seeds
+        "cole": "o9x9z9bb",  # iclr26, 5 seeds
+        "trajedi": ["awrppuvi", "qhszyk5x"],  # iclr26, 5 seeds
+    },
+    "overcooked-v1/counter_circuit": {
+        "fcp": "5v7kd2ok",  # iclr26, 5 seeds
+        "brdiv": "f8tvok12",  # iclr26, 5 seeds
+        "lbrdiv": ["5iyo3iw6", "2r9gen4f", "jcg3b9c0", "ct5luwgo", "u021qxlz"],  # iclr26, 5 seeds
+        "comedi": "um47gdei",  # iclr26, 5 seeds
+        "rotate": "8nsgv1wk",  # iclr26, 5 seeds
+        "cole": "upb63g1n",  # iclr26, 5 seeds
+        "trajedi": ["pmecpq57", "8ritukil"],  # iclr26, 5 seeds
     },
     "mini-hanabi": {
-        "fcp": "c5kukiyx", 
-        "brdiv": "0az0sa6t", 
-        "lbrdiv": ["wv7j92rh", "fig22cpk"],
-        "comedi": "acp6wglt",
-        "rotate": "mw1jdo7s",
-        "cole": "6zhwr6yb",
-        "trajedi": "2v2lw5k7",
-    }
+        "fcp": "c5kukiyx",  # neurips
+        "brdiv": "0az0sa6t",  # neurips
+        "lbrdiv": ["wv7j92rh", "fig22cpk"],  # neurips; 2+3 split at same TRAIN_SEED=20374 -> 3 seeds, not 5
+        "comedi": "acp6wglt",  # neurips
+        "rotate": "mw1jdo7s",  # neurips
+        "cole": "ffb5g4tu",  # iclr26, 5 seeds
+        "trajedi": "qj2yxrp2",  # iclr26, 5 seeds
+    },
 }
 
 ####### HYPERPARAMETER SWEEPS #######

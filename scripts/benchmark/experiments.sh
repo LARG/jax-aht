@@ -193,7 +193,7 @@ for algo in "${algos[@]}"; do
             ego_seeds_arg="algorithm.ego_train_algorithm.NUM_EGO_TRAIN_SEEDS=1"
         fi
 
-        if XLA_FLAGS=--xla_disable_hlo_passes=fusion XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${entry_point}/run.py" \
+        if XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONPATH=. python "${entry_point}/run.py" \
             algorithm="${algo}/${task}" \
             task="${task}" \
             label="${label}" \
