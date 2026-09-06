@@ -445,7 +445,9 @@ if __name__ == "__main__":
         return entry or None
 
     all_task_results = {}
-    ego_run_info: list[tuple[str, str, str]] = []  # (display_name, base_name, hatch)
+    # (display_name, base_name, hatch, teammate_type); bars are grouped by
+    # teammate type (all FCP-trained runs first, then CoMeDi-trained).
+    ego_run_info: list[tuple[str, str, str, str]] = []
     ego_seen: set[str] = set()
 
     for task_name in task_list:
@@ -484,7 +486,9 @@ if __name__ == "__main__":
                     if display_name not in ego_seen:
                         ego_seen.add(display_name)
                         hatch = TEAMMATE_HATCH.get(teammate_type, "")
-                        ego_run_info.append((display_name, base_name, hatch))
+                        ego_run_info.append(
+                            (display_name, base_name, hatch, teammate_type)
+                        )
 
                     bc_run_id = (
                         _bc_run_id(task_name, method_name, teammate_type)
@@ -525,7 +529,13 @@ if __name__ == "__main__":
             savedir=args.save_dir,
             savename=f"all_tasks_{args.plot_type}_{norm_suffix}",
             show_plot=args.show_plots,
-            run_info=ego_run_info,
+            run_info=[
+                info[:3]
+                for info in sorted(
+                    ego_run_info,
+                    key=lambda info: list(TEAMMATE_HATCH).index(info[3]),
+                )
+            ],
         )
     elif len(all_task_results) == 1:
         task_name = next(iter(all_task_results))
