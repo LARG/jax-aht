@@ -13,15 +13,20 @@ import argparse
 import re
 from pathlib import Path
 
+import pandas as pd
+
 from scripts.manage_configs.helpers import format_value, resolve_algo_config
 from scripts.paper_vis.plot_globals import (
-    HYPERPARAM_SWEEPS, ENTITY, HYPERPARAM_PROJECT,
+    ENTITY,
+    HYPERPARAM_PROJECT,
+    HYPERPARAM_SWEEPS,
 )
 from scripts.utils import ALGO_TO_ENTRY_POINT
 from scripts.wandb_utils.wandb_cache import (
-    load_sweep_df, build_hparam_df, fetch_sweep_last_run_date,
+    build_hparam_df,
+    fetch_sweep_last_run_date,
+    load_sweep_df,
 )
-
 
 REPO_ROOT = Path(__file__).parent.parent.parent
 
@@ -36,14 +41,24 @@ _EGO_ALGO_TO_CONFIG_NAME = {
 def _config_path(task: str, algorithm: str) -> Path:
     parts = task.split("/")
     if algorithm not in ALGO_TO_ENTRY_POINT:
-        raise ValueError(f"Unknown algorithm '{algorithm}'. Known: {list(ALGO_TO_ENTRY_POINT)}")
+        raise ValueError(
+            f"Unknown algorithm '{algorithm}'. Known: {list(ALGO_TO_ENTRY_POINT)}"
+        )
     root = ALGO_TO_ENTRY_POINT[algorithm]
     config_name = _EGO_ALGO_TO_CONFIG_NAME.get(algorithm, algorithm)
     if len(parts) == 1:
         return REPO_ROOT / root / "configs" / "algorithm" / config_name / f"{task}.yaml"
     task_family = "/".join(parts[:-1])
     task_name = parts[-1]
-    return REPO_ROOT / root / "configs" / "algorithm" / config_name / task_family / f"{task_name}.yaml"
+    return (
+        REPO_ROOT
+        / root
+        / "configs"
+        / "algorithm"
+        / config_name
+        / task_family
+        / f"{task_name}.yaml"
+    )
 
 
 # MeLIBA's KL loss is now summed over time and *averaged* over the batch. Sweeps that
@@ -58,14 +73,17 @@ _MELIBA_KL_FIX_DATE = "2026-08-30"
 _NON_HPARAM_KEYS = {"TOTAL_TIMESTEPS"}
 
 
-def _scale_meliba_kl_weight(task: str, best_hparams: dict, config_path: Path,
-                            sweep_id: str) -> None:
+def _scale_meliba_kl_weight(
+    task: str, best_hparams: dict, config_path: Path, sweep_id: str
+) -> None:
     """In-place: rescale MeLIBA's swept KL weight to the post-fix loss normalization.
 
     Only applied to sweeps whose most recent run predates _MELIBA_KL_FIX_DATE.
     """
     if _MELIBA_KL_KEY not in best_hparams:
-        print(f"  WARNING: {_MELIBA_KL_KEY} not in the sweep for {task}; no KL rescaling applied.")
+        print(
+            f"  WARNING: {_MELIBA_KL_KEY} not in the sweep for {task}; no KL rescaling applied."
+        )
         return
 
     last_run = fetch_sweep_last_run_date(sweep_id, ENTITY, HYPERPARAM_PROJECT)
@@ -73,8 +91,10 @@ def _scale_meliba_kl_weight(task: str, best_hparams: dict, config_path: Path,
         print(f"  WARNING: could not date sweep {sweep_id}; no KL rescaling applied.")
         return
     if last_run[:10] >= _MELIBA_KL_FIX_DATE:
-        print(f"  MeLIBA KL rescale skipped: sweep last ran {last_run[:10]}, "
-              f"on/after the {_MELIBA_KL_FIX_DATE} loss-normalization fix.")
+        print(
+            f"  MeLIBA KL rescale skipped: sweep last ran {last_run[:10]}, "
+            f"on/after the {_MELIBA_KL_FIX_DATE} loss-normalization fix."
+        )
         return
 
     algo_configs_root = config_path.parent
@@ -84,14 +104,18 @@ def _scale_meliba_kl_weight(task: str, best_hparams: dict, config_path: Path,
 
     # A swept value takes precedence over the config value.
     num_envs = float(best_hparams.get("NUM_ENVS", resolved["NUM_ENVS"]))
-    num_minibatches = float(best_hparams.get("NUM_MINIBATCHES", resolved["NUM_MINIBATCHES"]))
+    num_minibatches = float(
+        best_hparams.get("NUM_MINIBATCHES", resolved["NUM_MINIBATCHES"])
+    )
     scale = num_envs / num_minibatches
 
     raw = float(best_hparams[_MELIBA_KL_KEY])
     best_hparams[_MELIBA_KL_KEY] = raw * scale
-    print(f"  MeLIBA KL rescale: {_MELIBA_KL_KEY} {raw:g} * "
-          f"(NUM_ENVS {num_envs:g} / NUM_MINIBATCHES {num_minibatches:g} = {scale:g}) "
-          f"-> {raw * scale:g}")
+    print(
+        f"  MeLIBA KL rescale: {_MELIBA_KL_KEY} {raw:g} * "
+        f"(NUM_ENVS {num_envs:g} / NUM_MINIBATCHES {num_minibatches:g} = {scale:g}) "
+        f"-> {raw * scale:g}"
+    )
 
 
 def _set_top_level_key(content: str, key: str, new_val: str) -> str:
@@ -130,7 +154,9 @@ def _set_nested_key(content: str, parent: str, child: str, new_val: str) -> str:
     return "".join(new_lines)
 
 
-def update_config_file(config_path: Path, best_hparams: dict[str, str], dry_run: bool = False) -> None:
+def update_config_file(
+    config_path: Path, best_hparams: dict[str, str], dry_run: bool = False
+) -> None:
     content = config_path.read_text()
     changed_keys: list[str] = []
 
@@ -159,8 +185,21 @@ def update_config_file(config_path: Path, best_hparams: dict[str, str], dry_run:
         print(f"  Set {key}={best_hparams[key]}  →  {config_path}")
 
 
-def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: bool,
-                    max_hparams: int | None = None, seed: int = 0) -> None:
+def select_hparam_settings(
+    task: str,
+    algorithm: str,
+    force_recompute: bool = False,
+    max_hparams: int | None = None,
+    seed: int = 0,
+) -> tuple[pd.DataFrame, list[str]]:
+    """Return the hparam settings considered when picking the best config for task/algorithm.
+
+    Each row is one unique swept-hparam combination with its mean ``_score`` over seeds,
+    sorted best-first. With ``max_hparams`` set, a seeded random subset of that size is
+    drawn when the sweep ran more settings. This is the exact set the benchmark configs
+    were selected from (``--max-hparams 140 --seed 0``), so other tools (e.g. the sweep
+    distribution plots) should call this rather than re-deriving it.
+    """
     raw_df, bare_keys = load_sweep_df(task, algorithm, force_recompute)
     # Some sweep YAMLs pin the (reduced) sweep training budget under `parameters` rather
     # than in the `command` block, so it comes back as a single-valued "swept" key. It is
@@ -180,7 +219,23 @@ def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: b
     )
     if max_hparams is not None and len(grouped) > max_hparams:
         print(f"Sampling {max_hparams} of {len(grouped)} hparam settings (seed={seed})")
-        grouped = grouped.sample(n=max_hparams, random_state=seed).sort_values("_score", ascending=False)
+        grouped = grouped.sample(n=max_hparams, random_state=seed).sort_values(
+            "_score", ascending=False
+        )
+    return grouped, bare_keys
+
+
+def apply_algorithm(
+    task: str,
+    algorithm: str,
+    force_recompute: bool,
+    dry_run: bool,
+    max_hparams: int | None = None,
+    seed: int = 0,
+) -> None:
+    grouped, bare_keys = select_hparam_settings(
+        task, algorithm, force_recompute, max_hparams=max_hparams, seed=seed
+    )
     best_row = grouped.iloc[0]
     raw_hparams = {key: best_row[key] for key in bare_keys}
 
@@ -189,8 +244,9 @@ def apply_algorithm(task: str, algorithm: str, force_recompute: bool, dry_run: b
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
     if algorithm == "meliba":
-        _scale_meliba_kl_weight(task, raw_hparams, config_path,
-                                HYPERPARAM_SWEEPS[task][algorithm])
+        _scale_meliba_kl_weight(
+            task, raw_hparams, config_path, HYPERPARAM_SWEEPS[task][algorithm]
+        )
 
     best_hparams = {key: format_value(val) for key, val in raw_hparams.items()}
 
@@ -209,30 +265,59 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Apply the best sweep hyperparameters to the corresponding config file."
     )
-    parser.add_argument("--task", required=True, help="Task name (e.g. lbf/lbf_7x7_nolevels).")
-    parser.add_argument("--algorithm", default=None,
-                        help="Algorithm name (e.g. trajedi). Omit to run all algorithms for the task.")
-    parser.add_argument("--force-recompute", action="store_true",
-                        help="Re-fetch from wandb, ignoring the local cache.")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Print what would be written without modifying any files.")
-    parser.add_argument("--max-hparams", type=int, default=None,
-                        help="Maximum number of hparam settings to consider. If the sweep ran more, "
-                             "a random subset of this size is drawn (seeded, for reproducibility).")
-    parser.add_argument("--seed", type=int, default=0,
-                        help="Random seed used when subsampling hparam settings via --max-hparams.")
+    parser.add_argument(
+        "--task", required=True, help="Task name (e.g. lbf/lbf_7x7_nolevels)."
+    )
+    parser.add_argument(
+        "--algorithm",
+        default=None,
+        help="Algorithm name (e.g. trajedi). Omit to run all algorithms for the task.",
+    )
+    parser.add_argument(
+        "--force-recompute",
+        action="store_true",
+        help="Re-fetch from wandb, ignoring the local cache.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print what would be written without modifying any files.",
+    )
+    parser.add_argument(
+        "--max-hparams",
+        type=int,
+        default=None,
+        help="Maximum number of hparam settings to consider. If the sweep ran more, "
+        "a random subset of this size is drawn (seeded, for reproducibility).",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Random seed used when subsampling hparam settings via --max-hparams.",
+    )
     args = parser.parse_args()
 
     if args.task not in HYPERPARAM_SWEEPS:
-        raise ValueError(f"Task '{args.task}' not found. Available: {list(HYPERPARAM_SWEEPS)}")
+        raise ValueError(
+            f"Task '{args.task}' not found. Available: {list(HYPERPARAM_SWEEPS)}"
+        )
 
-    algorithms = [args.algorithm] if args.algorithm else list(HYPERPARAM_SWEEPS[args.task])
+    algorithms = (
+        [args.algorithm] if args.algorithm else list(HYPERPARAM_SWEEPS[args.task])
+    )
 
     for algorithm in algorithms:
         if len(algorithms) > 1:
-            print(f"\n{'='*60}")
-        apply_algorithm(args.task, algorithm, args.force_recompute, args.dry_run,
-                        max_hparams=args.max_hparams, seed=args.seed)
+            print(f"\n{'=' * 60}")
+        apply_algorithm(
+            args.task,
+            algorithm,
+            args.force_recompute,
+            args.dry_run,
+            max_hparams=args.max_hparams,
+            seed=args.seed,
+        )
 
 
 if __name__ == "__main__":

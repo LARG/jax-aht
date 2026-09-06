@@ -100,4 +100,12 @@ sweeps. Sweep IDs are stored in `plot_globals.py` under `HYPERPARAM_SWEEPS`.
 bash scripts/paper_vis/run_plot_sweep_distribution.sh
 ```
 
+Each point is one unique hyperparameter setting (mean score over its seeds). By
+default only the settings actually considered when the benchmark configs were
+chosen are shown: the seeded 140-setting subsample drawn by
+`scripts/manage_configs/apply_best_hparams.py --max-hparams 140 --seed 0`
+(`select_hparam_settings` there is the single source of truth; sweeps with at
+most 140 settings are shown in full). Use `--max-hparams 0` to plot every setting,
+or `--max-hparams N --seed S` to match a different selection.
+
 Figures are saved to `results/figures/`.
