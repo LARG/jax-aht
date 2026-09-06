@@ -8,6 +8,16 @@ conda activate bench311
 
 wandb run/sweep IDs for all plots are stored in [plot_globals.py](plot_globals.py).
 
+Downloaded wandb artifacts and computed stats are cached under `results/figures/cache/`
+(gitignored). From a worktree, symlink it to the main checkout's cache to avoid re-downloading.
+
+To regenerate all paper figures after changing run IDs in `plot_globals.py`, run in order:
+
+1. `recompute_best_returns.py --include_bc` (normalization bounds may shift)
+2. `benchmark_bar_charts.py` for `--plot_type unified` and `--plot_type ego` (see below)
+3. `plot_by_agent_type.py` (radar chart, `by_agent_type_br_norm.pdf`)
+4. `run_plot_sweep_distribution.sh`
+
 ---
 
 ## Benchmark bar charts
