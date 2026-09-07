@@ -19,7 +19,6 @@ import numpy as np
 import pandas as pd
 import wandb
 
-
 DEFAULT_CACHE_DIR = Path("results/figures/cache")
 
 
@@ -123,7 +122,7 @@ def fetch_sweep_bare_keys(sweep_id: str, entity: str, project: str) -> list[str]
     """Return swept parameter names from the wandb sweep config, with 'algorithm.' prefix stripped."""
     api = wandb.Api()
     sweep = api.sweep(f"{entity}/{project}/{sweep_id}")
-    return [k.removeprefix("algorithm.") for k in sweep.config.get("parameters", {}).keys()]
+    return [k.removeprefix("algorithm.") for k in sweep.config.get("parameters", {})]
 
 
 def fetch_sweep_last_run_date(sweep_id: str, entity: str, project: str) -> str | None:
@@ -156,11 +155,17 @@ def load_sweep_df(
     Swept keys come from the wandb sweep config, not the local param_sweep YAML.
     """
     from scripts.paper_vis.plot_globals import (
-        ENTITY, HYPERPARAM_PROJECT, HYPERPARAM_DEFAULT_METRIC,
-        HYPERPARAM_SWEEPS, TASK_LEGACY_NAMES,
+        ENTITY,
+        HYPERPARAM_DEFAULT_METRIC,
+        HYPERPARAM_PROJECT,
+        HYPERPARAM_SWEEPS,
+        TASK_LEGACY_NAMES,
     )
+
     if task not in HYPERPARAM_SWEEPS:
-        raise ValueError(f"Task '{task}' not found. Available: {list(HYPERPARAM_SWEEPS)}")
+        raise ValueError(
+            f"Task '{task}' not found. Available: {list(HYPERPARAM_SWEEPS)}"
+        )
     if algorithm not in HYPERPARAM_SWEEPS[task]:
         raise ValueError(
             f"Algorithm '{algorithm}' not found for task '{task}'. "
@@ -172,7 +177,9 @@ def load_sweep_df(
     task_name_for_check = TASK_LEGACY_NAMES.get(task, task.split("/")[-1])
     bare_keys = fetch_sweep_bare_keys(sweep_id, ENTITY, HYPERPARAM_PROJECT)
     df = fetch_sweep_cached(
-        sweep_id, ENTITY, HYPERPARAM_PROJECT,
+        sweep_id,
+        ENTITY,
+        HYPERPARAM_PROJECT,
         force_recompute=force_recompute,
         expected_name_parts=[algorithm, task_name_for_check],
     )
@@ -232,7 +239,9 @@ def fetch_run_eval_metrics_cached(
         with open(cache_path, "rb") as f:
             return pickle.load(f)
 
-    print(f"Fetching heldout_eval_metrics artifact for run {entity}/{project}/{run_id} ...")
+    print(
+        f"Fetching heldout_eval_metrics artifact for run {entity}/{project}/{run_id} ..."
+    )
     api = wandb.Api()
     run = api.run(f"{entity}/{project}/{run_id}")
 
@@ -247,8 +256,10 @@ def fetch_run_eval_metrics_cached(
 
     with tempfile.TemporaryDirectory() as tmp:
         artifact_dir = heldout_artifact.download(root=tmp)
-        from common.save_load_utils import load_train_run
         import jax
+
+        from common.save_load_utils import load_train_run
+
         eval_metrics = load_train_run(artifact_dir)
 
     # Convert all leaves to plain numpy arrays for pickling
@@ -292,8 +303,57 @@ def extract_metric(df: pd.DataFrame, metric: str) -> pd.DataFrame:
     """Add a '_score' column from a summary metric, dropping rows where it is missing."""
     col = f"_summary.{metric}"
     if col not in df.columns:
-        available = [c.removeprefix("_summary.") for c in df.columns if c.startswith("_summary.")]
-        raise ValueError(f"Metric '{metric}' not found. Available summary metrics: {available}")
+        available = [
+            c.removeprefix("_summary.") for c in df.columns if c.startswith("_summary.")
+        ]
+        raise ValueError(
+            f"Metric '{metric}' not found. Available summary metrics: {available}"
+        )
     result = df.dropna(subset=[col]).copy()
     result["_score"] = result[col].astype(float)
     return result
+
+
+def fetch_run_heldout_names_cached(
+    run_id: str,
+    entity: str,
+    project: str,
+    cache_dir: Path = DEFAULT_CACHE_DIR,
+) -> list[str] | None:
+    """Return the heldout partner names, in artifact order, logged by a run.
+
+    The heldout runner logs a ``HeldoutEval/FinalEgoVsHeldout-*-CI`` table whose
+    columns after the first three (Algorithm, Metric, aggregate) are the partner
+    labels in the same order as the partner axis of the eval-metrics artifact.
+    This is the only reliable source of that order: the wandb run config
+    reorders nested dict keys, so it cannot be used for per-partner alignment.
+
+    Returns None (and caches that) when the run has no such table.
+    """
+    cache_path = (
+        Path(cache_dir) / "run_heldout_names" / f"{entity}__{project}__{run_id}.json"
+    )
+    if cache_path.exists():
+        with open(cache_path, "r") as f:
+            return json.load(f)
+
+    print(f"Fetching heldout partner names for run {entity}/{project}/{run_id} ...")
+    api = wandb.Api()
+    run = api.run(f"{entity}/{project}/{run_id}")
+    table_files = [
+        f
+        for f in run.files()
+        if "FinalEgoVsHeldout" in f.name and f.name.endswith(".table.json")
+    ]
+    names = None
+    if table_files:
+        with tempfile.TemporaryDirectory() as tmp:
+            table_files[0].download(root=tmp, replace=True)
+            with open(Path(tmp) / table_files[0].name, "r") as f:
+                table = json.load(f)
+        names = list(table["columns"][3:])
+
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(cache_path, "w") as f:
+        json.dump(names, f)
+    return names

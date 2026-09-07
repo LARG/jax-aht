@@ -1,0 +1,47 @@
+# Standalone human-proxy heldout evaluation of a finished benchmark run's ego agent.
+# Used for older (may26-era) teammate-generation runs whose heldout set predates
+# `human_proxy`; produces a wandb run shaped like the ego-method BC evals
+# (tag `bc_heldout_eval`, table + `heldout_eval_metrics` artifact) that
+# scripts/paper_vis merges in by partner name.
+defaults:
+  - task: lbf/lbf_7x7_nolevels
+  - global_heldout_settings
+  - hydra: hydra_simple
+  - _self_
+
+ENV_NAME: ${task.ENV_NAME}
+ENV_KWARGS: ${task.ENV_KWARGS}
+ROLLOUT_LENGTH: ${task.ROLLOUT_LENGTH}
+TASK_NAME: ${task.TASK_NAME}
+
+# Source benchmark run whose `ego_train_run` artifact is evaluated.
+source_run_id: ???
+source_entity: aht-project
+source_project: aht-benchmark
+# Heldout partners (keys of heldout_set[TASK_NAME]) to evaluate against.
+partners: [human_proxy]
+ego_test_mode: false
+
+label: bc_heldout
+# `method` is filled in from the source run's algorithm.ALG at runtime (the hydra
+# output dir is keyed by source_run_id instead, since it is resolved at launch).
+method: unknown
+name: ${TASK_NAME}/heldout_ego_bc/${source_run_id}/${label}
+
+logger:
+  project: aht-benchmark
+  entity: aht-project
+  tags:
+    - bc_heldout_eval
+    - ${TASK_NAME}
+    - ${method}
+    - ${method}_human_proxy
+    - source=${source_run_id}
+  mode: online
+  verbose: false
+  log_train_out: false
+  log_eval_out: true
+
+local_logger:
+  save_train_out: false
+  save_eval_out: true
