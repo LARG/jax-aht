@@ -1,25 +1,10 @@
 """Per-run heldout partner bookkeeping for the paper plots.
 
-Every benchmark run logs a heldout-eval artifact whose partner axis follows the
-order in which ``load_heldout_set`` iterated the heldout config *at eval time*.
-Two things make that order hard to recover after the fact:
-
-* wandb stores nested config dicts with keys reordered, so the run config's
-  ``heldout_set`` cannot be iterated to recover the partner order;
-* the live yaml has been reordered since the may26-era runs (e.g. the LBF 7x7
-  heuristics moved before the RL partners).
-
-The heldout runner also logs a table whose columns are the partner labels in
-artifact order, so we take the order from there and look bounds up *by name*
-in the run config.
-
-Human proxy partners: sept26-era runs (and the may26 ROTATE runs) evaluate
-against a ``human_proxy`` partner as part of the standard heldout set. Older
-runs do not, and were instead evaluated against the BC proxy in a separate
-run (``BC_BENCHMARK_RUNS``). ``load_run_eval_metrics`` reconciles the two by
-appending the separate BC evaluation only for runs whose own heldout set has
-no human proxy, so every cell exposes the same partner set when a BC run is
-available.
+Heldout partners are identified by name rather than artifact index: wandb
+reorders config dict keys, so the partner order is read from the logged
+``HeldoutEval/FinalEgoVsHeldout`` table and bounds are looked up by name.
+For runs whose heldout set has no ``human_proxy``, ``load_run_eval_metrics``
+appends the separate BC eval run (``BC_BENCHMARK_RUNS``) along the partner axis.
 """
 
 import re
