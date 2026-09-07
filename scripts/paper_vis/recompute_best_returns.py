@@ -3,9 +3,6 @@
 Uses locally cached wandb artifact pickles (eval metrics + run configs) when
 available; only downloads from wandb for runs that have not been cached yet.
 
-Best returns are matched across runs by partner name, so runs with and without
-the human proxy partner are combined in one file (see ``heldout_partners``).
-
 Run from repo root: python scripts/paper_vis/recompute_best_returns.py [--tasks ...]
 """
 
