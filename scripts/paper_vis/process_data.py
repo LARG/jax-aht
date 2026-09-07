@@ -210,26 +210,18 @@ def heldout_metrics_per_agent(
         OEL:      (num_seeds, num_oel_iter, num_heldout_agents, num_eval_eps, num_agents_per_game)
         Standard: (num_seeds, num_heldout_agents, num_eval_eps, num_agents_per_game)
     """
-    num_heldout_agents = eval_metrics[metric_names[0]].shape[-3]
 
     summary_data = {}
     aggregate_stat = config["global_heldout_settings"]["AGGREGATE_STAT"]
 
     for metric_name in metric_names:
+        # Average out the episode and agents-per-game dims so that seeds are the
+        # bootstrap replication unit and heldout agents are the tasks (matches
+        # evaluation/heldout_runner.py). Final shape: (num_seeds, num_heldout_agents).
         if oel_method:
-            data = (
-                eval_metrics[metric_name][:, -1]
-                .mean(axis=-1)
-                .transpose(0, 2, 1)
-                .reshape(-1, num_heldout_agents)
-            )
+            data = eval_metrics[metric_name][:, -1].mean(axis=(-1, -2))
         else:
-            data = (
-                eval_metrics[metric_name]
-                .mean(axis=-1)
-                .transpose(0, 2, 1)
-                .reshape(-1, num_heldout_agents)
-            )
+            data = eval_metrics[metric_name].mean(axis=(-1, -2))
 
         data = np.array(data)
 
