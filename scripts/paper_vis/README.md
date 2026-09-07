@@ -8,15 +8,11 @@ conda activate bench311
 
 wandb run/sweep IDs for all plots are stored in [plot_globals.py](plot_globals.py).
 
-Downloaded wandb artifacts and computed stats are cached under `results/figures/cache/`
-(gitignored). From a worktree, symlink it to the main checkout's cache to avoid re-downloading.
+wandb downloads are cached in `results/figures/cache/` (gitignored; symlink it from worktrees).
 
-To regenerate all paper figures after changing run IDs in `plot_globals.py`, run in order:
-
-1. `recompute_best_returns.py --include_bc` (normalization bounds may shift)
-2. `benchmark_bar_charts.py` for `--plot_type unified` and `--plot_type ego` (see below)
-3. `plot_by_agent_type.py` (radar chart, `by_agent_type_br_norm.pdf`)
-4. `run_plot_sweep_distribution.sh`
+To regenerate all figures after changing run IDs, run in order:
+`recompute_best_returns.py --include_bc`, `benchmark_bar_charts.py` (unified and ego),
+`plot_by_agent_type.py` (radar), `run_plot_sweep_distribution.sh`.
 
 ---
 
@@ -37,25 +33,16 @@ PYTHONPATH=. python scripts/paper_vis/benchmark_bar_charts.py --plot_type ego --
 
 **Key flags:**
 - `--use_best_returns_normalization` (default true) — renormalize by the best observed return per heldout agent instead of the original per-agent bounds
-- `--include_bc` (default false) — ensure the human proxy (BC) teammate is part of every method's heldout set. sept26-era runs already evaluate against `human_proxy` as part of the heldout set; for older runs that lack it, the separate BC eval run listed in `BC_BENCHMARK_RUNS` is appended at plot time. The script prints a per-cell coverage report (`builtin` / `bc_merge` / `MISSING`) at the end
+- `--include_bc` (default false) — include the human proxy (BC) teammate in every cell, appending the separate BC eval from `BC_BENCHMARK_RUNS` for runs that lack it; prints a coverage report at the end
 - `--filter_failed_seeds` (default false) — filter out failed seeds
 - `--tasks lbf/lbf_7x7_nolevels overcooked-v1/cramped_room` — restrict to specific tasks
-- `--force_recompute` — re-download eval artifacts from wandb and recompute best returns and summary stats (normally unnecessary: caches are keyed by run IDs and invalidated automatically)
+- `--force_recompute` — re-download from wandb and recompute everything
 - `--save_dir PATH` — override output directory (default: `results/figures/`)
 
 Figures are saved as PDFs to `results/figures/`.
 
-### Heldout partner alignment
-
-Runs may differ in their heldout sets (e.g. 17 vs 18 partners when `human_proxy`
-was added), and the wandb run config does not preserve the heldout-set order, so
-partners are identified **by name** rather than by index. The partner order for
-each run is read from its logged `HeldoutEval/FinalEgoVsHeldout-*-CI` table
-(cached under `results/figures/cache/run_heldout_names/`), and per-partner
-bounds are looked up by name in the run config. See
-[heldout_partners.py](heldout_partners.py). Best returns, renormalization, and
-BC merging all operate on these named partners, so runs with different heldout
-sets can be compared as long as their common partners share names.
+Heldout partners are matched across runs by name, not index, so runs with
+different heldout sets can be compared (see [heldout_partners.py](heldout_partners.py)).
 
 ---
 
@@ -80,10 +67,9 @@ best-seen BR exceeds it.
 Performance bounds stored in `global_heldout_settings.yaml` are the original
 normalization maxima used at evaluation time. `compute_best_returns.py` scans
 all benchmark runs for each task and computes the highest return actually
-observed for each heldout agent (by name), caching results in
-`results/figures/cache/best_returns/<task>.json` together with a `_labels`
-list giving the partner order. Pass `--include_bc` to also scan the separate
-BC eval runs for methods whose heldout set lacks `human_proxy`.
+observed for each heldout agent, caching results in
+`results/figures/cache/best_returns/<task>.json`. Pass `--include_bc` to also
+scan the separate BC eval runs.
 
 To force recomputation from locally cached wandb artifacts (re-downloads from
 wandb only for runs not yet cached locally):
@@ -110,12 +96,8 @@ sweeps. Sweep IDs are stored in `plot_globals.py` under `HYPERPARAM_SWEEPS`.
 bash scripts/paper_vis/run_plot_sweep_distribution.sh
 ```
 
-Each point is one unique hyperparameter setting (mean score over its seeds). By
-default only the settings actually considered when the benchmark configs were
-chosen are shown: the seeded 140-setting subsample drawn by
-`scripts/manage_configs/apply_best_hparams.py --max-hparams 140 --seed 0`
-(`select_hparam_settings` there is the single source of truth; sweeps with at
-most 140 settings are shown in full). Use `--max-hparams 0` to plot every setting,
-or `--max-hparams N --seed S` to match a different selection.
+Each point is one hyperparameter setting (mean over seeds). By default only the
+140 settings sampled by `scripts/manage_configs/apply_best_hparams.py` (seed 0)
+are shown; use `--max-hparams 0` to plot all of them.
 
 Figures are saved to `results/figures/`.
