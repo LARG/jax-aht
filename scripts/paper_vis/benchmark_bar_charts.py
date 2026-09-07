@@ -333,7 +333,19 @@ def plot_all_tasks_ego_bar_chart(
         fontsize=AXIS_LABEL_FONTSIZE,
     )
     ax.set_title(plot_title, fontsize=TITLE_FONTSIZE)
+    # Matplotlib fills legend columns top-to-bottom; permute the entries so the
+    # legend reads row by row in the same order as the bars.
+    handles, labels = ax.get_legend_handles_labels()
+    n_rows = int(np.ceil(len(handles) / num_base))
+    order = [
+        i * num_base + j
+        for j in range(num_base)
+        for i in range(n_rows)
+        if i * num_base + j < len(handles)
+    ]
     ax.legend(
+        [handles[k] for k in order],
+        [labels[k] for k in order],
         fontsize=LEGEND_FONTSIZE,
         loc="center",
         ncols=num_base,
