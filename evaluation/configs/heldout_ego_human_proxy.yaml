@@ -1,5 +1,5 @@
 # Standalone human-proxy heldout evaluation of a finished benchmark run's ego agent.
-# Used for older (neurips-era) teammate-generation runs whose heldout set predates
+# Used for older (may26-era) teammate-generation runs whose heldout set predates
 # `human_proxy`; produces a wandb run shaped like the ego-method BC evals
 # (tag `bc_heldout_eval`, table + `heldout_eval_metrics` artifact) that
 # scripts/paper_vis merges in by partner name.

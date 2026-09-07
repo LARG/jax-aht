@@ -82,7 +82,7 @@ def load_results_for_task(
             run whose own heldout set has no human proxy, the matching BC
             heldout-eval artifact is appended along the partner axis before
             the reducer runs; runs that already include the human proxy
-            (iclr26-era) are used as-is. See ``heldout_partners``.
+            (sept26-era) are used as-is. See ``heldout_partners``.
 
     Returns:
         dict mapping display_name -> summary_data dict. Each summary carries

@@ -37,7 +37,7 @@ PYTHONPATH=. python scripts/paper_vis/benchmark_bar_charts.py --plot_type ego --
 
 **Key flags:**
 - `--use_best_returns_normalization` (default true) — renormalize by the best observed return per heldout agent instead of the original per-agent bounds
-- `--include_bc` (default false) — ensure the human proxy (BC) teammate is part of every method's heldout set. iclr26-era runs already evaluate against `human_proxy` as part of the heldout set; for older runs that lack it, the separate BC eval run listed in `BC_BENCHMARK_RUNS` is appended at plot time. The script prints a per-cell coverage report (`builtin` / `bc_merge` / `MISSING`) at the end
+- `--include_bc` (default false) — ensure the human proxy (BC) teammate is part of every method's heldout set. sept26-era runs already evaluate against `human_proxy` as part of the heldout set; for older runs that lack it, the separate BC eval run listed in `BC_BENCHMARK_RUNS` is appended at plot time. The script prints a per-cell coverage report (`builtin` / `bc_merge` / `MISSING`) at the end
 - `--filter_failed_seeds` (default false) — filter out failed seeds
 - `--tasks lbf/lbf_7x7_nolevels overcooked-v1/cramped_room` — restrict to specific tasks
 - `--force_recompute` — re-download eval artifacts from wandb and recompute best returns and summary stats (normally unnecessary: caches are keyed by run IDs and invalidated automatically)

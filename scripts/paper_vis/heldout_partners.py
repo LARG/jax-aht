@@ -6,14 +6,14 @@ Two things make that order hard to recover after the fact:
 
 * wandb stores nested config dicts with keys reordered, so the run config's
   ``heldout_set`` cannot be iterated to recover the partner order;
-* the live yaml has been reordered since the neurips-era runs (e.g. the LBF 7x7
+* the live yaml has been reordered since the may26-era runs (e.g. the LBF 7x7
   heuristics moved before the RL partners).
 
 The heldout runner also logs a table whose columns are the partner labels in
 artifact order, so we take the order from there and look bounds up *by name*
 in the run config.
 
-Human proxy partners: iclr26-era runs (and the neurips ROTATE runs) evaluate
+Human proxy partners: sept26-era runs (and the may26 ROTATE runs) evaluate
 against a ``human_proxy`` partner as part of the standard heldout set. Older
 runs do not, and were instead evaluated against the BC proxy in a separate
 run (``BC_BENCHMARK_RUNS``). ``load_run_eval_metrics`` reconciles the two by

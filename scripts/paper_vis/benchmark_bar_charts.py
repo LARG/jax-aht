@@ -410,7 +410,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--include_bc",
         action="store_true",
-        help="Include the human proxy partner in every cell: iclr26-era runs already "
+        help="Include the human proxy partner in every cell: sept26-era runs already "
         "evaluate against it; for older runs the separate BC heldout-eval artifact "
         "(BC_BENCHMARK_RUNS) is appended along the partner axis. Cells with neither "
         "are reported at the end.",
