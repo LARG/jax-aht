@@ -55,6 +55,8 @@ be listed as `CudaDevice` entries.
 python download_eval_data.py
 ```
 
+Re-running the script only downloads files that are missing locally; pass `--force` to re-download everything.
+
 6. Test the installation by running our IPPO implementation: 
 ```bash
 python marl/run.py task=lbf/lbf_7x7_nolevels algorithm=ippo/lbf/lbf_7x7_nolevels

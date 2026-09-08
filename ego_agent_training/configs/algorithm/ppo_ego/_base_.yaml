@@ -16,6 +16,7 @@ ENT_COEF: 0.01
 VF_COEF: 0.5
 MAX_GRAD_NORM: 1.0
 ANNEAL_LR: true
+ACTIVATION: tanh
 partner_agent: # partner config for ppo_ego
   # Only specify ONE partner agent type. Must be RL-based.
   ippo: # Name of the partner agent type. Can be arbitrary.

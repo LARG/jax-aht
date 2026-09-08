@@ -123,8 +123,28 @@ Download the complete evaluation set from the repository root:
 python download_eval_data.py
 ```
 
-The script places policies under `eval_teammates/` and the best-return data under `results/`.
+The script places policies under `eval_teammates/`, the validation policies under `val_teammates/`, and the best-return data under `results/`.
+Re-running the script only downloads files that are missing locally; pass `--force` to re-download everything.
 Routine CPU tests validate the heldout configuration without downloading these artifacts.
+
+### Validation teammates
+
+The heldout set above is reserved for reporting final results. A disjoint *validation* set, from the
+public [jaxaht/val-teammates dataset](https://huggingface.co/datasets/jaxaht/val-teammates), is provided
+for model selection and hyperparameter tuning, so that the heldout set is not tuned against. It is
+described by `evaluation/configs/global_validation_settings.yaml` and covers the two LBF tasks, the five
+Overcooked-v1 layouts, and Mini-Hanabi.
+
+To evaluate against the validation set instead of the heldout set, swap the entry in the `defaults` list
+of the evaluation config you are running (e.g. `evaluation/configs/heldout_ego.yaml`):
+
+```yaml
+defaults:
+  - task: lbf/lbf_7x7_nolevels
+  - global_validation_settings  # was: global_heldout_settings
+  - hydra: hydra_simple
+  - _self_
+```
 
 ## ▶️ Getting Started
 
