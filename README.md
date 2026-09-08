@@ -91,6 +91,7 @@ The CPU smoke suite currently runs IPPO, FCP, BRDiv, LBRDiv, CoMeDi, PPO Ego, LI
     - [Overcooked-v1](#overcooked-v1)
     - [Hanabi](#hanabi)
 - [📄 License](#-license)
+- [📓 Changelog](#-changelog)
 - [🔗 See Also](#-see-also)
 
 
@@ -307,6 +308,10 @@ JAX_AHT_RUN_HELDOUT_LOADING=1 python -m pytest -q -m eval_data tests/test_heldou
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📓 Changelog
+
+Notable changes since the initial release are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## 🔗 See Also
 This project was inspired by the following Jax-based RL repositories. Please check them out!
