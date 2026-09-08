@@ -22,6 +22,14 @@ renamed to the new version and a fresh `Unreleased` section is started.
 - Tuned hyperparameters from the benchmark sweeps, for every algorithm and task.
 - `download_eval_data.py` skips files already present locally, reports which downloads failed,
   and exits non-zero if any did.
+
+### Performance
+- MeLIBA subsamples decoder ELBO start indices, stratified to keep estimator variance low
+  (~4x faster).
+- TrajeDi takes a single gradient of the summed masked loss instead of a per-agent `vmap`
+  (~1.5x faster).
+- Heldout evaluation reuses XLA compilations across partners, and no longer OOMs on the 2D
+  sweep (it vmaps over seeds and loops over iterations).
 - Bootstrap confidence intervals in heldout evaluation are computed in parallel across tasks.
 
 ### Fixed
@@ -29,10 +37,10 @@ renamed to the new version and a fresh `Unreleased` section is started.
   post-step `done` as the reset signal while rollouts use the pre-step `done`. Transitions now
   store `prev_done` for replay across all trainers.
 - MeLIBA: KL is averaged over the batch (making `DECODER_KL_WEIGHT` minibatch-size invariant),
-  ELBO start indices are sampled per seed, step, and env instance, and the decoder action head
+  ELBO sampling and encoder noise vary per seed and gradient step, and the decoder action head
   is sized from the partner action space.
 - TrajeDi: corrected the second self-play entropy term, the probability-space JSD multiplier,
-  and the `update_steps` increment. The loss is also ~1.5x faster.
+  and the `update_steps` increment.
 - COLE: population buffer scores are stored as log-probabilities so softmax sampling recovers
   the metasolver distribution; Shapley coalition sampling, weights, and cross-play
   normalization are restricted to trained population slots; and the update budget counts
