@@ -9,6 +9,12 @@ renamed to the new version and a fresh `Unreleased` section is started.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-08
+
+Benchmark results from this version are **not comparable to 1.0.0**: the tuned hyperparameters
+and the correctness fixes below both change reported numbers. Please re-run baselines rather
+than mixing results across versions.
+
 ### Added
 - CI on pull requests: package build, CPU tests, and algorithm smoke tests.
 - A validation teammate set (`evaluation/configs/global_validation_settings.yaml`) for tuning
@@ -53,5 +59,6 @@ renamed to the new version and a fresh `Unreleased` section is started.
 
 Initial public release.
 
-[Unreleased]: https://github.com/LARG/jax-aht/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/LARG/jax-aht/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/LARG/jax-aht/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/LARG/jax-aht/releases/tag/v1.0.0
