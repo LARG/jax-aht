@@ -1,11 +1,15 @@
 import argparse
 import os
-from huggingface_hub import hf_hub_download, list_repo_files, snapshot_download
-import zipfile
 import shutil
 import tempfile
+import zipfile
 
-def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str, force: bool = False):
+from huggingface_hub import hf_hub_download, list_repo_files, snapshot_download
+
+
+def download_and_unzip_hf_file(
+    repo_id: str, filename: str, destination_dir: str, force: bool = False
+):
     """
     Downloads a file from a Hugging Face dataset repository, and moves its contents to the destination directory.
 
@@ -24,53 +28,70 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
 
     try:
         # Download the file from Hugging Face Hub (specify repo_type="dataset" for dataset repositories)
-        downloaded_file_path = hf_hub_download(repo_id=repo_id, filename=filename, repo_type="dataset")
+        downloaded_file_path = hf_hub_download(
+            repo_id=repo_id, filename=filename, repo_type="dataset"
+        )
         print(f"Downloaded {filename} to {downloaded_file_path}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error during hf_hub_download for {repo_id}/{filename}: {e}")
         return False
 
-    if not os.path.exists(downloaded_file_path) or os.path.getsize(downloaded_file_path) == 0:
+    if (
+        not os.path.exists(downloaded_file_path)
+        or os.path.getsize(downloaded_file_path) == 0
+    ):
         print(f"Error: Download failed or file is empty: {downloaded_file_path}")
         return False
-    
+
     downloaded_size = os.path.getsize(downloaded_file_path)
     print(f"Downloaded {downloaded_file_path} ({downloaded_size} bytes).")
 
     temp_dir_for_extraction = tempfile.mkdtemp()
 
     try:
-        print(f"Unzipping {downloaded_file_path} to temporary directory {temp_dir_for_extraction}...")
-        with zipfile.ZipFile(downloaded_file_path, 'r') as zip_ref:
+        print(
+            f"Unzipping {downloaded_file_path} to temporary directory {temp_dir_for_extraction}..."
+        )
+        with zipfile.ZipFile(downloaded_file_path, "r") as zip_ref:
             zip_ref.extractall(temp_dir_for_extraction)
-        print(f"Successfully unzipped {downloaded_file_path} to {temp_dir_for_extraction}.")
+        print(
+            f"Successfully unzipped {downloaded_file_path} to {temp_dir_for_extraction}."
+        )
 
         # Determine the source of files to move
         extracted_items = os.listdir(temp_dir_for_extraction)
         source_path_for_moving = temp_dir_for_extraction
 
         if len(extracted_items) == 1:
-            potential_single_folder = os.path.join(temp_dir_for_extraction, extracted_items[0])
+            potential_single_folder = os.path.join(
+                temp_dir_for_extraction, extracted_items[0]
+            )
             if os.path.isdir(potential_single_folder):
                 source_path_for_moving = potential_single_folder
-        
+
         # Ensure final destination directory exists
         os.makedirs(destination_dir, exist_ok=True)
 
-        print(f"Processing and moving files from '{source_path_for_moving}' to '{destination_dir}'...")
-        
+        print(
+            f"Processing and moving files from '{source_path_for_moving}' to '{destination_dir}'..."
+        )
+
         files_moved_count = 0
         files_skipped_count = 0
         # os.walk will iterate through all files and directories in source_path_for_moving
         for root, _, files_in_dir in os.walk(source_path_for_moving):
-            for filename in files_in_dir:
-                src_file_full_path = os.path.join(root, filename)
-                
+            for entry_name in files_in_dir:
+                src_file_full_path = os.path.join(root, entry_name)
+
                 # Determine the path of the file relative to the source_path_for_moving
                 # This relative path will be used to construct the destination path
-                relative_path_to_file = os.path.relpath(src_file_full_path, source_path_for_moving)
-                dst_file_full_path = os.path.join(destination_dir, relative_path_to_file)
-                
+                relative_path_to_file = os.path.relpath(
+                    src_file_full_path, source_path_for_moving
+                )
+                dst_file_full_path = os.path.join(
+                    destination_dir, relative_path_to_file
+                )
+
                 # Ensure the parent directory for the destination file exists
                 dst_file_parent_dir = os.path.dirname(dst_file_full_path)
                 os.makedirs(dst_file_parent_dir, exist_ok=True)
@@ -85,39 +106,59 @@ def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str
                 files_moved_count += 1
 
         if files_skipped_count > 0:
-            print(f"Skipped {files_skipped_count} file(s) already present in {destination_dir}.")
+            print(
+                f"Skipped {files_skipped_count} file(s) already present in {destination_dir}."
+            )
 
         if files_moved_count > 0:
-            print(f"Successfully moved {files_moved_count} file(s) to {destination_dir}.")
+            print(
+                f"Successfully moved {files_moved_count} file(s) to {destination_dir}."
+            )
         elif files_skipped_count > 0:
-            print(f"Nothing to do: all extracted files are already present in {destination_dir}.")
+            print(
+                f"Nothing to do: all extracted files are already present in {destination_dir}."
+            )
         else:
             # Provide a more specific note if no files were moved.
-            if not extracted_items: # Nothing was extracted from the zip initially
-                 print(f"Note: The zip file '{filename}' appears to be completely empty.")
-            elif source_path_for_moving != temp_dir_for_extraction and not os.listdir(source_path_for_moving):
-                 # This means a single root folder was identified, and it was empty.
-                 print(f"Note: The single root folder '{os.path.basename(source_path_for_moving)}' (from zip) was empty, so no files were moved.")
-            else: # Zip either contained only empty directories, or the structure didn't yield files from source_path_for_moving
-                 print(f"Note: No files found to move from '{source_path_for_moving}'. The zip may have contained only empty directories.")
-        
+            if not extracted_items:  # Nothing was extracted from the zip initially
+                print(
+                    f"Note: The zip file '{filename}' appears to be completely empty."
+                )
+            elif source_path_for_moving != temp_dir_for_extraction and not os.listdir(
+                source_path_for_moving
+            ):
+                # This means a single root folder was identified, and it was empty.
+                print(
+                    f"Note: The single root folder '{os.path.basename(source_path_for_moving)}' (from zip) was empty, so no files were moved."
+                )
+            else:  # Zip either contained only empty directories, or the structure didn't yield files from source_path_for_moving
+                print(
+                    f"Note: No files found to move from '{source_path_for_moving}'. The zip may have contained only empty directories."
+                )
+
         return True
 
     except zipfile.BadZipFile:
-        print(f"Error: File {downloaded_file_path} (size: {downloaded_size} bytes) is not a valid zip file.")
+        print(
+            f"Error: File {downloaded_file_path} (size: {downloaded_size} bytes) is not a valid zip file."
+        )
         return False
-    except Exception as e_unzip:
+    except Exception as e_unzip:  # noqa: BLE001
         # This catches other errors during unzipping or the file moving logic.
         print(f"Error during unzipping or moving of {downloaded_file_path}: {e_unzip}")
         return False
     finally:
         # Always try to clean up the temporary extraction directory
         if os.path.exists(temp_dir_for_extraction):
-            print(f"Cleaning up temporary extraction directory: {temp_dir_for_extraction}")
+            print(
+                f"Cleaning up temporary extraction directory: {temp_dir_for_extraction}"
+            )
             shutil.rmtree(temp_dir_for_extraction)
 
 
-def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, force: bool = False):
+def download_hf_directory(
+    repo_id: str, remote_dir: str, destination_dir: str, force: bool = False
+):
     """
     Downloads a directory from a Hugging Face dataset repository to a local directory,
     preserving the remote directory structure under destination_dir.
@@ -132,7 +173,9 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, f
     Returns:
         bool: True if successful, False otherwise.
     """
-    print(f"Starting download: {repo_id}/{remote_dir} -> {destination_dir}/{remote_dir}")
+    print(
+        f"Starting download: {repo_id}/{remote_dir} -> {destination_dir}/{remote_dir}"
+    )
     os.makedirs(destination_dir, exist_ok=True)
 
     if force:
@@ -146,17 +189,18 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, f
             )
             print(f"Successfully downloaded {remote_dir} to {destination_dir}.")
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Error downloading {repo_id}/{remote_dir}: {e}")
             return False
 
     # Incremental: only fetch the files that are missing locally.
     try:
         repo_files = [
-            f for f in list_repo_files(repo_id=repo_id, repo_type="dataset")
+            f
+            for f in list_repo_files(repo_id=repo_id, repo_type="dataset")
             if f == remote_dir or f.startswith(f"{remote_dir}/")
         ]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error listing files in {repo_id}/{remote_dir}: {e}")
         return False
 
@@ -164,7 +208,9 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, f
         print(f"Warning: no files found under {repo_id}/{remote_dir}.")
         return True
 
-    missing = [f for f in repo_files if not os.path.exists(os.path.join(destination_dir, f))]
+    missing = [
+        f for f in repo_files if not os.path.exists(os.path.join(destination_dir, f))
+    ]
     n_present = len(repo_files) - len(missing)
     if n_present > 0:
         print(f"Skipping {n_present} file(s) already present in {destination_dir}.")
@@ -183,7 +229,7 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, f
             )
         print(f"Successfully downloaded {remote_dir} to {destination_dir}.")
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error downloading {repo_id}/{remote_dir}: {e}")
         return False
 
@@ -191,10 +237,11 @@ def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str, f
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Download evaluation/validation teammate data from Hugging Face. "
-                    "By default, files already present locally are skipped."
+        "By default, files already present locally are skipped."
     )
     parser.add_argument(
-        "-f", "--force",
+        "-f",
+        "--force",
         action="store_true",
         help="Re-download everything, overwriting files that are already present locally.",
     )
