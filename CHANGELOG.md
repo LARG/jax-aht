@@ -16,6 +16,12 @@ and the correctness fixes below both change reported numbers. Please re-run base
 than mixing results across versions.
 
 ### Added
+- Hanabi (2-player, 5 colors and 5 ranks) and Mini-Hanabi (3 colors and 3 ranks) tasks, and the
+  LBF 12x12 layout, with algorithm configs for each.
+- Heldout evaluation sets for Hanabi, Mini-Hanabi, and LBF 12x12, along with the best-response
+  returns used as performance bounds when normalizing results. The heldout set now spans nine
+  tasks, up from six.
+- BC-LSTM human proxy agents for LBF and Overcooked-v1, trained on collected human data.
 - CI on pull requests: package build, CPU tests, and algorithm smoke tests.
 - A validation teammate set (`evaluation/configs/global_validation_settings.yaml`) for tuning
   and model selection, so the heldout set is only used for final results. Downloaded from
