@@ -25,6 +25,21 @@ renamed to the new version and a fresh `Unreleased` section is started.
 - Bootstrap confidence intervals in heldout evaluation are computed in parallel across tasks.
 
 ### Fixed
+- Recurrent agent updates reset hidden states one step early, because replay passed the
+  post-step `done` as the reset signal while rollouts use the pre-step `done`. Transitions now
+  store `prev_done` for replay across all trainers.
+- MeLIBA: KL is averaged over the batch (making `DECODER_KL_WEIGHT` minibatch-size invariant),
+  ELBO start indices are sampled per seed, step, and env instance, and the decoder action head
+  is sized from the partner action space.
+- TrajeDi: corrected the second self-play entropy term, the probability-space JSD multiplier,
+  and the `update_steps` increment. The loss is also ~1.5x faster.
+- COLE: population buffer scores are stored as log-probabilities so softmax sampling recovers
+  the metasolver distribution; Shapley coalition sampling, weights, and cross-play
+  normalization are restricted to trained population slots; and the update budget counts
+  training steps over the N-1 trained agents.
+- Bootstrap confidence intervals stacked eval episodes onto rliable's runs axis alongside
+  training seeds, inflating the sample size and shrinking the intervals. Episodes are now
+  averaged out first, leaving seeds as the replication unit.
 - Hydra run directories are timestamped to microseconds, so concurrent runs no longer share an
   output directory.
 
