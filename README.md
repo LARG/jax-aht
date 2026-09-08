@@ -6,13 +6,14 @@ For a quick introduction to the benchmark, please see our [tutorial notebook](tu
 ## 📢 What's New
 
 **v1.1.0** (September 2026)
+- Hanabi, Mini-Hanabi, and LBF 12x12 tasks, with heldout evaluation sets and best-response
+  performance bounds for each.
 - Tuned hyperparameters from our benchmark sweeps, for every algorithm and task.
 - A validation teammate set, so the heldout set is only used for final results.
 - Correctness fixes to MeLIBA, TrajeDi, COLE, recurrent agent updates, and bootstrap
   confidence intervals.
 
-Results from v1.1.0 are **not comparable to v1.0.0** — the tuned hyperparameters and the fixes
-above both change reported numbers. See [CHANGELOG.md](CHANGELOG.md) for the full list.
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 
 If you find this repository useful for your research, please cite,
