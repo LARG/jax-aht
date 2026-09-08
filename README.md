@@ -3,6 +3,17 @@
 Welcome to JaxAHT! This is a JAX-based benchmark repository for Ad Hoc Teamwork.
 For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
+## 📢 What's New
+
+**v1.1.0** (September 2026)
+- Tuned hyperparameters from our benchmark sweeps, for every algorithm and task.
+- A validation teammate set, so the heldout set is only used for final results.
+- Correctness fixes to MeLIBA, TrajeDi, COLE, recurrent agent updates, and bootstrap
+  confidence intervals.
+
+Results from v1.1.0 are **not comparable to v1.0.0** — the tuned hyperparameters and the fixes
+above both change reported numbers. See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
 
 If you find this repository useful for your research, please cite,
 ```bibtex
@@ -11,7 +22,7 @@ If you find this repository useful for your research, please cite,
   title = {JaxAHT},
   year = {2025},
   month = {September},
-  note = {Version 1.0.0},
+  note = {Version 1.1.0},
   url = {https://github.com/LARG/jax-aht},
 }
 ```
