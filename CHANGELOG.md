@@ -14,12 +14,10 @@ renamed to the new version and a fresh `Unreleased` section is started.
 - A validation teammate set (`evaluation/configs/global_validation_settings.yaml`) for tuning
   and model selection, so the heldout set is only used for final results. Downloaded from
   [jaxaht/val-teammates](https://huggingface.co/datasets/jaxaht/val-teammates).
-- Configs for `liam_ego` and `meliba_ego` on all Overcooked-v1 layouts, and `trajedi` on
-  `lbf/lbf_12x12`.
+- Tuned hyperparameters from the benchmark sweeps, for every algorithm and task.
 - `download_eval_data.py --force` to re-download data already present locally.
 
 ### Changed
-- Tuned hyperparameters from the benchmark sweeps, for every algorithm and task.
 - `download_eval_data.py` skips files already present locally, reports which downloads failed,
   and exits non-zero if any did.
 
