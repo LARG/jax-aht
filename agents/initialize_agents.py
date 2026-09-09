@@ -8,6 +8,11 @@ from agents.s5_actor_critic_agent import S5ActorCriticPolicy, S5ActorWithDoubleC
 from agents.liam_agent import LIAMPolicy, initialize_liam_encoder_decoder
 from agents.meliba_agent import MeLIBAPolicy, initialize_meliba_encoder_decoder
 
+def _env_obs_dim(env):
+    # Hanabi/mini-hanabi expose observation_space().shape as an int, not a tuple.
+    shape = env.observation_space(env.agents[0]).shape
+    return shape[0] if isinstance(shape, (tuple, list)) else shape
+
 def initialize_s5_agent(config, env, rng, obs_dim_override=None):
     """Initialize an S5 agent with the given config.
 
@@ -25,7 +30,7 @@ def initialize_s5_agent(config, env, rng, obs_dim_override=None):
     policy = S5ActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=obs_dim_override if obs_dim_override is not None
-            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+            else config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         d_model=config.get("S5_D_MODEL", 128),
         ssm_size=config.get("S5_SSM_SIZE", 128),
         # d_model=config.get("S5_D_MODEL", 16),
@@ -62,7 +67,7 @@ def initialize_rnn_agent(config, env, rng):
     # Create the RNN policy
     policy = RNNActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        obs_dim=config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
         gru_hidden_dim=config.get("GRU_HIDDEN_DIM", 64),
@@ -80,7 +85,7 @@ def initialize_mlp_agent(config, env, rng, obs_dim_override=None):
     policy = MLPActorCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=obs_dim_override if obs_dim_override is not None
-            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+            else config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
@@ -94,7 +99,7 @@ def initialize_actor_with_double_critic(config, env, rng, obs_dim_override=None)
     policy = ActorWithDoubleCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=obs_dim_override if obs_dim_override is not None
-            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+            else config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
@@ -108,7 +113,7 @@ def initialize_s5_actor_with_double_critic(config, env, rng, obs_dim_override=No
     policy = S5ActorWithDoubleCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
         obs_dim=obs_dim_override if obs_dim_override is not None
-            else config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+            else config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         d_model=config.get("S5_D_MODEL", 128),
         ssm_size=config.get("S5_SSM_SIZE", 128),
         ssm_n_layers=config.get("S5_N_LAYERS", 2),
@@ -129,7 +134,7 @@ def initialize_pseudo_actor_with_double_critic(config, env, rng):
     """Initialize a pseudo actor with double critic with the given config."""
     policy = PseudoActorWithDoubleCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        obs_dim=config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
     )
@@ -142,7 +147,7 @@ def initialize_actor_with_conditional_critic(config, env, rng):
     """Initialize an actor with conditional critic with the given config."""
     policy = ActorWithConditionalCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        obs_dim=config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         pop_size=config["POP_SIZE"],
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
@@ -156,7 +161,7 @@ def initialize_pseudo_actor_with_conditional_critic(config, env, rng):
     """Initialize a pseudo actor with conditional critic with the given config."""
     policy = PseudoActorWithConditionalCriticPolicy(
         action_dim=env.action_space(env.agents[0]).n,
-        obs_dim=config.get("POLICY_INPUT_DIM", env.observation_space(env.agents[0]).shape[0]),
+        obs_dim=config.get("POLICY_INPUT_DIM", _env_obs_dim(env)),
         pop_size=config["POP_SIZE"],
         activation=config.get("ACTIVATION", "tanh"),
         fc_hidden_dim=config.get("FC_HIDDEN_DIM", 64),
