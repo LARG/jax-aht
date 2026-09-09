@@ -1,192 +1,194 @@
+"""Download the evaluation and validation teammate data from Hugging Face.
+
+By default only files that are missing locally are downloaded; pass --force to
+re-download everything.
+"""
+
+import argparse
 import os
-from huggingface_hub import hf_hub_download, snapshot_download
-import zipfile
 import shutil
 import tempfile
+import zipfile
 
-def download_and_unzip_hf_file(repo_id: str, filename: str, destination_dir: str):
+from huggingface_hub import hf_hub_download, list_repo_files
+
+DEFAULT_REPO_ID = "jaxaht/eval-teammates"
+VAL_REPO_ID = "jaxaht/val-teammates"
+
+# name -> (kind, remote name, local destination, repo id)
+DATA_FILES = {
+    "best_returns_teammates": (
+        "zip",
+        "best_heldout_returns.zip",
+        "results/",
+        DEFAULT_REPO_ID,
+    ),
+    "lbf_teammates": ("dir", "lbf_7x7", "eval_teammates/", DEFAULT_REPO_ID),
+    "lbf_12x12_teammates": ("dir", "lbf_12x12", "eval_teammates/", DEFAULT_REPO_ID),
+    "overcooked-v1_teammates": (
+        "dir",
+        "overcooked-v1",
+        "eval_teammates/",
+        DEFAULT_REPO_ID,
+    ),
+    "hanabi_teammates": ("dir", "hanabi", "eval_teammates/", DEFAULT_REPO_ID),
+    "mini_hanabi_teammates": ("dir", "mini_hanabi", "eval_teammates/", DEFAULT_REPO_ID),
+    "lbf_val_teammates": ("dir", "lbf", "val_teammates/", VAL_REPO_ID),
+    "lbf_12x12_val_teammates": ("dir", "lbf_12x12", "val_teammates/", VAL_REPO_ID),
+    "overcooked-v1_val_teammates": (
+        "dir",
+        "overcooked-v1",
+        "val_teammates/",
+        VAL_REPO_ID,
+    ),
+    "mini_hanabi_val_teammates": ("dir", "mini_hanabi", "val_teammates/", VAL_REPO_ID),
+}
+
+
+def _move_tree(source_dir: str, destination_dir: str, force: bool) -> tuple[int, int]:
+    """Move every file under source_dir into destination_dir, preserving structure.
+
+    Existing files are left alone unless force is set. Returns (moved, skipped).
     """
-    Downloads a file from a Hugging Face dataset repository, and moves its contents to the destination directory.
+    moved = skipped = 0
+    for root, _, filenames in os.walk(source_dir):
+        for name in filenames:
+            src = os.path.join(root, name)
+            dst = os.path.join(destination_dir, os.path.relpath(src, source_dir))
 
-    Args:
-        repo_id (str): The Hugging Face repository ID (e.g., "jaxaht/eval-teammates").
-        filename (str): The name of the file to download from the repository.
-        destination_dir (str): The directory where the file should be unzipped.
-    Returns:
-        bool: True if successful, False otherwise.
+            if os.path.isfile(dst) and not force:
+                skipped += 1
+                continue
+
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.move(src, dst)
+            moved += 1
+    return moved, skipped
+
+
+def download_and_unzip_hf_file(
+    repo_id: str, filename: str, destination_dir: str, force: bool = False
+) -> None:
+    """Download a zip archive from a HF dataset repo and extract it into destination_dir.
+
+    If the archive contains a single top-level folder, its contents are placed
+    directly in destination_dir rather than nested one level deeper.
+
+    Raises on download or extraction failure.
     """
     print(f"Starting download & extraction: {repo_id}/{filename} -> {destination_dir}")
-
     os.makedirs(destination_dir, exist_ok=True)
 
-    try:
-        # Download the file from Hugging Face Hub (specify repo_type="dataset" for dataset repositories)
-        downloaded_file_path = hf_hub_download(repo_id=repo_id, filename=filename, repo_type="dataset")
-        print(f"Downloaded {filename} to {downloaded_file_path}")
-    except Exception as e:
-        print(f"Error during hf_hub_download for {repo_id}/{filename}: {e}")
-        return False
+    archive_path = hf_hub_download(
+        repo_id=repo_id, filename=filename, repo_type="dataset", force_download=force
+    )
 
-    if not os.path.exists(downloaded_file_path) or os.path.getsize(downloaded_file_path) == 0:
-        print(f"Error: Download failed or file is empty: {downloaded_file_path}")
-        return False
-    
-    downloaded_size = os.path.getsize(downloaded_file_path)
-    print(f"Downloaded {downloaded_file_path} ({downloaded_size} bytes).")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with zipfile.ZipFile(archive_path) as archive:
+            archive.extractall(temp_dir)
 
-    temp_dir_for_extraction = tempfile.mkdtemp()
+        # Unwrap a single top-level folder, if that is how the archive is laid out.
+        source_dir = temp_dir
+        entries = os.listdir(temp_dir)
+        if len(entries) == 1 and os.path.isdir(os.path.join(temp_dir, entries[0])):
+            source_dir = os.path.join(temp_dir, entries[0])
 
-    try:
-        print(f"Unzipping {downloaded_file_path} to temporary directory {temp_dir_for_extraction}...")
-        with zipfile.ZipFile(downloaded_file_path, 'r') as zip_ref:
-            zip_ref.extractall(temp_dir_for_extraction)
-        print(f"Successfully unzipped {downloaded_file_path} to {temp_dir_for_extraction}.")
+        moved, skipped = _move_tree(source_dir, destination_dir, force)
 
-        # Determine the source of files to move
-        extracted_items = os.listdir(temp_dir_for_extraction)
-        source_path_for_moving = temp_dir_for_extraction
-
-        if len(extracted_items) == 1:
-            potential_single_folder = os.path.join(temp_dir_for_extraction, extracted_items[0])
-            if os.path.isdir(potential_single_folder):
-                source_path_for_moving = potential_single_folder
-        
-        # Ensure final destination directory exists
-        os.makedirs(destination_dir, exist_ok=True)
-
-        print(f"Processing and moving files from '{source_path_for_moving}' to '{destination_dir}'...")
-        
-        files_moved_count = 0
-        # os.walk will iterate through all files and directories in source_path_for_moving
-        for root, _, files_in_dir in os.walk(source_path_for_moving):
-            for filename in files_in_dir:
-                src_file_full_path = os.path.join(root, filename)
-                
-                # Determine the path of the file relative to the source_path_for_moving
-                # This relative path will be used to construct the destination path
-                relative_path_to_file = os.path.relpath(src_file_full_path, source_path_for_moving)
-                dst_file_full_path = os.path.join(destination_dir, relative_path_to_file)
-                
-                # Ensure the parent directory for the destination file exists
-                dst_file_parent_dir = os.path.dirname(dst_file_full_path)
-                os.makedirs(dst_file_parent_dir, exist_ok=True)
-
-                if os.path.isfile(dst_file_full_path):
-                    print(f"Warning: Overwriting existing file '{dst_file_full_path}'.")
-
-                shutil.move(src_file_full_path, dst_file_full_path)
-                files_moved_count += 1
-        
-        if files_moved_count > 0:
-            print(f"Successfully moved {files_moved_count} file(s) to {destination_dir}.")
-        else:
-            # Provide a more specific note if no files were moved.
-            if not extracted_items: # Nothing was extracted from the zip initially
-                 print(f"Note: The zip file '{filename}' appears to be completely empty.")
-            elif source_path_for_moving != temp_dir_for_extraction and not os.listdir(source_path_for_moving):
-                 # This means a single root folder was identified, and it was empty.
-                 print(f"Note: The single root folder '{os.path.basename(source_path_for_moving)}' (from zip) was empty, so no files were moved.")
-            else: # Zip either contained only empty directories, or the structure didn't yield files from source_path_for_moving
-                 print(f"Note: No files found to move from '{source_path_for_moving}'. The zip may have contained only empty directories.")
-        
-        return True
-
-    except zipfile.BadZipFile:
-        print(f"Error: File {downloaded_file_path} (size: {downloaded_size} bytes) is not a valid zip file.")
-        return False
-    except Exception as e_unzip:
-        # This catches other errors during unzipping or the file moving logic.
-        print(f"Error during unzipping or moving of {downloaded_file_path}: {e_unzip}")
-        return False
-    finally:
-        # Always try to clean up the temporary extraction directory
-        if os.path.exists(temp_dir_for_extraction):
-            print(f"Cleaning up temporary extraction directory: {temp_dir_for_extraction}")
-            shutil.rmtree(temp_dir_for_extraction)
+    if skipped:
+        print(f"Skipped {skipped} file(s) already present in {destination_dir}.")
+    if moved:
+        print(f"Moved {moved} file(s) to {destination_dir}.")
+    elif skipped:
+        print(f"Nothing to do: {filename} is already fully extracted.")
+    else:
+        print(f"Warning: {filename} contained no files.")
 
 
-def download_hf_directory(repo_id: str, remote_dir: str, destination_dir: str):
+def download_hf_directory(
+    repo_id: str, remote_dir: str, destination_dir: str, force: bool = False
+) -> None:
+    """Download a directory from a HF dataset repo, preserving its structure.
+
+    remote_dir becomes a subdirectory of destination_dir. Files already present
+    locally are skipped unless force is set.
+
+    Raises on download failure.
     """
-    Downloads a directory from a Hugging Face dataset repository to a local directory,
-    preserving the remote directory structure under destination_dir.
-
-    Args:
-        repo_id (str): The Hugging Face repository ID (e.g., "jaxaht/eval-teammates").
-        remote_dir (str): The directory in the HF repo to download (e.g., "lbf_7x7").
-        destination_dir (str): Local directory to download into; remote_dir becomes a
-                               subdirectory of this (e.g., destination_dir/lbf/...).
-    Returns:
-        bool: True if successful, False otherwise.
-    """
-    print(f"Starting download: {repo_id}/{remote_dir} -> {destination_dir}/{remote_dir}")
+    destination = os.path.join(destination_dir, remote_dir)
+    print(f"Starting download: {repo_id}/{remote_dir} -> {destination}")
     os.makedirs(destination_dir, exist_ok=True)
 
-    try:
-        snapshot_download(
+    repo_files = [
+        f
+        for f in list_repo_files(repo_id=repo_id, repo_type="dataset")
+        if f == remote_dir or f.startswith(f"{remote_dir}/")
+    ]
+    if not repo_files:
+        print(f"Warning: no files found under {repo_id}/{remote_dir}.")
+        return
+
+    if force:
+        wanted = repo_files
+    else:
+        wanted = [
+            f
+            for f in repo_files
+            if not os.path.exists(os.path.join(destination_dir, f))
+        ]
+
+    skipped = len(repo_files) - len(wanted)
+    if skipped:
+        print(f"Skipping {skipped} file(s) already present in {destination_dir}.")
+    if not wanted:
+        print(f"Nothing to do: {remote_dir} is already fully downloaded.")
+        return
+
+    print(f"Downloading {len(wanted)} file(s) from {repo_id}/{remote_dir}...")
+    for name in wanted:
+        hf_hub_download(
             repo_id=repo_id,
             repo_type="dataset",
+            filename=name,
             local_dir=destination_dir,
-            allow_patterns=f"{remote_dir}/**",
+            force_download=force,
         )
-        print(f"Successfully downloaded {remote_dir} to {destination_dir}.")
-        return True
-    except Exception as e:
-        print(f"Error downloading {repo_id}/{remote_dir}: {e}")
-        return False
+    print(f"Successfully downloaded {remote_dir} to {destination_dir}.")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Download evaluation/validation teammate data from Hugging Face. "
+        "By default, files already present locally are skipped."
+    )
+    parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Re-download everything, overwriting files that are already present locally.",
+    )
+    args = parser.parse_args()
+
+    failed = []
+    for name, (kind, remote_name, destination_dir, repo_id) in DATA_FILES.items():
+        download = (
+            download_and_unzip_hf_file if kind == "zip" else download_hf_directory
+        )
+        try:
+            download(repo_id, remote_name, destination_dir, force=args.force)
+        except Exception as e:  # noqa: BLE001 - report and continue to the next dataset
+            print(f"Download failed for {name}: {type(e).__name__}: {e}")
+            failed.append(name)
+        else:
+            print(f"Download completed successfully for {name}.")
+
+    if failed:
+        print(f"\n{len(failed)} download(s) failed: {', '.join(failed)}")
+        return 1
+
+    print("\nAll downloads completed successfully.")
+    return 0
 
 
 if __name__ == "__main__":
-    default_repo_id = "jaxaht/eval-teammates"
-
-    data_files = {
-        "best_returns_teammates": {
-            "type": "zip",
-            "filename": "best_heldout_returns.zip",
-            "target_directory": "results/",
-        },
-        "lbf_teammates": {
-            "type": "dir",
-            "filename": "lbf_7x7",
-            "target_directory": "eval_teammates/",
-        },
-        "lbf_12x12_teammates": {
-            "type": "dir",
-            "filename": "lbf_12x12",
-            "target_directory": "eval_teammates/",
-        },
-        "overcooked-v1_teammates": {
-            "type": "dir",
-            "filename": "overcooked-v1",
-            "target_directory": "eval_teammates/",
-        },
-        "hanabi_teammates": {
-            "type": "dir",
-            "filename": "hanabi",
-            "target_directory": "eval_teammates/",
-        },
-        "mini_hanabi_teammates": {
-            "type": "dir",
-            "filename": "mini_hanabi",
-            "target_directory": "eval_teammates/",
-        },
-    }
-
-    for data_name, data_info in data_files.items():
-        repo_id = data_info.get("repo_id", default_repo_id)
-        if data_info["type"] == "zip":
-            success = download_and_unzip_hf_file(
-                repo_id=repo_id,
-                filename=data_info["filename"],
-                destination_dir=data_info["target_directory"],
-            )
-        else:
-            success = download_hf_directory(
-                repo_id=repo_id,
-                remote_dir=data_info["filename"],
-                destination_dir=data_info["target_directory"],
-            )
-
-        if success:
-            print(f"Download completed successfully for {data_name}.")
-        else:
-            print(f"Download failed for {data_name}.")
+    raise SystemExit(main())

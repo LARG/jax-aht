@@ -3,6 +3,18 @@
 Welcome to JaxAHT! This is a JAX-based benchmark repository for Ad Hoc Teamwork.
 For a quick introduction to the benchmark, please see our [tutorial notebook](tutorials/JaxAHT_Tutorial.ipynb).
 
+## 📢 What's New
+
+**v1.1.0** (September 2026)
+- Hanabi, Mini-Hanabi, and LBF 12x12 tasks, with heldout evaluation sets and best-response
+  performance bounds for each.
+- Tuned hyperparameters from our benchmark sweeps, for every algorithm and task.
+- A validation teammate set, so the heldout set is only used for final results.
+- Correctness fixes to MeLIBA, TrajeDi, COLE, recurrent agent updates, and bootstrap
+  confidence intervals.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
 
 If you find this repository useful for your research, please cite,
 ```bibtex
@@ -11,7 +23,7 @@ If you find this repository useful for your research, please cite,
   title = {JaxAHT},
   year = {2025},
   month = {September},
-  note = {Version 1.0.0},
+  note = {Version 1.1.0},
   url = {https://github.com/LARG/jax-aht},
 }
 ```
@@ -91,6 +103,7 @@ The CPU smoke suite currently runs IPPO, FCP, BRDiv, LBRDiv, CoMeDi, PPO Ego, LI
     - [Overcooked-v1](#overcooked-v1)
     - [Hanabi](#hanabi)
 - [📄 License](#-license)
+- [📓 Changelog](#-changelog)
 - [🔗 See Also](#-see-also)
 
 
@@ -123,8 +136,46 @@ Download the complete evaluation set from the repository root:
 python download_eval_data.py
 ```
 
-The script places policies under `eval_teammates/` and the best-return data under `results/`.
+The script places policies under `eval_teammates/`, the validation policies under `val_teammates/`, and the best-return data under `results/`.
+Re-running the script only downloads files that are missing locally; pass `--force` to re-download everything.
 Routine CPU tests validate the heldout configuration without downloading these artifacts.
+
+### Best responses to the heldout teammates
+
+By default, the heldout cross-play matrix (`evaluation/configs/heldout_xp.yaml`) uses the heldout agents
+themselves as the best-response set. To use *trained* best responses instead, uncomment the
+`global_heldout_br` entry in that config's `defaults` list and comment out the `best_response_set` line
+below it.
+
+These checkpoints live in the [jaxaht/eval-teammates-br dataset](https://huggingface.co/datasets/jaxaht/eval-teammates-br).
+The full set is ~74GB, so `download_eval_data.py` does not fetch it. Download only the tasks you
+need, directly from Hugging Face:
+
+```bash
+hf download jaxaht/eval-teammates-br --repo-type dataset --local-dir eval_teammates/ --include "lbf_7x7_nolevels/*"
+```
+
+Drop the `--include` filter to fetch all nine tasks. The task directories are `lbf_7x7_nolevels`,
+`lbf_12x12`, `overcooked_v1_<layout>`, `full_hanabi`, and `mini_hanabi`.
+
+### Validation teammates
+
+The heldout set above is reserved for reporting final results. A disjoint *validation* set, from the
+public [jaxaht/val-teammates dataset](https://huggingface.co/datasets/jaxaht/val-teammates), is provided
+for model selection and hyperparameter tuning, so that the heldout set is not tuned against. It is
+described by `evaluation/configs/global_validation_settings.yaml` and covers the two LBF tasks, the five
+Overcooked-v1 layouts, and Mini-Hanabi.
+
+To evaluate against the validation set instead of the heldout set, swap the entry in the `defaults` list
+of the evaluation config you are running (e.g. `evaluation/configs/heldout_ego.yaml`):
+
+```yaml
+defaults:
+  - task: lbf/lbf_7x7_nolevels
+  - global_validation_settings  # was: global_heldout_settings
+  - hydra: hydra_simple
+  - _self_
+```
 
 ## ▶️ Getting Started
 
@@ -287,6 +338,10 @@ JAX_AHT_RUN_HELDOUT_LOADING=1 python -m pytest -q -m eval_data tests/test_heldou
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📓 Changelog
+
+Notable changes since the initial release are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## 🔗 See Also
 This project was inspired by the following Jax-based RL repositories. Please check them out!
