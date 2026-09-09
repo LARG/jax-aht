@@ -1,0 +1,27 @@
+name: Check teammate paths
+
+# The heldout and validation configs point at checkpoints hosted in our Hugging
+# Face dataset repos. This runs weekly rather than on pull requests, so that a
+# Hugging Face outage cannot block unrelated work.
+on:
+  schedule:
+    - cron: "0 12 * * 1" # Mondays at 12:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  teammate-paths:
+    name: Teammate paths exist on Hugging Face
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: python -m pip install huggingface-hub pytest pyyaml
+      - name: Check configured paths
+        run: pytest tests/test_teammate_paths_on_hf.py -m hf_data --run-hf-data -v
