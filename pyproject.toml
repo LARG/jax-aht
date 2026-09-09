@@ -85,6 +85,7 @@ extraPaths = ["."]
 [tool.pytest.ini_options]
 markers = [
     "eval_data: requires locally downloaded eval teammate checkpoints",
+    "hf_data: queries the Hugging Face dataset repos over the network",
 ]
 
 [tool.ruff]
