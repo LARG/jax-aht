@@ -27,6 +27,9 @@ than mixing results across versions.
   and model selection, so the heldout set is only used for final results. Downloaded from
   [jaxaht/val-teammates](https://huggingface.co/datasets/jaxaht/val-teammates).
 - Tuned hyperparameters from the benchmark sweeps, for every algorithm and task.
+- `evaluation/configs/global_heldout_br.yaml`, the trained best responses to the heldout teammates,
+  for use with the heldout cross-play matrix. The checkpoints are ~74GB, so they are not fetched by
+  `download_eval_data.py`; see the README for how to download individual tasks.
 - `download_eval_data.py --force` to re-download data already present locally.
 
 ### Changed

@@ -140,6 +140,24 @@ The script places policies under `eval_teammates/`, the validation policies unde
 Re-running the script only downloads files that are missing locally; pass `--force` to re-download everything.
 Routine CPU tests validate the heldout configuration without downloading these artifacts.
 
+### Best responses to the heldout teammates
+
+By default, the heldout cross-play matrix (`evaluation/configs/heldout_xp.yaml`) uses the heldout agents
+themselves as the best-response set. To use *trained* best responses instead, uncomment the
+`global_heldout_br` entry in that config's `defaults` list and comment out the `best_response_set` line
+below it.
+
+These checkpoints live in the [jaxaht/eval-teammates-br dataset](https://huggingface.co/datasets/jaxaht/eval-teammates-br).
+The full set is ~74GB, so `download_eval_data.py` does not fetch it. Download only the tasks you
+need, directly from Hugging Face:
+
+```bash
+hf download jaxaht/eval-teammates-br --repo-type dataset --local-dir eval_teammates/ --include "lbf_7x7_nolevels/*"
+```
+
+Drop the `--include` filter to fetch all nine tasks. The task directories are `lbf_7x7_nolevels`,
+`lbf_12x12`, `overcooked_v1_<layout>`, `full_hanabi`, and `mini_hanabi`.
+
 ### Validation teammates
 
 The heldout set above is reserved for reporting final results. A disjoint *validation* set, from the
