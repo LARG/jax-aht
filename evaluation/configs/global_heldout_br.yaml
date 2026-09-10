@@ -788,3 +788,355 @@ best_response_set:
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
+
+  hanabi:
+    br_for_iggi:
+      path: "eval_teammates/full_hanabi/iggi/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_piers:
+      path: "eval_teammates/full_hanabi/piers/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_flawed:
+      path: "eval_teammates/full_hanabi/flawed/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_outer:
+      path: "eval_teammates/full_hanabi/outer/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_van_den_bergh:
+      path: "eval_teammates/full_hanabi/van_den_bergh/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_smartbot:
+      path: "eval_teammates/full_hanabi/smartbot/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_cautious:
+      path: "eval_teammates/full_hanabi/cautious/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_internal:
+      path: "eval_teammates/full_hanabi/internal/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_obl_r2d2_l1:
+      path: "eval_teammates/full_hanabi/obl_r2d2_l1/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_obl_r2d2_l4:
+      path: "eval_teammates/full_hanabi/obl_r2d2_l4/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_bc_lstm_human_proxy:
+      path: "eval_teammates/full_hanabi/bc_lstm_human_proxy/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_bc_lstm_v2:
+      path: "eval_teammates/full_hanabi/br_for_bc_lstm_v2/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_seed0:
+      path: "eval_teammates/full_hanabi/ippo_mlp_seed0/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_seed1:
+      path: "eval_teammates/full_hanabi/ippo_mlp_seed1/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_seed2:
+      path: "eval_teammates/full_hanabi/ippo_mlp_seed2/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_seed42:
+      path: "eval_teammates/full_hanabi/ippo_s5_seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_seed123:
+      path: "eval_teammates/full_hanabi/ippo_s5_seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_seed31415:
+      path: "eval_teammates/full_hanabi/ippo_s5_seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_op_seed42:
+      path: "eval_teammates/full_hanabi/ippo_s5_op_seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_op_seed123:
+      path: "eval_teammates/full_hanabi/ippo_s5_op_seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_op_seed31415:
+      path: "eval_teammates/full_hanabi/ippo_s5_op_seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_seed99999:
+      path: "eval_teammates/full_hanabi/ippo_s5_seed99999/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+  mini-hanabi:
+    br_for_ippo_mlp_seed0:
+      path: "eval_teammates/mini_hanabi/ippo_mlp_seed0/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_seed1:
+      path: "eval_teammates/mini_hanabi/ippo_mlp_seed1/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_iggi:
+      path: "eval_teammates/mini_hanabi/iggi/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_piers:
+      path: "eval_teammates/mini_hanabi/piers/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_flawed:
+      path: "eval_teammates/mini_hanabi/flawed/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_outer:
+      path: "eval_teammates/mini_hanabi/outer/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_van_den_bergh:
+      path: "eval_teammates/mini_hanabi/van_den_bergh/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_smartbot:
+      path: "eval_teammates/mini_hanabi/smartbot/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_cautious:
+      path: "eval_teammates/mini_hanabi/cautious/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_internal:
+      path: "eval_teammates/mini_hanabi/internal/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_mlp_seed2:
+      path: "eval_teammates/mini_hanabi/ippo_mlp_seed2/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_0:
+      path: "eval_teammates/mini_hanabi/brdiv_conf_0/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_1:
+      path: "eval_teammates/mini_hanabi/brdiv_conf_1/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_brdiv_conf_2:
+      path: "eval_teammates/mini_hanabi/brdiv_conf_2/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_lbrdiv_conf_0:
+      path: "eval_teammates/mini_hanabi/lbrdiv_conf_0/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_lbrdiv_conf_1:
+      path: "eval_teammates/mini_hanabi/lbrdiv_conf_1/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_lbrdiv_conf_2:
+      path: "eval_teammates/mini_hanabi/lbrdiv_conf_2/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_conf_0:
+      path: "eval_teammates/mini_hanabi/comedi_conf_0/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_conf_1:
+      path: "eval_teammates/mini_hanabi/comedi_conf_1/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_conf_2:
+      path: "eval_teammates/mini_hanabi/comedi_conf_2/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_conf_3:
+      path: "eval_teammates/mini_hanabi/comedi_conf_3/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_conf_4:
+      path: "eval_teammates/mini_hanabi/comedi_conf_4/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_seed42:
+      path: "eval_teammates/mini_hanabi/ippo_s5_seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_seed123:
+      path: "eval_teammates/mini_hanabi/ippo_s5_seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_seed31415:
+      path: "eval_teammates/mini_hanabi/ippo_s5_seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_op_seed42:
+      path: "eval_teammates/mini_hanabi/ippo_s5_op_seed42/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_op_seed123:
+      path: "eval_teammates/mini_hanabi/ippo_s5_op_seed123/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_ippo_s5_op_seed31415:
+      path: "eval_teammates/mini_hanabi/ippo_s5_op_seed31415/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
