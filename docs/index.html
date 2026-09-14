@@ -267,6 +267,7 @@
 					<li>AHT algorithms</li>
 					<li>Environments</li>
 					<li>Evaluation teammates for each environment</li>
+					<li>Best responses to the evaluation teammates</li>
 				</ul>
 				<p>
 					The library includes a variety of MARL/AHT algorithms, as AHT research often requires orchestrating
@@ -318,7 +319,7 @@
 								<th class="cat" scope="rowgroup" rowspan="3">Ego Agent Training</th>
 								<td class="name">PPO</td>
 								<td class="desc">Trains a PPO agent against a population of homogeneous partner agents.</td>
-								<td class="ref"><span class="none">&ndash;</span></td>
+								<td class="ref"><a href="https://arxiv.org/abs/1707.06347">Schulman et al. 2017</a></td>
 							</tr>
 							<tr>
 								<td class="name">LIAM</td>
@@ -454,7 +455,7 @@
 					</li>
 					<li>
 						<a href="https://huggingface.co/datasets/jaxaht/eval-teammates-br"><strong>Best responses to the heldout teammates</strong></a> &mdash;
-						<span>a trained best-response policy for each heldout teammate, used as the best-response set
+						<span>trained best-response policies for the heldout teammates, used as the best-response set
 						when computing the heldout cross-play matrix. Roughly 74&nbsp;GB across nine task
 						directories, so it is downloaded per task rather than by default.</span>
 					</li>

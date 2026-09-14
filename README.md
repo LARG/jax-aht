@@ -24,6 +24,7 @@ The JaxAHT library is designed to (1) facilitate research across the entire life
 - AHT algorithms
 - Environments
 - Evaluation teammates for each environment
+- Best responses to the evaluation teammates
 
 The library includes a variety of MARL/AHT algorithms, as AHT research often requires orchestrating multiple algorithms:
 - An ego agent training algorithm
@@ -45,7 +46,7 @@ Our modularization is restricted to environments, agents, and populations, which
 
 | Category | Algorithm | Description | Paper |
 |----------|-----------|-------------|-------|
-| **Ego Agent Training** | PPO | Trains a PPO agent against a population of homogeneous partner agents. | - |
+| **Ego Agent Training** | PPO | Trains a PPO agent against a population of homogeneous partner agents. | [Schulman et al. 2017](https://arxiv.org/abs/1707.06347) |
 | | LIAM | Trains a LIAM agent against a population of homogeneous partner agents. | [Papoudakis et al. 2021](https://arxiv.org/abs/2006.09447) |
 | | MeLIBA | Trains a MeLIBA agent against a population of homogeneous partner agents. | [Zintgraf et al. 2022](https://arxiv.org/abs/2101.03864) |
 | **Teammate Generation** | FCP | Generates diverse teammates using varying seeds and checkpoints of IPPO. | [Strouse et al. 2021](https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html) |
