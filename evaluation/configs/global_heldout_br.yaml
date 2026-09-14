@@ -168,6 +168,56 @@ best_response_set:
       actor_type: seq_agent
       ordering_strategy: nearest_agent
 
+  lbf/lbf_12x12:
+    br_for_ippo_mlp:
+      path: "eval_teammates/lbf_12x12/ippo_mlp_12levels_s0c6/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_0:
+      path: "eval_teammates/lbf_12x12/comedi_s0t0/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_2:
+      path: "eval_teammates/lbf_12x12/comedi_s0t2/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_4:
+      path: "eval_teammates/lbf_12x12/comedi_s0t4/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_6:
+      path: "eval_teammates/lbf_12x12/comedi_s0t6/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_comedi_8:
+      path: "eval_teammates/lbf_12x12/comedi_s0t8/saved_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_human_proxy:
+      path: "eval_teammates/lbf_12x12/lbf_12x12_BC/2026-05-06_13-05-25/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
   overcooked-v1/cramped_room:
     br_for_ippo_mlp_0:
       path: "eval_teammates/overcooked_v1_cramped_room/cramped_room_ippo_mlp_0_serious/2026-03-16_11-08-25/ego_train_run"
