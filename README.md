@@ -45,21 +45,17 @@ Our modularization is restricted to environments, agents, and populations, which
 
 | Category | Algorithm | Description | Paper |
 |----------|-----------|-------------|-------|
-| **Ego Agent Training** | PPO Ego | Trains a PPO agent against a population of homogeneous partner agents. | - |
-| | LIAM Ego | Trains a LIAM agent against a population of homogeneous partner agents. | [Papoudakis et al. 2021](https://arxiv.org/abs/2006.09447) |
-| | MeLIBA Ego | Trains a MeLIBA agent against a population of homogeneous partner agents. | [Zintgraf et al. 2022](https://arxiv.org/abs/2101.03864) |
-| **Teammate Generation** | FCP (Fictitious Co-Play) | Generates diverse teammates using varying seeds and checkpoints of IPPO. | [Strouse et al. 2021](https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html) |
+| **Ego Agent Training** | PPO | Trains a PPO agent against a population of homogeneous partner agents. | - |
+| | LIAM | Trains a LIAM agent against a population of homogeneous partner agents. | [Papoudakis et al. 2021](https://arxiv.org/abs/2006.09447) |
+| | MeLIBA | Trains a MeLIBA agent against a population of homogeneous partner agents. | [Zintgraf et al. 2022](https://arxiv.org/abs/2101.03864) |
+| **Teammate Generation** | FCP | Generates diverse teammates using varying seeds and checkpoints of IPPO. | [Strouse et al. 2021](https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html) |
 | | BRDiv | Generates diverse teammates using best response diversity (BRDiv) metric. | [Rahman et al. 2022](https://arxiv.org/abs/2207.14138) |
 | | LBRDiv | Generates diverse teammates via emulating the minimum coverage set. | [Rahman et al. 2024](https://arxiv.org/abs/2308.09595) |
 | | CoMeDi | Generates diverse teammates by optimizing mixed-play. | [Sarkar et al. 2023](https://arxiv.org/pdf/2310.15414) |
 | **MARL** | IPPO | Multi-agent reinforcement learning using independent PPO agents with parameter sharing | [Yu et al. 2022](https://arxiv.org/abs/2103.01955) |
 | **Open-Ended Training** | ROTATE | Open-ended training using cooperative regret maximization | [Wang et al. 2025](https://arxiv.org/abs/2505.23686) |
 | | COLE | Builds a cooperative policy pool using cross-play performance and prioritized partner sampling. | [Li et al. 2023](https://proceedings.mlr.press/v202/li23au.html) |
-| | TrajeDi | Trains a diverse confederate population using self-play, cross-play, and trajectory diversity. | - |
-| | PAIRED | Open-ended training based on the PAIRED algorithm from the unsupervised environment design literature. | [Dennis et al. 2020](https://arxiv.org/abs/2012.02096) |
-| | Open-Ended Minimax | Open-ended training baseline using minimax return optimization. | - |
-
-The CPU smoke suite currently runs IPPO, FCP, BRDiv, LBRDiv, CoMeDi, PPO Ego, LIAM Ego, MeLIBA Ego, ROTATE, COLE, and TrajeDi. PAIRED and Open-Ended Minimax implementations and configs are present but are not yet included in the smoke suite.
+| | TrajeDi | Trains a diverse confederate population using self-play, cross-play, and trajectory diversity. | [Lupu et al. 2021](https://proceedings.mlr.press/v139/lupu21a.html) |
 
 ### Supported Environments
 
@@ -75,6 +71,7 @@ The CPU smoke suite currently runs IPPO, FCP, BRDiv, LBRDiv, CoMeDi, PPO Ego, LI
 
 - [🚀 Installation Guide](#-installation-guide)
 - [📦 Evaluation Data](#-evaluation-data)
+  - [Best responses to the heldout teammates](#best-responses-to-the-heldout-teammates)
 - [▶️ Getting Started](#️-getting-started)
 - [🧪 Testing](#-testing)
 - [📝 Code Overview](#-code-overview)
@@ -125,6 +122,24 @@ python download_eval_data.py
 
 The script places policies under `eval_teammates/` and the best-return data under `results/`.
 Routine CPU tests validate the heldout configuration without downloading these artifacts.
+
+### Best responses to the heldout teammates
+
+By default, the heldout cross-play matrix (`evaluation/configs/heldout_xp.yaml`) uses the heldout agents
+themselves as the best-response set. To use *trained* best responses instead, uncomment the
+`global_heldout_br` entry in that config's `defaults` list and comment out the `best_response_set` line
+below it.
+
+These checkpoints live in the [jaxaht/eval-teammates-br dataset](https://huggingface.co/datasets/jaxaht/eval-teammates-br).
+The full set is ~74GB, so `download_eval_data.py` does not fetch it. Download only the tasks you
+need, directly from Hugging Face:
+
+```bash
+hf download jaxaht/eval-teammates-br --repo-type dataset --local-dir eval_teammates/ --include "lbf_7x7_nolevels/*"
+```
+
+Drop the `--include` filter to fetch all nine tasks. The task directories are `lbf_7x7_nolevels`,
+`lbf_12x12`, `overcooked_v1_<layout>`, `full_hanabi`, and `mini_hanabi`.
 
 ## ▶️ Getting Started
 
@@ -289,8 +304,8 @@ JAX_AHT_RUN_HELDOUT_LOADING=1 python -m pytest -q -m eval_data tests/test_heldou
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🔗 See Also
-This project was inspired by the following Jax-based RL repositories. Please check them out!
-- [JaxMARL](https://github.com/FLAIROx/JaxMARL): a library with Jax-based MARL algorithms and environments
-- [Jumanji](https://github.com/instadeepai/jumanji): a library with Jax implementations of several MARL environments
-- [Minimax](https://github.com/facebookresearch/minimax): a library with Jax implementations of single-agent UED algorithms
+This project was inspired by the following JAX-based RL repositories. Please check them out!
+- [JaxMARL](https://github.com/FLAIROx/JaxMARL): a library with JAX-based MARL algorithms and environments
+- [Jumanji](https://github.com/instadeepai/jumanji): a library with JAX implementations of several MARL environments
+- [Minimax](https://github.com/facebookresearch/minimax): a library with JAX implementations of single-agent UED algorithms
 - [ROTATE](https://github.com/carolinewang01/rotate): code for the ROTATE paper (Wang et al. 2025), which this benchmark is built off of.
