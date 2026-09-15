@@ -169,8 +169,9 @@ best_response_set:
       ordering_strategy: nearest_agent
 
   lbf/lbf_12x12:
+    # Uses the s2c1 BR instead of the custom-trained ippo_mlp BR, which performs worse.
     br_for_ippo_mlp:
-      path: "eval_teammates/lbf_12x12/ippo_mlp_0_serious/2026-05-22_09-58-37/ego_train_run"
+      path: "eval_teammates/lbf_12x12/ippo_mlp_12levels_s0c6/saved_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
