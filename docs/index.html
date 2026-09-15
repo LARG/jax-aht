@@ -3,174 +3,566 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<title>JaxAHT: A Unified Jax-based Benchmark for Ad Hoc Teamwork</title>
+	<title>JaxAHT: A Unified JAX-based Benchmark for Ad Hoc Teamwork</title>
 	<meta name="description" content="Standardized, reproducible AHT benchmark: ready-to-use teammate generation, RL training algorithms, diverse environments, transparent protocols, and strong baselines. Built with JAX for speed.">
+	<meta property="og:title" content="JaxAHT: A Unified JAX-based Benchmark for Ad Hoc Teamwork">
+	<meta property="og:description" content="A JAX-accelerated, unified framework for the full ad hoc teamwork research lifecycle: teammate generation, ego agent training, and heldout evaluation.">
+	<meta property="og:type" content="website">
 	<style>
 		:root {
-			--bg: #f7f9fc;
+			--bg: #ffffff;
+			--band: #f7f9fc;
 			--panel: #ffffff;
 			--text: #1a1f2e;
 			--muted: #5a6475;
+			--faint: #8a93a5;
 			--brand: #1e66f5;
 			--brand-2: #0ea5e9;
 			--border: #e6eaf2;
+			--border-strong: #d5dbe8;
+			--mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 		}
+
 		* { box-sizing: border-box; }
-		html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+
+		html { scroll-behavior: smooth; }
+		html, body {
+			margin: 0; padding: 0;
+			background: var(--bg); color: var(--text);
+			font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+			font-size: 16px; line-height: 1.65;
+			overflow-wrap: break-word;
+			-webkit-font-smoothing: antialiased;
+		}
+
 		a { color: var(--brand); text-decoration: none; }
 		a:hover { text-decoration: underline; }
+		a:focus-visible, button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+		h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
+
 		.container { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-		header.site { position: sticky; top: 0; z-index: 20; backdrop-filter: saturate(180%) blur(10px); background: rgba(255,255,255,0.85); border-bottom: 1px solid var(--border); }
-		header .inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-		.brand { font-weight: 700; letter-spacing: 0.2px; }
-		.brand small { color: var(--muted); font-weight: 500; }
-		nav a { margin-left: 16px; color: var(--muted); font-weight: 500; }
-		nav a:hover { color: var(--text); }
 
-		.hero { padding: 64px 0 24px; border-bottom: 1px solid var(--border); background: radial-gradient(900px 350px at 10% -10%, rgba(30,102,245,0.10), transparent), radial-gradient(900px 400px at 90% -20%, rgba(14,165,233,0.10), transparent); }
-		.hero h1 { font-size: 40px; line-height: 1.15; margin: 0 0 12px; }
-		.hero p.kicker { color: var(--brand-2); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; font-size: 12px; margin: 0 0 10px; }
-		.hero p.sub { color: var(--muted); font-size: 18px; margin: 0; }
-		.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
-		.button { display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: #ffffff; color: var(--text); font-weight: 600; }
-		.button.primary { background: linear-gradient(180deg, #3b82f6, #2563eb); color: #ffffff; border-color: #2563eb; }
-		.button:hover { filter: brightness(1.08); text-decoration: none; }
+		.skip { position: absolute; left: -9999px; top: 0; background: var(--brand); color: #fff; padding: 10px 14px; z-index: 100; }
+		.skip:focus { left: 0; }
 
-		.figure { margin: 32px auto 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--panel); max-width: 700px; }
-		.figure img { display: block; width: 100%; height: auto; background: #0e1016; }
-		.figure figcaption { padding: 10px 14px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+		/* ---------- header ---------- */
+		header.site {
+			position: sticky; top: 0; z-index: 20;
+			backdrop-filter: saturate(180%) blur(10px);
+			-webkit-backdrop-filter: saturate(180%) blur(10px);
+			background: rgba(255, 255, 255, 0.86);
+			border-bottom: 1px solid var(--border);
+		}
+		header .inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 60px; }
+		.brand { font-weight: 700; font-size: 16.5px; color: var(--text); white-space: nowrap; }
+		.brand:hover { text-decoration: none; }
+		nav.site-nav { display: flex; align-items: center; gap: 2px; }
+		nav.site-nav a { color: var(--muted); font-weight: 500; font-size: 14.5px; padding: 5px 10px; border-radius: 7px; white-space: nowrap; }
+		nav.site-nav a:hover { color: var(--text); background: var(--band); text-decoration: none; }
+		nav.site-nav a.active { color: var(--brand); }
 
-		.section { padding: 48px 0; border-bottom: 1px solid var(--border); }
-		.section h2 { margin: 0 0 12px; font-size: 26px; }
-		.section p, .section li { color: var(--text); }
-		.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-		.card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 18px; }
-		.card h3 { margin-top: 0; }
+		/* ---------- hero ---------- */
+		.hero {
+			padding: 60px 0 52px; border-bottom: 1px solid var(--border);
+			background:
+				radial-gradient(900px 350px at 10% -10%, rgba(30, 102, 245, 0.10), transparent),
+				radial-gradient(900px 400px at 90% -20%, rgba(14, 165, 233, 0.10), transparent);
+		}
+		.hero .kicker { color: var(--brand-2); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; font-size: 11.5px; margin: 0 0 10px; }
+		.hero h1 { font-size: clamp(28px, 4.2vw, 40px); margin: 0 0 12px; max-width: 24ch; }
+		.hero p.sub { color: var(--muted); font-size: clamp(16.5px, 1.8vw, 18px); margin: 0; max-width: 68ch; }
 
-		footer { padding: 24px 0 48px; color: var(--muted); text-align: center; }
-		.badge { display: inline-block; padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 12px; }
+		.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+		.button {
+			display: inline-flex; align-items: center; gap: 8px;
+			padding: 9px 14px; border-radius: 10px;
+			border: 1px solid var(--border-strong); background: #fff; color: var(--text);
+			font-weight: 600; font-size: 14.5px;
+		}
+		.button:hover { background: var(--band); text-decoration: none; }
+		.button.primary { background: linear-gradient(180deg, #3b82f6, #2563eb); color: #fff; border-color: #2563eb; }
+		.button.primary:hover { filter: brightness(1.07); }
+		.button svg { width: 15px; height: 15px; fill: currentColor; }
 
-		@media (max-width: 880px) {
-			.grid { grid-template-columns: 1fr; }
-			.hero h1 { font-size: 32px; }
-			nav { display: none; }
+		/* ---------- inline figure ---------- */
+		.inline-fig { margin: 26px 0 4px; }
+		.inline-fig img {
+			display: block; width: 100%; max-width: 760px; height: auto; margin: 0;
+			border: 1px solid var(--border); border-radius: 12px; background: #fff;
+		}
+
+		/* ---------- sections ---------- */
+		.section { padding: 52px 0; border-bottom: 1px solid var(--border); scroll-margin-top: 76px; }
+		.section p { max-width: 80ch; }
+		.section > .container > p:first-of-type { margin-top: 0; }
+		.lede { color: var(--muted); margin: 0 0 22px; max-width: 80ch; }
+		.section h2.eyebrow {
+			color: var(--brand-2); text-transform: uppercase; letter-spacing: 0.12em;
+			font-weight: 700; font-size: 13.5px; margin: 0 0 16px;
+		}
+
+		ul.clean { margin: 12px 0; padding-left: 22px; max-width: 80ch; }
+		ul.clean li { margin: 5px 0; }
+		ul.clean li::marker { color: var(--faint); }
+
+		/* ---------- tables ---------- */
+		.table-wrap {
+			margin: 20px 0 12px; border: 1px solid var(--border); border-radius: 12px;
+			overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--panel);
+		}
+		table.data { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 720px; }
+		table.data caption { position: absolute; left: -9999px; }
+		table.data th, table.data td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+		table.data thead th {
+			font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700;
+			color: var(--muted); background: var(--band); border-bottom: 1px solid var(--border-strong);
+			white-space: nowrap;
+		}
+		table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+		table.data th.cat {
+			background: var(--band); font-weight: 700; font-size: 13px; color: var(--text);
+			white-space: nowrap; border-right: 1px solid var(--border); width: 1%;
+		}
+		table.data td.name { font-weight: 600; white-space: nowrap; color: var(--text); }
+		table.data td.desc { color: var(--muted); min-width: 300px; }
+		table.data td.ref { white-space: nowrap; }
+		table.data td.ref .none { color: var(--faint); }
+		table.data td.src { white-space: nowrap; }
+		table.data td.var { color: var(--muted); }
+		table.data td.var code { font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+		table.data td.yes { text-align: center; color: #1c7a44; font-weight: 700; }
+		.scroll-hint { display: none; color: var(--faint); font-size: 12.5px; margin: 0 0 18px; }
+
+		code.inline {
+			font-family: var(--mono); font-size: 0.88em;
+			background: var(--band); border: 1px solid var(--border);
+			border-radius: 6px; padding: 1px 5px;
+			overflow-wrap: anywhere; word-break: break-word;
+		}
+
+
+		/* ---------- citation ---------- */
+		.code { position: relative; margin: 14px 0 0; max-width: 640px; }
+		.code pre {
+			margin: 0; padding: 16px 60px 16px 16px; overflow-x: auto;
+			white-space: pre-wrap;
+			background: var(--band); border: 1px solid var(--border); border-radius: 12px;
+			font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--text);
+		}
+		.code .copy {
+			position: absolute; top: 10px; right: 10px;
+			border: 1px solid var(--border-strong); background: #fff; color: var(--muted);
+			font: inherit; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 7px; cursor: pointer;
+		}
+		.code .copy:hover { background: var(--band); color: var(--text); }
+		.code .copy.copied { color: #1c7a44; border-color: #c6e6d3; background: #eaf7ef; }
+
+		/* ---------- see also ---------- */
+		ul.links { list-style: none; margin: 16px 0 0; padding: 0; max-width: 80ch; }
+		ul.links li { padding: 10px 0; border-top: 1px solid var(--border); }
+		ul.links li:last-child { border-bottom: 1px solid var(--border); }
+		ul.links strong { font-weight: 600; }
+		ul.links span { color: var(--muted); }
+
+		/* ---------- footer ---------- */
+		footer { padding: 28px 0 44px; color: var(--muted); text-align: center; font-size: 14px; }
+		footer p { margin: 0 0 6px; }
+		footer .flinks { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 16px; }
+
+		/* ---------- responsive ---------- */
+		@media (max-width: 820px) {
+			nav.site-nav { display: none; }
+			.hero { padding: 44px 0 34px; }
+			.section { padding: 40px 0; }
+			.scroll-hint { display: block; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			html { scroll-behavior: auto; }
 		}
 	</style>
 </head>
 <body>
-	<!-- <header class="site">
-		<div class="container inner">
-			<div class="brand">JaxAHT</div>
-		</div>
-	</header> -->
+	<a class="skip" href="#main">Skip to content</a>
 
-	<main>
-		<section class="hero" id="overview">
+	<header class="site">
+		<div class="container inner">
+			<a class="brand" href="#top">JaxAHT</a>
+			<nav class="site-nav" aria-label="Section navigation">
+				<a href="#overview">Overview</a>
+				<a href="#philosophy">Design Philosophy</a>
+				<a href="#algorithms">Algorithms</a>
+				<a href="#environments">Environments</a>
+				<a href="#eval-data">Evaluation Data</a>
+				<a href="#citation">Cite</a>
+			</nav>
+		</div>
+	</header>
+
+	<main id="main">
+		<section class="hero" id="top">
 			<div class="container">
-				<h1>JaxAHT: A Unified Jax-based Benchmark for Ad Hoc Teamwork</h1>
-				<p class="sub">A unified toolkit for fast iteration on AHT algorithms and evaluation.</p>
+				<p class="kicker">JAX-Accelerated &middot; Ad Hoc Teamwork</p>
+				<h1>A Unified JAX-based Benchmark for Ad Hoc Teamwork</h1>
+				<p class="sub">
+					JaxAHT is a JAX-based benchmark repository for Ad Hoc Teamwork &mdash; a unified toolkit for fast
+					iteration across the entire AHT lifecycle: teammate generation, ego agent training, and evaluation
+					against unseen teammates.
+				</p>
+
 				<div class="cta">
-					<a class="button primary" href="https://github.com/LARG/jax-aht">Code (GitHub)</a>
+					<a class="button primary" href="https://github.com/LARG/jax-aht">
+						<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+						GitHub
+					</a>
+					<a class="button" href="https://github.com/LARG/jax-aht/blob/main/tutorials/JaxAHT_Tutorial.ipynb">Tutorial Notebook</a>
 					<a class="button" href="#citation">Cite This Benchmark</a>
 				</div>
 
-				<figure class="figure">
-					<img src="resources/jaxaht_workflow.png" alt="AHT benchmark workflow diagram showing teammate generation, RL training, evaluation, and analysis" />
-					<figcaption>The Jax AHT benchmark aims to provide a Jax-accelerated and unified framework for the advancement of ad hoc teamwork research. The figure demonstrates three key components of ad hoc teamwork research, all of which are included in the benchmark suite: 1) Teammate generation algorithms, where the goal is to generate diverse policies to be used as partners for ego agent training. 2) Ego agent training algorithms, where the goal is to create a generalizable ego agent that performs well with whichever teammate it is matched up with. 3) Evaluation, where the ego agent is partnered with evaluation teammate policies that are unavailable during the ego agent training phase.</figcaption>
-				</figure>
 			</div>
 		</section>
 
-		<section class="section" id="abstract">
+		<!-- ================= OVERVIEW ================= -->
+		<section class="section" id="overview">
 			<div class="container">
-				<p>The development and evaluation of ad hoc teamwork (AHT) agents are often hindered by the lack of standardized implementations and reproducible evaluation pipelines, making it difficult to compare methods or build upon prior work. Experimentation is also often slow due to the lengthy reinforcement learning training periods required for many parts of the AHT training workflow, such as teammate generation or ego agent training.</p>
+				<h2 class="eyebrow">Overview</h2>
+				<p>
+					The development and evaluation of ad hoc teamwork (AHT) agents are often hindered by the lack of
+					standardized implementations and reproducible evaluation pipelines, making it difficult to compare
+					methods or build upon prior work. Experimentation is also often slow due to the lengthy
+					reinforcement learning training periods required for many parts of the AHT training workflow, such
+					as teammate generation or ego agent training.
+				</p>
+
+				<figure class="inline-fig">
+					<img
+						src="resources/jaxaht_design_philosophy.png"
+						onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/LARG/jax-aht/main/docs/resources/jaxaht_design_philosophy.png';"
+						alt="JaxAHT design philosophy. Training: MARL and teammate generation produce a set of teammates that an AHT agent learns against; alternatively a unified AHT learning loop grows the teammate set and trains the agent together. Evaluation: we provide algorithmically generated, heuristic, and human-proxy teammates, along with trained best responses." />
+				</figure>
 				<p>The <strong>JaxAHT</strong> library addresses these challenges by introducing:</p>
-				<ul>
+				<ul class="clean">
 					<li><strong>A unified benchmark</strong> with transparent evaluation protocols and strong baselines for fair, replicable research.</li>
-					<li><strong>A Jax-based implementation of various AHT methods</strong>, which is significantly faster than previous PyTorch/Tensorflow implementations.</li>
+					<li><strong>A JAX-based implementation of various AHT methods</strong>, which is significantly faster than previous PyTorch/Tensorflow implementations.</li>
 					<li><strong>A shared agent interface</strong> that allows agents trained by one algorithm to be seamlessly reused in other parts of the AHT workflow (i.e., teammate generation to ego agent training).</li>
 					<li><strong>A single-file implementation style</strong> inspired by JaxMARL and CleanRL, which makes it easier for users to understand and build upon the implemented AHT methods.</li>
 				</ul>
-				<p>These design choices lower the barrier to entry, enable faster iterations through the AHT agent development process (i.e., code implementation, training, and evaluation), and provide a reliable foundation for advancing AHT research.</p>
+				<p>
+					These design choices lower the barrier to entry, enable faster iterations through the AHT agent
+					development process (i.e., code implementation, training, and evaluation), and provide a reliable
+					foundation for advancing AHT research.
+				</p>
 			</div>
 		</section>
 
-		<!-- <section class="section" id="design">
-			<div class="container grid">
-				<div class="card">
-					<h3>What this benchmark provides</h3>
-					<ul>
-						<li>Ready-to-use teammate generation methods</li>
-						<li>RL-based ego agent training algorithms</li>
-						<li>Diverse AHT environments in one toolkit</li>
-						<li>Transparent evaluation protocols</li>
-						<li>Strong baselines for fair comparison</li>
-					</ul>
-				</div>
-				<div class="card">
-					<h3>Why JAX</h3>
-					<ul>
-						<li>High-throughput training and batched evaluation</li>
-						<li>Composable function transformations (jit, vmap, pmap)</li>
-						<li>Scales to multi-agent RL workloads</li>
-						<li>Reproducible, deterministic pipelines</li>
-					</ul>
-				</div>
+		<!-- ================= DESIGN PHILOSOPHY ================= -->
+		<section class="section" id="philosophy">
+			<div class="container">
+				<h2 class="eyebrow">Design Philosophy</h2>
+				<p>
+					The JaxAHT library is designed to (1) facilitate research across the entire lifecycle of ad hoc
+					teamwork, and (2) ease the evaluation of ad hoc agents (ego agents) for commonly used AHT benchmark
+					tasks. As such, the benchmark includes:
+				</p>
+				<ul class="clean">
+					<li>AHT algorithms</li>
+					<li>Environments</li>
+					<li>Evaluation teammates for each environment</li>
+					<li>Best responses to the evaluation teammates</li>
+				</ul>
+				<p>
+					The library includes a variety of MARL/AHT algorithms, as AHT research often requires orchestrating
+					multiple algorithms:
+				</p>
+				<ul class="clean">
+					<li>An ego agent training algorithm</li>
+					<li>A teammate generation algorithm</li>
+					<li>A multi-agent reinforcement learning (MARL) algorithm</li>
+					<li>A single-agent reinforcement learning method to act as a best response operator</li>
+				</ul>
+				<p>
+					Research focused on one type of algorithm can require other types for training/evaluation purposes.
+					For example, to evaluate a teammate generation method, an ego agent training method is necessary.
+					Similarly, an ego agent training method requires a set of training teammates, which may be generated
+					by a teammate generation algorithm or a MARL algorithm.
+				</p>
+				<p>
+					This codebase aims to provide a unified interface for the above AHT procedures, to enable research
+					on both individual procedures and combinations thereof. On the other hand, to facilitate fast
+					iteration, we take inspiration from the single-file model used by projects such as JaxMARL and
+					CleanRL and minimally modularize the code. Algorithms are largely implemented in a single-file
+					format to enable researchers to easily understand and build upon existing methods. However, the
+					agent interface is shared by all methods, to allow agents trained by one algorithm to easily be used
+					by another algorithm &mdash; a common workflow for AHT research.
+				</p>
+				<p>
+					Our modularization is restricted to environments, agents, and populations, which allows us to
+					cleanly interface the algorithm types above, while placing most of the logic for any single
+					algorithm within a single file.
+				</p>
 			</div>
 		</section>
 
+		<!-- ================= ALGORITHMS ================= -->
+		<section class="section" id="algorithms">
+			<div class="container">
+				<h2 class="eyebrow">Available Algorithms</h2>
+				<p class="lede">Eleven implementations across ego agent training, teammate generation, MARL, and open-ended training.</p>
+
+				<div class="table-wrap">
+					<table class="data">
+						<caption>Available algorithms by category</caption>
+						<thead>
+							<tr><th scope="col">Category</th><th scope="col">Algorithm</th><th scope="col">Description</th><th scope="col">Paper</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<th class="cat" scope="rowgroup" rowspan="3">Ego Agent Training</th>
+								<td class="name">PPO</td>
+								<td class="desc">Trains a PPO agent against a population of homogeneous partner agents.</td>
+								<td class="ref"><a href="https://arxiv.org/abs/1707.06347">Schulman et al. 2017</a></td>
+							</tr>
+							<tr>
+								<td class="name">LIAM</td>
+								<td class="desc">Trains a LIAM agent against a population of homogeneous partner agents.</td>
+								<td class="ref"><a href="https://arxiv.org/abs/2006.09447">Papoudakis et al. 2021</a></td>
+							</tr>
+							<tr>
+								<td class="name">MeLIBA</td>
+								<td class="desc">Trains a MeLIBA agent against a population of homogeneous partner agents.</td>
+								<td class="ref"><a href="https://arxiv.org/abs/2101.03864">Zintgraf et al. 2022</a></td>
+							</tr>
+
+							<tr>
+								<th class="cat" scope="rowgroup" rowspan="4">Teammate Generation</th>
+								<td class="name">FCP</td>
+								<td class="desc">Generates diverse teammates using varying seeds and checkpoints of IPPO.</td>
+								<td class="ref"><a href="https://proceedings.neurips.cc/paper/2021/hash/797134c3e42371bb4979a462eb2f042a-Abstract.html">Strouse et al. 2021</a></td>
+							</tr>
+							<tr>
+								<td class="name">BRDiv</td>
+								<td class="desc">Generates diverse teammates using best response diversity (BRDiv) metric.</td>
+								<td class="ref"><a href="https://arxiv.org/abs/2207.14138">Rahman et al. 2022</a></td>
+							</tr>
+							<tr>
+								<td class="name">LBRDiv</td>
+								<td class="desc">Generates diverse teammates via emulating the minimum coverage set.</td>
+								<td class="ref"><a href="https://arxiv.org/abs/2308.09595">Rahman et al. 2024</a></td>
+							</tr>
+							<tr>
+								<td class="name">CoMeDi</td>
+								<td class="desc">Generates diverse teammates by optimizing mixed-play.</td>
+								<td class="ref"><a href="https://arxiv.org/pdf/2310.15414">Sarkar et al. 2023</a></td>
+							</tr>
+
+							<tr>
+								<th class="cat" scope="rowgroup">MARL</th>
+								<td class="name">IPPO</td>
+								<td class="desc">Multi-agent reinforcement learning using independent PPO agents with parameter sharing.</td>
+								<td class="ref"><a href="https://arxiv.org/abs/2103.01955">Yu et al. 2022</a></td>
+							</tr>
+
+							<tr>
+								<th class="cat" scope="rowgroup" rowspan="3">Open-Ended Training</th>
+								<td class="name">ROTATE</td>
+								<td class="desc">Open-ended training using cooperative regret maximization.</td>
+								<td class="ref"><a href="https://arxiv.org/abs/2505.23686">Wang et al. 2025</a></td>
+							</tr>
+							<tr>
+								<td class="name">COLE</td>
+								<td class="desc">Builds a cooperative policy pool using cross-play performance and prioritized partner sampling.</td>
+								<td class="ref"><a href="https://proceedings.mlr.press/v202/li23au.html">Li et al. 2023</a></td>
+							</tr>
+							<tr>
+								<td class="name">TrajeDi</td>
+								<td class="desc">Trains a diverse confederate population using self-play, cross-play, and trajectory diversity.</td>
+								<td class="ref"><a href="https://proceedings.mlr.press/v139/lupu21a.html">Lupu et al. 2021</a></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<p class="scroll-hint">Scroll the table horizontally to see all columns.</p>
+
+			</div>
+		</section>
+
+		<!-- ================= ENVIRONMENTS ================= -->
 		<section class="section" id="environments">
 			<div class="container">
-				<h2>Environments</h2>
-				<p>Includes a diverse set of AHT settings covering coordination, communication, and adaptation challenges. Customize tasks and teammates to probe generalization.</p>
+				<h2 class="eyebrow">Supported Environments</h2>
+				<p class="lede">Four environments and nine task variants, each shipping with a set of heldout evaluation teammates.</p>
+
+				<div class="table-wrap">
+					<table class="data">
+						<caption>Supported environments</caption>
+						<thead>
+							<tr>
+								<th scope="col">Environment</th><th scope="col">Source</th><th scope="col">Description</th>
+								<th scope="col">Variants</th><th scope="col">Eval Teammates</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="name">Level-Based Foraging (LBF)</td>
+								<td class="src"><a href="https://github.com/instadeepai/jumanji">Jumanji</a></td>
+								<td class="desc">Cooperative foraging environment where agents must work together to collect food.</td>
+								<td class="var"><code>lbf_7x7_nolevels</code> (7x7, 3 food, no levels), <code>lbf_12x12</code> (12x12, 6 food, with levels)</td>
+								<td class="yes" aria-label="Available">&#10003;</td>
+							</tr>
+							<tr>
+								<td class="name">Overcooked-v1</td>
+								<td class="src"><a href="https://github.com/FLAIROx/JaxMARL">JaxMARL</a></td>
+								<td class="desc">Cooperative cooking environment where agents must coordinate to prepare and serve dishes.</td>
+								<td class="var"><code>asymm_advantages</code>, <code>coord_ring</code>, <code>counter_circuit</code>, <code>cramped_room</code>, <code>forced_coord</code></td>
+								<td class="yes" aria-label="Available">&#10003;</td>
+							</tr>
+							<tr>
+								<td class="name">Hanabi</td>
+								<td class="src"><a href="https://github.com/FLAIROx/JaxMARL">JaxMARL</a></td>
+								<td class="desc">Two-player cooperative card game with partial observability and implicit communication.</td>
+								<td class="var">5 colors, 5 ranks</td>
+								<td class="yes" aria-label="Available">&#10003;</td>
+							</tr>
+							<tr>
+								<td class="name">Mini-Hanabi</td>
+								<td class="src"><a href="https://github.com/FLAIROx/JaxMARL">JaxMARL</a></td>
+								<td class="desc">Smaller Hanabi task for faster experiments.</td>
+								<td class="var">3 colors, 3 ranks</td>
+								<td class="yes" aria-label="Available">&#10003;</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<p class="scroll-hint">Scroll the table horizontally to see all columns.</p>
 			</div>
 		</section>
 
-		<section class="section" id="baselines">
+		<!-- ================= EVALUATION DATA ================= -->
+		<section class="section" id="eval-data">
 			<div class="container">
-				<h2>Baselines</h2>
-				<p>Ships with strong baselines and clear evaluation recipes to ensure fair, apples-to-apples comparisons.</p>
+				<h2 class="eyebrow">Evaluation Data</h2>
+				<p class="lede">
+					JaxAHT ships the policies you need to evaluate an ego agent, not just the code to train one.
+					Every task comes with a set of heldout evaluation teammates, and with trained best responses
+					to those teammates. Both are released publicly on Hugging Face.
+				</p>
+				<ul class="links">
+					<li>
+						<a href="https://huggingface.co/datasets/jaxaht/eval-teammates"><strong>Heldout evaluation teammates</strong></a> &mdash;
+						<span>the LBF, Overcooked-v1, Hanabi, and Mini-Hanabi policies referenced by
+						<code class="inline">evaluation/configs/global_heldout_settings.yaml</code>, along with the best
+						heldout returns used for normalization. Roughly 10&nbsp;GB, fetched by
+						<code class="inline">python download_eval_data.py</code>.</span>
+					</li>
+					<li>
+						<a href="https://huggingface.co/datasets/jaxaht/eval-teammates-br"><strong>Best responses to the heldout teammates</strong></a> &mdash;
+						<span>trained best-response policies for the heldout teammates, used as the best-response set
+						when computing the heldout cross-play matrix. Roughly 74&nbsp;GB across nine task
+						directories, so it is downloaded per task rather than by default.</span>
+					</li>
+				</ul>
 			</div>
-		</section> -->
+		</section>
 
-		<!-- <section class="section" id="resources">
-			<div class="container grid">
-				<div class="card">
-					<h3>Project Links</h3>
-					<ul>
-						<li><a href="https://github.com/LARG/jax-aht">Code (GitHub)</a></li>
-						<li><a href="#">Paper (arXiv)</a> — coming soon</li>
-						<li><a href="#citation">BibTeX</a></li>
-					</ul>
-				</div>
-			</div>
-		</section> -->
-
+		<!-- ================= CITATION ================= -->
 		<section class="section" id="citation">
 			<div class="container">
-				<h2>Citation</h2>
-				<p>If you use this benchmark in your research, please cite:</p>
-				<pre class="card" style="overflow:auto; white-space: pre; padding: 14px;"><code>@misc{jaxaht2025,
-  author = {Learning Agents Research Group},
-  title = {JaxAHT},
-  year = {2025},
-  month = {September},
-  note = {Version 1.0.0},
-  url = {https://github.com/LARG/jax-aht},
-}</code></pre>
+				<h2 class="eyebrow">Citation</h2>
+				<p class="lede">If you find this repository useful for your research, please cite:</p>
+				<div class="code"><pre><code>@misc{wang2026jaxaht,
+      title={JaxAHT: A JAX-Based Library for Ad Hoc Teamwork},
+      author={Caroline Wang and Rolando Fernandez and Zelal Su Mustafaoglu and Montek Kundan and Jiaxun Cui and Lingyun Xiao and Zhihan Wang and Di Yang Shi and Aditya Madhan and Johnny Liu and Arrasy Rahman and Peter Stone},
+      year={2026},
+      eprint={2609.13716},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2609.13716},
+}</code></pre></div>
+			</div>
+		</section>
+
+		<!-- ================= SEE ALSO ================= -->
+		<section class="section" id="see-also">
+			<div class="container">
+				<h2 class="eyebrow">See Also</h2>
+				<p class="lede">This project was inspired by the following JAX-based RL repositories. Please check them out!</p>
+				<ul class="links">
+					<li><a href="https://github.com/FLAIROx/JaxMARL"><strong>JaxMARL</strong></a> &mdash; <span>a library with JAX-based MARL algorithms and environments.</span></li>
+					<li><a href="https://github.com/instadeepai/jumanji"><strong>Jumanji</strong></a> &mdash; <span>a library with JAX implementations of several MARL environments.</span></li>
+					<li><a href="https://github.com/facebookresearch/minimax"><strong>Minimax</strong></a> &mdash; <span>a library with JAX implementations of single-agent UED algorithms.</span></li>
+					<li><a href="https://github.com/carolinewang01/rotate"><strong>ROTATE</strong></a> &mdash; <span>code for the ROTATE paper (Wang et al. 2025), which this benchmark is built off of.</span></li>
+				</ul>
 			</div>
 		</section>
 	</main>
 
 	<footer>
 		<div class="container">
-			<p>©Learning Agents Research Group. Released under MIT License.</p>
+			<p>&copy; <span id="y">2025</span> Learning Agents Research Group. Released under the MIT License.</p>
+			<p class="flinks">
+				<a href="https://github.com/LARG/jax-aht">GitHub</a>
+				<a href="https://github.com/LARG/jax-aht/blob/main/tutorials/JaxAHT_Tutorial.ipynb">Tutorial</a>
+				<a href="https://github.com/LARG/jax-aht/blob/main/LICENSE">License</a>
+			</p>
 		</div>
 	</footer>
 
 	<script>
-		// set year
-		document.getElementById('y').textContent = new Date().getFullYear();
+		(function () {
+			var y = document.getElementById('y');
+			if (y) { y.textContent = new Date().getFullYear(); }
+
+			// Copy button for the BibTeX block.
+			document.querySelectorAll('.code').forEach(function (block) {
+				var code = block.querySelector('code');
+				if (!code) { return; }
+				var btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'copy';
+				btn.textContent = 'Copy';
+				btn.setAttribute('aria-label', 'Copy citation to clipboard');
+				btn.addEventListener('click', function () {
+					var text = code.textContent;
+					var done = function () {
+						btn.textContent = 'Copied';
+						btn.classList.add('copied');
+						setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1600);
+					};
+					function fallback() {
+						var ta = document.createElement('textarea');
+						ta.value = text; ta.setAttribute('readonly', '');
+						ta.style.position = 'absolute'; ta.style.left = '-9999px';
+						document.body.appendChild(ta); ta.select();
+						try { document.execCommand('copy'); done(); } catch (e) { /* no-op */ }
+						document.body.removeChild(ta);
+					}
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(text).then(done, fallback);
+					} else { fallback(); }
+				});
+				block.appendChild(btn);
+			});
+
+			// Highlight the nav link for the section in view.
+			var links = Array.prototype.slice.call(document.querySelectorAll('nav.site-nav a'));
+			var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+			if ('IntersectionObserver' in window && sections.length) {
+				var visible = new Set();
+				var observer = new IntersectionObserver(function (entries) {
+					entries.forEach(function (e) {
+						if (e.isIntersecting) { visible.add(e.target.id); } else { visible.delete(e.target.id); }
+					});
+					var current = null;
+					for (var i = 0; i < sections.length; i++) {
+						if (visible.has(sections[i].id)) { current = sections[i].id; break; }
+					}
+					links.forEach(function (a) {
+						a.classList.toggle('active', current !== null && a.getAttribute('href') === '#' + current);
+					});
+				}, { rootMargin: '-66px 0px -60% 0px', threshold: 0 });
+				sections.forEach(function (s) { observer.observe(s); });
+			}
+		})();
 	</script>
 </body>
 </html>
