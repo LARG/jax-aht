@@ -6,7 +6,7 @@ results*/
 temp/
 eval_teammates/
 val_teammates/
-wandb/
+wandb*/
 .wandb/
 .vscode/
 
