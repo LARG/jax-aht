@@ -9,7 +9,7 @@ renamed to the new version and a fresh `Unreleased` section is started.
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-09-08
+## [1.1.0] - 2026-09-15
 
 Benchmark results from this version are **not comparable to 1.0.0**: the tuned hyperparameters
 and the correctness fixes below both change reported numbers. Please re-run baselines rather
