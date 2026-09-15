@@ -6,13 +6,14 @@ For a quick introduction to the benchmark, please see our [tutorial notebook](tu
 
 If you find this repository useful for your research, please cite,
 ```bibtex
-@misc{jaxaht2025,
-  author = {Learning Agents Research Group},
-  title = {JaxAHT},
-  year = {2025},
-  month = {September},
-  note = {Version 1.0.0},
-  url = {https://arxiv.org/abs/2609.13716},
+@misc{wang2026jaxaht,
+      title={JaxAHT: A JAX-Based Library for Ad Hoc Teamwork},
+      author={Caroline Wang and Rolando Fernandez and Zelal Su Mustafaoglu and Montek Kundan and Jiaxun Cui and Lingyun Xiao and Zhihan Wang and Di Yang Shi and Aditya Madhan and Johnny Liu and Arrasy Rahman and Peter Stone},
+      year={2026},
+      eprint={2609.13716},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2609.13716},
 }
 ```
 
