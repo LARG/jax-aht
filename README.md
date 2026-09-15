@@ -19,7 +19,7 @@ If you find this repository useful for your research, please cite,
 
 ## Design Philosophy
 
-<img src="docs/resources/jaxaht_workflow.png" alt="JaxAHT teammate generation, ego agent training, and heldout evaluation workflow" width="900" />
+<img src="docs/resources/jaxaht_design_philosophy.png" alt="JaxAHT design philosophy. Training: MARL and teammate generation produce a set of teammates that an AHT agent learns against; alternatively a unified AHT learning loop grows the teammate set and trains the agent together. Evaluation: the agent is paired with algorithmic, heuristic, and human-proxy teammates, each of which has a trained best response." width="900" />
 
 The JaxAHT library is designed to (1) facilitate research across the entire lifecycle of ad hoc teamwork, and (2) ease the evaluation of ad hoc agents (ego agents) for commonly used AHT benchmark tasks. As such, the benchmark includes:
 - AHT algorithms

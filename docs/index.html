@@ -88,7 +88,7 @@
 		/* ---------- inline figure ---------- */
 		.inline-fig { margin: 26px 0 4px; }
 		.inline-fig img {
-			display: block; width: 100%; max-width: 640px; height: auto; margin: 0;
+			display: block; width: 100%; max-width: 760px; height: auto; margin: 0;
 			border: 1px solid var(--border); border-radius: 12px; background: #fff;
 		}
 
@@ -236,9 +236,9 @@
 
 				<figure class="inline-fig">
 					<img
-						src="resources/jaxaht_workflow.png"
-						onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/LARG/jax-aht/main/docs/resources/jaxaht_workflow.png';"
-						alt="JaxAHT workflow diagram: teammate generation produces a diverse partner population, ego agent training produces a generalizable ego agent, and heldout evaluation pairs the ego agent with unseen evaluation teammates." />
+						src="resources/jaxaht_design_philosophy.png"
+						onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/LARG/jax-aht/main/docs/resources/jaxaht_design_philosophy.png';"
+						alt="JaxAHT design philosophy. Training: MARL and teammate generation produce a set of teammates that an AHT agent learns against; alternatively a unified AHT learning loop grows the teammate set and trains the agent together. Evaluation: the agent is paired with algorithmic, heuristic, and human-proxy teammates, each of which has a trained best response." />
 				</figure>
 				<p>The <strong>JaxAHT</strong> library addresses these challenges by introducing:</p>
 				<ul class="clean">
