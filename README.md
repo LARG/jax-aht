@@ -6,8 +6,8 @@ For a quick introduction to the benchmark, please see our [tutorial notebook](tu
 ## 📢 What's New
 
 **v1.1.0** (September 2026)
-- Hanabi, Mini-Hanabi, and LBF 12x12 tasks, with heldout evaluation sets and best-response
-  performance bounds for each.
+- Hanabi (full and mini variants) and LBF 12x12 tasks, with heldout evaluation sets and
+  best-response performance bounds for each.
 - Tuned hyperparameters from our benchmark sweeps, for every algorithm and task.
 - A validation teammate set, so the heldout set is only used for final results.
 - Correctness fixes to MeLIBA, TrajeDi, COLE, recurrent agent updates, and bootstrap
@@ -77,8 +77,7 @@ Our modularization is restricted to environments, agents, and populations, which
 |-------------|--------|-------------|----------|----------------------|
 | **Level-Based Foraging (LBF)** | [Jumanji](https://github.com/instadeepai/jumanji) | Cooperative foraging environment where agents must work together to collect food | lbf_7x7_nolevels (7x7, 3 food, no levels), lbf_12x12 (12x12, 6 food, with levels) | ✅ |
 | **Overcooked-v1** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Cooperative cooking environment where agents must coordinate to prepare and serve dishes | asymm_advantages, coord_ring, counter_circuit, cramped_room, forced_coord | ✅  |
-| **Hanabi** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Two-player cooperative card game with partial observability and implicit communication | 5 colors, 5 ranks | ✅ |
-| **Mini-Hanabi** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Smaller Hanabi task for faster experiments | 3 colors, 3 ranks | ✅ |
+| **Hanabi** | [JaxMARL](https://github.com/FLAIROx/JaxMARL) | Two-player cooperative card game with partial observability and implicit communication | hanabi (5 colors, 5 ranks), mini-hanabi (3 colors, 3 ranks, for faster experiments) | ✅ |
 
 
 ## Table of Contents
