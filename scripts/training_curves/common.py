@@ -17,11 +17,9 @@ import os
 # Setting via setdefault so callers can override if they really want GPU.
 os.environ.setdefault("JAX_PLATFORMS", "cpu")
 
-# Redirect wandb's artifact dedup cache out of ~/.cache/wandb (which can hit
-# the home-dir quota on this cluster). We don't want the cache anyway — we
-# do our own metrics caching at a coarser grain.
-os.environ.setdefault("WANDB_CACHE_DIR", "/tmp/wandb-cache-jyliu")
-os.environ.setdefault("WANDB_DATA_DIR", "/tmp/wandb-data-jyliu")
+# Note: wandb keeps its own artifact dedup cache under ~/.cache/wandb, on top of
+# the coarser cache this module maintains. On a machine with a small home quota,
+# point WANDB_CACHE_DIR / WANDB_DATA_DIR at scratch before running.
 
 import json
 import pickle
