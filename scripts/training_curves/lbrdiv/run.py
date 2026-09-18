@@ -3,6 +3,7 @@
 Usage:
     PYTHONPATH=. python scripts/training_curves/lbrdiv/run.py --task overcooked-v1/coord_ring
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,8 +29,11 @@ def main():
     args = p.parse_args()
 
     runs = fetch_lbrdiv_curves_for_task(
-        task=args.task, entity=args.entity, project=args.project,
-        cache_dir=Path(args.cache_dir), force_recompute=args.force_recompute,
+        task=args.task,
+        entity=args.entity,
+        project=args.project,
+        cache_dir=Path(args.cache_dir),
+        force_recompute=args.force_recompute,
     )
     out_dir = Path(args.out_dir)
     entries: dict[str, dict] = {}

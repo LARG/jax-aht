@@ -25,6 +25,7 @@ ROTATE) get a teammate-index x-axis instead of raw env steps — see
 Run with:
     python -m scripts.training_curves.meta.plot_meta
 """
+
 from __future__ import annotations
 
 import argparse
@@ -36,7 +37,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 
-
 # Artifacts live under results/ (gitignored); this module lives under scripts/
 # so it is version-controlled. Path is repo-relative, matching
 # `common.DEFAULT_CACHE_DIR`, so run from the repo root.
@@ -45,13 +45,13 @@ DEFAULT_PICKLE = OUT_DIR / "meta_data.pkl"
 DEFAULT_OUT = OUT_DIR / "meta_plot.png"
 
 TEAMMATE_SET_COLORS = {
-    "fcp":     "tab:blue",
-    "comedi":  "tab:orange",
-    "rotate":  "tab:green",
-    "lbrdiv":  "tab:red",
+    "fcp": "tab:blue",
+    "comedi": "tab:orange",
+    "rotate": "tab:green",
+    "lbrdiv": "tab:red",
     "trajedi": "tab:purple",
-    "brdiv":   "tab:brown",
-    "cole":    "tab:pink",
+    "brdiv": "tab:brown",
+    "cole": "tab:pink",
     "unknown": "gray",
 }
 
@@ -79,8 +79,16 @@ def _stderr(values: np.ndarray) -> np.ndarray:
 
 
 def _empty(ax, msg: str = "no data") -> None:
-    ax.text(0.5, 0.5, msg, ha="center", va="center",
-            transform=ax.transAxes, color="gray", fontsize=10)
+    ax.text(
+        0.5,
+        0.5,
+        msg,
+        ha="center",
+        va="center",
+        transform=ax.transAxes,
+        color="gray",
+        fontsize=10,
+    )
     ax.axis("off")
 
 
@@ -158,16 +166,15 @@ def _teammate_index_xaxis(ax, entry: dict, max_labels: int = 8) -> bool:
     ax.tick_params(axis="x", which="minor", length=2, color="0.6")
     for k in range(1, n_segments):
         ax.axvline(k * seg, color="0.85", linewidth=0.4, zorder=0)
-    ax.set_xlabel(f"Teammate Index  ({seg / 1e6:.1f}e6 steps ea.)",
-                  fontsize=AXIS_LABEL_SIZE - 1)
+    ax.set_xlabel(
+        f"Teammate Index  ({seg / 1e6:.1f}e6 steps ea.)", fontsize=AXIS_LABEL_SIZE - 1
+    )
     return True
 
 
 def _envstep_xaxis_in_millions(ax) -> None:
     """X-axis labelled `1.0`, `2.0`, ... with the `1e6` multiplier in the xlabel."""
-    ax.xaxis.set_major_formatter(
-        mticker.FuncFormatter(lambda x, pos: f"{x / 1e6:.1f}")
-    )
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, pos: f"{x / 1e6:.1f}"))
     ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=6))
     ax.set_xlabel("Env Steps (1e6)", fontsize=AXIS_LABEL_SIZE)
 
@@ -175,6 +182,7 @@ def _envstep_xaxis_in_millions(ax) -> None:
 # -----------------------------------------------------------------------------
 # Per-panel renderers
 # -----------------------------------------------------------------------------
+
 
 def render_ego(ax, by_set: dict, title: str | None = None):
     if not by_set:
@@ -185,8 +193,7 @@ def render_ego(ax, by_set: dict, title: str | None = None):
         values = np.asarray(e["values"])
         mean = values.mean(axis=0)
         color = TEAMMATE_SET_COLORS.get(teammate_set, "gray")
-        ax.plot(env_steps, mean, color=color, linewidth=1.8,
-                label=teammate_set)
+        ax.plot(env_steps, mean, color=color, linewidth=1.8, label=teammate_set)
         sem = _stderr(values)
         ax.fill_between(env_steps, mean - sem, mean + sem, color=color, alpha=0.2)
     _set_panel_title(ax, title)
@@ -197,9 +204,14 @@ def render_ego(ax, by_set: dict, title: str | None = None):
     ax.legend(fontsize=LEGEND_SIZE, loc="lower right")
 
 
-def render_ego_losses(ax, by_set: dict, loss_keys: tuple[str, ...],
-                      title: str | None = None, log_y: bool = False,
-                      legend_loc: str = "best"):
+def render_ego_losses(
+    ax,
+    by_set: dict,
+    loss_keys: tuple[str, ...],
+    title: str | None = None,
+    log_y: bool = False,
+    legend_loc: str = "best",
+):
     if not by_set:
         _empty(ax, "no losses")
         return
@@ -215,10 +227,10 @@ def render_ego_losses(ax, by_set: dict, loss_keys: tuple[str, ...],
             mean = arr.mean(axis=0)
             color = TEAMMATE_SET_COLORS.get(teammate_set, "gray")
             ls = linestyles[li % len(linestyles)]
-            label = (f"{teammate_set} · {k}" if len(loss_keys) > 1
-                     else f"{teammate_set}")
-            ax.plot(env_steps, mean, color=color, linewidth=1.5,
-                    linestyle=ls, label=label)
+            label = f"{teammate_set} · {k}" if len(loss_keys) > 1 else f"{teammate_set}"
+            ax.plot(
+                env_steps, mean, color=color, linewidth=1.5, linestyle=ls, label=label
+            )
             plotted = True
     if not plotted:
         _empty(ax, "no autoencoder losses")
@@ -247,8 +259,7 @@ def render_fcp_partners(ax, fcp_partners: dict | None, title: str | None = None)
     n = values.shape[0]
     for r in range(n):
         ax.plot(env_steps, values[r], color="tab:blue", alpha=0.10, linewidth=0.5)
-    ax.plot(env_steps, values.mean(axis=0), color="black", linewidth=1.8,
-            label="mean")
+    ax.plot(env_steps, values.mean(axis=0), color="black", linewidth=1.8, label="mean")
     _set_panel_title(ax, title)
     ax.set_ylabel("Return", fontsize=AXIS_LABEL_SIZE)
     _standardize_return_axis(ax)
@@ -257,11 +268,16 @@ def render_fcp_partners(ax, fcp_partners: dict | None, title: str | None = None)
     ax.legend(fontsize=LEGEND_SIZE, loc="lower right")
 
 
-def render_xp_matrix(ax, entry: dict | None, title: str | None = None,
-                     vmin: float = 0.0, vmax: float = 0.5,
-                     show_colorbar: bool = True,
-                     colorbar_horizontal: bool = False,
-                     square: bool = False):
+def render_xp_matrix(
+    ax,
+    entry: dict | None,
+    title: str | None = None,
+    vmin: float = 0.0,
+    vmax: float = 0.5,
+    show_colorbar: bool = True,
+    colorbar_horizontal: bool = False,
+    square: bool = False,
+):
     """Heatmap with a red→yellow→green colormap pinned to [vmin, vmax].
 
     Defaults match LBF return scale (0–0.5). Override `vmax` for Overcooked
@@ -279,17 +295,28 @@ def render_xp_matrix(ax, entry: dict | None, title: str | None = None,
     # an equal-aspect matrix would be width-limited and leave most of the cell
     # empty. Stretching is harmless here — the axes are categorical. Pass
     # `square=True` for a cell wide enough to hold an undistorted matrix.
-    im = ax.imshow(mat, cmap="RdYlGn", origin="upper",
-                   aspect="equal" if square else "auto",
-                   vmin=vmin, vmax=vmax)
+    im = ax.imshow(
+        mat,
+        cmap="RdYlGn",
+        origin="upper",
+        aspect="equal" if square else "auto",
+        vmin=vmin,
+        vmax=vmax,
+    )
     if show_colorbar:
         # A horizontal colorbar underneath costs height (of which these cells
         # have plenty) instead of width (of which they have none) — a vertical
         # one overruns the slot and collides with the panel to the right.
         if colorbar_horizontal:
-            cbar = plt.colorbar(im, ax=ax, orientation="horizontal",
-                                location="bottom", shrink=0.9, fraction=0.06,
-                                pad=0.16)
+            cbar = plt.colorbar(
+                im,
+                ax=ax,
+                orientation="horizontal",
+                location="bottom",
+                shrink=0.9,
+                fraction=0.06,
+                pad=0.16,
+            )
         else:
             cbar = plt.colorbar(im, ax=ax, shrink=0.9, fraction=0.05, pad=0.04)
         cbar.ax.tick_params(labelsize=TICK_LABEL_SIZE - 2)
@@ -311,9 +338,15 @@ def render_xp_matrix(ax, entry: dict | None, title: str | None = None,
         threshold = vmin + 0.15 * (vmax - vmin)
         for i in range(pop_size):
             for j in range(pop_size):
-                ax.text(j, i, fmt.format(mat[i, j]), ha="center", va="center",
-                        color="white" if mat[i, j] < threshold else "black",
-                        fontsize=7)
+                ax.text(
+                    j,
+                    i,
+                    fmt.format(mat[i, j]),
+                    ha="center",
+                    va="center",
+                    color="white" if mat[i, j] < threshold else "black",
+                    fontsize=7,
+                )
     _set_panel_title(ax, title)
 
 
@@ -325,21 +358,39 @@ def render_lms_overlay(ax, lms: dict | None, title: str | None = None):
     h = np.asarray(lms["horizontal"])
     v = np.asarray(lms["vertical"])
     for k in range(h.shape[0]):
-        ax.plot(env_steps, h[k], color=LM_HORIZONTAL_COLOR, alpha=0.45,
-                linewidth=0.9, label="Horizontal" if k == 0 else None)
+        ax.plot(
+            env_steps,
+            h[k],
+            color=LM_HORIZONTAL_COLOR,
+            alpha=0.45,
+            linewidth=0.9,
+            label="Horizontal" if k == 0 else None,
+        )
     for k in range(v.shape[0]):
-        ax.plot(env_steps, v[k], color=LM_VERTICAL_COLOR, alpha=0.45,
-                linewidth=0.9, label="Vertical" if k == 0 else None)
+        ax.plot(
+            env_steps,
+            v[k],
+            color=LM_VERTICAL_COLOR,
+            alpha=0.45,
+            linewidth=0.9,
+            label="Vertical" if k == 0 else None,
+        )
     _set_panel_title(ax, title)
     ax.set_ylabel("LM Value", fontsize=AXIS_LABEL_SIZE)
     ax.set_xlabel("Env Steps", fontsize=AXIS_LABEL_SIZE)
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=LEGEND_SIZE, loc="upper right", title="LM Type",
-              title_fontsize=LEGEND_SIZE, framealpha=0.85)
+    ax.legend(
+        fontsize=LEGEND_SIZE,
+        loc="upper right",
+        title="LM Type",
+        title_fontsize=LEGEND_SIZE,
+        framealpha=0.85,
+    )
 
 
-def render_regret(ax, entry: dict | None, title: str | None = None,
-                  color: str = "tab:green"):
+def render_regret(
+    ax, entry: dict | None, title: str | None = None, color: str = "tab:green"
+):
     """ROTATE train regret: `average_returns_br - average_returns_ego` per partner update.
 
     Unlike the return panels this is *not* pinned to the 0–0.5 return axis —
@@ -355,8 +406,9 @@ def render_regret(ax, entry: dict | None, title: str | None = None,
     ax.axhline(0.0, color="0.6", linewidth=0.8, linestyle="--", zorder=1)
     ax.plot(env_steps, mean, color=color, linewidth=1.8, zorder=3)
     sem = _stderr(values)
-    ax.fill_between(env_steps, mean - sem, mean + sem, color=color, alpha=0.18,
-                    zorder=2)
+    ax.fill_between(
+        env_steps, mean - sem, mean + sem, color=color, alpha=0.18, zorder=2
+    )
     _set_panel_title(ax, title)
     ax.set_ylabel("Regret", fontsize=AXIS_LABEL_SIZE)
     # Two decimals, not three: "-0.025" style labels are the widest tick text in
@@ -368,8 +420,13 @@ def render_regret(ax, entry: dict | None, title: str | None = None,
     ax.grid(True, alpha=0.3, axis="y")
 
 
-def render_curve(ax, algo: str, entry: dict | None, title: str | None = None,
-                 show_ylabel: bool = True):
+def render_curve(
+    ax,
+    algo: str,
+    entry: dict | None,
+    title: str | None = None,
+    show_ylabel: bool = True,
+):
     if entry is None:
         _empty(ax, f"no curve for {algo}")
         return
@@ -444,7 +501,7 @@ def _row(*segments: tuple[str, int]) -> list[str]:
     cols: list[str] = []
     for i, (name, units) in enumerate(segments):
         if i:
-            cols.append(".")           # boundary spacer -> visible gap
+            cols.append(".")  # boundary spacer -> visible gap
         cols += [name] * (2 * units - 1)
     assert len(cols) == 2 * TOTAL_UNITS - 1, (len(cols), cols)
     return cols
@@ -457,10 +514,8 @@ LAYOUT = [
     # curve spans the same width on the second.
     _row(("rotate_regret", 4), ("cole_xp", 4), ("cole_curve", 4)),
     _row(("rotate_ret", 4), ("trajedi", 8)),
-
     # --- spacer isolating the unified block from the two sections below ---
     ["."] * (2 * TOTAL_UNITS - 1),
-
     # --- Teammate Generation (units 1-6) | Ego Algorithms (units 7-12) ---
     # FCP is compacted so BRDIV's XP matrix can sit beside it with a box of its
     # own, which is what lets the teammate half fit in three rows, not four.
@@ -474,17 +529,17 @@ assert len(ROW_HEIGHTS) == len(LAYOUT)
 # Anchor panels for each section header, spanning the full width of the section
 # so the header centres on it rather than on one panel.
 SECTION_HEADERS = [
-    ("Unified Algorithms",  ["rotate_regret", "cole_curve"]),
+    ("Unified Algorithms", ["rotate_regret", "cole_curve"]),
     ("Teammate Generation", ["fcp", "brdiv_xp"]),
-    ("Ego Algorithms",      ["ppo"]),
+    ("Ego Algorithms", ["ppo"]),
 ]
 
 # Which algorithm boxes each section box encloses, keyed by the labels used in
 # ALGO_BOXES.
 SECTIONS = [
-    ("Unified Algorithms",  ["ROTATE", "COLE", "TrajeDi"]),
+    ("Unified Algorithms", ["ROTATE", "COLE", "TrajeDi"]),
     ("Teammate Generation", ["FCP", "BRDiv", "LBRDiv", "CoMeDi"]),
-    ("Ego Algorithms",      ["PPO Ego", "LIAM Ego", "MeLIBA Ego"]),
+    ("Ego Algorithms", ["PPO Ego", "LIAM Ego", "MeLIBA Ego"]),
 ]
 
 # Box pads and label offsets below are expressed as figure fractions but were
@@ -494,15 +549,15 @@ _V = 21 / FIG_HEIGHT
 _H = 17 / FIG_WIDTH
 
 ROW_LABELS = [
-    ("FCP",        ["fcp"]),
-    ("BRDiv",      ["brdiv_xp"]),
-    ("LBRDiv",     ["lbrdiv_xp", "lbrdiv_lm"]),
-    ("CoMeDi",     ["comedi"]),
-    ("TrajeDi",    ["trajedi"]),
-    ("COLE",       ["cole_xp", "cole_curve"]),
-    ("ROTATE",     ["rotate_ret", "rotate_regret"]),
-    ("PPO Ego",    ["ppo"]),
-    ("LIAM Ego",   ["liam_ret", "liam_loss"]),
+    ("FCP", ["fcp"]),
+    ("BRDiv", ["brdiv_xp"]),
+    ("LBRDiv", ["lbrdiv_xp", "lbrdiv_lm"]),
+    ("CoMeDi", ["comedi"]),
+    ("TrajeDi", ["trajedi"]),
+    ("COLE", ["cole_xp", "cole_curve"]),
+    ("ROTATE", ["rotate_ret", "rotate_regret"]),
+    ("PPO Ego", ["ppo"]),
+    ("LIAM Ego", ["liam_ret", "liam_loss"]),
     ("MeLIBA Ego", ["meliba_ret", "meliba_loss"]),
 ]
 
@@ -517,8 +572,9 @@ def _panel_slot_bbox(fig, ax):
     return ax.get_subplotspec().get_position(fig)
 
 
-def add_section_header(fig, axd, panels: list[str], label: str,
-                       y_offset: float = 0.048 * _V):
+def add_section_header(
+    fig, axd, panels: list[str], label: str, y_offset: float = 0.048 * _V
+):
     """Place a section header above the first row of a section.
 
     Anchored to the section's first panel rather than a hard-coded figure
@@ -529,13 +585,18 @@ def add_section_header(fig, axd, panels: list[str], label: str,
     x0 = min(b.x0 for b in bbs)
     x1 = max(b.x1 for b in bbs)
     y1 = max(b.y1 for b in bbs)
-    return fig.text(x0 + (x1 - x0) / 2, y1 + y_offset, label,
-                    ha="center", va="bottom",
-                    fontsize=SECTION_HEADER_SIZE, fontweight="bold")
+    return fig.text(
+        x0 + (x1 - x0) / 2,
+        y1 + y_offset,
+        label,
+        ha="center",
+        va="bottom",
+        fontsize=SECTION_HEADER_SIZE,
+        fontweight="bold",
+    )
 
 
-def add_row_label(fig, axd, panels: list[str], label: str,
-                  gap_in: float = 0.06):
+def add_row_label(fig, axd, panels: list[str], label: str, gap_in: float = 0.06):
     """Place a bold row label centered just above the panel(s) and their titles.
 
     Sits `gap_in` inches above the tallest panel title rather than a fixed
@@ -549,13 +610,18 @@ def add_row_label(fig, axd, panels: list[str], label: str,
     x0 = min(b.x0 for b in slots)
     x1 = max(b.x1 for b in slots)
     content_top = max(
-        inv.transform_bbox(axd[name].get_tightbbox(renderer)).y1
-        for name in panels
+        inv.transform_bbox(axd[name].get_tightbbox(renderer)).y1 for name in panels
     )
     y = content_top + gap_in / fig.get_size_inches()[1]
-    return fig.text(x0 + (x1 - x0) / 2, y, label,
-                    ha="center", va="bottom",
-                    fontsize=ROW_LABEL_SIZE, fontweight="bold")
+    return fig.text(
+        x0 + (x1 - x0) / 2,
+        y,
+        label,
+        ha="center",
+        va="bottom",
+        fontsize=ROW_LABEL_SIZE,
+        fontweight="bold",
+    )
 
 
 # Top of an algorithm box, measured from its gridspec slot so boxes sharing a
@@ -571,8 +637,9 @@ SECTION_PAD_X = 0.16 / FIG_WIDTH
 SECTION_PAD_Y = 0.16 / FIG_HEIGHT
 
 
-def reclaim_matrix_margin(fig, axd, matrix: str, curve: str, siblings: list[str],
-                          keep_in: float = 0.10):
+def reclaim_matrix_margin(
+    fig, axd, matrix: str, curve: str, siblings: list[str], keep_in: float = 0.10
+):
     """Slide a square XP matrix left into the dead space its box inherits.
 
     `draw_algo_boxes` snaps boxes starting in the same grid column to a common
@@ -608,8 +675,12 @@ def reclaim_matrix_margin(fig, axd, matrix: str, curve: str, siblings: list[str]
     axd[curve].set_position([c.x0 - shift, c.y0, c.width + shift, c.height])
 
 
-def draw_algo_boxes(fig, axd, algo_boxes: list[tuple[str, list[str]]],
-                    row_label_texts: dict | None = None):
+def draw_algo_boxes(
+    fig,
+    axd,
+    algo_boxes: list[tuple[str, list[str]]],
+    row_label_texts: dict | None = None,
+):
     """Draw the thin rectangle around each algorithm's panel(s).
 
     Bounds start from the panels' *tight* bboxes (axes plus tick labels, axis
@@ -640,25 +711,32 @@ def draw_algo_boxes(fig, axd, algo_boxes: list[tuple[str, list[str]]],
         slots = [_panel_slot_bbox(fig, axd[name]) for name in panels]
         # The row label sits above the panel titles and must be enclosed too.
         text = (row_label_texts or {}).get(label)
-        label_top = ([inv.transform_bbox(text.get_window_extent(renderer)).y1]
-                     if text is not None else [])
-        specs.append({
-            "label": label,
-            "x0": min(b.x0 for b in tight) - BOX_MARGIN_X,
-            "x1": max(b.x1 for b in tight) + BOX_MARGIN_X,
-            "y0": min(b.y0 for b in tight) - BOX_MARGIN_Y,
-            "y1": max([b.y1 for b in tight] + label_top) + BOX_MARGIN_Y,
-            # Slot-space keys identifying which grid edge this box sits on.
-            "slot_x0": round(min(s.x0 for s in slots), 4),
-            "slot_x1": round(max(s.x1 for s in slots), 4),
-            "slot_y0": round(min(s.y0 for s in slots), 4),
-            "slot_y1": round(max(s.y1 for s in slots), 4),
-        })
+        label_top = (
+            [inv.transform_bbox(text.get_window_extent(renderer)).y1]
+            if text is not None
+            else []
+        )
+        specs.append(
+            {
+                "label": label,
+                "x0": min(b.x0 for b in tight) - BOX_MARGIN_X,
+                "x1": max(b.x1 for b in tight) + BOX_MARGIN_X,
+                "y0": min(b.y0 for b in tight) - BOX_MARGIN_Y,
+                "y1": max([b.y1 for b in tight] + label_top) + BOX_MARGIN_Y,
+                # Slot-space keys identifying which grid edge this box sits on.
+                "slot_x0": round(min(s.x0 for s in slots), 4),
+                "slot_x1": round(max(s.x1 for s in slots), 4),
+                "slot_y0": round(min(s.y0 for s in slots), 4),
+                "slot_y1": round(max(s.y1 for s in slots), 4),
+            }
+        )
 
-    for key, edge, combine in (("slot_x0", "x0", min),
-                               ("slot_x1", "x1", max),
-                               ("slot_y0", "y0", min),
-                               ("slot_y1", "y1", max)):
+    for key, edge, combine in (
+        ("slot_x0", "x0", min),
+        ("slot_x1", "x1", max),
+        ("slot_y0", "y0", min),
+        ("slot_y1", "y1", max),
+    ):
         groups: dict[float, list[dict]] = {}
         for spec in specs:
             groups.setdefault(spec[key], []).append(spec)
@@ -668,13 +746,19 @@ def draw_algo_boxes(fig, axd, algo_boxes: list[tuple[str, list[str]]],
                 m[edge] = shared
 
     for s in specs:
-        fig.add_artist(mpatches.FancyBboxPatch(
-            (s["x0"], s["y0"]), s["x1"] - s["x0"], s["y1"] - s["y0"],
-            boxstyle="round,pad=0.002,rounding_size=0.005",
-            transform=fig.transFigure,
-            fill=False, edgecolor="0.55", linewidth=1.0,
-            clip_on=False,
-        ))
+        fig.add_artist(
+            mpatches.FancyBboxPatch(
+                (s["x0"], s["y0"]),
+                s["x1"] - s["x0"],
+                s["y1"] - s["y0"],
+                boxstyle="round,pad=0.002,rounding_size=0.005",
+                transform=fig.transFigure,
+                fill=False,
+                edgecolor="0.55",
+                linewidth=1.0,
+                clip_on=False,
+            )
+        )
     return {s["label"]: (s["x0"], s["x1"], s["y0"], s["y1"]) for s in specs}
 
 
@@ -699,13 +783,19 @@ def draw_section_boxes(fig, algo_rects: dict, header_texts: dict):
         if header is not None:
             top = inv.transform_bbox(header.get_window_extent(renderer)).y1
             y1 = max(y1, top + SECTION_PAD_Y)
-        fig.add_artist(mpatches.FancyBboxPatch(
-            (x0, y0), x1 - x0, y1 - y0,
-            boxstyle="round,pad=0.002,rounding_size=0.006",
-            transform=fig.transFigure,
-            fill=False, edgecolor="0.30", linewidth=1.8,
-            clip_on=False,
-        ))
+        fig.add_artist(
+            mpatches.FancyBboxPatch(
+                (x0, y0),
+                x1 - x0,
+                y1 - y0,
+                boxstyle="round,pad=0.002,rounding_size=0.006",
+                transform=fig.transFigure,
+                fill=False,
+                edgecolor="0.30",
+                linewidth=1.8,
+                clip_on=False,
+            )
+        )
 
 
 def main():
@@ -721,8 +811,7 @@ def main():
     width_ratios: list[float] = []
     for unit in range(TOTAL_UNITS):
         if unit:
-            width_ratios.append(
-                BAND_GAP if unit in WIDE_GAP_UNITS else PANEL_GAP)
+            width_ratios.append(BAND_GAP if unit in WIDE_GAP_UNITS else PANEL_GAP)
         width_ratios.append(1.0)
 
     # Margins are given in inches and converted, so they stay put if the canvas
@@ -752,48 +841,87 @@ def main():
     # ---- Teammate-gen panels (Title-Cased panel headings) ----
     # Titles here are kept short because they are centred and unconstrained;
     # `fit_panel_titles` shrinks any that still overflow.
-    render_fcp_partners(axd["fcp"], data.get("fcp_partners"),
-                        title="Per-Partner Return")
+    render_fcp_partners(
+        axd["fcp"], data.get("fcp_partners"), title="Per-Partner Return"
+    )
     # The 3x3 matrices annotate every cell, so their colorbars are redundant —
     # dropping them buys width back in the tightest row of the figure. COLE's
     # 18x18 is unannotated and keeps its colorbar.
-    render_xp_matrix(axd["brdiv_xp"], data["xp_matrices"].get("brdiv"),
-                     title="Final XP Matrix", show_colorbar=False, square=True)
-    render_curve(axd["trajedi"], "trajedi",
-                 data["teammate_curves"].get("trajedi"),
-                 title="Training Return")
-    render_xp_matrix(axd["lbrdiv_xp"], data["xp_matrices"].get("lbrdiv"),
-                     title="Final XP Matrix", show_colorbar=False, square=True)
-    render_lms_overlay(axd["lbrdiv_lm"], data.get("lbrdiv_lms"),
-                       title="Lagrange Multipliers")
-    render_curve(axd["comedi"], "comedi", data["teammate_curves"].get("comedi"),
-                 title="Partner Training Return")
-    render_curve(axd["cole_curve"], "cole", data["teammate_curves"].get("cole"),
-                 title="Partner Training Return")
-    render_xp_matrix(axd["cole_xp"], data["xp_matrices"].get("cole"),
-                     title="Final XP Matrix", colorbar_horizontal=True,
-                     square=True)
+    render_xp_matrix(
+        axd["brdiv_xp"],
+        data["xp_matrices"].get("brdiv"),
+        title="Final XP Matrix",
+        show_colorbar=False,
+        square=True,
+    )
+    render_curve(
+        axd["trajedi"],
+        "trajedi",
+        data["teammate_curves"].get("trajedi"),
+        title="Training Return",
+    )
+    render_xp_matrix(
+        axd["lbrdiv_xp"],
+        data["xp_matrices"].get("lbrdiv"),
+        title="Final XP Matrix",
+        show_colorbar=False,
+        square=True,
+    )
+    render_lms_overlay(
+        axd["lbrdiv_lm"], data.get("lbrdiv_lms"), title="Lagrange Multipliers"
+    )
+    render_curve(
+        axd["comedi"],
+        "comedi",
+        data["teammate_curves"].get("comedi"),
+        title="Partner Training Return",
+    )
+    render_curve(
+        axd["cole_curve"],
+        "cole",
+        data["teammate_curves"].get("cole"),
+        title="Partner Training Return",
+    )
+    render_xp_matrix(
+        axd["cole_xp"],
+        data["xp_matrices"].get("cole"),
+        title="Final XP Matrix",
+        colorbar_horizontal=True,
+        square=True,
+    )
     rotate = data.get("rotate") or {}
-    render_curve(axd["rotate_ret"], "rotate", rotate.get("return"),
-                 title="Ego vs. Confederate")
-    render_regret(axd["rotate_regret"], rotate.get("train_regret"),
-                  title="Train Regret",
-                  color=TEAMMATE_SET_COLORS["rotate"])
+    render_curve(
+        axd["rotate_ret"], "rotate", rotate.get("return"), title="Ego vs. Confederate"
+    )
+    render_regret(
+        axd["rotate_regret"],
+        rotate.get("train_regret"),
+        title="Train Regret",
+        color=TEAMMATE_SET_COLORS["rotate"],
+    )
 
     # ---- Ego panels ----
-    render_ego(axd["ppo"], data["ego"].get("ppo_ego", {}),
-               title="Training Return")
-    render_ego(axd["liam_ret"], data["ego"].get("liam_ego", {}),
-               title="Training Return")
-    render_ego_losses(axd["liam_loss"], data["ego"].get("liam_ego", {}),
-                      loss_keys=("reconstruction_loss",),
-                      title="Reconstruction Loss")
-    render_ego(axd["meliba_ret"], data["ego"].get("meliba_ego", {}),
-               title="Training Return")
-    render_ego_losses(axd["meliba_loss"], data["ego"].get("meliba_ego", {}),
-                      loss_keys=("reconstruction_loss", "kl_divergence_loss"),
-                      title="Autoencoder Losses",
-                      log_y=True, legend_loc="upper right")
+    render_ego(axd["ppo"], data["ego"].get("ppo_ego", {}), title="Training Return")
+    render_ego(
+        axd["liam_ret"], data["ego"].get("liam_ego", {}), title="Training Return"
+    )
+    render_ego_losses(
+        axd["liam_loss"],
+        data["ego"].get("liam_ego", {}),
+        loss_keys=("reconstruction_loss",),
+        title="Reconstruction Loss",
+    )
+    render_ego(
+        axd["meliba_ret"], data["ego"].get("meliba_ego", {}), title="Training Return"
+    )
+    render_ego_losses(
+        axd["meliba_loss"],
+        data["ego"].get("meliba_ego", {}),
+        loss_keys=("reconstruction_loss", "kl_divergence_loss"),
+        title="Autoencoder Losses",
+        log_y=True,
+        legend_loc="upper right",
+    )
 
     # Finalize layout positions before anything measures bboxes.
     fig.canvas.draw()
@@ -808,35 +936,42 @@ def main():
     # already tight. COLE's matrix sits directly above its curve rather than
     # beside it: the two share columns, so shifting the matrix left would pull
     # it out of alignment with the curve underneath.
-    reclaim_matrix_margin(fig, axd, "lbrdiv_xp", "lbrdiv_lm",
-                          ["fcp", "comedi", "rotate_regret", "rotate_ret"])
+    reclaim_matrix_margin(
+        fig,
+        axd,
+        "lbrdiv_xp",
+        "lbrdiv_lm",
+        ["fcp", "comedi", "rotate_regret", "rotate_ret"],
+    )
     reclaim_matrix_margin(fig, axd, "cole_xp", "cole_curve", ["trajedi"])
-    fig.canvas.draw()          # refresh bboxes for the box/label measurements
+    fig.canvas.draw()  # refresh bboxes for the box/label measurements
 
     # Row labels and section headers (drawn after layout so bboxes are valid).
-    row_label_texts = {label: add_row_label(fig, axd, panels, label)
-                       for label, panels in ROW_LABELS}
-    header_texts = {label: add_section_header(fig, axd, panels, label)
-                    for label, panels in SECTION_HEADERS}
+    row_label_texts = {
+        label: add_row_label(fig, axd, panels, label) for label, panels in ROW_LABELS
+    }
+    header_texts = {
+        label: add_section_header(fig, axd, panels, label)
+        for label, panels in SECTION_HEADERS
+    }
 
     # Group boxes: one rectangle per algorithm enclosing its panel(s) +
     # the row label sitting above. ALGO_BOXES uses the full panel set per algo
     # (LIAM/MeLIBA each have 2 stacked panels — both go in the same box).
     ALGO_BOXES = [
-        ("FCP",        ["fcp"]),
-        ("BRDiv",      ["brdiv_xp"]),
-        ("TrajeDi",    ["trajedi"]),
-        ("LBRDiv",     ["lbrdiv_xp", "lbrdiv_lm"]),
-        ("CoMeDi",     ["comedi"]),
-        ("COLE",       ["cole_xp", "cole_curve"]),
-        ("ROTATE",     ["rotate_ret", "rotate_regret"]),
-        ("PPO Ego",    ["ppo"]),
-        ("LIAM Ego",   ["liam_ret", "liam_loss"]),
+        ("FCP", ["fcp"]),
+        ("BRDiv", ["brdiv_xp"]),
+        ("TrajeDi", ["trajedi"]),
+        ("LBRDiv", ["lbrdiv_xp", "lbrdiv_lm"]),
+        ("CoMeDi", ["comedi"]),
+        ("COLE", ["cole_xp", "cole_curve"]),
+        ("ROTATE", ["rotate_ret", "rotate_regret"]),
+        ("PPO Ego", ["ppo"]),
+        ("LIAM Ego", ["liam_ret", "liam_loss"]),
         ("MeLIBA Ego", ["meliba_ret", "meliba_loss"]),
     ]
     algo_rects = draw_algo_boxes(fig, axd, ALGO_BOXES, row_label_texts)
     draw_section_boxes(fig, algo_rects, header_texts)
-
 
     # Save both PNG (quick preview) and PDF (vector for paper/sharing).
     out_path = Path(args.out)

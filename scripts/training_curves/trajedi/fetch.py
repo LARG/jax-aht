@@ -5,6 +5,7 @@ shape (NUM_SEEDS, NUM_UPDATES). Unlike FCP/CoMeDi, there is no inner pop axis
 in the metric tree — the partner population is folded into the update axis
 because the algorithm interleaves SP/XP/MP rollouts inside each update step.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,8 +13,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from scripts.training_curves.common import (
-    CurveData,
     DEFAULT_CACHE_DIR,
+    CurveData,
     fetch_train_run_metrics_cached,
     find_benchmark_runs,
     get_config_value,
@@ -45,7 +46,10 @@ def fetch_trajedi_curves_for_task(
     force_recompute: bool = False,
 ) -> list[TrajeDiRunCurves]:
     runs = find_benchmark_runs(
-        algorithm="trajedi", task=task, entity=entity, project=project,
+        algorithm="trajedi",
+        task=task,
+        entity=entity,
+        project=project,
     )
     if not runs:
         raise ValueError(
@@ -60,13 +64,19 @@ def fetch_trajedi_curves_for_task(
             raise ValueError(f"Run {run.id} missing algorithm.TOTAL_TIMESTEPS.")
 
         metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="saved_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             reduce_per_update=True,
         )
-        out.append(TrajeDiRunCurves(
-            run_id=run.id, task=task,
-            train=_train_curve(metrics, total),
-        ))
+        out.append(
+            TrajeDiRunCurves(
+                run_id=run.id,
+                task=task,
+                train=_train_curve(metrics, total),
+            )
+        )
     return out

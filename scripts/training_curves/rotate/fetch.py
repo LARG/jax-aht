@@ -32,6 +32,7 @@ the benchmark runs and only writes 2 eval points per OEL iter):
 We concatenate the OEL-iter axis with the within-iter step axis to produce a
 single timeline for plotting (analogous to CoMeDi/COLE's iteration handling).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -39,8 +40,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from scripts.training_curves.common import (
-    CurveData,
     DEFAULT_CACHE_DIR,
+    CurveData,
     fetch_train_run_metrics_cached,
     find_benchmark_runs,
     get_config_value,
@@ -53,10 +54,10 @@ from scripts.wandb_utils.wandb_cache import fetch_run_eval_metrics_cached
 class RotateRunCurves:
     run_id: str
     task: str
-    ego_vs_conf: CurveData       # ego eval against confederate, per-seed
-    conf_vs_confbr: CurveData    # confederate eval against best-response, per-seed
+    ego_vs_conf: CurveData  # ego eval against confederate, per-seed
+    conf_vs_confbr: CurveData  # confederate eval against best-response, per-seed
     ego_vs_heldout: CurveData | None  # None if heldout_eval_metrics artifact is missing
-    train_regret: CurveData | None    # None for runs predating regret logging
+    train_regret: CurveData | None  # None for runs predating regret logging
 
 
 # The 2026-08-18 ROTATE sync from continual-aht renamed the confederate-vs-BR
@@ -73,7 +74,9 @@ def _first_present(metrics: dict, keys: tuple[str, ...]) -> str | None:
 
 
 def _reduce_partner_metric(
-    arr: np.ndarray, name: str, partner_total_per_iter: int,
+    arr: np.ndarray,
+    name: str,
+    partner_total_per_iter: int,
 ) -> CurveData:
     """Collapse a 4D partner-side metric to a per-seed curve on a single timeline.
 
@@ -108,11 +111,15 @@ def _conf_vs_confbr(teammate_metrics: dict, partner_total_per_iter: int) -> Curv
             f"Available: {sorted(teammate_metrics)}"
         )
     return _reduce_partner_metric(
-        np.asarray(teammate_metrics[key]), key, partner_total_per_iter,
+        np.asarray(teammate_metrics[key]),
+        key,
+        partner_total_per_iter,
     )
 
 
-def _train_regret(teammate_metrics: dict, partner_total_per_iter: int) -> CurveData | None:
+def _train_regret(
+    teammate_metrics: dict, partner_total_per_iter: int
+) -> CurveData | None:
     """Per-seed dense regret signal logged by ROTATE as `Losses/TrainRegret`.
 
     `train_regret` is `average_returns_br - average_returns_ego` computed per
@@ -127,7 +134,8 @@ def _train_regret(teammate_metrics: dict, partner_total_per_iter: int) -> CurveD
     if "train_regret" not in teammate_metrics:
         return None
     return _reduce_partner_metric(
-        np.asarray(teammate_metrics["train_regret"]), "train_regret",
+        np.asarray(teammate_metrics["train_regret"]),
+        "train_regret",
         partner_total_per_iter,
     )
 
@@ -152,7 +160,9 @@ def _ego_vs_conf(ego_metrics: dict, ego_total_per_iter: int) -> CurveData:
     return make_curve(flat, ego_total_per_iter * n_iters, n_segments=n_iters)
 
 
-def _ego_vs_heldout(heldout_metrics: dict, ego_total_per_iter: int, n_iters: int) -> CurveData:
+def _ego_vs_heldout(
+    heldout_metrics: dict, ego_total_per_iter: int, n_iters: int
+) -> CurveData:
     """Per-seed ego-vs-heldout return, one point per OEL iter.
 
     `heldout_metrics["returned_episode_returns"]` is shape
@@ -180,7 +190,10 @@ def fetch_rotate_curves_for_task(
     force_recompute: bool = False,
 ) -> list[RotateRunCurves]:
     runs = find_benchmark_runs(
-        algorithm="rotate", task=task, entity=entity, project=project,
+        algorithm="rotate",
+        task=task,
+        entity=entity,
+        project=project,
     )
     if not runs:
         raise ValueError(
@@ -193,11 +206,15 @@ def fetch_rotate_curves_for_task(
         # and have no saved_train_run artifact. Skip rather than fail — they need
         # a rerun to be plottable.
         if not any("saved_train_run" in a.name for a in run.logged_artifacts()):
-            print(f"[rotate] skipping run {run.id} (task={task}): no saved_train_run "
-                  "artifact (log_train_out=False — needs rerun).")
+            print(
+                f"[rotate] skipping run {run.id} (task={task}): no saved_train_run "
+                "artifact (log_train_out=False — needs rerun)."
+            )
             continue
         print(f"\n[rotate] processing run {run.id}  task={task}  state={run.state}")
-        partner_total = get_config_value(run.config, "algorithm.TIMESTEPS_PER_ITER_PARTNER")
+        partner_total = get_config_value(
+            run.config, "algorithm.TIMESTEPS_PER_ITER_PARTNER"
+        )
         ego_total = get_config_value(run.config, "algorithm.TIMESTEPS_PER_ITER_EGO")
         if partner_total is None or ego_total is None:
             raise ValueError(
@@ -206,15 +223,21 @@ def fetch_rotate_curves_for_task(
             )
 
         teammate_metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="saved_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             tuple_index=0,
         )
         ego_metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="saved_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             tuple_index=1,
         )
 
@@ -222,30 +245,40 @@ def fetch_rotate_curves_for_task(
         ego_curve = _ego_vs_conf(ego_metrics, ego_total)
         regret_curve = _train_regret(teammate_metrics, partner_total)
         if regret_curve is None:
-            print(f"  [warn] run {run.id} has no `train_regret` "
-                  "(predates 2026-08-18 regret logging).")
+            print(
+                f"  [warn] run {run.id} has no `train_regret` "
+                "(predates 2026-08-18 regret logging)."
+            )
 
         # Heldout eval — separate artifact, already a flat dict of arrays.
         # Some neurips:benchmark runs are missing this artifact; in that case
         # we render the heldout panel as N/A rather than failing the whole run.
         try:
             heldout = fetch_run_eval_metrics_cached(
-                run.id, entity, project, cache_dir=cache_dir,
+                run.id,
+                entity,
+                project,
+                cache_dir=cache_dir,
                 force_recompute=force_recompute,
             )
-            n_iters = np.asarray(teammate_metrics["eval_ep_last_info_br"]["returned_episode_returns"]).shape[1]
+            n_iters = np.asarray(
+                teammate_metrics["eval_ep_last_info_br"]["returned_episode_returns"]
+            ).shape[1]
             heldout_curve = _ego_vs_heldout(heldout, ego_total, n_iters)
         except ValueError as e:
             print(f"  [warn] heldout eval not available for {run.id}: {e}")
             heldout_curve = None
 
-        out.append(RotateRunCurves(
-            run_id=run.id, task=task,
-            ego_vs_conf=ego_curve,
-            conf_vs_confbr=conf_curve,
-            ego_vs_heldout=heldout_curve,
-            train_regret=regret_curve,
-        ))
+        out.append(
+            RotateRunCurves(
+                run_id=run.id,
+                task=task,
+                ego_vs_conf=ego_curve,
+                conf_vs_confbr=conf_curve,
+                ego_vs_heldout=heldout_curve,
+                train_regret=regret_curve,
+            )
+        )
 
     if not out:
         raise ValueError(

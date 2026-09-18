@@ -12,6 +12,7 @@ Curve definitions (from inspection of run ikrlj1qe, FCP/coord_ring):
     `eval_ep_last_info["returned_episode_returns"]` because that's the
     held-out eval return — sparse (NUM_CHECKPOINTS-limited).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,8 +20,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from scripts.training_curves.common import (
-    CurveData,
     DEFAULT_CACHE_DIR,
+    CurveData,
     extract_ego_curve,
     fetch_train_run_metrics_cached,
     find_benchmark_runs,
@@ -55,7 +56,10 @@ def fetch_fcp_curves_for_task(
 ) -> list[FCPRunCurves]:
     """Pull every FCP `neurips:benchmark` run on `task` and return per-seed curves."""
     runs = find_benchmark_runs(
-        algorithm="fcp", task=task, entity=entity, project=project,
+        algorithm="fcp",
+        task=task,
+        entity=entity,
+        project=project,
     )
     if not runs:
         raise ValueError(
@@ -66,7 +70,9 @@ def fetch_fcp_curves_for_task(
     for run in runs:
         print(f"\n[fcp] processing run {run.id}  task={task}  state={run.state}")
         partner_total = get_config_value(run.config, "algorithm.TOTAL_TIMESTEPS")
-        ego_total = get_config_value(run.config, "algorithm.ego_train_algorithm.TOTAL_TIMESTEPS")
+        ego_total = get_config_value(
+            run.config, "algorithm.ego_train_algorithm.TOTAL_TIMESTEPS"
+        )
         if partner_total is None or ego_total is None:
             raise ValueError(
                 f"Run {run.id} missing TOTAL_TIMESTEPS config "
@@ -74,23 +80,31 @@ def fetch_fcp_curves_for_task(
             )
 
         partner_metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="saved_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             reduce_per_update=True,
         )
         ego_metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="ego_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="ego_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             reduce_per_update=True,
         )
 
-        out.append(FCPRunCurves(
-            run_id=run.id,
-            task=task,
-            partner=_partner_curve(partner_metrics, partner_total),
-            ego=extract_ego_curve(ego_metrics, ego_total),
-        ))
+        out.append(
+            FCPRunCurves(
+                run_id=run.id,
+                task=task,
+                partner=_partner_curve(partner_metrics, partner_total),
+                ego=extract_ego_curve(ego_metrics, ego_total),
+            )
+        )
 
     return out

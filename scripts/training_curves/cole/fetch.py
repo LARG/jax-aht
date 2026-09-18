@@ -12,6 +12,7 @@ is no ego curve to plot. Some COLE neurips:benchmark runs (e.g. yn8h1tua) were
 logged with `log_train_out=False` and have no train_run artifact at all — we
 skip those with a warning rather than failing.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,8 +20,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from scripts.training_curves.common import (
-    CurveData,
     DEFAULT_CACHE_DIR,
+    CurveData,
     fetch_train_run_metrics_cached,
     find_benchmark_runs,
     get_config_value,
@@ -60,7 +61,10 @@ def fetch_cole_curves_for_task(
     force_recompute: bool = False,
 ) -> list[COLERunCurves]:
     runs = find_benchmark_runs(
-        algorithm="cole", task=task, entity=entity, project=project,
+        algorithm="cole",
+        task=task,
+        entity=entity,
+        project=project,
     )
     if not runs:
         raise ValueError(
@@ -70,33 +74,47 @@ def fetch_cole_curves_for_task(
     out: list[COLERunCurves] = []
     for run in runs:
         if not _has_saved_train_run(run):
-            print(f"[cole] skipping run {run.id} (task={task}): no saved_train_run artifact "
-                  f"(likely log_train_out=False — needs rerun).")
+            print(
+                f"[cole] skipping run {run.id} (task={task}): no saved_train_run artifact "
+                f"(likely log_train_out=False — needs rerun)."
+            )
             continue
 
         print(f"\n[cole] processing run {run.id}  task={task}  state={run.state}")
-        timesteps_per_iter = get_config_value(run.config, "algorithm.TOTAL_TIMESTEPS_PER_ITERATION")
+        timesteps_per_iter = get_config_value(
+            run.config, "algorithm.TOTAL_TIMESTEPS_PER_ITERATION"
+        )
         if timesteps_per_iter is None:
-            raise ValueError(f"Run {run.id} missing algorithm.TOTAL_TIMESTEPS_PER_ITERATION.")
+            raise ValueError(
+                f"Run {run.id} missing algorithm.TOTAL_TIMESTEPS_PER_ITERATION."
+            )
 
         result = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="saved_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             reduce_per_update=True,
             extra_top_level_keys=("final_xp_matrix",),
         )
         partner_metrics = result["metrics"]
         xp_per_seed = np.asarray(result["final_xp_matrix"])
         if xp_per_seed.ndim != 3:
-            raise ValueError(f"final_xp_matrix expected 3D (seeds, pop, pop), got {xp_per_seed.shape}")
+            raise ValueError(
+                f"final_xp_matrix expected 3D (seeds, pop, pop), got {xp_per_seed.shape}"
+            )
         xp_mean = xp_per_seed.mean(axis=0)  # match Eval/LastXPMatrix log
 
-        out.append(COLERunCurves(
-            run_id=run.id, task=task,
-            partner=_partner_curve(partner_metrics, timesteps_per_iter),
-            xp_matrix=xp_mean,
-        ))
+        out.append(
+            COLERunCurves(
+                run_id=run.id,
+                task=task,
+                partner=_partner_curve(partner_metrics, timesteps_per_iter),
+                xp_matrix=xp_mean,
+            )
+        )
 
     if not out:
         raise ValueError(

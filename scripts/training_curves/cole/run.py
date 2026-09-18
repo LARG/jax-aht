@@ -1,16 +1,17 @@
 """CLI: fetch + plot COLE training curves + LastXPMatrix heatmap for a task."""
+
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
 
+from scripts.training_curves.cole.fetch import fetch_cole_curves_for_task
+from scripts.training_curves.cole.plot import plot_cole_run
 from scripts.training_curves.common import (
     DEFAULT_CACHE_DIR,
     task_to_safe_filename,
     update_wandb_run_index,
 )
-from scripts.training_curves.cole.fetch import fetch_cole_curves_for_task
-from scripts.training_curves.cole.plot import plot_cole_run
 
 
 def main():
@@ -24,8 +25,11 @@ def main():
     args = p.parse_args()
 
     runs = fetch_cole_curves_for_task(
-        task=args.task, entity=args.entity, project=args.project,
-        cache_dir=Path(args.cache_dir), force_recompute=args.force_recompute,
+        task=args.task,
+        entity=args.entity,
+        project=args.project,
+        cache_dir=Path(args.cache_dir),
+        force_recompute=args.force_recompute,
     )
     out_dir = Path(args.out_dir)
     entries: dict[str, dict] = {}

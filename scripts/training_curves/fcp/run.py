@@ -4,6 +4,7 @@ Usage:
     PYTHONPATH=. python scripts/training_curves/fcp/run.py --task overcooked-v1/coord_ring
     PYTHONPATH=. python scripts/training_curves/fcp/run.py --task overcooked-v1/coord_ring --force-recompute
 """
+
 from __future__ import annotations
 
 import argparse
@@ -20,15 +21,24 @@ from scripts.training_curves.fcp.plot import plot_fcp_run
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", required=True,
-                        help="e.g. overcooked-v1/coord_ring or lbf/lbf_7x7_nolevels")
+    parser.add_argument(
+        "--task",
+        required=True,
+        help="e.g. overcooked-v1/coord_ring or lbf/lbf_7x7_nolevels",
+    )
     parser.add_argument("--entity", default="aht-project")
     parser.add_argument("--project", default="aht-benchmark")
     parser.add_argument("--cache-dir", default=str(DEFAULT_CACHE_DIR))
-    parser.add_argument("--out-dir", default="results/figures/training_curves/fcp",
-                        help="Output directory for the plot.")
-    parser.add_argument("--force-recompute", action="store_true",
-                        help="Bypass the local artifact-metrics cache.")
+    parser.add_argument(
+        "--out-dir",
+        default="results/figures/training_curves/fcp",
+        help="Output directory for the plot.",
+    )
+    parser.add_argument(
+        "--force-recompute",
+        action="store_true",
+        help="Bypass the local artifact-metrics cache.",
+    )
     args = parser.parse_args()
 
     runs = fetch_fcp_curves_for_task(

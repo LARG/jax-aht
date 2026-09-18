@@ -29,15 +29,6 @@ Step 1 needs wandb auth and downloads several GB of artifacts the first time
 the pickle, so it is offline and takes a few seconds — iterate on layout by
 re-running step 2 alone.
 
-Step 1 keeps two caches: this package's, under `results/figures/cache/` (~1 GB),
-and wandb's own artifact dedup cache under `~/.cache/wandb/`. If your home
-directory has a quota, send the latter to scratch first:
-
-```bash
-export WANDB_CACHE_DIR=/tmp/$USER/wandb-cache
-export WANDB_DATA_DIR=/tmp/$USER/wandb-data
-```
-
 ### Outputs
 
 All under `results/figures/training_curves/aggregate_2/` (gitignored):

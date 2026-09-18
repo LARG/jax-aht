@@ -1,10 +1,10 @@
 """Plot TrajeDi per-seed training-return curve."""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 from scripts.paper_vis.plot_globals import (
     AXIS_LABEL_FONTSIZE,
@@ -21,8 +21,13 @@ def plot_trajedi_run(curves: TrajeDiRunCurves, out_path: Path):
     n_seeds = curves.train.values.shape[0]
     cmap = plt.get_cmap("tab10")
     for s in range(n_seeds):
-        ax.plot(curves.train.env_steps, curves.train.values[s],
-                color=cmap(s % 10), label=f"seed {s}", linewidth=1.5)
+        ax.plot(
+            curves.train.env_steps,
+            curves.train.values[s],
+            color=cmap(s % 10),
+            label=f"seed {s}",
+            linewidth=1.5,
+        )
 
     task_title = TASK_TO_PLOT_TITLE.get(curves.task, curves.task)
     method = METHOD_TO_DISPLAY_NAME.get("trajedi", "TrajeDi")

@@ -10,6 +10,7 @@ Curve definitions (from `LBRDiv.py:1017-1037` and inspection):
   - Ego curve: identical to FCP — `metrics["returned_episode_returns"]` from
     `ego_train_run`, shape (NUM_SEEDS, NUM_EGO_TRAIN_SEEDS, NUM_EGO_UPDATES).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,8 +18,8 @@ from dataclasses import dataclass
 import numpy as np
 
 from scripts.training_curves.common import (
-    CurveData,
     DEFAULT_CACHE_DIR,
+    CurveData,
     extract_ego_curve,
     fetch_train_run_metrics_cached,
     find_benchmark_runs,
@@ -38,6 +39,7 @@ class LMCurves:
     visualization we mean over seeds and flatten the last two axes into a
     single "pair" axis, giving (POP_SIZE^2, NUM_PARTNER_UPDATES).
     """
+
     values: np.ndarray  # (pop_size^2, num_updates)
     env_steps: np.ndarray
     pair_labels: list[str]
@@ -61,8 +63,8 @@ def _partner_curves(metrics: dict, total_timesteps: int) -> tuple[CurveData, Cur
             f"partner eval_ep_last_info expected 5D "
             f"(seeds, updates, pop^2, eval_eps, agents), got {arr.shape}"
         )
-    n_seeds, n_updates, n_pairs, n_eval, n_agents = arr.shape
-    pop_size = int(round(n_pairs ** 0.5))
+    _, _, n_pairs, _, _ = arr.shape
+    pop_size = round(n_pairs**0.5)
     if pop_size * pop_size != n_pairs:
         raise ValueError(f"expected pop^2 pairs, got {n_pairs} (sqrt={pop_size})")
 
@@ -72,7 +74,9 @@ def _partner_curves(metrics: dict, total_timesteps: int) -> tuple[CurveData, Cur
     sp_per_seed = arr[:, :, sp_mask].mean(axis=(-3, -2, -1))
     xp_per_seed = arr[:, :, xp_mask].mean(axis=(-3, -2, -1))
 
-    return make_curve(sp_per_seed, total_timesteps), make_curve(xp_per_seed, total_timesteps)
+    return make_curve(sp_per_seed, total_timesteps), make_curve(
+        xp_per_seed, total_timesteps
+    )
 
 
 def _lm_curves(arr: np.ndarray, total_timesteps: int) -> LMCurves:
@@ -80,7 +84,7 @@ def _lm_curves(arr: np.ndarray, total_timesteps: int) -> LMCurves:
         raise ValueError(
             f"LM array expected 4D (seeds, updates, pop, pop), got {arr.shape}"
         )
-    n_seeds, n_updates, pop_size, _ = arr.shape
+    _, n_updates, pop_size, _ = arr.shape
     seed_mean = arr.mean(axis=0)  # (updates, pop, pop)
     flat = seed_mean.reshape(n_updates, pop_size * pop_size).T  # (pop^2, updates)
     pair_labels = [f"({i},{j})" for i in range(pop_size) for j in range(pop_size)]
@@ -96,7 +100,10 @@ def fetch_lbrdiv_curves_for_task(
     force_recompute: bool = False,
 ) -> list[LBRDivRunCurves]:
     runs = find_benchmark_runs(
-        algorithm="lbrdiv", task=task, entity=entity, project=project,
+        algorithm="lbrdiv",
+        task=task,
+        entity=entity,
+        project=project,
     )
     if not runs:
         raise ValueError(
@@ -107,7 +114,9 @@ def fetch_lbrdiv_curves_for_task(
     for run in runs:
         print(f"\n[lbrdiv] processing run {run.id}  task={task}  state={run.state}")
         partner_total = get_config_value(run.config, "algorithm.TOTAL_TIMESTEPS")
-        ego_total = get_config_value(run.config, "algorithm.ego_train_algorithm.TOTAL_TIMESTEPS")
+        ego_total = get_config_value(
+            run.config, "algorithm.ego_train_algorithm.TOTAL_TIMESTEPS"
+        )
         if partner_total is None or ego_total is None:
             raise ValueError(
                 f"Run {run.id} missing TOTAL_TIMESTEPS config "
@@ -115,27 +124,39 @@ def fetch_lbrdiv_curves_for_task(
             )
 
         partner_metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="saved_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             reduce_per_update=True,
         )
         ego_metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="ego_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="ego_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             reduce_per_update=True,
         )
 
         sp_curve, xp_curve = _partner_curves(partner_metrics, partner_total)
-        out.append(LBRDivRunCurves(
-            run_id=run.id,
-            task=task,
-            sp_partner=sp_curve,
-            xp_partner=xp_curve,
-            ego=extract_ego_curve(ego_metrics, ego_total),
-            lm_horizontal=_lm_curves(np.asarray(partner_metrics["lms_horizontal"]), partner_total),
-            lm_vertical=_lm_curves(np.asarray(partner_metrics["lms_vertical"]), partner_total),
-        ))
+        out.append(
+            LBRDivRunCurves(
+                run_id=run.id,
+                task=task,
+                sp_partner=sp_curve,
+                xp_partner=xp_curve,
+                ego=extract_ego_curve(ego_metrics, ego_total),
+                lm_horizontal=_lm_curves(
+                    np.asarray(partner_metrics["lms_horizontal"]), partner_total
+                ),
+                lm_vertical=_lm_curves(
+                    np.asarray(partner_metrics["lms_vertical"]), partner_total
+                ),
+            )
+        )
 
     return out

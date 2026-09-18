@@ -1,4 +1,5 @@
 """CLI: fetch + plot TrajeDi training-return curve for a task."""
+
 from __future__ import annotations
 
 import argparse
@@ -24,8 +25,11 @@ def main():
     args = p.parse_args()
 
     runs = fetch_trajedi_curves_for_task(
-        task=args.task, entity=args.entity, project=args.project,
-        cache_dir=Path(args.cache_dir), force_recompute=args.force_recompute,
+        task=args.task,
+        entity=args.entity,
+        project=args.project,
+        cache_dir=Path(args.cache_dir),
+        force_recompute=args.force_recompute,
     )
     out_dir = Path(args.out_dir)
     entries: dict[str, dict] = {}

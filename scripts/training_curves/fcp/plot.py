@@ -1,4 +1,5 @@
 """Plot FCP per-seed training curves."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -16,11 +17,15 @@ from scripts.paper_vis.plot_globals import (
 from scripts.training_curves.fcp.fetch import FCPRunCurves
 
 
-def _plot_curves_panel(ax, env_steps: np.ndarray, values: np.ndarray, title: str, ylabel: str):
+def _plot_curves_panel(
+    ax, env_steps: np.ndarray, values: np.ndarray, title: str, ylabel: str
+):
     n_seeds = values.shape[0]
     cmap = plt.get_cmap("tab10")
     for s in range(n_seeds):
-        ax.plot(env_steps, values[s], color=cmap(s % 10), label=f"seed {s}", linewidth=1.5)
+        ax.plot(
+            env_steps, values[s], color=cmap(s % 10), label=f"seed {s}", linewidth=1.5
+        )
     ax.set_title(title, fontsize=TITLE_FONTSIZE)
     ax.set_xlabel("Environment Steps", fontsize=AXIS_LABEL_FONTSIZE)
     ax.set_ylabel(ylabel, fontsize=AXIS_LABEL_FONTSIZE)
@@ -37,12 +42,16 @@ def plot_fcp_run(curves: FCPRunCurves, out_path: Path):
     fig.suptitle(f"{method} — {task_title}", fontsize=TITLE_FONTSIZE + 2)
 
     _plot_curves_panel(
-        axes[0], curves.partner.env_steps, curves.partner.values,
+        axes[0],
+        curves.partner.env_steps,
+        curves.partner.values,
         title="Partner training return",
         ylabel="Return (mean over partner pop)",
     )
     _plot_curves_panel(
-        axes[1], curves.ego.env_steps, curves.ego.values,
+        axes[1],
+        curves.ego.env_steps,
+        curves.ego.values,
         title="Ego training return",
         ylabel="Return (vs partner pop)",
     )

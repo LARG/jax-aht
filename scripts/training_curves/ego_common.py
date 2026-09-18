@@ -5,6 +5,7 @@
 NUM_EGO_UPDATES). They share `algorithm.TOTAL_TIMESTEPS` for the env-step axis.
 The per-algo folders are thin wrappers that only set the algorithm name.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,9 +20,9 @@ from scripts.paper_vis.plot_globals import (
     TITLE_FONTSIZE,
 )
 from scripts.training_curves.common import (
-    CurveData,
     DEFAULT_CACHE_DIR,
     EGO_DISPLAY_NAMES,
+    CurveData,
     extract_ego_curve,
     fetch_train_run_metrics_cached,
     find_benchmark_runs,
@@ -48,9 +49,10 @@ def _build_run_id_to_teammate_type(algorithm: str) -> dict[str, str]:
     (with suffix) but "liam" / "meliba" (without). Match against both.
     """
     from scripts.paper_vis.plot_globals import EGO_BENCHMARK_RUNS
+
     candidates = {algorithm, algorithm.removesuffix("_ego")}
     rid_to_type: dict[str, str] = {}
-    for task, by_alg in EGO_BENCHMARK_RUNS.items():
+    for by_alg in EGO_BENCHMARK_RUNS.values():
         for alg, by_teammate in by_alg.items():
             if alg not in candidates:
                 continue
@@ -69,7 +71,10 @@ def fetch_ego_curves_for_task(
     force_recompute: bool = False,
 ) -> list[EgoRunCurves]:
     runs = find_benchmark_runs(
-        algorithm=algorithm, task=task, entity=entity, project=project,
+        algorithm=algorithm,
+        task=task,
+        entity=entity,
+        project=project,
     )
     if not runs:
         raise ValueError(
@@ -82,8 +87,10 @@ def fetch_ego_curves_for_task(
     out: list[EgoRunCurves] = []
     for run in runs:
         teammate_type = rid_to_type.get(run.id, "")
-        print(f"\n[{algorithm}] processing run {run.id}  task={task}  "
-              f"state={run.state}  teammate_type={teammate_type or '?'}")
+        print(
+            f"\n[{algorithm}] processing run {run.id}  task={task}  "
+            f"state={run.state}  teammate_type={teammate_type or '?'}"
+        )
         # Standalone ego algos use TOTAL_TIMESTEPS at top level (not under
         # ego_train_algorithm — that nesting is the partner+ego pipeline only).
         total = get_config_value(run.config, "algorithm.TOTAL_TIMESTEPS")
@@ -91,16 +98,23 @@ def fetch_ego_curves_for_task(
             raise ValueError(f"Run {run.id} missing algorithm.TOTAL_TIMESTEPS.")
 
         metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="ego_train_run",
-            entity=entity, project=project,
-            cache_dir=cache_dir, force_recompute=force_recompute,
+            run,
+            artifact_kind="ego_train_run",
+            entity=entity,
+            project=project,
+            cache_dir=cache_dir,
+            force_recompute=force_recompute,
             reduce_per_update=True,
         )
-        out.append(EgoRunCurves(
-            run_id=run.id, task=task, algorithm=algorithm,
-            teammate_type=teammate_type,
-            train=extract_ego_curve(metrics, total),
-        ))
+        out.append(
+            EgoRunCurves(
+                run_id=run.id,
+                task=task,
+                algorithm=algorithm,
+                teammate_type=teammate_type,
+                train=extract_ego_curve(metrics, total),
+            )
+        )
     return out
 
 
@@ -109,8 +123,13 @@ def plot_ego_run(curves: EgoRunCurves, out_path: Path):
     n_seeds = curves.train.values.shape[0]
     cmap = plt.get_cmap("tab10")
     for s in range(n_seeds):
-        ax.plot(curves.train.env_steps, curves.train.values[s],
-                color=cmap(s % 10), label=f"seed {s}", linewidth=1.5)
+        ax.plot(
+            curves.train.env_steps,
+            curves.train.values[s],
+            color=cmap(s % 10),
+            label=f"seed {s}",
+            linewidth=1.5,
+        )
 
     task_title = TASK_TO_PLOT_TITLE.get(curves.task, curves.task)
     method = EGO_DISPLAY_NAMES.get(curves.algorithm, curves.algorithm)

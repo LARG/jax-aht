@@ -1,4 +1,5 @@
 """Plot BRDIV per-seed training curves: SP partner, XP partner, ego."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -21,22 +22,48 @@ def _eval_indices(values: np.ndarray) -> np.ndarray:
     return np.asarray([0] + (np.nonzero(diffs)[0] + 1).tolist())
 
 
-def _plot_panel(ax, env_steps: np.ndarray, values: np.ndarray, title: str, ylabel: str,
-                sparse_eval: bool = False):
+def _plot_panel(
+    ax,
+    env_steps: np.ndarray,
+    values: np.ndarray,
+    title: str,
+    ylabel: str,
+    sparse_eval: bool = False,
+):
     n_seeds = values.shape[0]
     cmap = plt.get_cmap("tab10")
     if sparse_eval:
         idxs = _eval_indices(values)
         x = env_steps[idxs]
         for s in range(n_seeds):
-            ax.plot(x, values[s, idxs], color=cmap(s % 10), label=f"seed {s}",
-                    linewidth=1.5, marker="o", markersize=5)
+            ax.plot(
+                x,
+                values[s, idxs],
+                color=cmap(s % 10),
+                label=f"seed {s}",
+                linewidth=1.5,
+                marker="o",
+                markersize=5,
+            )
         if len(idxs) <= 5:
-            ax.text(0.02, 0.98, f"{len(idxs)} eval points (NUM_CHECKPOINTS limited)",
-                    transform=ax.transAxes, va="top", fontsize=10, color="gray")
+            ax.text(
+                0.02,
+                0.98,
+                f"{len(idxs)} eval points (NUM_CHECKPOINTS limited)",
+                transform=ax.transAxes,
+                va="top",
+                fontsize=10,
+                color="gray",
+            )
     else:
         for s in range(n_seeds):
-            ax.plot(env_steps, values[s], color=cmap(s % 10), label=f"seed {s}", linewidth=1.5)
+            ax.plot(
+                env_steps,
+                values[s],
+                color=cmap(s % 10),
+                label=f"seed {s}",
+                linewidth=1.5,
+            )
     ax.set_title(title, fontsize=TITLE_FONTSIZE)
     ax.set_xlabel("Environment Steps", fontsize=AXIS_LABEL_FONTSIZE)
     ax.set_ylabel(ylabel, fontsize=AXIS_LABEL_FONTSIZE)
@@ -51,14 +78,29 @@ def plot_brdiv_run(curves: BRDivRunCurves, out_path: Path):
     method = METHOD_TO_DISPLAY_NAME.get("brdiv", "BRDiv")
     fig.suptitle(f"{method} — {task_title}", fontsize=TITLE_FONTSIZE + 2)
 
-    _plot_panel(axes[0], curves.sp_partner.env_steps, curves.sp_partner.values,
-                title="Partner SP return", ylabel="Self-play return (mean over pop)",
-                sparse_eval=True)
-    _plot_panel(axes[1], curves.xp_partner.env_steps, curves.xp_partner.values,
-                title="Partner XP return", ylabel="Cross-play return (mean over off-diag pairs)",
-                sparse_eval=True)
-    _plot_panel(axes[2], curves.ego.env_steps, curves.ego.values,
-                title="Ego training return", ylabel="Return (vs partner pop)")
+    _plot_panel(
+        axes[0],
+        curves.sp_partner.env_steps,
+        curves.sp_partner.values,
+        title="Partner SP return",
+        ylabel="Self-play return (mean over pop)",
+        sparse_eval=True,
+    )
+    _plot_panel(
+        axes[1],
+        curves.xp_partner.env_steps,
+        curves.xp_partner.values,
+        title="Partner XP return",
+        ylabel="Cross-play return (mean over off-diag pairs)",
+        sparse_eval=True,
+    )
+    _plot_panel(
+        axes[2],
+        curves.ego.env_steps,
+        curves.ego.values,
+        title="Ego training return",
+        ylabel="Return (vs partner pop)",
+    )
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     out_path.parent.mkdir(parents=True, exist_ok=True)

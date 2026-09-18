@@ -1,4 +1,5 @@
 """Plot ROTATE per-seed curves: ego vs conf, conf vs confBR, ego vs heldout."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -36,12 +37,26 @@ def _plot_panel(ax, env_steps, values, title, ylabel, marker=None, sparse_eval=F
         idxs = _eval_indices(values)
         x = env_steps[idxs]
         for s in range(n_seeds):
-            ax.plot(x, values[s, idxs], color=cmap(s % 10), label=f"seed {s}",
-                    linewidth=1.5, marker="o", markersize=4)
+            ax.plot(
+                x,
+                values[s, idxs],
+                color=cmap(s % 10),
+                label=f"seed {s}",
+                linewidth=1.5,
+                marker="o",
+                markersize=4,
+            )
     else:
         for s in range(n_seeds):
-            ax.plot(env_steps, values[s], color=cmap(s % 10), label=f"seed {s}",
-                    linewidth=1.5, marker=marker, markersize=4)
+            ax.plot(
+                env_steps,
+                values[s],
+                color=cmap(s % 10),
+                label=f"seed {s}",
+                linewidth=1.5,
+                marker=marker,
+                markersize=4,
+            )
     ax.set_title(title, fontsize=TITLE_FONTSIZE)
     ax.set_xlabel("Environment Steps", fontsize=AXIS_LABEL_FONTSIZE)
     ax.set_ylabel(ylabel, fontsize=AXIS_LABEL_FONTSIZE)
@@ -57,28 +72,41 @@ def plot_rotate_run(curves: RotateRunCurves, out_path: Path):
     fig.suptitle(f"{method} — {task_title}", fontsize=TITLE_FONTSIZE + 2)
 
     _plot_panel(
-        axes[0], curves.ego_vs_conf.env_steps, curves.ego_vs_conf.values,
+        axes[0],
+        curves.ego_vs_conf.env_steps,
+        curves.ego_vs_conf.values,
         title="Ego vs Conf (training return)",
         ylabel="Return",
     )
     _plot_panel(
-        axes[1], curves.conf_vs_confbr.env_steps, curves.conf_vs_confbr.values,
+        axes[1],
+        curves.conf_vs_confbr.env_steps,
+        curves.conf_vs_confbr.values,
         title="Conf vs Conf-BR (avg per-step reward)",
         ylabel="Avg per-step reward",
     )
     # Heldout has only one point per OEL iter — render with markers.
     if curves.ego_vs_heldout is not None:
         _plot_panel(
-            axes[2], curves.ego_vs_heldout.env_steps, curves.ego_vs_heldout.values,
+            axes[2],
+            curves.ego_vs_heldout.env_steps,
+            curves.ego_vs_heldout.values,
             title="Ego vs Heldout (per-iter eval)",
             ylabel="Return (heldout-mean)",
             marker="o",
         )
     else:
         axes[2].axis("off")
-        axes[2].text(0.5, 0.5, "Ego vs Heldout\n(heldout_eval_metrics artifact missing)",
-                     ha="center", va="center", fontsize=14, color="gray",
-                     transform=axes[2].transAxes)
+        axes[2].text(
+            0.5,
+            0.5,
+            "Ego vs Heldout\n(heldout_eval_metrics artifact missing)",
+            ha="center",
+            va="center",
+            fontsize=14,
+            color="gray",
+            transform=axes[2].transAxes,
+        )
 
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     out_path.parent.mkdir(parents=True, exist_ok=True)

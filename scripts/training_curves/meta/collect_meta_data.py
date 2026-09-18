@@ -29,6 +29,7 @@ Run with:
     python -m scripts.training_curves.meta.collect_meta_data
     python -m scripts.training_curves.meta.collect_meta_data --task overcooked-v1/coord_ring
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,6 +39,8 @@ from pathlib import Path
 
 import numpy as np
 
+from scripts.training_curves.cole.fetch import fetch_cole_curves_for_task
+from scripts.training_curves.comedi.fetch import fetch_comedi_curves_for_task
 from scripts.training_curves.common import (
     DEFAULT_CACHE_DIR,
     extract_ego_curve,
@@ -46,11 +49,8 @@ from scripts.training_curves.common import (
     get_config_value,
 )
 from scripts.training_curves.fcp.fetch import fetch_fcp_curves_for_task
-from scripts.training_curves.comedi.fetch import fetch_comedi_curves_for_task
-from scripts.training_curves.cole.fetch import fetch_cole_curves_for_task
-from scripts.training_curves.trajedi.fetch import fetch_trajedi_curves_for_task
 from scripts.training_curves.rotate.fetch import fetch_rotate_curves_for_task
-
+from scripts.training_curves.trajedi.fetch import fetch_trajedi_curves_for_task
 
 # Artifacts live under results/ (gitignored); this module lives under scripts/
 # so it is version-controlled. Path is repo-relative, matching
@@ -61,9 +61,9 @@ OUT_MD = OUT_DIR / "meta_data.md"
 
 EGO_ALGOS = ("ppo_ego", "liam_ego", "meliba_ego")
 TEAMMATE_CURVE_ALGOS = (
-    ("fcp",     fetch_fcp_curves_for_task,     "partner"),
-    ("comedi",  fetch_comedi_curves_for_task,  "partner"),
-    ("cole",    fetch_cole_curves_for_task,    "partner"),
+    ("fcp", fetch_fcp_curves_for_task, "partner"),
+    ("comedi", fetch_comedi_curves_for_task, "partner"),
+    ("cole", fetch_cole_curves_for_task, "partner"),
     ("trajedi", fetch_trajedi_curves_for_task, "train"),
 )
 XP_ALGOS = ("brdiv", "lbrdiv", "cole")
@@ -82,7 +82,7 @@ def teammate_set_from_run(run) -> str:
     that matches a known teammate-gen algorithm name.
     """
     pa = run.config.get("algorithm", {}).get("partner_agent", {})
-    for _src, info in pa.items():
+    for info in pa.values():
         path = info.get("path", "") if isinstance(info, dict) else ""
         for seg in path.split("/"):
             if seg in KNOWN_TEAMMATE_ALGOS:
@@ -94,9 +94,15 @@ def teammate_set_from_run(run) -> str:
 # the training return. LIAM/MeLIBA add autoencoder-related metrics on top of
 # the standard PPO ones; the collector stores whichever are present.
 LOSS_KEYS_OF_INTEREST = (
-    "actor_loss", "value_loss", "entropy_loss", "avg_grad_norm",
-    "reconstruction_loss", "kl_divergence_loss", "elbo_loss",
-    "encoder_avg_grad_norm", "decoder_avg_grad_norm",
+    "actor_loss",
+    "value_loss",
+    "entropy_loss",
+    "avg_grad_norm",
+    "reconstruction_loss",
+    "kl_divergence_loss",
+    "elbo_loss",
+    "encoder_avg_grad_norm",
+    "decoder_avg_grad_norm",
 )
 
 
@@ -116,8 +122,10 @@ def collect_ego_stratified(task: str) -> dict:
         for run in runs:
             teammate = teammate_set_from_run(run)
             metrics = fetch_train_run_metrics_cached(
-                run, artifact_kind="ego_train_run",
-                cache_dir=DEFAULT_CACHE_DIR, reduce_per_update=True,
+                run,
+                artifact_kind="ego_train_run",
+                cache_dir=DEFAULT_CACHE_DIR,
+                reduce_per_update=True,
             )
             total = get_config_value(run.config, "algorithm.TOTAL_TIMESTEPS")
             curve = extract_ego_curve(metrics, total)
@@ -136,14 +144,13 @@ def collect_ego_stratified(task: str) -> dict:
                 # Pool seeds across multiple runs for the same teammate set.
                 prev = per_set[teammate]
                 n = min(prev["values"].shape[1], values.shape[1])
-                pooled = np.concatenate(
-                    [prev["values"][:, :n], values[:, :n]], axis=0
-                )
+                pooled = np.concatenate([prev["values"][:, :n], values[:, :n]], axis=0)
                 # Pool losses keyed by the intersection of present keys.
                 merged_losses: dict[str, np.ndarray] = {}
                 for k in set(prev.get("losses", {})) & set(losses):
                     merged_losses[k] = np.concatenate(
-                        [prev["losses"][k][:, :n], losses[k][:, :n]], axis=0,
+                        [prev["losses"][k][:, :n], losses[k][:, :n]],
+                        axis=0,
                     )
                 per_set[teammate] = {
                     "env_steps": env_steps[:n],
@@ -165,8 +172,12 @@ def collect_ego_stratified(task: str) -> dict:
                     "losses": losses,
                 }
         out[algo] = per_set
-        all_loss_keys = sorted({k for v in per_set.values() for k in v.get("losses", {})})
-        print(f"  ego/{algo}: teammates={sorted(per_set.keys())}  losses={all_loss_keys}")
+        all_loss_keys = sorted(
+            {k for v in per_set.values() for k in v.get("losses", {})}
+        )
+        print(
+            f"  ego/{algo}: teammates={sorted(per_set.keys())}  losses={all_loss_keys}"
+        )
     return out
 
 
@@ -203,8 +214,10 @@ def collect_teammate_curves(task: str) -> dict:
             "n_segments": getattr(run_curves[0], attr).n_segments,
             "run_ids": run_ids,
         }
-        print(f"  teammate_curves/{algo}: {pooled.shape[0]} seeds, {n_updates} updates, "
-              f"n_segments={out[algo]['n_segments']}")
+        print(
+            f"  teammate_curves/{algo}: {pooled.shape[0]} seeds, {n_updates} updates, "
+            f"n_segments={out[algo]['n_segments']}"
+        )
     return out
 
 
@@ -236,15 +249,19 @@ def collect_rotate(task: str) -> dict | None:
     key is omitted and the plot renders an empty regret panel.
     """
     try:
-        run_curves = fetch_rotate_curves_for_task(task=task, cache_dir=DEFAULT_CACHE_DIR)
+        run_curves = fetch_rotate_curves_for_task(
+            task=task, cache_dir=DEFAULT_CACHE_DIR
+        )
     except ValueError as e:
         print(f"  rotate: skip ({e})")
         return None
 
     run_ids = [rc.run_id for rc in run_curves]
     out = {"return": _pool_curves([rc.ego_vs_conf for rc in run_curves], run_ids)}
-    print(f"  rotate/return: {out['return']['n_seeds']} seeds, "
-          f"{out['return']['values'].shape[1]} updates")
+    print(
+        f"  rotate/return: {out['return']['n_seeds']} seeds, "
+        f"{out['return']['values'].shape[1]} updates"
+    )
 
     with_regret = [rc for rc in run_curves if rc.train_regret is not None]
     if with_regret:
@@ -252,8 +269,10 @@ def collect_rotate(task: str) -> dict | None:
             [rc.train_regret for rc in with_regret],
             [rc.run_id for rc in with_regret],
         )
-        print(f"  rotate/train_regret: {out['train_regret']['n_seeds']} seeds, "
-              f"{out['train_regret']['values'].shape[1]} updates")
+        print(
+            f"  rotate/train_regret: {out['train_regret']['n_seeds']} seeds, "
+            f"{out['train_regret']['values'].shape[1]} updates"
+        )
     else:
         print("  rotate/train_regret: unavailable (runs predate regret logging)")
     return out
@@ -269,8 +288,10 @@ def collect_fcp_partners(task: str) -> dict | None:
     run_ids: list[str] = []
     for run in runs:
         metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            cache_dir=DEFAULT_CACHE_DIR, reduce_per_update=True,
+            run,
+            artifact_kind="saved_train_run",
+            cache_dir=DEFAULT_CACHE_DIR,
+            reduce_per_update=True,
         )
         arr = np.asarray(metrics["returned_episode_returns"])  # (seeds, pop, updates)
         per_run.append(arr)
@@ -308,22 +329,26 @@ def collect_xp_matrix(algo: str, task: str) -> dict | None:
         if algo == "cole":
             # COLE saves the final_xp_matrix as a top-level key.
             res = fetch_train_run_metrics_cached(
-                run, artifact_kind="saved_train_run",
-                cache_dir=DEFAULT_CACHE_DIR, reduce_per_update=True,
+                run,
+                artifact_kind="saved_train_run",
+                cache_dir=DEFAULT_CACHE_DIR,
+                reduce_per_update=True,
                 extra_top_level_keys=("final_xp_matrix",),
             )
             xp = np.asarray(res["final_xp_matrix"])  # (n_seeds, pop, pop)
         else:
             metrics = fetch_train_run_metrics_cached(
-                run, artifact_kind="saved_train_run",
-                cache_dir=DEFAULT_CACHE_DIR, reduce_per_update=True,
+                run,
+                artifact_kind="saved_train_run",
+                cache_dir=DEFAULT_CACHE_DIR,
+                reduce_per_update=True,
             )
             arr = np.asarray(metrics["eval_ep_last_info"]["returned_episode_returns"])
             # (seeds, updates, pop^2, eps, agents) → final + mean over (eps, agents)
             n_seeds, _, n_pairs, _, _ = arr.shape
-            pop = int(round(n_pairs ** 0.5))
-            last = arr[:, -1].mean(axis=(-2, -1))           # (seeds, pop²)
-            xp = last.reshape(n_seeds, pop, pop)            # (seeds, pop, pop)
+            pop = round(n_pairs**0.5)
+            last = arr[:, -1].mean(axis=(-2, -1))  # (seeds, pop²)
+            xp = last.reshape(n_seeds, pop, pop)  # (seeds, pop, pop)
         per_seed.append(xp)
         run_ids.append(run.id)
     if not per_seed:
@@ -331,7 +356,7 @@ def collect_xp_matrix(algo: str, task: str) -> dict | None:
     pooled = np.concatenate(per_seed, axis=0)
     print(f"  xp/{algo}: {pooled.shape[0]} seeds, pop_size={pooled.shape[-1]}")
     return {
-        "matrix": pooled.mean(axis=0),                      # (pop, pop)
+        "matrix": pooled.mean(axis=0),  # (pop, pop)
         "pop_size": int(pooled.shape[-1]),
         "n_seeds": int(pooled.shape[0]),
         "run_ids": run_ids,
@@ -355,13 +380,15 @@ def collect_lbrdiv_lms(task: str) -> dict | None:
     run_ids: list[str] = []
     for run in runs:
         metrics = fetch_train_run_metrics_cached(
-            run, artifact_kind="saved_train_run",
-            cache_dir=DEFAULT_CACHE_DIR, reduce_per_update=True,
+            run,
+            artifact_kind="saved_train_run",
+            cache_dir=DEFAULT_CACHE_DIR,
+            reduce_per_update=True,
         )
         if "lms_horizontal" not in metrics or "lms_vertical" not in metrics:
             print(f"  lbrdiv_lms/{run.id}: no LMs in metric tree; skipping")
             continue
-        h = np.asarray(metrics["lms_horizontal"])    # (seeds, updates, pop, pop)
+        h = np.asarray(metrics["lms_horizontal"])  # (seeds, updates, pop, pop)
         v = np.asarray(metrics["lms_vertical"])
         h_per_run.append(h)
         v_per_run.append(v)
@@ -375,13 +402,15 @@ def collect_lbrdiv_lms(task: str) -> dict | None:
     n_updates = min(a.shape[1] for a in h_per_run)
     h_pooled = np.concatenate([a[:, :n_updates] for a in h_per_run], axis=0)
     v_pooled = np.concatenate([a[:, :n_updates] for a in v_per_run], axis=0)
-    h_seed_mean = h_pooled.mean(axis=0)              # (updates, pop, pop)
+    h_seed_mean = h_pooled.mean(axis=0)  # (updates, pop, pop)
     v_seed_mean = v_pooled.mean(axis=0)
     n_updates, pop, _ = h_seed_mean.shape
-    h_flat = h_seed_mean.reshape(n_updates, pop * pop).T   # (pop², updates)
+    h_flat = h_seed_mean.reshape(n_updates, pop * pop).T  # (pop², updates)
     v_flat = v_seed_mean.reshape(n_updates, pop * pop).T
     pair_labels = [f"({i},{j})" for i in range(pop) for j in range(pop)]
-    print(f"  lbrdiv_lms: pop_size={pop}, {n_updates} updates, n_seeds={h_pooled.shape[0]}")
+    print(
+        f"  lbrdiv_lms: pop_size={pop}, {n_updates} updates, n_seeds={h_pooled.shape[0]}"
+    )
     return {
         "env_steps": env_steps_ref[:n_updates],
         "horizontal": h_flat,
@@ -394,25 +423,31 @@ def collect_lbrdiv_lms(task: str) -> dict | None:
 
 
 def write_manifest(data: dict, md_path: Path) -> None:
-    today = datetime.date.today().isoformat()
+    today = datetime.datetime.now(datetime.UTC).date().isoformat()
     lines = [
         "# Meta-data manifest (`aggregate_2/meta_data.pkl`)",
         "",
         f"Generated: {today}  ·  task: `{data['task']}`",
         "",
-        "Reproducible: re-run `python -m "
-        "scripts.training_curves.meta.collect_meta_data`.",
+        (
+            "Reproducible: re-run `python -m "
+            "scripts.training_curves.meta.collect_meta_data`."
+        ),
         "",
         "## Sections",
         "",
         "- `task`: the task this snapshot is for.",
         "- `ego[<algo>][<teammate_set>]`: stratified per-seed ego training-return curves.",
         "- `teammate_curves[<algo>]`: seed-pooled partner-training-return curves.",
-        "- `fcp_partners`: FCP per-partner training-return curves "
-        "  (rows are individual partners, not seed means).",
+        (
+            "- `fcp_partners`: FCP per-partner training-return curves "
+            "  (rows are individual partners, not seed means)."
+        ),
         "- `xp_matrices[<algo>]`: final cross-play matrix (seed mean) for brdiv / lbrdiv / cole.",
-        "- `rotate['return' | 'train_regret']`: seed-pooled ROTATE curves "
-        "(separate x-axes: ego updates vs partner updates).",
+        (
+            "- `rotate['return' | 'train_regret']`: seed-pooled ROTATE curves "
+            "(separate x-axes: ego updates vs partner updates)."
+        ),
         "",
         "## Coverage",
         "",
@@ -421,7 +456,9 @@ def write_manifest(data: dict, md_path: Path) -> None:
     ]
     for algo, by_set in data["ego"].items():
         for ts, e in by_set.items():
-            lines.append(f"- {algo} / {ts}: n_seeds={e['n_seeds']}, run_id={e['run_id']}")
+            lines.append(
+                f"- {algo} / {ts}: n_seeds={e['n_seeds']}, run_id={e['run_id']}"
+            )
     lines += ["", "### Teammate curves", ""]
     for algo, e in data["teammate_curves"].items():
         lines.append(f"- {algo}: n_seeds={e['n_seeds']}, run_ids={e['run_ids']}")
@@ -431,12 +468,18 @@ def write_manifest(data: dict, md_path: Path) -> None:
             lines.append(f"- {key}: n_seeds={e['n_seeds']}, run_ids={e['run_ids']}")
     if data.get("fcp_partners"):
         e = data["fcp_partners"]
-        lines += ["", "### FCP partners", "",
-                  f"- n_partners={e['n_partners']}, run_ids={e['run_ids']}"]
+        lines += [
+            "",
+            "### FCP partners",
+            "",
+            f"- n_partners={e['n_partners']}, run_ids={e['run_ids']}",
+        ]
     lines += ["", "### XP matrices", ""]
     for algo, e in data["xp_matrices"].items():
-        lines.append(f"- {algo}: pop_size={e['pop_size']}, n_seeds={e['n_seeds']}, "
-                     f"run_ids={e['run_ids']}")
+        lines.append(
+            f"- {algo}: pop_size={e['pop_size']}, n_seeds={e['n_seeds']}, "
+            f"run_ids={e['run_ids']}"
+        )
     md_path.write_text("\n".join(lines) + "\n")
 
 

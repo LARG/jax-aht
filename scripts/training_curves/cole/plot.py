@@ -1,4 +1,5 @@
 """Plot COLE per-seed partner training return + final XP-matrix heatmap."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -16,11 +17,15 @@ from scripts.paper_vis.plot_globals import (
 from scripts.training_curves.cole.fetch import COLERunCurves
 
 
-def _plot_curve_panel(ax, env_steps: np.ndarray, values: np.ndarray, title: str, ylabel: str):
+def _plot_curve_panel(
+    ax, env_steps: np.ndarray, values: np.ndarray, title: str, ylabel: str
+):
     n_seeds = values.shape[0]
     cmap = plt.get_cmap("tab10")
     for s in range(n_seeds):
-        ax.plot(env_steps, values[s], color=cmap(s % 10), label=f"seed {s}", linewidth=1.5)
+        ax.plot(
+            env_steps, values[s], color=cmap(s % 10), label=f"seed {s}", linewidth=1.5
+        )
     ax.set_title(title, fontsize=TITLE_FONTSIZE)
     ax.set_xlabel("Environment Steps", fontsize=AXIS_LABEL_FONTSIZE)
     ax.set_ylabel(ylabel, fontsize=AXIS_LABEL_FONTSIZE)
@@ -46,9 +51,15 @@ def _plot_xp_matrix_panel(ax, mat: np.ndarray):
         fmt = f"{{:.{decimals}f}}"
         for i in range(pop_size):
             for j in range(pop_size):
-                ax.text(j, i, fmt.format(mat[i, j]), ha="center", va="center",
-                        color="white" if mat[i, j] < mat.max() * 0.5 else "black",
-                        fontsize=8)
+                ax.text(
+                    j,
+                    i,
+                    fmt.format(mat[i, j]),
+                    ha="center",
+                    va="center",
+                    color="white" if mat[i, j] < mat.max() * 0.5 else "black",
+                    fontsize=8,
+                )
 
 
 def plot_cole_run(curves: COLERunCurves, out_path: Path):
@@ -59,7 +70,9 @@ def plot_cole_run(curves: COLERunCurves, out_path: Path):
     fig.suptitle(f"{method} — {task_title}", fontsize=TITLE_FONTSIZE + 2)
 
     _plot_curve_panel(
-        axes[0], curves.partner.env_steps, curves.partner.values,
+        axes[0],
+        curves.partner.env_steps,
+        curves.partner.values,
         title="Partner training return",
         ylabel="Return (mean over partner pop)",
     )

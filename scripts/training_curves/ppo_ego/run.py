@@ -1,4 +1,5 @@
 """CLI: fetch + plot PPO Ego training-return curve for a task."""
+
 from __future__ import annotations
 
 import argparse
@@ -37,9 +38,12 @@ def main():
     args = p.parse_args()
 
     runs = fetch_ego_curves_for_task(
-        algorithm=ALG, task=args.task,
-        entity=args.entity, project=args.project,
-        cache_dir=Path(args.cache_dir), force_recompute=args.force_recompute,
+        algorithm=ALG,
+        task=args.task,
+        entity=args.entity,
+        project=args.project,
+        cache_dir=Path(args.cache_dir),
+        force_recompute=args.force_recompute,
     )
     out_dir = Path(args.out_dir)
     entries: dict[str, dict] = {}
@@ -47,7 +51,9 @@ def main():
         suffix = _disambig_suffix(r)
         fname = f"{task_to_safe_filename(args.task)}__{suffix}.png"
         plot_ego_run(r, out_dir / fname)
-        label = f"{r.task} ({suffix})" if r.teammate_type else f"{r.task} (run {r.run_id})"
+        label = (
+            f"{r.task} ({suffix})" if r.teammate_type else f"{r.task} (run {r.run_id})"
+        )
         entries[fname] = {"label": label, "run_id": r.run_id}
     update_wandb_run_index(out_dir, entries, args.entity, args.project)
 
