@@ -40,7 +40,7 @@ ANNEAL_LR: False
 # WandB Params
 logger: 
   project: aht-benchmark
-  entity: aht-project
+  entity: null
   mode: offline # options: online, offline, disabled
   verbose: false
   log_train_out: true # whether to log the out dictionary

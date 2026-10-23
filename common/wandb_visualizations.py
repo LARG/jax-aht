@@ -10,8 +10,8 @@ class Logger:
     def __init__(self, config):
         self.verbose = config["logger"].get("verbose", False)
         self.run = wandb.init(
-            project=config["logger"]["project"],
-            entity=config["logger"]["entity"],
+            project=config["logger"].get("project", None),
+            entity=config["logger"].get("entity", None),
             config=OmegaConf.to_container(config, resolve=True, throw_on_missing=True),
             tags=config["logger"].get("tags", None),
             notes=config["logger"].get("notes", None),
