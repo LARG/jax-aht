@@ -9,6 +9,8 @@ val_teammates/
 wandb*/
 .wandb/
 
+.env.local
+
 # Human data raw
 human_data_collecting/collected_data_prolific/
 human_data_collecting/*.tar.gz
@@ -17,6 +19,12 @@ human_data_collecting/*.tar.gz
 # pycache
 **/__pycache__/
 **/*.pyc
+
+# Virtual environments / uv
+.venv/
+venv/
+uv.lock
+
 
 # Python packaging artifacts
 *.egg-info/
