@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluation Teammate Conventions — jax-aht</title>
+<style>
+:root { --bg: #f7f7f9; --fg: #1d1d24; --card: #ffffff; --accent: #4a5fc1; --muted: #6a6a76; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #16161c; --fg: #e8e8ee; --card: #22222b; --accent: #8fa0e8; --muted: #9a9aa8; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+main { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
+h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+p.subtitle { color: var(--muted); margin-top: 0; }
+.tasknav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 0; }
+.tasknav a { font-size: 0.85rem; color: var(--accent); text-decoration: none;
+  border: 1px solid var(--muted); border-radius: 999px; padding: 0.25rem 0.8rem; }
+.tasknav a.active { background: var(--accent); color: var(--card); border-color: var(--accent); }
+.split { display: flex; gap: 1rem; align-items: stretch; margin-top: 1.5rem; }
+.plot-pane { flex: 1 1 100%; min-width: 0; transition: flex-basis 0.35s ease; }
+.split.open .plot-pane { flex-basis: 66.67%; }
+.video-pane { flex: 0 0 0%; min-width: 0; overflow: hidden; transition: flex-basis 0.35s ease; }
+.split.open .video-pane { flex: 0 0 33.33%; }
+.card { background: var(--card); border-radius: 10px; padding: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.15); height: 100%; }
+svg { width: 100%; height: auto; display: block; }
+.pt { cursor: pointer; }
+.pt:hover { stroke: var(--fg); stroke-width: 1.5; }
+.pt.selected { stroke: var(--fg); stroke-width: 2; }
+.pt.novideo { opacity: 0.35; cursor: not-allowed; }
+.medoid-ring { fill: none; stroke: var(--fg); stroke-width: 1.2; pointer-events: none; }
+.medoid-label { font-size: 10px; fill: var(--fg); pointer-events: none; }
+.legend-text, .axis-label { font-size: 11px; fill: var(--muted); }
+.legend-title { font-size: 11px; fill: var(--muted); font-style: italic; }
+#tooltip { position: fixed; display: none; background: var(--card); color: var(--fg);
+  border: 1px solid var(--muted); border-radius: 6px; padding: 0.4rem 0.6rem;
+  font-size: 0.8rem; pointer-events: none; z-index: 10; max-width: 280px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+#tooltip .tt-name { color: var(--accent); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.5rem; }
+.grid button { text-align: left; }
+.grid button.selected { border-color: var(--accent); color: var(--accent); }
+.video-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.video-head h2 { font-size: 1rem; margin: 0; word-break: break-word; }
+button { background: none; border: 1px solid var(--muted); color: var(--muted);
+  border-radius: 6px; padding: 0.25rem 0.7rem; cursor: pointer; font-size: 0.85rem; }
+button:hover { color: var(--fg); border-color: var(--fg); }
+button.primary { border-color: var(--accent); color: var(--accent); }
+video { width: 100%; border-radius: 6px; background: #000; margin-top: 0.6rem; }
+#vcaption, .whois { font-size: 0.82rem; color: var(--muted); margin: 0.5rem 0 0; }
+.labelbox { margin-top: 0.9rem; border-top: 1px solid rgba(128,128,128,0.25); padding-top: 0.7rem; }
+.labelbox h3 { font-size: 0.85rem; margin: 0 0 0.4rem; color: var(--muted); font-weight: 600; }
+#labelText { width: 100%; min-height: 3.2em; resize: vertical; border-radius: 6px;
+  border: 1px solid var(--muted); background: var(--bg); color: var(--fg);
+  font: inherit; font-size: 0.85rem; padding: 0.4rem 0.5rem; }
+#labelText[disabled] { opacity: 0.75; }
+.labelbtns { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+#saveNote { font-size: 0.75rem; color: var(--muted); margin: 0.4rem 0 0; }
+#status { color: var(--muted); }
+footer { margin-top: 2rem; font-size: 0.8rem; color: var(--muted); }
+@media (max-width: 720px) {
+  .split, .split.open { flex-direction: column; }
+  .split.open .video-pane { flex-basis: auto; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1 id="title">Evaluation Teammate Conventions</h1>
+<div class="tasknav" id="tasknav"></div>
+<p class="subtitle" id="intro1"></p>
+<p class="subtitle" id="intro2"></p>
+
+<div class="split" id="split">
+  <div class="plot-pane"><div class="card">
+    <svg id="plot" viewBox="0 0 640 580" role="img" aria-label="MDS map of evaluation teammates"></svg>
+    <div class="grid" id="grid" hidden></div>
+  </div></div>
+  <div class="video-pane" id="videoPane"><div class="card">
+    <div class="video-head"><h2 id="vtitle"></h2><button id="close" type="button">Close &times;</button></div>
+    <video id="video" controls loop autoplay muted playsinline></video>
+    <p id="vcaption"></p>
+    <p class="whois" id="whois"></p>
+    <div class="labelbox">
+      <h3>Convention description</h3>
+      <textarea id="labelText" rows="2" placeholder="Describe what this teammate does..."></textarea>
+      <div class="labelbtns">
+        <button id="saveLabel" class="primary" type="button">Save</button>
+        <button id="overwriteLabel" type="button" hidden>Overwrite</button>
+        <button id="exportLabels" type="button">Export labels</button>
+      </div>
+      <p id="saveNote"></p>
+    </div>
+  </div></div>
+</div>
+<p id="status"></p>
+<div id="tooltip"></div>
+
+<footer>Videos show each evaluation teammate (highlighted agent) playing with its trained best
+response. Map coordinates come from population-diversity behavioral features.</footer>
+</main>
+
+<script>
+const CONFIG = {
+  showClusters: true,
+  legendTitle: "Suggested convention structure",
+  neutralColor: "#8a93b8",
+  palette: { 1: "#6b83c4", 2: "#d9a05b", 3: "#6fae8f", 4: "#c47a6b", 5: "#a586b8", 6: "#7fb3c8", 7: "#b0a45e", 8: "#9097a3" },
+};
+const clusterColor = c => CONFIG.showClusters ? (CONFIG.palette[c] || CONFIG.neutralColor) : CONFIG.neutralColor;
+const $ = id => document.getElementById(id);
+
+let manifest = null, task = null, taskBlock = null, videos = {};
+let points = null;                 // null when no conventions_<task>.json exists
+let selected = null, selectedKey = null, selectedName = null;
+let shippedLabels = {}, localLabels = {}, serverAvailable = false;
+let LS_KEY = "";
+
+function labelFor(key) {
+  if (Object.prototype.hasOwnProperty.call(localLabels, key)) return localLabels[key];
+  if (Object.prototype.hasOwnProperty.call(shippedLabels, key)) return shippedLabels[key];
+  return null;
+}
+const mergedLabels = () => {
+  const out = Object.assign({}, shippedLabels, localLabels);
+  Object.keys(out).forEach(k => { if (!out[k]) delete out[k]; });
+  return out;
+};
+
+function drawMap(pts) {
+  const svg = $("plot");
+  svg.hidden = false;
+  $("grid").hidden = true;
+  svg.innerHTML = "";
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 640, plotH = 500, m = 45;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 1;
+  const s = (Math.min(W, plotH) - 2 * m) / span;
+  const px = p => W / 2 + (p.x - cx) * s;
+  const py = p => plotH / 2 - (p.y - cy) * s;
+  const el = (tag, attrs, text) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text) e.textContent = text;
+    return e;
+  };
+
+  svg.appendChild(el("text", { x: W / 2, y: plotH - 4, "text-anchor": "middle", class: "axis-label" }, "MDS Dimension 1"));
+  svg.appendChild(el("text", { x: 12, y: plotH / 2, "text-anchor": "middle", class: "axis-label",
+    transform: `rotate(-90 12 ${plotH / 2})` }, "MDS Dimension 2"));
+
+  pts.forEach(p => {
+    const x = px(p), y = py(p), hasVideo = !!videos[p.key];
+    if (p.is_medoid) {
+      svg.appendChild(el("circle", { cx: x, cy: y, r: 11, class: "medoid-ring" }));
+      const txt = labelFor(p.key) || p.name;
+      const left = x > W * 0.62;
+      svg.appendChild(el("text", { x: x + (left ? -14 : 14), y: y + 4,
+        "text-anchor": left ? "end" : "start", class: "medoid-label" }, txt));
+    }
+    const c = el("circle", { cx: x, cy: y, r: 6.5, fill: clusterColor(p.cluster),
+      stroke: "rgba(255,255,255,0.7)", "stroke-width": 0.8,
+      class: "pt" + (hasVideo ? "" : " novideo"), tabindex: 0 });
+    c.addEventListener("mousemove", ev => showTip(ev, p, hasVideo));
+    c.addEventListener("mouseleave", hideTip);
+    if (hasVideo) c.addEventListener("click", () => select(p.key, c));
+    svg.appendChild(c);
+  });
+
+  if (CONFIG.showClusters) {
+    svg.appendChild(el("text", { x: 30, y: plotH + 22, class: "legend-title" }, CONFIG.legendTitle));
+    const clusters = [...new Set(pts.map(p => p.cluster))].sort((a, b) => a - b);
+    clusters.forEach((c, i) => {
+      const lx = 30 + (i % 4) * 140, ly = plotH + 44 + Math.floor(i / 4) * 22;
+      svg.appendChild(el("circle", { cx: lx, cy: ly, r: 5, fill: clusterColor(c), opacity: 0.85 }));
+      svg.appendChild(el("text", { x: lx + 11, y: ly + 4, class: "legend-text" }, "Cluster " + c));
+    });
+  }
+}
+
+function drawGrid() {
+  $("plot").hidden = true;
+  const g = $("grid");
+  g.hidden = false;
+  g.innerHTML = "";
+  Object.values(videos).sort((a, b) => a.name.localeCompare(b.name)).forEach(v => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = v.name;
+    b.addEventListener("click", () => select(v.key, b));
+    g.appendChild(b);
+  });
+}
+
+function showTip(ev, p, hasVideo) {
+  const tt = $("tooltip");
+  const lbl = labelFor(p.key), v = videos[p.key];
+  tt.innerHTML = `<b class="tt-nm"></b><br>Cluster ${p.cluster}` +
+    (p.is_medoid ? " (representative)" : "") +
+    (p.score !== null && p.score !== undefined ? `<br>Mean score with BR: ${p.score}` : "") +
+    (v && v.partner ? `<br>Partner: ${v.partner}` : "") +
+    (lbl ? `<br>Convention: <span class="tt-name"></span>` : "") +
+    (hasVideo ? "" : "<br><i>no video rendered</i>");
+  tt.querySelector(".tt-nm").textContent = p.name;
+  if (lbl) tt.querySelector(".tt-name").textContent = lbl;
+  tt.style.display = "block";
+  const pad = 14;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + tt.offsetWidth > window.innerWidth - 8) x = ev.clientX - tt.offsetWidth - pad;
+  if (y + tt.offsetHeight > window.innerHeight - 8) y = ev.clientY - tt.offsetHeight - pad;
+  tt.style.left = x + "px";
+  tt.style.top = y + "px";
+}
+const hideTip = () => { $("tooltip").style.display = "none"; };
+
+function select(key, node) {
+  const v = videos[key];
+  if (!v) return;
+  if (selected) selected.classList.remove("selected");
+  selected = node;
+  selectedKey = key;
+  selectedName = v.name;
+  node.classList.add("selected");
+  hideTip();
+  $("video").src = v.file;
+  $("vtitle").textContent = v.name;
+  const p = points ? points.find(q => q.key === key) : null;
+  $("vcaption").textContent =
+    (p ? `Cluster ${p.cluster}${p.is_medoid ? " representative (medoid)" : ""}. ` : "") +
+    `${v.num_episodes} episode(s), mean return ${v.mean_return}.`;
+  $("whois").textContent = v.partner === "BR"
+    ? "The highlighted agent is the evaluation teammate; its partner is that teammate's trained best response (BR)."
+    : "No BR checkpoint was available for this teammate, so it is shown playing with a copy of itself.";
+  refreshLabelBox();
+  $("split").classList.add("open");
+}
+
+function refreshLabelBox() {
+  if (!selectedKey) return;
+  const existing = labelFor(selectedKey), ta = $("labelText");
+  ta.value = existing || "";
+  ta.disabled = !!existing;
+  $("saveLabel").hidden = !!existing;
+  $("overwriteLabel").hidden = !existing;
+  $("saveNote").textContent = "";
+}
+
+$("overwriteLabel").addEventListener("click", () => {
+  $("labelText").disabled = false;
+  $("saveLabel").hidden = false;
+  $("overwriteLabel").hidden = true;
+  $("labelText").focus();
+});
+
+$("saveLabel").addEventListener("click", () => {
+  if (!selectedKey) return;
+  const text = $("labelText").value.trim();
+  localLabels[selectedKey] = text;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(localLabels)); } catch (e) {}
+  const note = "Saved locally (browser storage).";
+  if (serverAvailable) {
+    fetch("save_label", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task: task, key: selectedKey, label: text }) })
+      .then(r => { $("saveNote").textContent = r.ok ?
+        "Saved to convention_labels_" + task + ".json on disk." : note; })
+      .catch(() => { $("saveNote").textContent = note; });
+  } else {
+    $("saveNote").textContent = note + " Use “Export labels” to download a committable JSON.";
+  }
+  refreshLabelBox();
+  if (points) drawMap(points);
+});
+
+$("exportLabels").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({ task: task, labels: mergedLabels() }, null, 1)],
+    { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "convention_labels_" + task + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$("close").addEventListener("click", () => {
+  $("split").classList.remove("open");
+  const v = $("video");
+  v.pause();
+  v.removeAttribute("src");
+  v.load();
+  if (selected) { selected.classList.remove("selected"); selected = null; selectedKey = null; }
+});
+
+function renderTaskNav() {
+  const nav = $("tasknav");
+  nav.innerHTML = "";
+  Object.keys(manifest.tasks).forEach(t => {
+    const a = document.createElement("a");
+    a.href = "index.html?task=" + t;
+    a.textContent = manifest.tasks[t].label || t;
+    if (t === task) a.classList.add("active");
+    nav.appendChild(a);
+  });
+}
+
+fetch("manifest.json").then(r => r.json()).then(m => {
+  manifest = m;
+  const slugs = Object.keys(m.tasks || {});
+  if (!slugs.length) throw new Error("manifest has no tasks; run generate_videos.py first");
+  task = new URLSearchParams(location.search).get("task");
+  if (!m.tasks[task]) task = slugs[0];
+  taskBlock = m.tasks[task];
+  LS_KEY = "jaxaht_convention_labels_" + task;
+  try { localLabels = JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch (e) { localLabels = {}; }
+  videos = {};
+  (taskBlock.teammates || []).forEach(t => { videos[t.key] = t; });
+
+  $("title").textContent = "Evaluation Teammates: " + taskBlock.label;
+  document.title = taskBlock.label + " — Evaluation Teammate Conventions";
+  renderTaskNav();
+
+  return Promise.all([
+    fetch(`conventions_${task}.json`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`convention_labels_${task}.json`).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch("save_label", { method: "OPTIONS" }).then(r => r.ok).catch(() => false),
+  ]);
+}).then(([conv, lab, srv]) => {
+  shippedLabels = (lab && lab.labels) || {};
+  serverAvailable = !!srv;
+  const n = Object.keys(videos).length;
+  if (conv && Array.isArray(conv.points)) {
+    points = conv.points;
+    $("intro1").textContent =
+      `The ${n} evaluation teammates for ${taskBlock.label}, summarized by behavioral statistics ` +
+      "collected while each played with its trained best response, then laid out in 2-D with " +
+      "multidimensional scaling so that nearby teammates behave similarly.";
+    $("intro2").textContent =
+      "Groups of similar teammates suggest distinct conventions; ringed points are each group's " +
+      "most representative teammate. Hover a point for details, and click it to watch that " +
+      "teammate play with its best response.";
+    drawMap(points);
+  } else {
+    $("intro1").textContent =
+      `The ${n} evaluation teammates for ${taskBlock.label}, each shown playing with its trained ` +
+      "best response. Click a teammate to watch it play.";
+    $("intro2").textContent =
+      `No convention map for this task yet — run export_conventions_json.py to add conventions_${task}.json.`;
+    drawGrid();
+  }
+}).catch(e => { $("status").textContent = "Failed to load site data: " + e; });
+</script>
+</body>
+</html>
