@@ -373,8 +373,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Notable changes since the initial release are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## 🔗 See Also
+Related projects and papers:
+- [ICRL4AHT](https://github.com/AHT-Hub/ICRL4AHT): a benchmark for in-context RL on Overcooked-V2, whose teammate generation pipeline builds on JaxAHT ([Jing et al., ICML 2026](https://openreview.net/forum?id=EbkumuY3eW))
+- [ROTATE](https://github.com/carolinewang01/rotate): code for the ROTATE open-ended AHT method, which JaxAHT grew out of ([Wang et al., NeurIPS 2026](https://openreview.net/forum?id=h76k7u9S4o))
+
 This project was inspired by the following JAX-based RL repositories. Please check them out!
 - [JaxMARL](https://github.com/FLAIROx/JaxMARL): a library with JAX-based MARL algorithms and environments
 - [Jumanji](https://github.com/instadeepai/jumanji): a library with JAX implementations of several MARL environments
 - [Minimax](https://github.com/facebookresearch/minimax): a library with JAX implementations of single-agent UED algorithms
-- [ROTATE](https://github.com/carolinewang01/rotate): code for the ROTATE paper (Wang et al. 2025), which this benchmark is built off of.
