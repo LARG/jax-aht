@@ -48,6 +48,8 @@ dependencies = [
     # Environment dependencies
     "jumanji==1.1.0",
     "jaxmarl==0.0.7",
+    # brax leaves mujoco-mjx unpinned; 4.x needs mujoco 4 but jaxmarl pins mujoco 3.1.3
+    "mujoco-mjx==3.1.3",
 ]
 
 [project.optional-dependencies]

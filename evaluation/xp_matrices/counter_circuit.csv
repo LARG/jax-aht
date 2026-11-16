@@ -1,0 +1,801 @@
+task,row_agent,row_label,col_agent,br_for_label,is_diag,metric_name,aggregate_stat,mean,ci_lower,ci_upper,num_episodes,max_episode_steps,eval_seed,seating
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],True,base_return,mean,198.4375,181.25,213.75,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,187.1875,175.3125,197.8125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,142.5,129.0625,155.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,42.5,37.8125,46.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,40.3125,35.625,45.0,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,51.875,45.3125,58.75,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,42.1875,35.0,49.375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,30.0,25.9375,34.0625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,45.625,40.9375,50.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,50.0,44.0625,55.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,26.25,21.5625,30.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,27.5,22.8125,32.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,34.375,30.0,38.75,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,33.75,27.5,40.625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,44.0625,39.6875,48.4375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,35.3125,30.625,40.0,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,40.0,35.625,44.375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,25.0,19.6875,30.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,44.0625,37.5,50.625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,94.375,78.4375,110.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,154.375,132.8125,174.6875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],True,base_return,mean,209.375,195.9375,220.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,181.5625,165.9375,195.625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,42.8125,38.4375,47.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,40.9375,36.25,45.625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,56.875,52.5,61.5625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,34.375,28.125,40.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,31.875,26.875,36.57031249999932,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,53.125,46.25,60.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,42.1875,37.1875,47.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,40.9375,33.4375,48.75,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,30.625,25.9375,35.32031249999932,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,44.0625,37.5,50.625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,39.0625,33.4375,44.6875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,41.5625,37.5,45.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,31.25,25.9375,36.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,44.375,40.0,48.75,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,19.375,15.625,23.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,47.8125,42.5,53.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,56.25,48.4375,65.0,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,180.0,161.5625,196.25,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,172.5,158.75,184.6875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],True,base_return,mean,201.25,190.625,210.0,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,42.5,37.8125,46.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,42.5,37.8125,47.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,57.1875,51.5625,62.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,33.4375,26.5625,40.625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,30.9375,26.5625,35.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,67.8125,59.0625,76.5625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,52.8125,45.625,60.0,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,31.25,25.9375,37.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,29.0625,25.0,33.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,36.25,30.625,42.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,31.875,26.5625,37.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,43.75,39.6875,47.8125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,38.125,32.1875,44.375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,43.4375,39.375,47.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,29.375,25.0,33.75,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,42.5,38.125,46.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,79.375,66.25,93.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,7.5,4.6875,10.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,7.5,5.0,10.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,7.1875,5.0,9.6875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],True,base_return,mean,132.8125,111.875,153.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,17.1875,12.8125,21.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,23.75,19.0625,28.75,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,5.625,3.4375,8.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,28.4375,23.4375,33.4375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,12.8125,9.0625,16.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,36.875,31.5625,42.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,19.0625,14.6875,23.4375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,53.75,42.5,64.6875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,23.125,18.4375,28.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,25.9375,20.625,31.5625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,9.375,6.5625,12.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,13.75,10.0,17.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,13.125,9.6875,16.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,25.625,20.9375,30.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,8.75,5.9375,11.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,21.875,17.5,26.25,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,14.0625,10.3125,17.8125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,7.5,5.0,10.0,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,9.375,6.5625,12.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,28.125,24.0625,32.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],True,base_return,mean,121.875,100.625,142.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,31.25,26.25,36.25,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,14.6875,10.625,19.0625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,26.25,21.5625,30.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,17.8125,13.4375,22.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,30.0,24.375,35.625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,23.125,18.4375,27.8125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,24.375,19.375,29.375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,25.0,20.0,30.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,24.375,20.3125,28.4375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,14.375,10.0,19.0625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,11.5625,8.4375,14.6875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,18.4375,13.75,23.4375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,23.4375,18.4375,28.4375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,12.5,9.6875,15.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,29.0625,24.375,34.0625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,10.0,6.875,13.4375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,12.1875,9.0625,15.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,12.5,9.0625,15.9375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,27.1875,22.5,31.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,17.5,13.4375,21.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],True,base_return,mean,145.3125,125.9375,163.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,8.75,5.625,12.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,27.5,22.1875,33.125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,31.25,21.25,42.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,73.4375,64.0625,82.8125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,50.3125,38.125,62.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,32.1875,26.5625,37.8125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,61.25,50.3125,72.1875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,75.625,62.1875,89.0625,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,13.125,9.0625,17.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,33.4375,24.6875,42.5,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,15.3125,11.5625,19.375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,41.875,32.5,51.875,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,15.0,10.3125,20.3125,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,25.625,20.625,30.625,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,50.0,44.0625,55.625,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,50.625,44.6875,56.5625,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,34.6875,30.625,38.75,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,39.375,35.0,43.75,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,46.875,40.0,54.0625,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,37.5,32.8125,42.5,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_independent_agent_0 (0),independent_agent_0,True,base_return,mean,171.5625,166.5625,175.9375,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,40.625,32.1875,49.375,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,63.75,57.1875,70.625,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,40.625,34.375,47.1875,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,53.75,47.5,59.6875,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,20.3125,15.9375,24.6875,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,32.5,26.875,38.125,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,31.875,25.9375,38.125,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,59.375,49.375,69.6875,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,19.0625,15.0,23.4375,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,21.25,16.875,25.9375,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,25.625,20.625,30.625,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,22.8125,18.4375,27.1875,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_human_proxy (0),human_proxy,False,base_return,mean,35.3125,29.375,41.25,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,4.6875,2.8125,6.875,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,4.375,2.5,6.5625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,4.6875,2.8125,6.875,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,37.5,27.8125,47.8125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,24.6875,17.5,32.5,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,15.9375,11.25,20.9375,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,3.4375,1.5625,5.3125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_onion_agent_0 (0),onion_agent_0,True,base_return,mean,51.875,42.5,61.5625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,22.1875,15.625,29.375,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,49.375,40.0,59.0625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,32.5,24.375,40.9375,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,24.375,16.5625,32.8125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,27.5,20.625,35.3125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,30.3125,24.375,36.5625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,15.0,10.625,19.6875,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,27.8125,21.25,34.6875,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,11.25,7.1875,15.9375,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,36.5625,28.125,45.3125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,4.375,2.5,6.5625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_human_proxy (0),human_proxy,False,base_return,mean,29.6875,24.0625,35.625,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,42.8125,35.9375,49.375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,33.75,27.5,40.0,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,27.1875,22.1875,32.1875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,30.9375,26.25,35.625,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,31.875,26.875,36.875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,31.5625,26.5625,36.25,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,35.0,28.75,40.9375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,29.6875,25.0,34.375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_plate_agent_0 (0),plate_agent_0,True,base_return,mean,100.0,87.8125,110.9375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,36.25,28.75,44.6875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,57.1875,49.375,65.0,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,24.6875,17.8125,32.5,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,31.875,25.3125,38.75,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,40.0,31.5625,48.75,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,32.1875,26.5625,38.125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,16.875,12.1875,21.875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,15.9375,11.875,20.3125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,30.3125,23.4375,37.8125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,19.0625,14.0625,24.0625,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_human_proxy (0),human_proxy,False,base_return,mean,42.1875,34.0625,50.625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,6.25,4.0625,8.4375,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,5.3125,3.125,7.5,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,5.9375,3.75,8.125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,21.25,16.5625,26.25,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,16.5625,11.867187500000185,21.5625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,22.1875,17.1875,27.5,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,4.375,2.5,6.5625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,34.0625,29.6875,38.125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,23.75,16.5625,31.25,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_onion_agent_0_9 (0),onion_agent_0.9,True,base_return,mean,75.625,66.55468750000018,84.375,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,41.5625,32.8125,50.625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,47.5,38.4375,56.5625,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,45.625,36.5625,55.0,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,56.5625,46.875,65.9375,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,11.875,8.75,15.3125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,34.375,26.25,42.8125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,16.25,12.1875,20.3125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,36.25,27.8125,45.3125,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,2.8125,1.25,4.6875,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_human_proxy (0),human_proxy,False,base_return,mean,38.4375,28.75,48.125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,10.0,6.875,13.4375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,10.0,6.875,13.125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,11.5625,8.4375,15.0,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,23.75,19.6875,28.125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,27.8125,21.5625,34.0625,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,31.875,25.625,38.125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,19.6875,14.375,25.3125,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,30.9375,25.9375,36.25,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,40.9375,32.8125,49.375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,38.4375,32.5,44.6875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_plate_agent_0_9 (0),plate_agent_0.9,True,base_return,mean,87.1875,77.8125,96.25,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,31.5625,24.6875,38.75,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,52.1875,42.1875,62.1875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,66.25,57.5,74.375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,21.5625,17.5,25.625,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,27.8125,20.625,35.625,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,11.5625,7.8125,15.625,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,49.0625,38.75,59.375,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,7.1875,4.6875,9.6875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_human_proxy (0),human_proxy,False,base_return,mean,29.375,22.5,36.875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,10.0,7.5,12.5,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,3.75,1.875,5.625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,2.8125,1.25,4.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,33.75,29.6875,37.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,38.125,34.375,41.875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,37.1875,33.4375,40.9375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,11.5625,8.75,14.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,40.3125,37.1875,43.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,66.5625,60.3125,72.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,80.9375,74.6875,87.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,80.9375,71.875,89.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,base_return,mean,95.0,90.0,99.375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,103.125,99.6875,106.5625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,100.3125,94.6875,105.625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,25.3125,22.1875,28.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,63.4375,54.375,72.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,22.1875,17.8125,26.5625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,95.625,92.5,98.75,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,5.0,3.125,7.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,93.4375,87.1875,99.0625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,9.375,6.875,11.875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,5.9375,3.4375,8.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,3.75,1.875,5.9375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,33.125,29.375,36.875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,36.25,32.1875,40.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,38.125,34.0625,42.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,12.1875,9.375,15.0,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,41.25,37.8125,44.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,60.625,53.75,67.5,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,73.125,66.875,79.375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,84.0625,75.625,91.875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,90.3125,84.0625,95.625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,base_return,mean,105.9375,103.125,108.75,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,102.8125,99.6875,105.9375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,23.125,20.0,26.25,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,71.5625,63.125,80.0,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,22.1875,17.5,26.875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,96.5625,92.5,100.625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,5.9375,3.75,8.125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,90.3125,83.125,97.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,7.8125,5.3125,10.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,7.1875,4.6875,10.0,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,7.8125,5.625,10.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,28.125,24.0625,32.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,35.0,30.625,39.375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,38.75,34.6875,42.5,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,13.4375,9.6875,17.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,36.5625,33.125,40.0,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,59.0625,53.125,65.0,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,77.1875,71.875,82.5,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,90.9375,83.4375,97.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,90.9375,84.6875,96.5625,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,105.625,101.5625,109.375,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,base_return,mean,104.375,101.25,107.5,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,24.375,21.5625,27.5,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,63.125,54.6875,71.25,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,21.5625,17.1875,26.25,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,98.4375,93.75,102.19531249999932,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,4.6875,2.5,7.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,90.9375,83.75,97.5,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,90.0,84.6875,95.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,85.3125,81.25,89.0625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,78.4375,73.4375,83.75,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,90.625,83.75,97.5,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,87.1875,79.375,95.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,80.9375,76.25,85.625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,73.125,65.9375,80.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,67.8125,62.1875,73.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,87.8125,80.625,94.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,85.625,79.375,91.875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,85.625,76.5625,94.375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,90.625,80.9375,100.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,109.6875,104.375,115.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,95.9375,88.4375,103.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,base_return,mean,132.8125,126.875,138.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,95.9375,89.375,101.875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,62.5,58.4375,66.5625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,103.125,96.875,109.375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,76.25,71.875,80.625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,140.9375,134.0625,147.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,14.6875,10.625,19.0625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,9.375,6.5625,12.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,11.875,8.75,15.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,17.5,13.125,21.875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,10.0,6.875,13.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,14.0625,10.3125,18.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,9.0625,6.25,12.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,29.6875,24.0625,35.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,9.6875,6.25,13.75,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,47.8125,40.3125,55.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,34.375,25.3125,43.75,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,12.1875,7.5,17.5,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,25.9375,17.5,35.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,27.1875,18.125,36.875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,5.3125,2.8125,8.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,base_return,mean,100.0,94.6875,105.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,30.9375,26.25,35.625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,84.375,76.875,91.25,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,15.625,11.5625,19.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,16.25,11.875,20.9375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,16.5625,12.8125,20.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,12.8125,9.6875,16.25,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,20.625,15.625,25.625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,17.8125,13.4375,22.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,24.6875,20.3125,29.0625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,26.5625,21.5625,31.5625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,7.5,4.6875,10.625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,25.0,20.625,29.375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,24.6875,17.1875,32.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,42.1875,34.0625,50.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,41.25,31.5625,51.5625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,31.5625,23.4375,40.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,49.375,38.75,60.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,72.5,62.1875,82.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,10.3125,7.5,13.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,53.75,43.4375,64.0625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,base_return,mean,41.5625,37.8125,45.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,93.4375,86.5625,99.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,25.3125,20.625,30.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,21.25,15.625,27.5,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,9.0625,6.25,11.875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,5.9375,3.75,8.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,9.375,6.5625,12.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,18.75,14.0625,23.75,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,8.4375,5.3125,11.875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,16.5625,13.125,20.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,8.125,5.625,10.625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,21.25,16.25,26.25,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,14.375,10.9375,18.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,42.5,34.6875,50.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,29.6875,21.875,37.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,18.75,12.8125,25.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,33.125,23.4375,43.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,47.1875,37.5,57.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,11.5625,8.75,14.375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,58.125,50.0,65.9375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,10.0,6.875,13.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,base_return,mean,106.875,103.75,110.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,6.875,4.375,9.375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,base_return,mean,19.0625,14.375,24.0625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,14.375,10.625,18.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,20.3125,15.9375,25.0,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,22.8125,18.4375,27.5,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,33.4375,28.75,38.125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,17.8125,13.4375,22.1875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,21.875,17.1875,26.875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,13.4375,9.6875,17.5,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,34.375,30.0,38.75,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,28.125,24.375,31.5625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,65.3125,57.8125,72.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,40.0,30.9375,49.375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,47.8125,37.8125,57.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,46.5625,37.8125,55.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,60.9375,51.875,70.3125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,11.5625,8.4375,14.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,66.5625,58.125,74.6875,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,33.75,29.0625,38.4375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,95.3125,89.375,100.625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,base_return,mean,52.1875,46.5625,57.8125,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,base_return,mean,48.4375,42.8125,54.0625,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,base_return,mean,57.5,46.875,67.8125,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,base_return,mean,41.25,31.875,50.9375,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,base_return,mean,48.125,38.4375,57.8125,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,base_return,mean,48.4375,42.1875,54.6875,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,base_return,mean,38.125,30.0,46.875,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,base_return,mean,53.125,46.25,60.0,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,32.1875,26.5625,38.125,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,37.1875,29.6875,45.0,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,55.0,45.3125,65.0,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,base_return,mean,76.875,67.1875,86.5625,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,base_return,mean,50.9375,40.9375,61.25,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,46.25,36.875,55.9375,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,50.9375,41.25,60.9375,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,52.5,42.8125,62.5,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,44.6875,36.875,52.5,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,59.375,50.3125,68.4375,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,37.1875,30.625,43.75,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,85.0,73.4375,96.25,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,33.4375,25.9375,40.9375,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,base_return,mean,172.1875,163.125,179.375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],True,returned_episode_returns,mean,210.670345723629,192.1750299938023,227.06023233309386,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,199.20237004756927,186.5085985481739,210.399384611845,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,151.21484804153442,136.94427985846997,165.4033699482679,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,43.54531082510948,38.786697667092085,48.01562283709645,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,41.32499820628436,36.532791308080775,46.077341648486616,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,53.98437279462814,47.06951052695513,61.073493719100945,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,43.59530960326083,36.12890395209397,51.12989828815769,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,30.970311683428008,26.785155450736056,35.11796778470307,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,47.19921622314723,42.264021028236314,52.12194996806065,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,52.01249579805881,45.95855064648204,58.20470200646668,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,27.035155422461685,22.330429005084444,31.784393355832435,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,28.389061886817217,23.687401962117296,33.16330001167953,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,35.31171716528479,30.836698124017857,39.72661925123975,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,34.858592493110336,28.428065630076162,42.10079874720686,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,45.232028967526276,40.75388477760134,49.65782966963015,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,36.46562340302626,31.585877640552646,41.300017693407426,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,41.25546748563647,36.790624033473435,45.66798693854361,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,25.802342940936796,20.368729752847866,31.257049858183017,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,46.02030941267731,39.1218729660759,52.79218407978042,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (0),ippo_mlp_cc[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,99.25312865991145,82.17416121053975,116.94223258632701,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,163.80627372290473,140.81943474435246,185.59227501422865,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],True,returned_episode_returns,mean,222.53128385543823,208.3247954905033,234.79302604794503,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,192.96330882312031,176.32406693968662,207.874289770436,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,43.88046735525131,39.426561353355645,48.29376784861088,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,42.155466908589005,37.38671719939448,46.94456844092346,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,59.396871477365494,54.79370798021555,64.19544534236192,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,35.47187299752841,28.95150249786093,42.18204796606442,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,32.935155302577186,27.83281193427829,37.86937373944808,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,55.309371531009674,48.03273096978665,62.77818020135164,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,44.12812209746335,38.89058345299127,49.40468388547888,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,42.682809716498014,34.80937286651024,50.886734674585746,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,31.556249177840073,26.798417612331104,36.45464743584869,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,45.89609038835624,39.01406004079472,52.76263280901911,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,40.33437327761203,34.46013540625572,46.31652138531207,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,42.77187321707606,38.70613145213574,46.648435389995576,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,32.69452925922815,27.02339679571305,38.51023161591292,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,45.94765427708626,41.387478589266536,50.57890353277325,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,20.018749273964204,16.214042362481997,23.86249903899152,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,49.49609163403511,43.91796725317836,54.977360765635964,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (1),ippo_mlp_cc[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,58.58827957510948,50.39919659346342,67.83156201988456,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,191.03674610855523,171.5132448632212,208.41280364155824,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,183.18361142277718,168.5546230047941,196.24238311275838,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],True,returned_episode_returns,mean,214.01644277572632,202.77737846970558,223.10474587082862,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,43.51171737909317,38.78984281122685,47.97109204977751,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,43.640623425890226,38.88749887964659,48.35626788012887,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,59.19687129277736,53.52808265031781,64.63204661787022,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,34.70234119903762,27.59218548522913,42.09378581530909,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,31.961717659432907,27.4234369903832,36.47031138855964,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,70.78905656933784,61.692924697697165,79.9555000834167,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,55.05390099307988,47.4780230297707,62.54616545902099,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,32.56406102818437,26.97654217149393,38.81497816845075,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,29.87890557089122,25.799979893646377,34.02656151719566,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,37.52343568246579,31.603103802028638,44.14456814365694,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,32.78593676746823,27.457714251136352,38.14535076444736,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,44.96562284231186,40.884333960711956,49.053142227232456,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,39.532028794521466,33.24681466091133,46.01015314571996,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,44.84999805688858,40.64296707510948,48.999997387081386,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,30.306249034998473,25.777323537680786,34.935291311082246,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,43.8101543605444,39.36478372562415,48.24376732977544,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_cc (2),ippo_mlp_cc[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,83.42109553219052,69.53189526052448,98.14725124689282,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,7.6242187331663445,4.813281203700171,10.478906231252768,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,7.6453124596737325,5.1195312202515195,10.4546874129941,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,7.242968714504968,5.033593737795309,9.739062484013266,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],True,returned_episode_returns,mean,141.0054852605099,118.74437015281292,162.7001383565599,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,17.767187119054142,13.238281003363955,22.571112715348136,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,24.403905802231748,19.624198884535872,29.46406178997131,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,5.7664061386021785,3.5460937395269867,8.27187482293375,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,29.339841759880073,24.205467413392036,34.44687222042121,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,13.312499934516381,9.507011810960831,17.423456988904217,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,38.080467397056054,32.56785053692438,43.84066272097115,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,19.710937310243025,15.25464842561196,24.209394171671008,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,56.62890099256765,44.75849119437771,68.27591152895037,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,23.855468130554073,19.00859324369958,28.949256759075794,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,26.674217844440136,21.185917233853253,32.398436373581355,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,9.665625038265716,6.882773438285223,12.503925845593038,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,14.113281149882823,10.342968705538079,17.93205078853498,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,13.51953109720489,9.94431630888867,17.32736320113472,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,26.364843094954267,21.620292544075348,31.15079989200021,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,8.974999923608266,6.085156279960938,12.127363127411806,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (0),ippo_mlp_pass[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,22.646874536410905,18.16326143752958,27.127382016432236,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,14.30156234028982,10.555449075276556,18.070312145249044,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,7.5945310951792635,5.0765623808503735,10.138300542224895,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,9.53906244051177,6.691406291164458,12.456269511526623,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,29.024217796570156,24.855448387243086,33.22577999121131,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],True,returned_episode_returns,mean,129.29220351018012,106.58673109919764,151.19773365496658,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,31.969530397851486,26.872616417302925,37.08908070957259,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,14.942187137377914,10.839823980978691,19.353905642217434,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,26.98906077258289,22.238260372914375,31.800837559299538,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,18.3632807819522,13.914062341197859,23.111737701416132,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,30.95703003712697,25.242147673931324,36.74689311544353,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,23.714843411231413,18.996855385758682,28.477362810471092,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,25.18984291650122,20.06247982460627,30.333632085692077,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,25.559374362637755,20.424999562582524,30.932850720938582,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,24.985937089135405,20.83044896116044,29.203143798602103,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,14.699218422931153,10.299159919499655,19.428183152044944,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,11.93203104834538,8.732792725978653,15.168769275836528,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,18.84999955969397,14.096874714200386,23.905487917151184,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,24.14062444679439,19.04997992531862,29.278241456253443,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,12.768749947135802,9.874199120220146,15.675019456091102,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (1),ippo_mlp_pass[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,29.980467940331437,25.129647779176594,35.05478429567155,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,10.282031084760092,7.108593768626451,13.758652071663523,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,12.45000003115274,9.263222666473304,15.664902325665748,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,12.74843728018459,9.290605305724602,16.246093463992292,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,27.86015503440285,23.08828033685713,32.632830625484345,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,17.949218243651558,13.767968458292307,22.36876883857476,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],True,returned_episode_returns,mean,154.4336145760608,133.68831775675065,173.40709555884095,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,8.921093649580143,5.751542998892547,12.416406012566586,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,28.265623069251888,22.817186277388828,33.990681346037306,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,32.67578044132097,22.200741730071606,44.21171728965419,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,77.09140017034952,67.2358737489587,87.00079368501902,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,53.03437218797626,40.20931478410494,66.09564085982709,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,33.0218738859985,27.28203040723747,38.767186005927215,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,64.14218179008458,52.56169500660617,75.5416725233357,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,79.5203098541242,65.22097460671357,93.79767212010483,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,13.47265622211853,9.41480473605916,17.864863226683518,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,34.88905990746571,25.75544770764973,44.523511488495565,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,15.655468434270006,11.83046840447496,19.757831527022063,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,43.72030885895947,33.88745834055735,54.19382337673304,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,15.572655982105061,10.717929530168478,21.07736274080089,64,400,34957,new
+overcooked-v1/counter_circuit,ippo_mlp_pass (2),ippo_mlp_pass[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,26.307030726689845,21.217187129294324,31.40160084436065,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,52.653903043828905,46.44062254771124,58.67814111013431,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,53.377338946796954,47.10146068399772,59.51017077877186,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,36.335935611103196,32.16015510832949,40.54845453784801,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,41.09452858567238,36.698415488004684,45.511754509061575,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,49.38124563789461,42.016383076188504,56.97581492025929,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,39.21015388984233,34.20859202183783,44.47736014202237,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_independent_agent_0 (0),independent_agent_0,True,returned_episode_returns,mean,182.45548248291016,177.15778564810753,187.09614753723145,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,42.5218713945942,33.72730199964572,51.67118685081804,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,66.79218277335167,59.809331578016284,74.03905763104558,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,42.56952827126952,35.975759597838625,49.40249603051924,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,55.91405898332596,49.52890353798866,62.22282814532517,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,21.16406169126276,16.81947206289624,25.650799939746502,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,33.979685527679976,28.10779175660282,39.92034900555299,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,33.304685879906174,26.967869875885665,39.92423595091095,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,62.939837836660445,52.267749266885225,73.95559779214672,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,19.714843232475687,15.413866874825912,24.171874265109363,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,22.194530094973743,17.55388619203586,26.978201674297445,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,26.54999927955214,21.44843690990092,31.692186470546584,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,23.846093353116885,19.348398199833174,28.505644044314963,64,400,34957,new
+overcooked-v1/counter_circuit,independent_agent_0,independent_agent_0,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,36.84843561111484,30.692107856008807,43.0383178841701,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,4.863281238824129,2.934375010702934,7.060156238843047,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,4.455468722619116,2.5687304428487554,6.632050750320193,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,4.748437489266507,2.8468750001891747,6.940624953986844,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,39.84921585419215,29.395212743639423,50.886206796934104,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,26.06718576035928,18.41302625298559,34.25548641846981,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,16.499217975942884,11.66716735312948,21.759412793883527,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,3.6039063496282324,1.7625000507483493,5.510156415936945,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_onion_agent_0 (0),onion_agent_0,True,returned_episode_returns,mean,54.75155699928291,44.646851480487385,65.08594969041732,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,23.38124893355416,16.446855023506213,30.954685857972073,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,51.99765257915715,42.18337592383469,62.147027380445785,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,33.955466902814806,25.49759654111695,42.67507552267052,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,25.512498684809543,17.24921790300432,34.47501800084283,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,28.78124906553421,21.53904175226635,37.000799450108026,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,31.53671748045599,25.394472224323547,38.041482768219424,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,15.978124231973197,11.192030864297706,21.094569246398166,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,29.029686218709685,22.178905643832696,36.29691234441415,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,11.765624822932296,7.422538896051995,16.612499611290694,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,38.2898416823009,29.498279426603407,47.343356502607605,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,4.458593775576446,2.5570312230091075,6.641406192096474,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0,onion_agent_0,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,30.948436285019852,25.007792090081786,37.1023617118597,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,44.45624781254446,37.28591617617494,51.344548114710776,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,34.7085929751629,28.249159505116406,41.13831924023543,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,28.046873831772245,22.86244051831309,33.2172055529285,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,31.651561600563582,26.90701102081803,36.4265613510579,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,32.65390484931413,27.570311394540475,37.73281077862921,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,32.28515552915633,27.199999363161623,37.12660077512257,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,35.81249859352829,29.451561162834697,41.897674125494085,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,30.43046795151895,25.69296821194439,35.15624881191907,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_plate_agent_0 (0),plate_agent_0,True,returned_episode_returns,mean,105.87968394794734,92.85376651034895,117.6345268246019,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,37.72499858314404,29.84607309800631,46.466403806088785,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,59.32108978647739,51.20075853453018,67.53519042120315,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,25.81015478563495,18.5780460018068,33.97665805923897,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,33.07031071226811,26.296814937543243,40.2382983574149,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,41.65390359220328,32.87029108791321,50.795386613665315,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,32.93906107585644,27.16247939165478,38.97267432553635,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,17.40390571957687,12.628827825270129,22.55468659005419,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,16.394530928344466,12.251523127182738,20.82421821665921,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,31.40312330168672,24.22888560227584,39.1797045614614,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,19.852343138190918,14.718749725419912,25.184393861024,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0,plate_agent_0,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,44.00546635949286,35.47027146453038,52.961794693931,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,6.396875161444768,4.17421887540695,8.648457204343865,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,5.391406268812716,3.20156249536376,7.590644582980893,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,5.9984376018401235,3.8062500780200934,8.203906466398621,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,21.85234271932859,17.02339757995069,26.93515475921449,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,17.069530291715637,12.143945019743166,22.189862194944,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,22.828124482010026,17.606855143605213,28.2593742171186,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,4.47187508479692,2.5796875782863937,6.657812585828651,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,35.07656005618628,30.642946473379563,39.250016544507524,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,24.870311072154436,17.39687396309455,32.703943351229825,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_onion_agent_0_9 (0),onion_agent_0.9,True,returned_episode_returns,mean,79.64061891438905,69.84183025368112,88.98921170413522,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,43.68359068670543,34.38825940617098,53.37425479361554,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,49.960151881561615,40.54665677317681,59.44532655908988,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,47.92577728070319,38.31013338018674,57.85858849335928,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,59.47499583364697,49.367808433060425,69.45858734995127,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,12.318750245205592,9.062500140251359,15.83828139094112,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,36.122653269791044,27.637321549963968,44.902574354146765,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,16.697655737923924,12.578828010687722,20.8523428111017,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,38.142184419208206,29.225779373386466,47.588297206135756,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,2.8984375144937076,1.3234374962019502,4.767968763833051,64,400,34957,new
+overcooked-v1/counter_circuit,onion_agent_0.9,onion_agent_0.9,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,40.428121633129194,30.314977519177788,50.81030778992425,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,10.314843787578866,7.1648439833777955,13.725781300650851,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,10.214062524493784,7.074218861763074,13.42345719248842,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,11.857031114341225,8.685156231457949,15.275800554874875,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,24.285937077424023,20.137480259255973,28.67285105314075,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,28.435936494381167,22.069510896249266,34.86675655759169,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,32.606249273521826,26.253886118602534,38.93595589918841,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,20.203905858274084,14.770292756047274,25.957811857011983,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,31.74218606989598,26.610136150835025,37.10863054658984,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,42.79921473446302,34.24763343437807,51.62030764250667,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,40.13905967480969,33.952322012666265,46.61017202518415,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_plate_agent_0_9 (0),plate_agent_0.9,True,returned_episode_returns,mean,91.78358676435892,81.96634193214122,101.3805790299404,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,32.74218584416667,25.613260362116854,40.28755585766193,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,54.86171370756347,44.256187515638885,65.51038351989844,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,69.91249249596149,60.75778621393256,78.51173002943396,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,22.123436809924897,17.987479810488004,26.271112392230133,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,29.122654283128213,21.360076915379615,37.37907930518994,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,11.840624976321124,8.022656267335696,15.989062333082256,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,51.55858854134567,40.76069912741805,62.48386083817893,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,7.31718758441275,4.811718792564352,9.849218854986248,64,400,34957,new
+overcooked-v1/counter_circuit,plate_agent_0.9,plate_agent_0.9,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,30.635936272679828,23.424178419151577,38.517186092761406,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,10.438281654263847,7.87421906470845,13.044570904050484,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,3.975000119244214,2.117187577977893,5.8765627052838685,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,3.1281251489999704,1.5460938253687346,4.984414329155694,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,34.79687370033935,30.671092857327313,38.92189295076532,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,39.22656061651651,35.399217301630415,43.03124785482942,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,38.27265475993045,34.43824072560528,42.087498325121125,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,12.085937661060598,9.178125206271943,15.207031106960494,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,41.68280732631683,38.48358943685889,44.88202504515648,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,70.02186834812164,63.37419416233897,76.74690616950393,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,85.4304593980778,78.7582339406945,91.86893533095716,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,85.51561662560562,75.87169169029657,94.71022596285911,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,returned_episode_returns,mean,99.94920887949411,94.83200220825674,104.5023729532957,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,108.90858352184296,105.35075061023235,112.42967750132084,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,106.02811631560326,100.22647539228201,111.46094908863306,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,26.156249547144398,22.90601542702644,29.371112136507872,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,67.11249317071633,57.524174226864126,76.32190582185285,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,22.81093692826107,18.368730010974105,27.280467722924367,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,101.1328010559082,97.79137587845325,104.46664880216119,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,5.293750176904723,3.3382227266454736,7.490625167188409,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,98.58358566183597,91.9155593003612,104.60161217600107,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,9.794531660096254,7.271875326451846,12.314844256833021,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,6.152343820955139,3.672656327005825,8.698457154100469,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,4.003125070943497,2.0976367396680877,6.200000051726238,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,34.11093617690494,30.26404189572786,37.92577966513636,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,37.3265607181238,33.19763518634136,41.408630966732744,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,39.1249985996983,34.96560426980868,43.22111163467198,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,12.660156587604433,9.773398664859998,15.66867209101177,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,42.666400760412216,39.214057590067384,46.134388567507266,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,63.801557118073106,56.65685105421581,70.95706473588943,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,77.1429600417614,70.4913991175592,83.65960023924707,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,88.90389709483134,79.99915155949711,97.13598524486878,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,95.31092746270588,88.73274536093086,100.98909084500046,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,returned_episode_returns,mean,111.97889530658722,109.06481235027313,114.823446726799,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,108.80702048540115,105.57497066259384,112.00235245972871,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,23.917968476656824,20.736718914308586,27.120312001096316,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,75.7296790786786,66.68593032131757,84.5648924695939,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,22.831248922331724,18.045292197006347,27.679842033312877,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,102.15233331918716,98.06012754291297,106.21331021487713,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,6.240625248232391,4.053906407330942,8.459394900310143,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,95.12577360868454,87.44684866815805,102.35784348621964,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,8.278125277312938,5.729668176652923,10.860937726666453,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,7.4562501106993295,4.92654293752712,10.264101773168655,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,8.058594081143383,5.810156510111119,10.548457583782145,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,28.97812367847655,24.78203047385323,33.169549350551094,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,36.03359191672644,31.57265465184464,40.48206813239667,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,39.89140467706602,35.77031145910441,43.75392380449921,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,13.99687502317829,10.207812701599323,17.87033212264505,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,37.85390129731968,34.27810132516315,41.38124385280535,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,62.34140020608902,55.95546382218599,68.74304038360714,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,81.48358434438705,75.84446377307177,87.05235325545073,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,96.14842753426638,88.18585000425519,103.37737201631244,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,95.88592823746148,89.39212022667925,101.73049827843933,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,111.68280190229416,107.53748867809773,115.59530141055583,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,returned_episode_returns,mean,110.36952102184296,107.08586921989918,113.68842731416224,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,25.156249606749043,22.291406169880066,28.303124204164487,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,66.59139959840104,57.683588263520505,75.18983540084446,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,22.283593119238503,17.81873020932253,27.001737622455387,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,104.04217660427094,99.21245078146458,108.06026295423507,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,4.996093957917765,2.7929492841591133,7.473457302994209,64,400,34957,new
+overcooked-v1/counter_circuit,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,95.68436732888222,88.05077439844608,102.65858569517732,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,95.10233503580093,89.63106659799814,100.61251083761454,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,90.12889716029167,85.9398350290954,94.05237326174974,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,82.66171056032181,77.5187031596899,88.00635787099598,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,94.98280560970306,87.88270800709725,102.14069516062736,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,91.52343000192195,83.19372291662731,99.66641802806407,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,85.30858594179153,80.44139908403159,90.17813615500927,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,77.01014754199423,69.44592963272008,84.12737308666692,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,71.22030368447304,65.40233522132039,77.01952180415392,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,92.63592755794525,85.07030353993177,100.02114193439483,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,90.5890524983406,84.10452185273171,97.14457986801862,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,90.34764714352787,80.7999724527821,99.481260464387,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,95.65155507903546,85.31612548290286,105.74532433524728,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,116.1460832953453,110.47340724766255,121.73436367511749,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,101.54296027496457,93.55151444450021,109.19926814986393,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,returned_episode_returns,mean,140.53202265501022,134.27016816288233,145.96958318799733,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,101.40077042579651,94.56247044205665,107.60860171318053,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,65.76093071699142,61.42319743335248,70.08057903647422,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,109.13124084472656,102.66325199902057,115.46795961856841,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,80.55311682226602,75.87419124286971,85.00079263150691,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,149.45625323057175,142.398203933239,156.04377352297305,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,15.54062459548004,11.340624826250131,20.016425126936518,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,9.934375072130933,7.15701177520532,12.778925867663927,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,12.567968666902743,9.357792901023641,15.810175720066761,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,18.19609330786625,13.828906440552965,22.59376886477257,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,10.581249799230136,7.410136430087733,14.077343309670686,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,14.587499653338455,10.791406063667091,18.617226026605927,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,9.885156104108319,7.039843763929094,13.007831823194282,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,30.763278326019645,25.078103393595665,36.1992928658612,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,10.480468339112122,6.874218501729774,14.624218153495168,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,50.79296370781958,43.039038808224724,58.44313866586889,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,36.46171580441296,26.8304472532589,46.45470402378123,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,13.270311559550464,8.310897853504867,18.80158052286133,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,27.650779024348594,18.87417862503644,37.06251604869758,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,29.03593485133024,19.513260245851416,39.260973593748346,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,5.992968692968134,3.468750011589145,8.806249823555117,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,returned_episode_returns,mean,105.55155378580093,100.05463845431805,110.71952180415391,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,31.87734211725183,27.08589711544337,36.64456833608565,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,89.13983502984047,81.38421039655805,96.31960046961903,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,16.29921848984668,12.224179471441312,20.48052687367453,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,17.349218174815178,12.828847307222897,22.12894463802222,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,17.477343584236223,13.699980292363035,21.30548809712636,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,13.461718813341577,10.251562744032707,16.840644475464067,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,21.479687076061964,16.582070232083804,26.55783148346236,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,18.596874394337647,14.196034784737277,23.01173717017227,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,25.637498887255788,21.20308497073129,30.104686015588232,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,27.518749286420643,22.50701133981347,32.58515522792004,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,8.165625140827615,5.259355564972794,11.378984408829995,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,25.95624848594889,21.514842930680608,30.398435378225987,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,26.152341782406438,18.2968543062525,34.64300437138881,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,44.55155827477574,36.078024006169294,53.19483810437375,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,43.570308139547706,33.291383563261476,54.477377423224965,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,33.38827866560314,24.94997918374138,42.209410926242704,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,52.14687081053853,40.93669598097913,63.691693662991725,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,76.54764927085489,65.61792348595336,87.362491876469,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,10.953125016530976,8.078125052625547,14.074999764701351,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,56.83202654775232,45.9835703776218,67.63995576307641,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,returned_episode_returns,mean,42.89296597242355,39.01482219547033,46.74374655485153,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,98.44061651249649,91.12965952941013,105.05938628942239,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,26.29531160998158,21.48906207475229,31.31718628539238,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,22.44843607302755,16.60232322984375,29.046970240236252,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,9.632812637661118,6.7507814749173125,12.58126967140706,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,6.372656513180118,4.172656452117371,8.632051095149652,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,9.717968807264697,6.920273456176802,12.56486342535063,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,19.503124505106825,14.768730194201636,24.535175090371922,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,8.971874932118226,5.831211011123378,12.441425744918522,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,17.31015567074064,13.79214799227193,21.100018974774866,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,8.675000266812276,6.156250165092933,11.24609409487166,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,22.07890505436808,17.0171670650132,27.182049486623143,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,15.19453105609864,11.647636730433442,18.98287077893037,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,44.73046488966793,36.5209149605129,53.06649902781936,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,31.540622083470225,23.364841501484626,40.20626529383007,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,19.689842704683542,13.592147894157097,26.40548670652788,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,35.20468457043171,24.92794737790246,45.90798360609914,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,49.67187116201967,39.42806370847393,60.37030714878347,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,12.174218867439777,9.375761800823966,14.978906228853157,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,61.339837921841536,52.71235841393937,69.636066980788,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,10.36562484363094,7.162480439334468,13.865644162912211,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,returned_episode_returns,mean,112.8351469039917,109.680419126153,115.99378057420253,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,7.346875237650238,4.87732432105695,9.882812808838207,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,20.057030318304896,15.16796827162616,25.179686203040184,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,15.356250142445788,11.588261835303275,19.21250004008034,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,21.413280861685053,16.876542692289515,26.158592990633043,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,23.882031077053398,19.29914032305824,28.575038630358172,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,34.378905464254785,29.627323558279024,39.13204976784618,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,18.589062067156192,14.17656215926254,23.07187416089,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,22.767186618060805,17.972636163821154,27.837518562549665,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,14.123437487171032,10.38984392225684,18.17265592900221,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,35.549214321770705,31.030425855334034,40.02265033468139,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,29.049999648705125,25.260917938360944,32.70398397743701,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,68.28827584534883,60.438237495115025,76.05950500890611,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,42.03671534295427,32.44607187676011,51.950073873289504,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,50.22343263961375,39.88116780724376,60.693040955089955,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,49.089058484882116,40.0022817509016,58.298451956780625,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,63.82733988761902,54.220250563323496,73.87190815284848,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,12.385156211443245,9.293730289768428,15.550800638180224,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,70.23124301631469,61.27491626545234,78.66651566902436,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,34.814841790124774,29.99683426078409,39.64142333953641,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,100.57186496257782,94.42264580726624,105.99686353802682,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,returned_episode_returns,mean,54.41640280093998,48.63437231334392,60.18829620087053,64,400,34957,new
+overcooked-v1/counter_circuit,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,50.36171579360962,44.485876583307984,56.31644158735871,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_cc_0 (0),ippo_mlp_cc[0],False,returned_episode_returns,mean,60.73671399342129,49.65073789835151,71.6711861989388,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_cc_1 (0),ippo_mlp_cc[1],False,returned_episode_returns,mean,43.3937465743511,33.4671654514721,53.54708539360434,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_cc_2 (0),ippo_mlp_cc[2],False,returned_episode_returns,mean,50.55780840088846,40.462496992239906,60.66028831261209,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_pass_0 (0),ippo_mlp_pass[0],False,returned_episode_returns,mean,50.92108971532434,44.4976336061256,57.40870618582702,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_pass_1 (0),ippo_mlp_pass[1],False,returned_episode_returns,mean,39.967965532501694,31.29046602861927,48.98753511145187,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_ippo_mlp_pass_2 (0),ippo_mlp_pass[2],False,returned_episode_returns,mean,55.980463349842466,48.80694899144146,63.07655634404364,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,33.538278866850305,27.550701663966176,39.70945029728609,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,38.820309879258275,31.07341593282763,46.75548485366162,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,57.94218257209286,47.76325779405888,68.34733776053177,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_onion_agent_0_9 (0),onion_agent_0.9,False,returned_episode_returns,mean,81.21796137915226,71.12331312464958,91.3055964712912,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_plate_agent_0_9 (0),plate_agent_0.9,False,returned_episode_returns,mean,53.91093355009798,43.39915682605206,64.77191076056042,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,48.78593382390682,38.79447026651324,59.16175237562274,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,53.64452706603333,43.424019456589306,64.18997569094498,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,55.06562113185646,44.960816882732615,65.66017104616185,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,47.246870161790866,39.14290582508547,55.454759720628495,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,62.43671405967325,52.875718563376,72.12581523302943,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,38.824997127463575,31.907029295133544,45.861773301825444,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,89.4499972522608,77.24917467669874,101.31874813247268,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,35.11562274803873,27.29909945834079,42.97345393963042,64,400,34957,new
+overcooked-v1/counter_circuit,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,returned_episode_returns,mean,183.190645408642,173.42421905520024,190.77429931759835,64,400,34957,new

@@ -35,3 +35,4 @@ setuptools<81
 
 jumanji==1.1.0
 jaxmarl==0.0.7
+mujoco-mjx==3.1.3
