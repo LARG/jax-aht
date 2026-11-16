@@ -1,0 +1,649 @@
+task,row_agent,row_label,col_agent,br_for_label,is_diag,metric_name,aggregate_stat,mean,ci_lower,ci_upper,num_episodes,max_episode_steps,eval_seed,seating
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],True,base_return,mean,205.625,190.9375,217.5,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,184.0625,165.0,201.5625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,43.4375,39.0625,47.5,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,76.5625,59.375,95.3125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,14.6875,11.875,17.5,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,35.9375,25.9375,47.1875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,11.25,8.4375,14.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,134.0625,112.1875,155.625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,17.1875,12.8125,21.5625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,13.75,10.625,17.1875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,10.9375,7.8125,14.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,100.0,75.9375,124.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,110.0,89.375,130.625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,42.5,28.125,58.75,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,11.875,9.375,14.375,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,10.9375,7.5,14.6875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,10.3125,7.5,13.125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,53.4375,36.5625,72.5,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,188.125,168.125,206.5625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],True,base_return,mean,207.5,193.4375,219.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,45.0,40.9375,49.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,103.125,80.9375,126.25,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,11.25,8.4375,14.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,24.0625,18.4375,29.6875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,8.125,5.3125,10.9375,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,111.5625,89.375,133.75,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,13.4375,10.0,16.875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,17.1875,13.75,20.625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,10.3125,7.5,13.125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,81.875,58.125,105.9375,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,187.5,170.0,203.4375,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,24.0625,17.8125,30.625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,8.75,6.25,11.25,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,10.3125,7.8125,12.8125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,10.3125,7.8125,12.8125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,62.8125,42.5,84.375,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,44.375,40.625,48.125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,52.1875,46.875,57.5,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],True,base_return,mean,220.3125,209.0625,229.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,79.375,59.6875,100.0,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,12.8125,10.0,15.625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,73.75,54.6875,93.125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,9.0625,6.25,11.875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,88.75,71.25,107.1875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,15.625,12.1875,19.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,18.4375,14.0625,22.8125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,10.3125,7.8125,12.8125,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,78.4375,58.75,98.75,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,45.9375,40.9375,50.9375,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,18.75,14.0625,23.75,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,17.5,13.125,22.1875,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,10.3125,6.875,14.0625,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,8.125,5.625,10.9375,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,44.6875,31.875,59.375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,71.5625,60.625,83.125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,101.5625,84.0625,119.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,45.0,40.625,49.375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],True,base_return,mean,119.375,101.25,137.8125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,21.875,17.1875,26.875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,34.6875,29.0625,40.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,30.3125,25.9375,34.6875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,110.0,91.25,129.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,27.1875,23.125,31.5625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,38.4375,33.75,43.125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,25.3125,21.25,29.375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,90.0,70.9375,109.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,51.875,46.25,58.125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,37.5,31.5625,43.44531249999932,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,37.1875,32.1875,42.1875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,31.875,26.5625,37.1875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,26.875,22.1875,31.5625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,44.375,38.4375,50.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,26.25,20.9375,31.875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,29.6875,24.6875,34.6875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,32.5,28.4375,36.875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,30.3125,25.9375,34.6875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],True,base_return,mean,176.5625,160.9375,190.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,58.4375,46.875,70.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,42.5,33.4375,51.875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,28.4375,24.0625,32.8125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,30.625,25.625,35.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,59.375,49.375,69.375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,39.0625,30.625,48.125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,37.8125,33.4375,42.1875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,28.125,24.0625,32.1875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,57.8125,51.25,64.375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,32.8125,28.125,37.5,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,30.9375,25.9375,35.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,47.5,38.4375,56.875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,76.875,65.9375,87.5,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,32.1875,26.875,37.5,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,35.625,30.625,40.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,52.1875,44.0625,60.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,40.0,34.375,45.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,47.5,39.6875,55.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf2_1 (0),brdiv-conf2,True,base_return,mean,137.1875,118.75,155.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,27.1875,21.5625,33.4375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,35.0,29.0625,40.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,29.0625,24.0625,34.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,19.6875,14.6875,25.0,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,25.0,19.6875,30.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,48.125,43.75,52.5,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,33.125,27.1875,39.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,57.5,51.5625,63.4375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,19.6875,15.3125,24.375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,20.625,16.5625,24.6875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,19.0625,15.3125,22.8125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_human_proxy (0),human_proxy,False,base_return,mean,80.3125,70.0,90.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,21.5625,17.5,25.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,22.1875,18.125,26.5625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,26.25,21.875,30.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,25.9375,21.25,30.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,24.375,18.75,30.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,34.0625,28.75,39.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],True,base_return,mean,68.4375,56.5625,80.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,21.875,17.1875,26.875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,26.5625,21.25,31.875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,82.5,68.125,97.1875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,37.8125,31.5625,44.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,23.75,19.0625,28.4375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,26.25,21.875,30.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,25.9375,21.25,30.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,40.9375,35.625,46.25,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,45.625,40.0,51.25,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,56.25,50.9375,61.25,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,44.375,38.125,50.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,142.1875,127.8125,155.9375,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,158.125,142.1875,173.125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,46.25,41.875,50.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,142.1875,125.9375,157.5,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,23.75,18.4375,29.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,32.8125,27.5,38.125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,21.875,17.5,26.25,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],True,base_return,mean,185.9375,175.625,194.6875,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,30.9375,26.25,35.625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,30.3125,26.5625,34.0625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,26.25,21.5625,30.945312499999318,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,77.8125,57.8125,98.75,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,126.5625,113.125,140.0,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,36.25,30.9375,41.5625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,30.625,25.9375,35.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,25.9375,21.5625,30.3125,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,22.1875,17.8125,26.5625,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,65.625,55.625,76.25,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,29.6875,24.6875,35.0,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,32.1875,25.9375,38.4375,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,52.8125,45.0,60.625,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,44.0625,37.5,50.625,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,28.75,22.5,35.0,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,33.4375,28.75,38.125,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,33.125,26.875,39.6875,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,33.4375,27.8125,39.0625,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_independent_agent_0_6 (0),independent_agent_0.6,True,base_return,mean,49.6875,41.875,57.5,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,35.0,28.125,41.875,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,32.8125,25.625,40.3125,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,20.3125,15.0,25.9375,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,38.75,32.1875,45.3125,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,45.0,36.25,53.75,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,38.4375,33.4375,43.4375,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,32.8125,26.5625,39.375,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,24.0625,18.125,30.3125,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_human_proxy (0),human_proxy,False,base_return,mean,51.5625,40.3125,63.125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,23.4375,19.375,27.5,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,25.9375,21.875,30.0,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,30.3125,25.3125,35.3125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,25.625,21.25,30.0,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,22.1875,17.5,26.875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,15.3125,11.5625,19.0625,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,67.1875,51.875,84.0625,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,20.9375,16.875,25.3125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,27.8125,23.75,32.1875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,base_return,mean,191.875,177.8125,204.0625,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,45.9375,35.3125,56.875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,22.5,17.8125,27.1875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,27.5,22.8125,32.1875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,19.6875,15.625,23.75,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,62.5,54.375,70.625,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,46.875,39.375,54.375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,96.5625,79.6875,114.375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,59.6875,48.125,71.875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,31.875,26.25,37.5,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,23.125,18.4375,28.4375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,27.8125,21.25,34.6875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,27.8125,22.1875,33.4375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,79.375,59.0625,100.3125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,40.0,32.8125,47.1875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,42.1875,34.6875,49.6875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,29.375,23.125,35.625,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,31.5625,25.625,37.5,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,65.3125,53.4375,77.5,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,base_return,mean,172.1875,156.875,185.625,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,28.4375,22.5,34.375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,32.8125,26.875,38.75,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,66.25,54.6875,77.8125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,50.3125,41.5625,59.375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,63.4375,52.8125,74.375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,64.6875,51.5625,78.4375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,125.625,110.0,140.9375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,56.5625,48.125,64.6875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,57.5,46.5625,68.4375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,43.4375,36.875,50.0,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,84.0625,73.125,95.0,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,32.8125,27.8125,37.8125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,50.3125,45.3125,55.3125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,24.375,18.75,30.0,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,60.625,48.75,72.5,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,20.0,15.625,24.375,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,33.75,28.4375,39.0625,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,17.8125,13.4375,22.5,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,base_return,mean,142.8125,132.8125,151.875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,72.1875,60.0,84.6875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,50.9375,40.9375,61.25,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,31.5625,25.3125,37.8125,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,29.375,24.0625,34.6875,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,26.875,21.5625,32.5,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,59.375,48.125,70.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,172.8125,158.11718750000017,186.875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,177.1875,165.3125,187.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,48.125,43.4375,52.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,134.375,116.5625,151.875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,19.0625,14.0625,24.375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,29.6875,23.4375,36.25,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,10.3125,7.5,13.4375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,131.875,115.625,147.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,23.75,18.429687500000185,29.375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,15.9375,11.5625,20.3125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,14.375,11.25,17.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,93.4375,74.0625,112.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,base_return,mean,248.4375,240.9375,254.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,27.5,19.0625,37.1875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,16.25,13.125,19.375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,14.375,11.25,17.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,13.125,10.3125,15.9375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,51.25,38.75,64.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,8.4375,5.9375,10.9375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,10.0,7.5,12.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,7.8125,5.3125,10.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,17.8125,13.125,22.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,49.375,41.875,56.875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,29.375,22.8125,35.9375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,15.3125,10.9375,20.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,10.3125,7.5,13.125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,21.25,16.875,25.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,17.5,12.5,23.125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,35.625,28.4375,43.125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,25.3125,19.6875,30.9375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,8.75,6.25,11.25,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,base_return,mean,63.75,57.8125,69.375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,15.9375,12.1875,20.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,10.625,7.5,13.75,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,14.6875,11.25,18.4375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,32.8125,27.1875,38.4375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,3.75,1.875,5.9375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,5.625,3.4375,7.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,5.9375,3.75,8.125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,6.875,4.0625,10.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,3.125,1.5625,5.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,10.625,6.5625,15.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,26.5625,20.9375,32.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,9.0625,6.25,11.875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,9.375,6.5625,12.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,23.75,18.75,29.0625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,10.9375,7.5,14.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,7.1875,4.6875,10.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,5.625,3.4375,7.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,3.75,1.875,5.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,base_return,mean,48.75,44.375,52.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,25.0,19.6875,30.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,24.375,19.0625,29.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,24.6875,19.0625,30.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,6.875,4.6875,9.375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,9.0625,6.5625,11.5625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,7.1875,4.6875,9.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,7.1875,4.375,10.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,7.8125,5.625,10.3125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,7.8125,5.3125,10.3125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,19.0625,14.375,23.75,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,7.8125,5.3125,10.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,8.125,5.3125,11.25,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,9.6875,6.5625,13.125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,20.3125,14.6875,25.9375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,5.9375,3.75,8.125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,6.875,4.6875,9.375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,8.75,6.25,11.25,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,26.875,21.875,31.875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,base_return,mean,55.9375,51.25,60.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,19.0625,15.625,22.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,base_return,mean,13.125,9.0625,17.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,7.8125,5.3125,10.3125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,5.625,3.4375,7.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,8.125,5.625,10.625,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,9.0625,6.5625,11.875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,10.0,7.5,12.5,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,10.625,7.8125,13.4375,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,33.75,25.625,42.1875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,9.6875,7.1875,12.1875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,8.75,6.25,11.25,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,27.1875,20.9375,33.75,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,18.4375,12.5,25.0,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,7.1875,5.0,9.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,9.375,6.875,11.875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,5.625,3.4375,7.8125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,18.125,11.5625,25.3125,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,18.75,13.4375,24.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,base_return,mean,94.0625,83.4375,104.6875,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,base_return,mean,17.5,11.25,24.375,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,35.9375,27.1875,45.0,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,44.375,32.8125,56.5625,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,50.3125,35.9375,65.9375,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,base_return,mean,31.875,23.125,41.25,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,base_return,mean,63.75,49.375,78.4375,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf2_1 (0),brdiv-conf2,False,base_return,mean,56.875,44.6875,69.375,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,base_return,mean,32.1875,22.8125,42.8125,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,base_return,mean,43.4375,31.875,55.625,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_independent_agent_0_6 (0),independent_agent_0.6,False,base_return,mean,26.25,19.6875,33.125,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,54.6875,39.6875,70.0,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,24.0625,19.375,28.75,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,55.625,45.3125,66.25,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,29.0625,23.4375,34.6875,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,53.125,43.125,63.125,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,28.75,24.375,33.4375,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,33.4375,26.875,40.3125,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,22.1875,17.8125,26.5625,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,base_return,mean,128.125,109.6875,146.25,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],True,returned_episode_returns,mean,218.60237720014993,203.10147668013232,231.30085764529647,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,195.414872944355,175.07424508184195,214.09868401139974,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,44.66874862910481,40.28511591750867,48.796111691754774,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,80.68906815652736,62.26638943781145,100.68924705507669,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,14.990624719881453,12.10232400106761,17.882050473906563,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,37.32734288024949,26.850682132488874,49.25007888287509,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,11.407031048263889,8.62185531030409,14.229687179294706,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,142.07345808151877,118.73005322432292,165.07834661889498,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,17.596874815470073,13.13749991007353,22.09767548933887,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,14.028124749835115,10.791406069310323,17.493808316992357,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,11.125780976028182,7.95156228550768,14.321874601281888,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,106.03595318208681,80.5741707485693,131.4677732839845,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,116.60547813773155,94.63898995816707,138.63255336582657,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,44.498439866059925,29.28664225446119,61.59537504135514,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,12.058593476365786,9.513281071904931,14.584374582927557,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,11.18593718460761,7.701562404898868,15.01253858284326,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,10.471874714363366,7.631249820334778,13.344530941243283,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (0),ippo_mlp[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,56.215629226353485,38.1044346193754,76.61266493223373,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,199.62346782686654,178.15527845027393,219.05878464281557,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],True,returned_episode_returns,mean,220.51878682972165,205.6492525696871,232.7461927652359,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,46.043749135918915,41.91640588592272,50.143748734449034,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,109.15548026567558,85.47944100046443,133.7109728941562,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,11.411718494142406,8.578124785986438,14.26876923930831,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,24.774998778884765,18.9882412652456,30.705486507026944,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,8.286718691000715,5.442187464926974,11.17265628639434,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,118.03438830381492,94.27623910316034,141.76659919802913,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,13.713281083328184,10.210156135220313,17.242187340032253,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,17.487499505630694,14.043710579794425,20.94691342523583,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,10.460156059707515,7.642968600540189,13.304687238256156,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,86.75470051210141,61.57059395005782,112.32529031384618,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,199.4672145843506,180.75777921229601,216.41043946594,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,24.77968648681417,18.312479904798966,31.52734212428477,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,8.889843637007289,6.363281178103352,11.417187292051675,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,10.485156125098001,7.952343624147761,13.014081922041076,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,10.477343547681812,7.9546873507439155,12.988281012300286,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (1),ippo_mlp[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,66.45078941615066,44.7591242759474,89.38614578635023,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,45.61640477180481,41.75312390625477,49.43048624098301,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,54.1820275070495,48.48749725187372,59.86345242653041,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],True,returned_episode_returns,mean,234.22113240958424,222.26718337510684,243.37037435770034,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,83.60938286792953,62.70859913522581,105.61799922561622,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,13.052343464281876,10.196855274261907,15.914882570391633,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,77.5757847429486,57.34894655403187,98.16195997501926,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,9.214062458602712,6.4085742201612454,12.053124822088284,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,93.0554764031549,74.30467284873302,112.77112352551194,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,15.917968744121026,12.441406372246274,19.427363469169357,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,18.978905445721466,14.478866543283221,23.494549719279163,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,10.586718678707257,8.031230305229839,13.124238202150444,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,82.93594409851357,61.977113492676295,104.38987344111956,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,47.69687254430028,42.43826016561361,52.86720381751656,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,19.36718699359335,14.447577821512825,24.586737675647598,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,18.077342766860966,13.544511048491405,22.98359214875818,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,10.557812285725959,7.0734177697988345,14.342187148872473,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,8.334374810336158,5.743730326551304,11.196874679782194,64,400,34957,new
+overcooked-v1/forced_coord,ippo_mlp (2),ippo_mlp[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,46.75781427632319,33.010839463703455,62.437758555161395,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,75.24140170228202,63.59751573995163,87.51171276810346,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,107.40000334382057,88.8638302884996,125.94084870219228,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,46.58202756673563,42.07499686728115,50.97189048306609,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],True,returned_episode_returns,mean,126.32266491674818,106.97873509375495,145.96657576817668,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,22.430468375387136,17.657812528887007,27.49302663648413,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,35.73202951584244,30.01874872954795,41.41954869865294,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,31.257030136010144,26.75232350328006,35.778904522700756,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,116.51094670919701,96.34187823795367,136.90673041949046,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,28.088280606316403,23.85390569299343,32.547674973418175,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,39.69687342667021,34.954666663479294,44.42343541059527,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,26.135155367606785,21.94921824564808,30.296873626930754,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,95.1476628848468,74.8623672756803,115.43694322027147,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,54.362496119807474,48.37009405098507,60.87735976971162,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,38.827341712254565,32.642049011558996,45.088336929914654,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,38.447653019451536,33.34529076559702,43.51571901277056,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,33.14687326014973,27.630447747861037,38.71333732800558,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,27.767186815210152,22.978886445875105,32.57976460767822,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (0),brdiv-conf1[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,46.059372562216595,40.09363086176745,52.204762780551384,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,26.87812464288436,21.462480222240266,32.56406174940057,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,30.36640567239374,25.299218566979107,35.47345617826795,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,33.68906107614748,29.481229348736814,38.09849463343271,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,31.15390536794439,26.575389741259286,35.6672453008723,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],True,returned_episode_returns,mean,187.67814763216302,171.042168909061,202.24561054592485,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,61.425779408367816,49.27318079449324,74.59331870637685,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,44.4492157343775,34.92490009323956,54.309429614037796,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,29.12187435053056,24.635136172297646,33.5820304568726,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,31.60156193433795,26.524999728548572,36.68437454381201,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,62.44765091512818,51.70376506014436,73.19702475233352,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,40.77187297993805,31.98355348671612,50.16347397269563,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,39.01406076585408,34.51167844868469,43.50079864798608,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,28.863281089172233,24.732772948827186,32.99689463276154,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,60.25937052373774,53.41476191921975,67.19690873026848,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,34.0187482542824,29.20697186192556,38.878161817346694,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,31.981248397030868,26.8804674885032,37.09765393868729,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,49.67499744327506,40.10605260606244,59.491559312661394,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf1 (2),brdiv-conf1[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,81.02421223535202,69.40620642445283,92.3906949663622,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,33.257811326533556,27.789823561091907,38.717185825636264,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,36.722654998651706,31.592167043799417,41.82109206370369,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,54.70858902367763,46.210874607466394,63.15241637948783,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,41.37109205179149,35.68357292294095,47.02189277945144,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,49.69609006081009,41.629528328352905,57.88050345673109,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf2_1 (0),brdiv-conf2,True,returned_episode_returns,mean,145.51094989781268,125.73567318393617,165.45257676690815,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,28.11718651111005,22.15148379419552,34.631307273959095,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,36.19843582547037,30.08433423265087,42.395349581519255,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,30.13671799970325,24.980429126028323,35.38982267505192,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,20.34687432210194,15.22890580783278,25.848514783137936,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,25.932811410049908,20.42496022967971,31.70937335862691,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,49.808590543456376,45.29060223160777,54.380621464294364,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,34.467186247580685,28.39214768842794,40.61486168094852,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,59.805464535951614,53.689000335335734,66.08362754806876,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,20.270312006643508,15.764062107236532,25.09691325582098,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,21.381249631289393,17.284179532072454,25.587498877626786,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,19.65390588680748,15.773437464755261,23.5859565706618,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf2 (1),brdiv-conf2,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,84.63905670074746,73.7538608420291,95.64161400038282,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,22.178906143875793,18.032792868255637,26.55236306914885,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,22.865624493861105,18.653886402821808,27.368749210747772,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,27.255468034825753,22.671796762861778,31.811776273525897,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,26.74921789910877,21.997635912940314,31.53906127886148,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,25.388279939594213,19.55859308975487,31.453142708157245,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,35.54687330761226,30.14531158253667,40.90312328809087,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],True,returned_episode_returns,mean,71.9210913842544,59.34374764997047,84.83054542826139,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,22.625780661939643,17.799218412756453,27.746893813445055,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,27.542186896665953,22.23042878349079,32.924218206389924,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,87.0117186846328,71.6874589363113,102.66648417573887,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,39.32577865757048,32.784373084493566,45.85394219798472,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,24.462499148154166,19.713261081671227,29.249998733805842,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,27.12656241620425,22.61794912564801,31.853144151681043,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,26.825780606886838,21.986679458912114,31.894530021294486,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,42.49452776345424,37.052340698370244,47.917984655092006,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,47.34452835936099,41.53120879824274,53.203922143316596,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,58.60858891019598,53.10624554464594,63.814877648651596,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (0),brdiv-conf3[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,46.31640331778908,39.78825916183705,52.828922111763674,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,150.58985165366903,135.26873608722818,165.2836435470439,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,167.89611103525385,150.93202662288678,183.90314183220033,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,47.58124702575151,43.13749759333732,52.003121662483316,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,150.92813559179194,133.5374687541451,167.3166538584686,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,24.421093047305476,19.018729903563507,29.919569428061365,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,33.808592701214366,28.403886005512323,39.28519405352708,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,22.465624368924182,18.0437300832622,26.911717805897933,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],True,returned_episode_returns,mean,197.82346296310425,186.76004352420568,207.18908817470074,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,31.958592950482853,27.18515560729429,36.73595606113958,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,31.12812420737464,27.26874957806867,34.95626864429796,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,27.026561963371933,22.21558550366608,31.925389724039825,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,82.27032216824591,60.975474339735236,104.5442513730784,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,134.28047186136246,119.97630884796382,148.60234960019588,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,37.38984202791471,31.904686354659496,42.91720482731034,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,31.626561040175147,26.83201052353834,36.40859172348864,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,26.820311743358616,22.387479890823307,31.263280317530736,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,22.699218321824446,18.233573747760968,27.171913713963292,64,400,34957,new
+overcooked-v1/forced_coord,brdiv-conf3 (2),brdiv-conf3[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,68.5640580598265,58.0499580395408,79.68907812880352,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,30.789842236205004,25.526502643033748,36.25937295910262,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,33.56952862784965,27.09368934901868,40.041520224127446,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,55.76093186147045,47.5475544337256,63.95702452439582,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,46.45077672007028,39.39216445478087,53.350014627323255,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,30.093748063081875,23.602303135696275,36.69999710396223,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,34.78984183672583,29.854647288666456,39.64220470192377,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,34.593747574137524,28.013260087279196,41.49691040143516,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,34.859372466860805,28.995232563398897,40.76097392369993,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_independent_agent_0_6 (0),independent_agent_0.6,True,returned_episode_returns,mean,51.77109043003293,43.576462672949134,60.06802308440237,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,36.79687162087066,29.617926973235445,43.99921454403229,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,34.41484133643098,26.849939935964358,42.30780909396708,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,21.28515505231917,15.71638569907518,27.199236991896758,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,40.81484063860262,33.96093560762383,47.67659822572895,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,47.29374582198216,38.18630537274294,56.48440893328079,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,40.36874623905169,35.04138322979706,45.58827679100941,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,34.238279134442564,27.592127830971734,41.12734118991939,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,25.239841801056173,19.05935387216159,31.835974075096598,64,400,34957,new
+overcooked-v1/forced_coord,independent_agent_0.6,independent_agent_0.6,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,54.38905724900542,42.384312655638496,66.5797393003595,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,23.982812035654206,19.878866811041373,28.129706358801922,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,26.62812456500251,22.503808315347126,30.72421816435526,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,31.31093604565831,26.189842633038644,36.465662359984705,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,26.254687071137596,21.77732389349549,30.748436702143227,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,22.871092797024176,18.018729984473612,27.757049463610745,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,15.761718464666046,11.906230297008007,19.716464197823367,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,70.6609397114371,54.30450945297344,88.60719063348513,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,21.56093741749646,17.387500127642124,25.979706635970796,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,28.587499851360917,24.381249928669423,33.01874960532878,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,returned_episode_returns,mean,203.94768622517586,188.97731110006572,216.82919138893482,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,48.16015263821464,36.91716516631859,59.87665568098454,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,23.124217975942884,18.32810509517003,27.923455876686784,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,28.297655684582423,23.476562202988134,33.17113182061148,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,20.26015624467982,16.121074201543525,24.403906056919368,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,65.83124298468465,57.27649757098261,74.37046109677611,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,49.11874591157539,41.28515329324146,56.98907670627523,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,102.32812989375088,84.21101944043477,121.44082609976465,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,62.840620964823756,50.435856153027274,75.92892137251182,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,32.841405106242746,27.07265569262672,38.62658063409617,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,23.819530702370685,18.939804358691617,29.221874071881757,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,28.877341658691876,22.06324116286414,36.204742724957754,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,28.80546712380601,23.014803470303015,34.74198980550713,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,84.2296939859516,62.70142970489833,106.36508612361065,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,41.84530885220738,34.24833690865926,49.563315565850644,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,43.82812265178654,35.977283101889775,51.822672706066804,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,30.431248695706017,24.06847542955075,36.89689241278683,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,32.679686535324436,26.662303901601994,38.95964698489549,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,68.95233916095458,56.274077842017874,81.92267096841533,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,returned_episode_returns,mean,182.72502208367223,166.4772250355134,196.91656987787428,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,29.527342690038495,23.41171791504894,35.79706883402831,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,33.973436111584306,27.90703023538517,40.1187674648565,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,69.77030665939674,57.55370628080564,82.12819640124508,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,52.64140204794239,43.34212575280981,62.30188901220387,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,66.93124560127035,55.85839433941292,78.55020948413292,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,68.01093680906342,53.998963263497,82.57349470525514,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,133.1679745852016,116.37338287091116,149.551824875921,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,59.59843225509394,50.81636309951428,68.13597037606814,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,60.653901398938615,49.22968456551316,72.17903746770607,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,44.96640397340525,38.20310359801515,51.853922699132816,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,88.66952331038192,76.8733906313486,100.29452248283778,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,33.81327997468179,28.73982315989997,38.87111162275396,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,52.09843394160271,46.80935268625617,57.385952879488464,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,25.10703036864288,19.361718190119426,30.816424686179378,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,63.85624551796354,51.25933294646675,76.56271004867737,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,20.70937467290787,16.249199200759175,25.28447238186053,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,34.91093628434464,29.485936727613442,40.342205521598224,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,18.36640607798472,13.911718846712029,23.070429643362868,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,returned_episode_returns,mean,151.4031274318695,140.66871145963668,161.0421922340989,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,76.50702628539875,63.461676884919875,89.78831643791636,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,53.182808416953776,42.62497787851171,64.25319731817726,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,32.549216593033634,26.182811036347992,39.0189032714319,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,30.644529707031325,25.093748915288597,36.20390413390123,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,27.7007805055473,22.2531047762066,33.40158120064007,64,400,34957,new
+overcooked-v1/forced_coord,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,62.40077693504281,50.649195610934115,74.16493555067426,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,183.41954898834229,167.64179280996325,198.31488569378854,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,188.4867386817932,175.8249805033207,199.86113731861113,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,49.63046634220518,44.85534950466827,54.208609993045684,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,142.5218852997059,123.58985173419205,161.04011091768768,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,19.572655499796383,14.397655800567009,25.12343640423351,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,30.71327977225883,24.18742113805056,37.56956853569572,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,10.551562406122684,7.6875000277417715,13.704687287389243,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,139.62969461089233,122.39369342757126,156.2640921342376,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,24.45078100101091,18.906132612966836,30.191445041904803,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,16.268749649228994,11.843749783627572,20.760936906993447,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,14.767968416970689,11.610136454291933,17.967968163677142,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,98.85703577450477,78.12703418819002,119.10238835734489,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,returned_episode_returns,mean,265.10006189346313,256.9163103461266,271.7719576537609,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,28.724218178540468,19.875760592584268,38.81888622016703,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,16.615624642872717,13.469511548326409,19.837499287609536,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,14.698437381593976,11.549960703135003,17.88126944557007,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,13.445312494586688,10.596855416645122,16.316445237906006,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,53.99843614117708,40.753025739105944,68.44156450454173,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,8.624218732700683,6.101562546957576,11.155468627007213,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,10.196093672828283,7.672636637132382,12.716406166787783,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,7.985937494726386,5.417167878506008,10.82580074254074,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,18.339843219786417,13.496874571047375,23.46796777406853,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,51.76093297597254,43.850777847752035,59.48048290556762,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,30.249998199753463,23.50310401063034,37.08517309165181,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,15.866405618435238,11.332792686193716,20.788299669590195,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,10.567968702933285,7.742187458800617,13.441406221980287,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,21.88906209502602,17.39140600466344,26.394550380033614,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,18.243749028944876,12.962499428819864,24.12036962147103,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,37.070309823961,29.460154561782836,44.94296464526851,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,26.13671729597263,20.385897671767452,31.90550559952971,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,8.980468649300747,6.459355380976922,11.49689442453964,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,returned_episode_returns,mean,66.72186949849129,60.595952375978236,72.56098979711533,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,16.37812425516313,12.481991807356827,20.60943237257597,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,10.977343440579716,7.76248021356878,14.267987839061242,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,15.184374887205195,11.546035312146707,19.13828068521252,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,34.228904038784094,28.368728701749934,40.10706746974901,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,3.8882813047384843,1.9796679608974959,6.105468799448863,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,5.81093773356406,3.5953126197113305,8.05546902014321,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,6.1328126739826985,3.9156251019696358,8.385976818209743,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,7.132031429966446,4.2734376679931305,10.306250329280738,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,3.307031405624002,1.6898437983720214,5.222656465663749,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,11.083593495306559,6.949960855131213,15.549277007445921,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,27.265623945684638,21.58279201983387,33.25546762656158,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,9.307812638173345,6.4492190056218535,12.238281346607256,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,9.695312657684553,6.807031507523789,12.870312576663855,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,24.48749880824471,19.33203032386955,29.855506281164704,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,11.214843625202775,7.739843624981586,14.978925665561109,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,7.349999970931094,4.791406357343658,10.17656250760192,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,5.818750221398659,3.6179688749354684,8.044531603134237,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,3.914843829057645,2.0226563289179467,5.8648634085460785,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,returned_episode_returns,mean,50.5124953687191,46.08200752437115,54.75708449035882,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,25.814842787163798,20.326542386034273,31.55158062013652,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,25.108592552191112,19.637440596218223,30.610174627680678,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,25.50624888011953,19.61638622535247,31.61093579368462,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,7.031250048137736,4.794531244461541,9.520371011686798,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,9.223437535576522,6.710937522949825,11.742988286058242,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,7.348437524575274,4.817187583664781,9.917187632640708,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,7.352343524224125,4.567890635092046,10.216405893611954,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,7.931249922839925,5.6773241994422285,10.441425668440932,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,7.918749779870268,5.398437474343519,10.486796643180417,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,19.474218088551424,14.699979984937817,24.29843648295064,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,7.9945312445634045,5.432812540890882,10.82656243583042,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,8.353906274714973,5.468730420447537,11.542187485007162,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,9.99531239294447,6.7851563088872355,13.46253894636611,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,20.8203115464421,15.096835177108007,26.617205970804207,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,6.0164062205003574,3.8101562621537597,8.24999997063569,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,7.015624929510523,4.788281178851321,9.508593584147457,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,8.934375078300945,6.414062553964323,11.453125066614302,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,27.71484271902591,22.539842989663885,32.91095584842842,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,returned_episode_returns,mean,58.31718298792839,53.56396105960012,63.22425312772393,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,19.458593356830534,15.88273405199434,23.21955004556075,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,13.516405839822255,9.362499876126822,17.93931568538535,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,8.037499964761082,5.5570117492054125,10.516445232703695,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,5.8093751079868525,3.6085742051247514,8.03437515545229,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,8.400000036752317,5.887500006344635,10.922656269543221,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,9.318749799276702,6.769492082302168,12.084394199668894,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,10.149999982735608,7.630468802206451,12.691425762001016,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,10.857812459231354,8.01328120896942,13.724238288879858,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,35.30234116432257,26.80296665595088,44.065660711977394,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,9.84921870281687,7.346835872785596,12.365624887560262,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,8.991406436020043,6.49841811945953,11.514863631673505,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,28.41406073019607,21.825741037163244,35.41109189503476,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,19.125780219153967,12.982772820841639,25.947654434025754,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,7.4562499659950845,5.2031250371859645,9.956269484591028,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,9.591406298917718,7.086718747272971,12.10390630710026,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,5.889062554575503,3.6718749888736055,8.135156304287374,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,18.992186447198037,12.102343206832302,26.54687340654782,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,19.582811373576988,14.047636134939967,25.567186169323396,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,returned_episode_returns,mean,99.32968113425886,88.00766998505424,110.47278861197118,64,400,34957,new
+overcooked-v1/forced_coord,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,18.450780065904837,11.911698833768606,25.582127032529378,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,37.3890601581661,28.1929477026657,47.00866834277112,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,46.511715883389115,34.325681681219436,59.56798398932151,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,53.030466729949694,37.777303067837785,69.47816124348027,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf1_0 (0),brdiv-conf1[0],False,returned_episode_returns,mean,33.49296585994307,24.14603398915497,43.44064021444792,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf1_2 (0),brdiv-conf1[1],False,returned_episode_returns,mean,67.26640217355452,52.04060287860775,82.93765153735147,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf2_1 (0),brdiv-conf2,False,returned_episode_returns,mean,59.92655996128451,47.07406027752441,73.24695050143927,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf3_0 (0),brdiv-conf3[0],False,returned_episode_returns,mean,33.564842349733226,23.729608854459368,44.78605267448728,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_brdiv_conf3_2 (0),brdiv-conf3[1],False,returned_episode_returns,mean,45.64765283529414,33.576462833245756,58.39626521210737,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_independent_agent_0_6 (0),independent_agent_0.6,False,returned_episode_returns,mean,27.24999939254485,20.410898225929124,34.453905203993784,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,57.830467594147194,42.00997976905783,74.14230277605965,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,25.071092677651905,20.308397330011942,29.988318703495313,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,58.36952568916604,47.54050316212088,69.64846943329903,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,30.66484131856123,24.760095644477406,36.61486048406659,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,55.561714321549516,45.17413693330018,65.99767011264339,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,29.71640504040988,25.149999557458795,34.47900223472824,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,34.79062246705871,28.01482218822639,41.871989281507545,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,22.907811856654007,18.38279265669262,27.482831232025635,64,400,34957,new
+overcooked-v1/forced_coord,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,returned_episode_returns,mean,135.92657084477833,116.2091880060194,155.08370084108319,64,400,34957,new

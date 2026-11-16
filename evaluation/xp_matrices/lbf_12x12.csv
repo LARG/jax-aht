@@ -1,0 +1,649 @@
+task,row_agent,row_label,col_agent,br_for_label,is_diag,metric_name,aggregate_stat,mean,ci_lower,ci_upper,num_episodes,max_episode_steps,eval_seed,seating
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_ippo_mlp (0),ippo_mlp,True,percent_eaten,mean,93.48959058523178,89.84375685453415,96.8750074505806,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,94.79167431592941,91.40625774860382,97.65625768899918,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,86.19792425632477,81.51042407751083,90.36459130048752,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,86.45834052562714,80.98958998918533,91.40625751018524,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,93.22917431592941,89.32292437404394,96.35417449474335,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,78.12500667572021,71.87500619888306,84.11459010839462,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,84.11459004878998,77.60417288541794,90.10417395830154,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,76.041672706604,69.0104221701622,82.55209004878998,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,80.46875619888306,72.1354221701622,88.28125673532486,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,70.57292264699936,62.23958855867386,78.64583969116211,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,77.6041728258133,69.79167205095291,84.89584010839462,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,98.43750768899918,96.35417449474335,99.7395910024643,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,91.66667437553406,88.0208407625556,95.05209112167358,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,61.45833867788315,56.51042139530182,66.40625590085983,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,88.02084064483643,82.81250679343938,92.70834094285965,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,83.85417413711548,78.38542360067368,88.80209106206894,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,95.57292461395264,93.22917473316193,97.65625786781311,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,77.86458945274353,69.27083867788315,85.93750667572021,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,86.97917395830154,82.29167371988297,91.14584106206894,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,True,percent_eaten,mean,84.3750067949295,78.90625619888306,89.58334040641785,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,82.29167395830154,77.86459022760391,86.45834118127823,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,72.39583945274353,65.10417228937149,79.42708986997604,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,82.55209058523178,77.60417371988297,87.239590883255,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,73.43750607967377,67.96875542402267,78.90625655651093,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,75.00000655651093,67.96875643581151,81.51042383909225,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,64.06250542402267,56.51042151451111,71.3541728258133,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,66.66667205095291,58.854171513020994,74.21875584125519,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,69.53125596046448,62.76042181104422,76.30209016948939,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,58.33333832025528,49.73958772420883,66.66667229086161,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,82.03125709295273,76.30208992958069,87.50000733137131,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,80.7291738986969,75.78125649690628,85.67709064483643,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,63.020839154720306,58.333338379859924,67.70833998918533,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,77.6041733622551,71.35417306423187,83.33334064483643,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,75.78125661611557,70.05208951234818,81.25000709295273,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,82.03125733137131,76.30208992958069,87.2395910024643,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,71.0937557220459,63.02083832025528,79.16667282730342,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,85.41667395830154,80.72917348146439,89.84375768899918,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,85.41667395830154,80.20834004878998,90.10417467355728,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_0 (0),comedi[0],True,percent_eaten,mean,78.38542342185974,73.17708957195282,83.33334070444107,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,65.88542240858078,59.375005066394806,72.13542294502258,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,81.51042360067368,76.30208963155746,86.458340883255,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,74.73958975076675,69.27083921432495,79.9479238986969,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,74.21875649690628,68.75000607967377,79.6875067949295,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,62.2395886182785,54.68750470727682,69.53125578165054,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,63.54167193174362,57.03125482797623,70.0520891547203,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,61.197922348976135,54.42708820104599,67.96875602006912,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,64.32292211055756,56.77083790153265,71.87500607967377,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,75.00000697374344,69.5312562584877,80.208340883255,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,75.26042330265045,69.2708392739296,80.98959052562714,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,54.94792127609253,50.0000039935112,59.8958386182785,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,73.69792306423187,67.18750560283661,79.95443441271725,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,67.44792264699936,59.89583873748779,74.47917348295451,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,81.51042413711548,77.08334016799927,85.93750762939453,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,72.65625584125519,65.88542193174362,79.16667306423187,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,72.13542252779007,64.0625051856041,79.68750655651093,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,72.39583957195282,65.10417222976685,79.42708992958069,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,70.83333969116211,64.58333897590637,77.08334016799927,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_2 (0),comedi[1],True,percent_eaten,mean,86.19792413711548,80.7291738986969,90.88542485237122,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,71.3541728258133,65.3645887374878,77.34375673532486,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,78.64584022760391,73.69792306423187,83.59375715255737,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,73.17708933353424,66.14583879709244,79.6875067949295,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,66.66667228937149,59.6354216337204,73.69792276620865,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,64.32292187213898,56.50391063839213,72.13542246818542,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,65.3645892739296,58.07292193174362,72.65625649690628,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,62.760422229766846,54.68750458955765,70.83333939313889,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,83.59375697374344,77.60417318344116,89.06250739097595,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,82.81250715255737,77.08333992958069,88.0208410024643,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,51.56250423192978,45.833337128162384,57.03125488758087,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,75.52083998918533,68.75000613927841,81.77084052562714,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,79.68750685453415,72.91667318344116,85.67709094285965,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,86.45834094285965,81.77084052562714,90.88542449474335,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,53.90625423192978,46.614586889743805,61.458338260650635,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,85.6770903468132,80.72917306423187,90.36459076404572,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,80.72917342185974,74.73958975076675,86.19792395830154,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,79.94792395830154,75.52083998918533,84.11459130197764,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,66.66667264699936,59.63542187213898,73.43750673532486,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_4 (0),comedi[2],True,percent_eaten,mean,87.76042407751083,83.07292395681142,91.92709094285965,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,80.20834016799927,74.21875631809235,85.93750715255737,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,76.56250661611557,70.05208957195282,82.55209040641785,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,59.11458820104599,52.08333748579025,66.1458387374878,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,54.16667103767395,46.3541704416275,61.97917169332504,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,57.29167139530182,49.47917062044144,65.3645886182785,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,75.26042288541794,67.70833879709244,82.55208998918533,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,85.15625751018524,80.20834046602249,89.58334130048752,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,82.03125673532486,76.56250631809235,87.23959028720856,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,55.989588022232056,50.781254291534424,61.19792193174362,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,72.65625596046448,66.14583867788315,79.16667288541794,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,72.39583951234818,66.40625560283661,78.12500667721034,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,80.20834076404572,75.0000069141388,84.89584141969681,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,65.10417228937149,57.031254947185516,72.916672706604,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,72.39583945274353,65.62500554174184,78.90625667572021,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,70.31250607967377,63.281255304813385,77.08334010839462,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,64.58333891630173,58.59375488758087,70.5729228258133,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,79.94792306423187,73.95833933353424,85.67709004878998,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,67.70833879709244,60.156254947185516,75.00000590085983,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_6 (0),comedi[3],True,percent_eaten,mean,82.0312569141388,77.08333975076675,86.71875739097595,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,73.17708951234818,66.66667228937149,79.42708986997604,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,61.19792193174362,53.90625452846289,68.4895891547203,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,68.22917228937149,60.15625488758087,76.04167288541794,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,66.66667264699936,59.11458855867386,73.95834004878998,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,64.8437551856041,57.552087903022766,72.13542228937149,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,80.98959016799927,74.73958963155746,86.71875727325678,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,80.20834022760391,74.73958998918533,85.41667383909225,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,46.093753933906555,40.88542002439499,51.302087903022766,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,76.04167300462723,69.79167246818542,82.0312567949295,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,73.69792300462723,66.14583909511566,80.72917354106903,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,84.37500774860382,79.16667413711548,89.06250786930323,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,64.0625051856041,55.72917097657919,72.13542264699936,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,70.31250590085983,62.76042187213898,77.34375661611557,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,72.13542276620865,64.84375542402267,79.16667330265045,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,61.19792181253433,54.16667115688324,68.2291721701622,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,75.52083951234818,69.01042222976685,81.77084010839462,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,65.10417228937149,58.07292187213898,71.87500596046448,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,75.26042294502258,68.48958921432495,81.51042348295451,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_8 (0),comedi[4],True,percent_eaten,mean,80.20834028720856,74.73958969116211,85.41667401790619,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,61.19792181253433,53.38542103767395,68.75000596046448,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,63.02083885669708,54.94792157411575,70.83333963155746,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,66.14583891630173,59.114588260650635,73.17708951234818,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,69.79167252779007,60.937505185604095,78.12500655651093,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,80.20834016799927,73.95833986997604,85.93750715255737,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,76.30209022760391,70.31250691264867,81.77084070444107,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,49.73958718776703,45.57292014360428,54.16667086035013,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,75.00000643730164,68.75000578165054,80.9895903468132,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,75.7812562584877,69.27083897590637,82.03125685453415,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,84.63542419672012,79.68750709295273,89.32292425632477,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,58.072921335697174,49.73958736658096,66.4062551856041,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,62.23958832025528,52.60417079925537,71.61458909511566,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,75.260422706604,66.66667199134827,83.33333992958069,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,67.70833909511566,59.89583832025528,75.26042312383652,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,72.65625584125519,63.54167187213898,81.2500064983964,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,82.29167371988297,75.26042318344116,88.54167431592941,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,68.48958945274353,60.41667240560055,76.0416733622551,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,64.5833387374878,55.98958820104599,72.91667264699936,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_lexi (0),seq_agent_lexi,True,percent_eaten,mean,94.79167419672012,90.88542371988297,97.9166744351387,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,36.19791954755783,28.125002145767212,44.791670083999634,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,62.76042187213898,53.64583772420883,71.61458933353424,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,40.8854199051857,32.81250250339508,49.218753814697266,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,96.61459070444107,92.70834040641785,99.47917425632477,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,91.92709076404572,86.97917354106903,96.09375762939453,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,49.73958742618561,45.05208706855774,54.427087903022766,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,73.95833939313889,65.62500554323196,81.77084004878998,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,81.77083998918533,75.260422706604,87.76042395830154,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,91.14584070444107,86.71875721216202,95.05209094285965,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,19.53125149011612,14.322917759418488,25.520835280418396,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,75.00000578165054,65.88542175292969,83.59375643730164,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,82.29167312383652,74.21875578165054,89.5833403468132,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,71.61458933353424,64.5833387374878,78.64583957344294,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,74.7395892739296,65.88542175292969,83.07943388670625,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,73.43750596046448,65.88542181253433,80.72917300462723,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,83.33334004878998,76.30208939164876,89.84375709295273,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,78.1250062584877,70.31250554323196,85.41667371988297,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,56.51042115688324,47.13542038202286,65.88542169332504,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_rlexi (0),seq_agent_rlexi,True,percent_eaten,mean,97.65625756978989,95.31250739097595,99.47917437553406,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,61.97917199134827,52.86458796262741,70.83333939313889,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,51.041670978069305,41.66667020320892,60.15625512599945,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,92.44792383909225,86.97917354106903,96.87500756978989,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,94.53125786781311,90.88542425632477,97.39584136009216,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,40.8854199051857,35.67708611488342,46.35417026281357,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,82.03125661611557,75.00000613927841,88.28125733286143,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,89.84375721216202,84.11459004878998,94.79167425632477,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,93.48959124088287,89.32292461395264,96.61459136009216,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,46.35417026281357,37.23958617448807,55.729170978069305,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,60.93750482797623,51.56250417083502,70.31250554323196,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,72.65625602006912,64.32292193174362,80.46875673532486,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,74.2187562584877,66.92708897590637,80.98959046751261,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,75.26042300462723,67.18750560283661,82.81250697374344,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,75.26042306423187,67.96875560283661,82.0312570348382,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,72.39583939313889,65.62500536441803,78.90625655651093,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,69.53125560283661,62.23958820104599,76.8229228258133,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,64.32292175292969,55.20833778381348,73.17708909511566,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,47.39583706855774,39.06250321865082,55.46875447034836,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_col (0),seq_agent_col,True,percent_eaten,mean,97.13542419672012,93.2291738986969,99.7395910024643,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,19.270834922790527,14.583334565162659,24.218752145767212,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,95.57292413711548,91.14584064483643,98.95834094285965,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,91.6666738986969,85.93750673532486,96.61459082514048,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,50.26042079925537,45.05208683013916,55.72917115688324,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,71.61458897590637,63.802088379859924,79.16667276620865,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,83.59375673532486,76.5625065550208,89.84375715255737,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,93.48959124088287,90.364590883255,96.35417449474335,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,26.562502086162567,20.052084863185883,33.593752682209015,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,80.46875637769699,72.13542234897614,88.02084022760391,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,84.11459016799927,77.08333939313889,90.62500715255737,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,70.8333392739296,63.8020886182785,77.60417318344116,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,69.27083867788315,59.37500458955765,78.385422706604,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,76.04167294502258,67.70833891630173,83.85417348146439,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,88.0208403468132,81.77083969116211,93.48959076404572,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,77.86458957195282,70.57292222976685,85.15625661611557,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,59.8958380818367,50.781254172325134,68.75000560283661,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,58.07292127609253,48.69792062044144,67.18750524520874,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,30.46875250339508,22.656251847743988,38.802086651325226,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_rcol (0),seq_agent_rcol,True,percent_eaten,mean,98.177090883255,94.79167401790619,100.00000762939453,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,93.22917401790619,88.2812569141388,97.39584094285965,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,92.18750721216202,87.23959004878998,96.35417425632477,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,45.05208706855774,39.58333647251129,50.52083790451288,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,80.46875655651093,72.65625602006912,87.50000727176666,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,92.44792407751083,87.50000697374344,96.6145910024643,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,95.83334118127823,92.70834106206894,98.17709124088287,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,44.53125339746475,35.67708605527878,53.385420739650726,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,83.07292371988297,76.3020898103714,89.06250751018524,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,72.13542240858078,63.02083820104599,80.72917306423187,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,77.86458998918533,70.8333392739296,84.63542360067368,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,89.8437574505806,84.63542371988297,94.27084118127823,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,77.34375649690628,71.09375590085983,83.33333998918533,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,87.50000721216202,81.25000661611557,93.22917395830154,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,81.25000649690628,74.479172706604,87.50000697374344,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,72.91667234897614,64.84375500679016,80.72917288541794,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,68.48958885669708,59.11458802074194,77.604172706604,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,75.26042300462723,67.44792204946279,82.81250679641963,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,61.1979216337204,51.82292091846466,70.57292217165232,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_nearest (0),seq_agent_nearest,True,percent_eaten,mean,97.65625762939453,95.57292425632477,99.21875774860382,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,93.75000774860382,89.32292419672012,97.13542461395264,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,46.09375375509262,41.145836651325226,51.04167109876871,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,90.10417401790619,84.63542360067368,94.79167431592941,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,91.14584070444107,86.19792360067368,95.31250774860382,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,95.0520910024643,91.92709076404572,97.65625786781311,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,43.48958671092987,35.15625274181366,52.08333736658096,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,59.375004529953,50.52083718776703,68.22917187213898,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,71.0937557220459,62.76042169183493,79.16667312383652,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,64.58333879709244,55.98958778381348,72.91667264699936,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,63.02083855867386,54.166670978069305,71.87500596046448,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,64.84375548362732,56.25000470876694,73.17708969265223,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,76.30208969116211,68.4895891547203,83.59375685453415,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,70.31250590085983,61.97917175292969,78.12500661611557,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,59.89583832025528,51.3020875453949,68.48958879709244,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,54.16667091846466,44.79167032241821,63.281254947185516,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,64.06250536441803,54.94792127609253,72.91667300462723,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,52.343754172325134,42.1875034570694,62.500005066394806,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,89.58334028720856,83.33333975076675,95.05209070444107,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_farthest (0),seq_agent_farthest,True,percent_eaten,mean,94.27084070444107,89.32292354106903,98.43750751018524,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,48.95833730697632,44.01042014360428,53.90625464916229,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,75.26042264699936,67.44792205095291,82.55208992958069,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,86.71875685453415,80.20833963155746,92.44792395830154,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,85.15625703334808,77.60417282432317,91.92709070444107,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,26.82291877269745,20.312501549720764,33.85416924953461,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,25.781251966953278,21.09375160932541,30.468752324581146,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,28.906252205371857,24.47916853427887,33.593752562999725,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,28.906252324581146,23.95833534002304,33.85416954755783,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,35.156252801418304,29.687502324581146,40.62500339746475,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,18.489584743976593,14.062501072883606,22.91666841506958,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,29.42708557844162,23.958335161209106,35.156252682209015,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,33.0729193687439,27.86458545923233,38.541669964790344,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,21.614584982395172,17.187501311302185,26.04166865348816,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,24.47916865348816,19.791668176651,29.687502443790436,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,28.9062522649765,23.958335161209106,33.8541693687439,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,21.35416841506958,16.666667997837067,26.30208557844162,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,25.260418713092804,20.572918236255646,30.208335995674133,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,30.208335757255554,25.52083534002304,34.89583641290665,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_entitled_agent (0),entitled_agent,True,percent_eaten,mean,55.46875458955765,51.30208748579025,59.63542169332504,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,30.46875238418579,26.30208534002304,34.89583599567413,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,25.520835280418396,20.833334922790527,30.208335638046265,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,24.218751907348633,20.052084863185883,28.64583557844162,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,23.437501847743988,17.968751430511475,29.16666889190674,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,92.44792395830154,87.50000685453415,96.8750074505806,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,89.06250697374344,83.07292312383652,94.27084082365036,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,88.28125756978989,83.85417366027832,92.44792437553406,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,96.87500774860382,94.79167425632477,98.69792449474335,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,92.708340883255,88.02084076404572,96.61459112167358,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,94.79167425632477,90.62500739097595,98.1770910024643,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,94.79167425632477,91.66667401790619,97.65625751167536,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,84.89584010839462,78.1250062584877,90.8854238986969,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,92.18750756978989,88.54167395830154,95.57292407751083,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,82.55209022760391,76.82292294502258,88.02084064483643,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,89.84375721216202,85.1562567949295,94.01042419672012,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,97.13542425632477,93.75000733137131,99.47917437553406,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,94.79167419672012,91.14584094136953,97.65625774860382,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,77.60417413711548,74.21875715255737,80.98959082365036,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_greedy_closest_teammate (0),greedy_closest_teammate,True,percent_eaten,mean,96.61459076404572,92.70834040641785,99.7395910024643,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,83.59375667572021,77.08333945274353,89.58334046602249,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,90.10417437553406,85.15625732988119,94.27084141969681,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,80.98958969116211,73.69792246818542,87.76042354106903,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,72.13542258739471,64.3229221701622,79.42708986997604,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,69.53125584125519,61.97917169332504,76.82292312383652,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,60.41667151451111,54.68750441074371,66.14583855867386,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,66.66667211055756,59.114588141441345,73.95833939313889,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,69.53125596046448,63.281255066394806,75.78125649690628,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,75.00000673532486,68.75000607967377,80.98959058523178,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,77.3437567949295,71.0937562584877,83.07292395830154,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,64.5833386182785,57.291671216487885,71.87500566393138,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,70.05208909511566,62.50000512599945,77.34375637769699,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,72.13542258739471,64.84375530481339,79.16667306423187,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,60.93750500679016,53.64583784341812,68.22917234897614,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,93.22917401790619,88.54167371988297,97.13542431592941,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,94.79167431592941,91.14584046602249,97.9166744351387,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,46.09375387430191,41.66667002439499,50.52083778381348,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,74.47917288541794,66.6666721701622,81.77083998918533,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_greedy_lowest_level (0),greedy_lowest_level,True,percent_eaten,mean,90.62500727176666,84.89583992958069,95.57292431592941,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,93.22917377948761,87.7604233622551,97.39584076404572,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,38.28125298023224,31.770835757255554,45.3125034570694,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,71.35417252779007,63.541672229766846,78.90625620037318,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,72.39583897590637,63.802088379859924,80.46875631809235,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,65.10417199134827,58.072921454906464,71.87500613927841,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,56.51042139530182,48.43750381320715,64.58333879709244,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,69.2708391547203,61.71875488758087,76.82292306423187,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,72.3958391547203,64.32292187213898,80.20833957195282,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,79.68750667572021,72.91667288541794,85.93750727176666,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,52.86458748579025,44.01042014360428,61.7187547698617,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,51.302087247371674,41.927086532115936,60.67708796262741,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,69.0104221701622,59.63542127609253,78.12500613927841,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,47.91667032241821,38.80208629369736,57.29167103767395,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,94.79167401790619,90.36459022760391,98.43750762939453,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,92.4479238986969,86.45834010839462,97.39584082365036,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,41.40625321865082,35.156252682209015,47.91667038202286,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,75.26042276620865,67.18750536441803,82.81250667572021,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,90.62500733137131,85.41667348146439,95.0520910024643,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_greedy_highest_level (0),greedy_highest_level,True,percent_eaten,mean,98.17709106206894,96.09375768899918,99.7395910024643,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_human_proxy (0),human_proxy,False,percent_eaten,mean,29.42708557844162,22.91666841506958,36.45833611488342,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_ippo_mlp (0),ippo_mlp,False,percent_eaten,mean,60.93750488758087,53.385420978069305,68.48958867788315,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,percent_eaten,mean,63.28125512599945,56.770837903022766,69.79167234897614,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_0 (0),comedi[0],False,percent_eaten,mean,56.510421454906464,50.52083760499954,62.23958873748779,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_2 (0),comedi[1],False,percent_eaten,mean,57.291671335697174,51.04167067855597,63.54167187213898,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_4 (0),comedi[2],False,percent_eaten,mean,53.64583772420883,47.39583706855774,60.41667139530182,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_6 (0),comedi[3],False,percent_eaten,mean,54.42708772420883,48.177087247371674,60.677088260650635,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_8 (0),comedi[4],False,percent_eaten,mean,60.156255066394806,53.12500447034836,66.92708909511566,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_lexi (0),seq_agent_lexi,False,percent_eaten,mean,44.79167032241821,38.281252920627594,51.562504172325134,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,percent_eaten,mean,50.000004053115845,42.9687534570694,57.03125471025705,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_col (0),seq_agent_col,False,percent_eaten,mean,43.22917020320892,36.197919607162476,50.52083736658096,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_rcol (0),seq_agent_rcol,False,percent_eaten,mean,47.6562539935112,40.364586532115936,55.208337903022766,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_nearest (0),seq_agent_nearest,False,percent_eaten,mean,63.80208879709244,56.7708380818367,70.83333939313889,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_farthest (0),seq_agent_farthest,False,percent_eaten,mean,64.58333885669708,57.81250476837158,71.3541728258133,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_entitled_agent (0),entitled_agent,False,percent_eaten,mean,46.093753695487976,41.145836532115936,51.30208748579025,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,percent_eaten,mean,54.16667115688324,47.13542056083679,61.19792169332504,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_greedy_lowest_level (0),greedy_lowest_level,False,percent_eaten,mean,50.5208375453949,43.48958683013916,57.552088499069214,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_greedy_highest_level (0),greedy_highest_level,False,percent_eaten,mean,61.19792193174362,54.166671393811704,67.96875602155924,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,percent_eaten,mean,52.604170978069305,44.01042032241821,61.1979216337204,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_ippo_mlp (0),ippo_mlp,True,returned_episode_returns,mean,0.46354169282130897,0.44322918890975416,0.4817838940711215,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.46979169896803796,0.45104169938131233,0.4859375343716238,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.4223958619986661,0.396875027740316,0.4460937834825017,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.42500002472661436,0.3955729405512102,0.45182294679107143,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.4640625312458724,0.4440104493231047,0.48125003185123205,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.3851562743075192,0.35312501940061336,0.41562502970919013,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.414583352743648,0.3794271018035943,0.4471354362554848,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.3664062676834874,0.32890626420412444,0.40234376816952133,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.3958333599730395,0.35208335119241385,0.4364583589165704,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.34557293477701023,0.3020833523172769,0.38697918360558103,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.3815104386303574,0.3411393365502592,0.419270861565019,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.4919271166436374,0.4820312754949555,0.4989583669230342,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.45442710700444877,0.4338541868957691,0.4729166901728604,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.2895833467482589,0.26354167924728245,0.31588542811368825,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.4367187792668119,0.4096354451030493,0.4609375325962901,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.41302084969356656,0.3843750210886355,0.4390625189989805,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4750000322237611,0.4614583700778894,0.48645836720243096,64,128,34957,new
+lbf/lbf_12x12,ippo_mlp (0),ippo_mlp,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.38072918815305457,0.3341146033766563,0.42395835482893746,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.4286458573769778,0.40312502019805835,0.4523437715077307,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,True,returned_episode_returns,mean,0.4166666907258332,0.38697919200058095,0.4440104435314424,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3979166937060654,0.3731771046179347,0.42187503376044333,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.3539062723866664,0.31718752013839546,0.3898437783413101,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.4036458539776504,0.37708335113711655,0.42942710524075667,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.357031270628795,0.32760418927064167,0.3859375255124178,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.3609375228988938,0.32343752412707544,0.3963541929872008,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.30729167768731713,0.26848959451308474,0.34583334601920795,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.32031251583248377,0.27942709560738876,0.36015626672888174,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.3307291867095046,0.2927083511603996,0.3684896078222664,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.28255209751660004,0.23828126093139873,0.32578126389416867,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.402343770081643,0.3716146052378463,0.43151043472462336,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.3981771091930568,0.3726562743540853,0.42291669570840895,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.29218751413282007,0.2658854282897664,0.3184895971789956,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.3781250240863301,0.3450521071179537,0.4093750274143531,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.36875001509906724,0.33828126487060217,0.39817710034549236,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4057291916105896,0.3763021067308728,0.4322916898003314,64,128,34957,new
+lbf/lbf_12x12,"ippo_mlp_s2c1 (2, 1)",ippo_mlp_s2c1,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.34244793315883726,0.2986979363282444,0.3854166841789265,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.4197916917037219,0.39427085500210524,0.44427085807546973,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.4184896082151681,0.38984377377782947,0.444531278219074,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_0 (0),comedi[0],True,returned_episode_returns,mean,0.38125002093147486,0.3528646007122006,0.4085937738447683,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.3174479344743304,0.28307293011748696,0.3505208505113842,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.3968750206986442,0.3671875213040039,0.42552085338102186,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.35937501915032044,0.3283854366716696,0.38906252029555616,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.3591146016260609,0.3307291823410196,0.3875000162573997,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.29401043278630823,0.2539062657087925,0.332552104802744,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.29921876441221684,0.2643229300665553,0.33489584958879276,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.28723959845956415,0.25078126502630765,0.3229166831690236,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.3067708507296629,0.26666668433754237,0.3466146040620515,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.36640627472661436,0.33802085532806814,0.39322919480036944,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.36302085616625845,0.3309896036458667,0.39401044068508784,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.2460937611758709,0.21822917623794638,0.2742187620053301,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.36276043142424896,0.328645846733707,0.39583334746421317,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.32395835575880483,0.28437502400338416,0.36172529019531735,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.39869793644174933,0.3736979351262562,0.42291668709367514,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.3481771009392105,0.311458346695872,0.3843750173124135,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.3549479362554848,0.3140625137166353,0.39401044174446725,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.3533854361739941,0.3143229354027426,0.390104188938858,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3453125148662366,0.31223959592171013,0.3776041861390695,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_2 (0),comedi[1],True,returned_episode_returns,mean,0.42630210903007537,0.39765627070446496,0.45208336040377617,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.3440104376641102,0.31197918590332846,0.37604168873513116,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.38359377067536116,0.35651043173274954,0.4104166850680485,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.35833334998460487,0.32109376898006303,0.39348960239294684,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.31979168218094856,0.28255209634517087,0.3567708482922171,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.3065104324487038,0.26484376180451363,0.3476562676994945,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.3101562701049261,0.2713541800461826,0.3487044564171805,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.2997396051650867,0.2562500221974915,0.34244793933903567,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.4122396074817516,0.3807291885575978,0.44088544213445857,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.4083333555608988,0.3791666845791042,0.4356771120801568,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.22760417725658044,0.19869792512763523,0.2567708431801293,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.36848960467614233,0.33307293404941446,0.4018229405148304,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.3937500254251063,0.3596354400302516,0.425000027292117,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4265625257976353,0.40104169443948195,0.45026044198311865,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 2)",comedi[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.24791667703539133,0.20781250734144124,0.2893229240711662,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.4268229401204735,0.4013021045830101,0.45078128066379575,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.39661461004288867,0.3658854435721878,0.42552086083451285,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.39140627160668373,0.366927105927607,0.41458335844799876,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.32343751785811037,0.28645835094794164,0.35911460149218327,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_4 (0),comedi[2],True,returned_episode_returns,mean,0.4317708610324189,0.40703127649321685,0.45468752622255126,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.3895833557471633,0.3572916909644846,0.42031252035521904,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.3708333517424762,0.33723960697243455,0.4023437745694537,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.2781250149128027,0.24088543030666187,0.31562501367297957,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.25312501314328983,0.21223959244962315,0.2945312695403118,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.27239584660856053,0.2312500116371666,0.3143294457797305,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.364843767718412,0.3236979345660075,0.40391278484312293,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.41875002218876034,0.39244794026890306,0.442968775643385,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.406250016996637,0.376822935877135,0.43385418295511047,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.2643229329842143,0.2380208480739384,0.2914062662777724,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.35260418523103,0.3179687617172021,0.38645835012430324,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.35182293673278764,0.3200521033068071,0.38229168873658637,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.3929687696509063,0.3656250242551323,0.4182291899400298,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 4)",comedi[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.3117187677999027,0.26927084825001657,0.3528645976053667,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.35208335280185565,0.3161458535323618,0.38671877020096873,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.3411458508344367,0.30364584691997154,0.3773437699433998,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3135416846489534,0.28229168254183606,0.34453127382148524,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.3914062671829015,0.3604166824312415,0.42135418789694085,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.3247395997750573,0.2848958511007368,0.3632812685362296,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_6 (0),comedi[3],True,returned_episode_returns,mean,0.4028646075166762,0.3768229444860481,0.42786461138166487,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.3479166852775961,0.31250001518346837,0.38203126548760336,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.29244793188991025,0.2541666799646919,0.3302083514863625,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.33072918868856505,0.28776043477409985,0.3718750277883373,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.3216146024642512,0.2815104333421914,0.36041669012920463,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.31276042939862236,0.2752604277324281,0.3505208474496612,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.39713543775724247,0.3638021033795667,0.42812502081505954,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.394531273865141,0.36640627062879505,0.42161460779898335,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.20338542718673125,0.1765625099069439,0.23046876269363564,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.37395835103234276,0.3408854316789075,0.40572918149118775,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.3643229353474453,0.3252604327179142,0.40130210455390625,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.41822919296100736,0.3908789247681854,0.4427083616843447,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 6)",comedi[3],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.3119791809585877,0.2690104323279229,0.35364584662020204,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.345572937396355,0.30625001363805493,0.38255210759525654,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.35416668839752674,0.3161458516318817,0.39062502218584993,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.29218751925509423,0.256503920000978,0.3276041915669339,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.3645833518821746,0.32890626718144633,0.3992187692274456,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.31822918221587315,0.28229167848767245,0.3528646046179347,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.3705729389330372,0.3348958549308009,0.4039062747062417,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_comedi_8 (0),comedi[4],True,returned_episode_returns,mean,0.39166669052792713,0.36119793919788207,0.4197916907782201,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.29609376133885235,0.256250008752977,0.3351562620999175,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.3041666825884022,0.26276043166581076,0.3447916847711895,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.31536459823837504,0.2768229263354442,0.3536523664792179,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.3416666830307804,0.29661459650087635,0.3846354303706903,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.39192711107898504,0.35885419021360576,0.4229166971112136,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.3744791835779324,0.3440104341134429,0.40338543453253806,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.21276042668614537,0.18984375783184076,0.23723959468916292,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.36536460189381614,0.3315104319364764,0.3979166869554319,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.37656252190936357,0.3429687707510311,0.40859377222077453,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4208333581336774,0.39453126738808353,0.44505210407223783,64,128,34957,new
+lbf/lbf_12x12,"comedi (-1, 8)",comedi[4],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.2710937635274604,0.227343763972749,0.3145833466129261,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.3000000206520781,0.24973960232455283,0.3486979361972772,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.369270856550429,0.3244791880060802,0.4111979436245747,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3242187710129656,0.2828125209125574,0.36458335852075835,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.35755210067145526,0.31093751332518876,0.40208334895578446,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.4080729443812743,0.37212892552488497,0.44062503218301574,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.33281252247979864,0.29218752222222977,0.3716146027596551,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.31302085041534156,0.26979168078978544,0.35520835360803177,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_lexi (0),seq_agent_lexi,True,returned_episode_returns,mean,0.47317711694631726,0.45338544737314806,0.48906253557652235,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.16276042186655104,0.1205729188513942,0.20677083931368542,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.30755210196366534,0.26093100020516447,0.35312501912121663,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.18437500740401447,0.14296875696018105,0.226822925270244,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.48177086940268055,0.46041670085542136,0.49687503604218364,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.45468752610031515,0.4276041914592497,0.4776041854143841,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.21562501171138138,0.19062501231237547,0.2414062660711352,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.36223959748167545,0.32031251314620024,0.4023437660711352,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.4083333571907133,0.37500002374290486,0.4390625224914402,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.45104169961996377,0.4270833625807427,0.472395877155941,64,128,34957,new
+lbf/lbf_12x12,seq_agent_lexi,seq_agent_lexi,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.07526042067911476,0.050260419372352774,0.10416667094104923,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.37161460355855525,0.32526043633406515,0.4153646079590544,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.4070312771364115,0.3653646031860262,0.4447916975739645,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3460937650525011,0.3085937614581781,0.3830729363282444,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.36640627757878974,0.3203125266780262,0.4104167013108963,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.36067710642237216,0.32057293737161674,0.398697940762213,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.41093752084998414,0.37395834992494204,0.44453126989683367,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.38776044017868116,0.347656275134068,0.4255208581482293,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.26328126376029104,0.2132812618932803,0.3127604298933875,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_rlexi (0),seq_agent_rlexi,True,returned_episode_returns,mean,0.4877604506909847,0.4755208659684286,0.4968750402331352,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.29375001590233296,0.24557293193793156,0.34114585877832726,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.24869792885147035,0.20208333996561123,0.294791679251648,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.45963544852565974,0.4315104478417197,0.4833333659917116,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.46979169227415696,0.450000022246968,0.4854166954770335,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.17135417397366837,0.14401042397221317,0.1992187608324457,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.4062500242725946,0.36927085728093517,0.440104188110854,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.44505210721399635,0.41432293510297313,0.4718750200903742,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4630208616144955,0.4416666943463497,0.4802083633840084,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rlexi,seq_agent_rlexi,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.2158854273147881,0.16848959121853113,0.2643229267880088,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.29765626572771,0.25026042810786747,0.3455794485591463,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.3539062701747753,0.31093752269953256,0.3947916885561426,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3604166865115985,0.3216145996368141,0.3971354399152915,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.36796877026790753,0.3263021041435422,0.40703127232263797,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.3710937684518285,0.3333333498419961,0.405989605243667,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.3546875173924491,0.31979168276011477,0.38802085456845814,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.33802085474599153,0.29947918446559924,0.37604169601981996,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.3098958475748077,0.2630208464062889,0.3562500139320036,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.21875001094304025,0.17760417569515993,0.26067709696217206,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_col (0),seq_agent_col,True,returned_episode_returns,mean,0.4843750190921128,0.4640625170432031,0.49843752244487405,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.07317708636401221,0.05208333511836827,0.0966145881684497,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.47656252863816917,0.4546875248139258,0.49375002831220627,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.45625002693850547,0.42630211217037867,0.481510449203779,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.2148437604191713,0.18619792628887807,0.24453126098087524,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.3484375160187483,0.30702475061989404,0.38802085096831435,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.41692709998460487,0.3820312673051376,0.4486979317254736,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4643229451030493,0.4473958564689383,0.4796875254251063,64,128,34957,new
+lbf/lbf_12x12,seq_agent_col,seq_agent_col,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.11666667280951515,0.08463542116805911,0.15208334039489274,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.40156252053566277,0.35937501628650353,0.43958334932103754,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.4192708603804931,0.38307294248079415,0.4515625317697413,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.34062501741573215,0.30390626657754183,0.3763021050399402,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.33854167722165585,0.2869791749806609,0.38671876345324563,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.37447918305406347,0.3312500134838047,0.41484376702137526,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.4361979425884783,0.402864608092932,0.46510418973630296,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.378385444812011,0.33802085601200815,0.41744795322592837,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.2854166805627756,0.23854168183315777,0.33255210286879444,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.2781250159605406,0.2299479271081509,0.3252604367793538,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.12656250700820237,0.0867187553056283,0.17031250778527465,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_rcol (0),seq_agent_rcol,True,returned_episode_returns,mean,0.4906250322237611,0.47343752812594175,0.5000000354135409,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.46562503511086106,0.4385416977384011,0.4875000420215656,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.462760437047109,0.43776042967801915,0.4838541860226542,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.1901041753590107,0.16119792364625027,0.22005209524941166,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.4002604430424981,0.3609375181782525,0.4364583618065808,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.45911461382638663,0.4322916961973533,0.48151044877013194,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4781250280793756,0.4640625233296305,0.49062502617016435,64,128,34957,new
+lbf/lbf_12x12,seq_agent_rcol,seq_agent_rcol,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.20755209279013798,0.16250000886066118,0.2539062570154783,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.41250002256128937,0.37630211339564995,0.44427085580828135,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.35286460421048105,0.3059896026839851,0.39714195503474853,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.37942710577044636,0.3424479368826724,0.4143229409877677,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.4463541941368021,0.41875002637534636,0.47031252134620444,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.37890626856824383,0.3466146018356085,0.40937501834559953,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.4346354437293485,0.40312501978187354,0.463027382770087,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.40026043879333884,0.36510418354300783,0.43281252880988175,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.354427098762244,0.31171876448206604,0.3953125203886884,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.3315104370121844,0.28255209809285586,0.3786458561735344,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.3684896051418036,0.32734377041633705,0.4075521064311033,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.29531251231674105,0.24765625734435162,0.3432291774224723,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_nearest (0),seq_agent_nearest,True,returned_episode_returns,mean,0.489583358168602,0.48072919342666864,0.4968750257976353,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.4653646065853536,0.4427083576912992,0.483593774959445,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.19114584237104282,0.16484375897416612,0.21875001001462807,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.446875021152664,0.4179687653813744,0.4718750189174898,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.4552083592861891,0.4302083667833358,0.4763021115446463,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.47369794361293316,0.4567708629067056,0.48776044469559565,64,128,34957,new
+lbf/lbf_12x12,seq_agent_nearest,seq_agent_nearest,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.1986979294451885,0.15598959550843575,0.2429687636977178,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.2789062672527507,0.23151043220423162,0.3260416834993521,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.3424479329842143,0.2981771007005591,0.3859375166954123,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3078125145402737,0.2632812617201125,0.3502604348468594,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.2984375172527507,0.25130209588678554,0.34583335603238086,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.31484376755543053,0.271093764109537,0.357812520704465,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.3703125163447112,0.329166683134099,0.40885418600519186,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.3385416853125207,0.2940104337700177,0.38046876854496076,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.2869791802368127,0.24270834273047512,0.3307291876655654,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.26093751640291885,0.21354167773970403,0.3083333540824242,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.3054687667754479,0.2572916776261991,0.3536458592076087,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.25182293326361105,0.1994791808509035,0.3046875230545993,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.4466146138147451,0.4138021163831581,0.4750000347994501,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_seq_agent_farthest (0),seq_agent_farthest,True,returned_episode_returns,mean,0.4716146148275584,0.4468750299362,0.49140628218301574,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.21588542516110465,0.1893229247594718,0.2434895920465351,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.3682291846489534,0.3270768348142157,0.40729168959951495,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.43151043716352433,0.39843751791922843,0.46093751945591066,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4203125223284587,0.38125001964799593,0.4546875241241651,64,128,34957,new
+lbf/lbf_12x12,seq_agent_farthest,seq_agent_farthest,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.11145833868067712,0.08020833693153691,0.1447916763194371,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.125000006693881,0.10078125406289473,0.14973959228373132,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.12942709034541622,0.10807292198151117,0.15235027023591044,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.1361979227513075,0.11301432632753873,0.16093750670843293,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.16692709230119362,0.1390625061452738,0.1958333436632529,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.08593750436557457,0.06406250392319635,0.10911458858900006,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.13697917375247926,0.10963542281970148,0.16614584421913606,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.1570312564726919,0.1299479227149277,0.18515625637228367,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.09505208733025938,0.07447916950040963,0.116406254703179,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.10729167243698612,0.0838541720280773,0.13229818553081657,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.13229167269309983,0.10729167032404803,0.15781250817672116,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.09088542155222967,0.0687500037587597,0.11458334082271904,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.11848958855262026,0.09427083760674577,0.14401042269455502,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.13880208902992308,0.11588542209938169,0.1622395905549638,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_entitled_agent (0),entitled_agent,True,returned_episode_returns,mean,0.26041668007383123,0.23854167828831124,0.28281251387816153,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.13697917276294902,0.11510417108074762,0.15963542445242637,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.11406250594882295,0.09244792093377327,0.13697917439567392,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.11536458949558437,0.09348958876071264,0.13802083960181336,64,128,34957,new
+lbf/lbf_12x12,entitled_agent,entitled_agent,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.10494792344979942,0.07864583702175879,0.13281250740983525,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.4609375275904313,0.43463543999241666,0.48359377405140547,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.44479169812984765,0.41406253246823327,0.4718750386353349,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.43750002153683454,0.4140625210624421,0.45911460417555644,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.4835937796160579,0.4721354437060654,0.4932292038574815,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.46015627693850547,0.43593752254964785,0.480989614513237,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.4700521143968217,0.44661461398063695,0.4890625309199095,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.47526045609265566,0.45989586878567934,0.4885417102021165,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.42265627800952643,0.38854169042315334,0.4531250309722964,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.45729169296100736,0.438020852371119,0.4747396135004237,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.4041666866396554,0.37239585756906307,0.4338541887846077,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.4440104417735711,0.4187500189815182,0.4666666942794109,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.48411461646901444,0.4656250301952241,0.4968750411644578,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.47083335905335844,0.4505208639835473,0.487500028219074,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.37005210062488914,0.3510416860168334,0.3888020997401327,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_greedy_closest_teammate (0),greedy_closest_teammate,True,returned_episode_returns,mean,0.4833333679707721,0.46406253369059414,0.49843753641471267,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.41901044017868116,0.3859375197207555,0.4494791881996207,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.4502604471053928,0.42604169620317406,0.4710937785101123,64,128,34957,new
+lbf/lbf_12x12,greedy_closest_teammate,greedy_closest_teammate,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.40260417986428365,0.36562501547450665,0.4369791784032714,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.33854168513789773,0.29583335294883,0.37968752218876034,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.32317709794733673,0.2802083489135839,0.3645833505608607,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.26510418113321066,0.23281251097505445,0.2979166836012155,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.30494793673278764,0.2622395998216234,0.3468750257612555,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.3203125153668225,0.2838541805394925,0.3562500192245352,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.35312501579755917,0.3177083465066971,0.38750001514854376,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.3661458511487581,0.32994793592952193,0.399739599096938,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.2934896002407186,0.2518229335415526,0.3341146000981098,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.3231771007995121,0.2794270958314883,0.3656250203537638,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.335677103837952,0.2937500179934432,0.37656252296292225,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.2713541794801131,0.23072917520476038,0.31302084739290875,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.4598958548740484,0.43281251557637007,0.48281252500601113,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.468750023865141,0.44687501596927176,0.4875000249623554,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.18046875833533704,0.15546875841537258,0.20598959102935624,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.35416668211109936,0.3114583464834141,0.3937500185566023,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_greedy_lowest_level (0),greedy_lowest_level,True,returned_episode_returns,mean,0.4466146075865254,0.41406252571759977,0.47421877418528313,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.46171877632150427,0.43281252204906195,0.48593752086744646,64,128,34957,new
+lbf/lbf_12x12,greedy_lowest_level,greedy_lowest_level,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.14791667368263006,0.11380208847549511,0.18464193905674564,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.36067710450151935,0.3213541896460811,0.3986979388981126,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.36328126897569746,0.3203125151107088,0.4044270996644627,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.3276041849167086,0.2916666792079923,0.36302085244387855,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.27864584256894886,0.2359375097992597,0.3210937597381417,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.3520833503571339,0.313541684296797,0.3895833505797782,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.360937520803418,0.3203125185609679,0.40000001859298207,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.4062500244472176,0.37343100640573557,0.43671877987799235,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.26171876379521564,0.21614584343187743,0.3075520961443544,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.25182292982935905,0.20416668181715067,0.2989583455841057,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.34270834730705246,0.2940104346664157,0.3890625188680133,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.23489584028720856,0.1880208392351051,0.28281250817381076,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.4763021144317463,0.4552083654154558,0.4932291985023767,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.4619791971636005,0.43098960929055463,0.4872396125734667,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.19192709191702306,0.16041667375102406,0.22500000795262168,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.3776041853125207,0.33645834830531385,0.41562502313172445,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.4596354463719763,0.4335937769414159,0.48098961265059187,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_greedy_highest_level (0),greedy_highest_level,True,returned_episode_returns,mean,0.4929687804542482,0.4835937744937837,0.49895836506038904,64,128,34957,new
+lbf/lbf_12x12,greedy_highest_level,greedy_highest_level,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,0.13932292227400467,0.10651042079553008,0.1742187572599505,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_ippo_mlp (0),ippo_mlp,False,returned_episode_returns,mean,0.29166668199468404,0.2531250110972906,0.330729186537792,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_ippo_mlp_s2c1 (0),ippo_mlp_s2c1,False,returned_episode_returns,mean,0.30520835041534156,0.271875012665987,0.3390625201922376,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_0 (0),comedi[0],False,returned_episode_returns,mean,0.2570312664611265,0.2263020995305851,0.28750001715670803,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_2 (0),comedi[1],False,returned_episode_returns,mean,0.26588543091202155,0.23333334345807089,0.2989583465430769,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_4 (0),comedi[2],False,returned_episode_returns,mean,0.25286459660856053,0.2197916767312563,0.2872396020844462,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_6 (0),comedi[3],False,returned_episode_returns,mean,0.25442709715571254,0.22213542681420223,0.28776043084217234,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_comedi_8 (0),comedi[4],False,returned_episode_returns,mean,0.2830729282577522,0.2473958443632,0.31875000906584317,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_lexi (0),seq_agent_lexi,False,returned_episode_returns,mean,0.20104167732642964,0.16640626032458386,0.2359375125481165,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_rlexi (0),seq_agent_rlexi,False,returned_episode_returns,mean,0.2286458449671045,0.19192709249909967,0.2664062588388333,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_col (0),seq_agent_col,False,returned_episode_returns,mean,0.1958333431975916,0.16015625733125488,0.2328125145548256,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_rcol (0),seq_agent_rcol,False,returned_episode_returns,mean,0.2197916764416732,0.18176432845648394,0.2585937639290933,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_nearest (0),seq_agent_nearest,False,returned_episode_returns,mean,0.304947929806076,0.26770834466733506,0.3419336140141235,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_seq_agent_farthest (0),seq_agent_farthest,False,returned_episode_returns,mean,0.3075521009741351,0.27135418046382254,0.34401043627294714,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_entitled_agent (0),entitled_agent,False,returned_episode_returns,mean,0.19895834411727265,0.17239584284834564,0.22708334552735324,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_greedy_closest_teammate (0),greedy_closest_teammate,False,returned_episode_returns,mean,0.2539062657742761,0.21822266648814564,0.29036460741335757,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_greedy_lowest_level (0),greedy_lowest_level,False,returned_episode_returns,mean,0.23463542928220704,0.19869792729004984,0.27109376713779054,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_greedy_highest_level (0),greedy_highest_level,False,returned_episode_returns,mean,0.29244792804820463,0.2559895915328525,0.32890626421576596,64,128,34957,new
+lbf/lbf_12x12,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,returned_episode_returns,mean,0.24791667982935905,0.20468751282751327,0.2916666801524116,64,128,34957,new
