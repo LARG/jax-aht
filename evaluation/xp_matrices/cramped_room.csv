@@ -1,0 +1,649 @@
+task,row_agent,row_label,col_agent,br_for_label,is_diag,metric_name,aggregate_stat,mean,ci_lower,ci_upper,num_episodes,max_episode_steps,eval_seed,seating
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],True,base_return,mean,263.125,255.3125,269.0625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,144.0625,125.0,162.5,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,161.25,139.375,182.1875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,22.1875,18.4375,25.9375,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,122.8125,96.5625,149.0625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,17.5,13.75,21.5625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,7.5,4.6875,10.625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,24.6875,20.625,29.0625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,10.9375,8.125,13.75,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,25.0,21.5625,28.4375,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,17.8125,14.375,21.5625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,25.3125,20.9375,29.6875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,152.5,126.5625,178.125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,16.875,12.8125,21.25,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,36.5625,24.6875,50.3125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,8.125,5.625,10.625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,128.125,100.9375,155.9375,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,31.5625,28.125,35.0,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,56.25,46.5625,67.1875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],True,base_return,mean,253.4375,244.6875,259.6875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,49.0625,38.75,60.625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,16.875,13.4375,20.3125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,31.5625,21.25,44.6875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,40.0,24.375,57.1875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,7.1875,4.0625,10.625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,29.6875,25.0,34.6875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,10.625,7.5,14.0625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,20.3125,17.1875,23.4375,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,14.6875,11.5625,17.8125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,21.25,17.5,25.3125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,115.9375,88.4375,143.4375,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,18.4375,14.6875,22.1875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,13.4375,10.0,16.875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,6.25,4.0625,8.4375,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,45.9375,30.3125,63.125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,35.9375,31.25,40.625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,166.5625,147.5,185.0,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,156.25,130.9375,180.625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],True,base_return,mean,260.0,247.8125,269.0625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,19.6875,15.9375,23.75,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,57.8125,40.625,76.25,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,30.3125,20.9375,40.9375,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,7.1875,4.6875,10.0,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,28.125,24.6875,31.5625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,10.3125,7.1875,13.75,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,19.6875,16.5625,22.8125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,16.25,12.8125,19.6875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,28.75,25.3125,32.1875,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,101.5625,82.1875,120.625,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,13.75,9.6875,18.125,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,23.4375,16.5625,31.25,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,6.5625,4.375,8.75,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,25.9375,20.0,32.5,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,33.75,28.75,38.75,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,25.9375,20.625,31.5625,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,27.1875,22.1875,32.1875,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,21.5625,16.875,26.875,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],True,base_return,mean,207.8125,205.3125,210.3125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,6.25,4.0625,8.4375,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,7.1875,4.6875,10.0,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,5.0,3.125,7.1875,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,42.1875,32.1875,53.125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,20.625,13.4375,28.75,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,170.3125,151.25,187.8125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,11.25,8.125,14.375,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,7.8125,5.3125,10.3125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,5.0,2.8125,7.5,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,9.6875,6.5625,13.4375,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,9.0625,6.25,11.875,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,9.6875,6.5625,13.125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,6.5625,4.0625,9.375,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,186.5625,170.3125,200.9375,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,103.75,88.75,118.125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,61.875,53.4375,70.3125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,130.3125,107.1875,153.125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,6.25,3.4375,9.375,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],True,base_return,mean,246.875,243.125,250.625,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,121.25,99.375,142.5,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,4.375,2.5,6.5625,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,94.6875,83.4375,105.9375,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,5.625,3.125,8.125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,5.625,3.4375,7.8125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,109.0625,85.625,132.8125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,22.1875,18.75,25.625,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,55.3125,47.8125,62.8125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,51.5625,40.0,63.75,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,54.0625,41.875,66.875,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,5.9375,3.75,8.125,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,171.5625,147.5,194.0625,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,39.375,29.6875,50.3125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,20.0,15.625,24.6875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,42.5,34.6875,50.625,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,74.0625,65.9375,82.1875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,117.8125,101.5625,133.75,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,126.25,111.875,139.6875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_independent_agent_0_4 (0),independent_agent_0.4,True,base_return,mean,183.4375,178.75,188.125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,168.125,164.0625,172.1875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,75.0,61.875,88.125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,126.25,115.9375,136.25,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,149.0625,134.0625,162.8125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,88.125,75.3125,100.9375,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,23.75,17.8125,30.3125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,28.125,23.75,32.8125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,125.9375,108.125,143.75,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,132.1875,122.1875,141.5625,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,129.375,118.125,139.375,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,16.25,12.1875,20.625,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_human_proxy (0),human_proxy,False,base_return,mean,130.9375,114.375,147.1875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,18.125,14.375,21.875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,24.375,20.0,28.75,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,55.0,47.8125,62.5,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,30.625,25.9375,35.3125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,66.25,53.125,80.0,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,170.3125,153.75,185.0,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_independent_agent_0 (0),independent_agent_0,True,base_return,mean,203.4375,192.5,211.875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,33.125,27.8125,39.0625,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,129.375,114.375,144.0625,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,35.3125,29.375,41.25781249999932,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,36.5625,31.5625,41.5625,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,20.9375,16.5625,25.3125,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,25.3125,21.25,29.375,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,41.875,34.0625,49.6875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,68.75,58.4375,79.6875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,38.4375,30.625,47.1875,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,26.5625,22.1875,30.9375,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_human_proxy (0),human_proxy,False,base_return,mean,40.0,34.375,45.625,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,54.375,39.6875,69.375,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,24.375,18.4375,30.625,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,40.3125,29.6875,51.5625,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,49.6875,37.8125,62.1875,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,4.375,2.5,6.5625,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,2.8125,1.25,4.6875,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,2.5,0.9375,4.0625,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_onion_agent_0_1 (0),onion_agent_0.1,True,base_return,mean,143.75,119.05468750000018,167.5,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,8.4375,4.6875,12.8125,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,50.625,36.875,65.0,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,7.1875,5.0,9.6875,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,73.4375,54.0625,93.75,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,3.4375,1.8671875000001847,5.3125,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,91.5625,72.1875,111.25,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,3.4375,1.5625,5.3125,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,4.6875,2.8125,6.875,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,2.8125,1.25,4.6875,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_human_proxy (0),human_proxy,False,base_return,mean,99.375,78.11718750000018,120.3125,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,21.5625,16.25,27.1875,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,22.1875,16.5625,28.125,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,48.4375,40.625,56.25,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,40.0,29.6875,51.25,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,128.75,108.125,148.75,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,132.1875,109.6875,153.4375,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,137.5,116.25,158.125,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,96.5625,80.625,112.5,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_plate_agent_0_1 (0),plate_agent_0.1,True,base_return,mean,177.5,153.4375,199.375,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,77.5,63.4375,92.1875,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,145.625,120.3125,170.0,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,17.8125,15.0,20.625,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,23.125,18.125,28.4375,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,122.1875,98.4375,145.9375,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,110.625,89.375,131.875,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,104.0625,83.125,124.6875,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,19.0625,14.0625,24.0625,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_human_proxy (0),human_proxy,False,base_return,mean,118.125,98.125,137.8125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,24.375,20.0,29.0625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,36.25,31.5625,40.9375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,27.5,22.1875,32.8125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,202.8125,196.25,207.1875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,8.125,5.625,10.9375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,8.4375,5.9375,10.9375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,10.3125,7.5,13.125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,109.6875,97.8125,120.9375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,43.75,35.625,52.1875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,base_return,mean,192.1875,177.8125,204.375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,10.625,7.5,14.0625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,23.75,20.9375,26.5625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,7.1875,4.375,10.3125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,66.25,57.5,74.6875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,10.625,7.8125,13.4375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,9.0625,5.9375,12.1875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,9.0625,6.25,11.875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,190.625,181.25,199.0625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,20.9375,16.25,25.9375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,17.5,13.4375,21.875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,17.8125,14.0625,21.875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,53.125,42.1875,64.6875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,18.125,14.0625,22.5,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,11.875,8.4375,15.625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,10.3125,6.5625,14.375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,108.4375,97.8125,119.0625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,51.25,43.4375,59.375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,46.5625,37.8125,55.9375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,base_return,mean,240.0,236.25,244.0625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,29.6875,26.5625,33.125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,16.875,13.125,20.9375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,56.25,42.5,70.625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,19.0625,15.0,23.4375,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,40.625,33.75,48.125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,15.9375,12.1875,20.0,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,97.5,85.0,110.0,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,31.25,25.625,37.1875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,17.5,12.5,22.8125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,33.4375,27.1875,39.6875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,27.5,21.875,33.75,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,4.6875,2.8125,6.875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,4.375,2.5,6.5625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,2.1875,0.9375,3.75,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,130.3125,120.0,140.3125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,85.3125,73.75,96.875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,29.6875,23.125,36.875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,9.6875,6.875,12.8125,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,base_return,mean,208.125,199.6875,213.75,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,5.0,3.125,7.1875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,105.625,89.375,121.5625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,4.375,2.1875,6.875,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,7.8125,5.3125,10.625,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,5.3125,3.125,7.5,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,160.625,140.9375,179.375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,175.625,163.4375,187.1875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,194.0625,178.75,208.4375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,186.875,174.375,198.4375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,68.75,58.75,79.0625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,36.5625,31.25,41.875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,33.75,27.1875,40.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,27.5,23.4375,31.5625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,62.5,56.5625,69.0625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,45.3125,39.0625,51.875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,61.875,53.4375,70.3125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,57.1875,50.9375,63.75,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,35.0,31.25,38.75,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,base_return,mean,249.0625,244.6875,253.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,47.8125,41.25,54.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,155.9375,146.875,164.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,6.25,3.75,8.75,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,83.125,72.1875,94.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,146.25,132.5,159.375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,4.6875,2.5,7.5,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,11.875,8.125,15.625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,5.625,3.4375,8.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,11.5625,8.117187500000185,15.3125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,7.5,5.0,10.3125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,32.8125,25.3125,40.625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,32.1875,26.25,38.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,55.0,45.0,65.625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,60.625,50.625,70.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,9.6875,6.5625,13.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,9.0625,6.5625,11.875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,15.9375,11.875,20.3125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,8.75,5.625,12.1875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,base_return,mean,206.25,202.8125,209.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,31.25,23.4375,39.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,11.875,8.125,15.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,21.875,16.25,27.8125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,55.0,42.1875,68.4375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,6.5625,4.375,9.0625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,17.5,11.875,23.4375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,8.4375,5.625,11.5625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,15.3125,11.25,19.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,20.3125,16.5625,24.375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,9.6875,6.875,12.5,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,5.0,2.8125,7.5,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,27.1875,20.3125,34.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,7.1875,4.375,10.3125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,10.3125,6.25,15.3125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,17.1875,12.1875,22.8125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,11.25,8.125,14.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,5.625,3.125,8.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,11.25,8.4375,14.0625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,base_return,mean,204.375,196.875,209.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,5.3125,3.125,7.8125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,15.3125,11.875,18.75,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,23.4375,16.5625,30.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,6.5625,4.375,8.75,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,12.5,9.0625,16.25,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,8.125,5.3125,10.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,16.5625,11.5625,21.875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,13.125,9.6875,16.5625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,13.125,9.375,16.875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,11.5625,8.4375,14.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,61.25,50.9375,71.25781249999932,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,21.875,17.1875,26.5625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,7.1875,4.6875,9.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,11.875,8.125,15.625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,41.875,35.0,49.0625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,9.6875,6.25,13.75,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,30.9375,21.5625,41.5625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,24.0625,17.8125,30.625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,base_return,mean,212.8125,208.4375,217.1875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,16.5625,11.5625,21.875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,base_return,mean,46.875,35.0,59.6875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,20.625,15.625,25.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,41.25,32.5,50.3125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,26.25,20.625,32.5,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,10.625,6.875,14.695312499999318,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,44.375,33.125,56.5625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,56.875,43.75,70.625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,9.6875,7.1875,12.1875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,45.3125,37.8125,53.4375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,10.9375,7.8125,14.375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,10.3125,6.875,14.0625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,8.125,5.625,10.625,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,26.25,20.9375,31.875,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,21.25,15.3125,28.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,19.375,15.625,23.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,110.9375,90.3125,130.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,5.9375,3.75,8.125,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,base_return,mean,196.875,185.625,205.9375,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,base_return,mean,16.25,11.875,21.25,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,14.0625,10.625,17.8125,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,17.8125,13.125,22.5,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,42.1875,34.6875,49.6875,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,32.5,24.6875,40.9375,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,45.9375,35.0,57.8125,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,base_return,mean,38.75,29.375,49.0625,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,59.375,45.625,73.75,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,base_return,mean,146.25,130.9375,161.25,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,base_return,mean,52.1875,42.1875,62.5,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,29.0625,22.1875,36.25,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,24.375,16.875,33.4375,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,45.9375,36.5625,55.9375,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,27.8125,22.8125,33.125,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,110.3125,94.375,125.625,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,29.375,23.125,35.9375,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,71.875,58.4375,85.3125,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,59.0625,41.5625,76.875,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,base_return,mean,221.875,217.1875,226.25,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],True,returned_episode_returns,mean,281.69850516319275,273.3671946883202,287.9250655889511,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,153.9437729358906,133.51872814334348,173.51651298850774,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,172.04065571445972,148.5682887152536,194.5008210286498,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,23.008593315666076,19.154687425408337,26.866425114015872,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,131.11955920688342,102.8725785429444,159.40814023349373,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,18.41796809481457,14.373437055050454,22.70236230784794,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,7.943750130594708,5.08513688279054,11.100781268115679,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,25.720312184130307,21.550000329338946,30.339862587177777,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,11.458593802235555,8.646875117793389,14.281269618521035,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,25.757031215005554,22.309335968256345,29.22658177436533,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,18.274218423757702,14.77812484534661,21.940683102863836,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,26.403904934006277,21.917127854433787,30.918767450761514,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,162.72424856486032,134.9076981833874,189.9712868327245,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,17.342187267844565,13.20156229773129,21.76175744130887,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,38.60390808084048,26.01404288073827,53.280531069089186,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,8.332812467124313,5.831250031020318,10.871874998358544,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,136.88206247845665,107.63812926190003,166.58646552013084,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (0),ippo_mlp[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,32.53281185030937,29.010136228054762,36.047675082832576,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,59.83515466452809,49.419372987747195,71.6265607653564,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],True,returned_episode_returns,mean,270.8781933784485,261.57420403957366,277.4336857199669,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,52.21093645825749,41.27648320606823,64.37974757283955,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,17.423437340999953,13.907753780604981,20.95703108775633,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,33.27656449226197,22.245039614923012,47.16592187828207,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,42.54141034052009,25.8701965297194,60.99926489492063,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,7.62109381519258,4.514824206651247,11.037519482907372,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,30.89765524957329,25.92578059954103,36.21972494015934,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,11.203124970488716,7.910097699095788,14.778925930944386,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,20.935156202933285,17.76250003614259,24.06095663625747,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,15.017187335412018,11.87968731097062,18.1703318758402,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,21.956249359820504,18.07734331964457,26.020370191703837,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,123.68206074845511,94.2396304042777,153.31365014412293,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,19.16953056922648,15.316386111750035,23.009374021191615,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,14.04843724577222,10.506230334022257,17.71251908608683,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,6.450781171093695,4.258593690232374,8.688281126144284,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,48.78984796977602,31.94451367262518,67.23362146315776,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (1),ippo_mlp[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,37.25468587316573,32.49658111422323,42.12658012122847,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,178.1390903115389,157.73205520632183,197.7891516405347,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,166.97268391854595,140.01906269172179,193.06046326881477,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],True,returned_episode_returns,mean,278.1016323566437,265.02108110189437,287.853664946556,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,20.546874660998583,16.56794894253835,24.775038918806235,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,61.51641067577293,43.05062777674466,81.33141437793091,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,32.20156262040837,22.1287888263978,43.64066602772073,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,7.571875049499795,4.9334960759428235,10.43439486424322,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,29.139843315293547,25.547636783616326,32.775057815943725,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,10.723437384935096,7.542968676572491,14.167206956289009,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,20.34765626862645,17.16248073754832,23.560956997238097,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,16.71640616102377,13.223437433983781,20.2852148111182,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,29.830467792227864,26.362499394500627,33.23204930443317,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,108.1929765821551,87.44881303502044,128.68678847687843,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,14.153124459960964,9.993730116028747,18.600018730675217,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,24.682030590833165,17.300741773471238,32.987518468985215,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,6.717968788230792,4.5070312889787605,8.957050907176743,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,27.38281137996819,20.97320254367515,34.487497828676716,64,400,34957,new
+overcooked-v1/cramped_room,ippo_mlp (2),ippo_mlp[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,34.86953001655638,29.759374225884677,40.1117365705315,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,27.497654790931847,21.721073174776393,33.622693507286016,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,28.49531144631328,23.30072217980633,33.77111187967821,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,22.758592445228714,17.69765542524401,28.41718541346345,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],True,returned_episode_returns,mean,222.37739729881287,219.81018972992896,224.93130446672438,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,6.3414060866925865,4.15935535432509,8.564843516687688,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,7.40234364598291,4.835156232609006,10.203124764443782,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,5.13750006176997,3.2171679894177947,7.346875120598997,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,45.77499927766621,35.29685510990676,57.29859310225582,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,22.098436289466918,14.556190756948492,30.764921113949086,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,182.0086348116747,161.567965530949,200.8539918814611,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,11.712499891174957,8.589824297586166,14.943027125223303,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,8.164062323514372,5.642187407257734,10.72423807851155,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,5.105468635156285,2.9234178910279303,7.5703123479645,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,10.30546846560901,7.02962876607635,14.140624355380714,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,9.24453122925479,6.461699137069809,12.067968694625597,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,9.731249958451372,6.599218761740485,13.15470699861762,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,6.69687489955686,4.185937458537228,9.500019478581088,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (0),brdiv-conf[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,199.29614033736289,182.1484023101628,214.44389721173792,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,110.75390783604234,94.87656332748011,126.0603143782122,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,65.69765054620802,56.69136263660621,74.6039585610153,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,139.35236402938608,114.59737876440778,163.69162513584595,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,6.97343738732161,4.1171093692464655,10.227382569178005,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],True,returned_episode_returns,mean,264.0610067844391,260.1695785522461,267.8899161875248,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,129.9125187525642,106.54982057756716,152.7638338218588,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,4.869531447824556,2.939062620959885,7.057832356658762,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,100.72031023539603,88.60151985595003,112.8258768096566,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,6.298437450954225,3.767929607043335,8.983593628607924,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,6.146874981932342,3.9163866673829038,8.438281314470805,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,116.52814366389066,91.61622450540308,141.7415099011734,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,22.70624995866092,19.242187720502262,26.166405892322654,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,58.684370923787355,50.88593422072008,66.57970121707767,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,54.87968728877604,42.498338300082835,67.97189652246888,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,57.96171626710566,44.90152230131644,71.75191001261844,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,6.529687565751374,4.320312490290962,8.829707166482693,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,183.64300787448883,158.03284599483018,207.76529955714938,64,400,34957,new
+overcooked-v1/cramped_room,brdiv-conf (1),brdiv-conf[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,42.19062505476177,31.850781453819945,53.991428142809305,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,21.182031047181226,16.77343751067674,25.918789147860657,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,45.20390256756218,36.96474425782217,53.83436969923787,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,78.69843129516812,69.93593190968095,87.44864657538417,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,125.67657428386156,108.35295852082345,142.7063039516026,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,134.71485590934753,119.28891617059708,149.1523575499654,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_independent_agent_0_4 (0),independent_agent_0.4,True,returned_episode_returns,mean,196.09612154960632,191.3265700995922,200.79637856483458,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,179.67736077308655,175.366304731369,183.86095595955848,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,79.74218787573045,65.79994024854531,93.82814553039934,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,134.97969162464142,124.01781561076642,145.59074776619673,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,159.3437719285721,143.28126806800282,174.11055392161066,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,93.9374993564561,80.40802670121194,107.47052906430325,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,25.09062329819426,18.75152232446708,31.967966130108106,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,29.7062487276271,25.024823230504992,34.471873311535454,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,134.37892353534698,115.39374001026154,153.4711928009987,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,141.0828150510788,130.54835861623286,151.0195344388485,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,138.14218991994858,126.13101715147496,148.90006218552588,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,17.42499947734177,13.142929361574353,21.962499097082762,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0.4,independent_agent_0.4,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,139.5656441450119,121.73354866355658,156.8852182984352,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,19.10859310516389,15.327323895211157,22.89070241677836,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,25.64687457383843,21.171835817408283,30.103143764410923,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,58.057027876377106,50.502341378480196,65.9445666640997,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,31.733592529664747,26.75146370472503,36.728982890916804,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,70.40859447151888,56.303885342352444,85.3096903222147,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,181.98753095866414,164.3901829251656,197.7230802029371,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_independent_agent_0 (0),independent_agent_0,True,returned_episode_returns,mean,217.81332182884216,206.23126958608628,226.70793360471725,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,34.57265447464306,28.89915917942708,40.737497361432176,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,137.85703867673874,121.65465370491147,153.5516702674329,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,36.85312305693515,30.76400267489953,43.21183302468997,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,38.32109165826114,33.1367174516432,43.60392329859023,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,21.67734302399913,17.23359336163412,26.053964121735767,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,26.756248685531318,22.52341676745564,30.957048881519583,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,44.03359102085233,35.91400182270445,52.30159812225028,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,73.18124747276306,62.203824423253536,84.91806403696536,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,40.23281102348119,32.045272624795324,49.38915927968918,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,28.149998906068504,23.552303968416528,32.85786988299805,64,400,34957,new
+overcooked-v1/cramped_room,independent_agent_0,independent_agent_0,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,41.90780971723143,36.0655643184844,47.88452784508553,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,58.14687426708406,42.461698319358405,74.27447127774647,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,25.978904921677895,19.678846552329198,32.580505979774166,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,42.958590871538036,31.6514034423657,55.068024551510455,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,53.17968593968544,40.46091792009247,66.49689341612975,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,4.498437544971239,2.6000000166677637,6.669531284086406,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,2.990625047008507,1.3929492191164177,4.854687508288771,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,2.690625101502519,1.1351563111122231,4.305468844273127,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_onion_agent_0_1 (0),onion_agent_0.1,True,returned_episode_returns,mean,154.44612595671788,128.0217250831076,179.7911121797922,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,9.068749780533835,5.082792699467974,13.694530905077409,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,54.28046814829577,39.54347546714417,69.56021580306842,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,7.395312579406891,5.1171875835207175,9.900800822357995,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,78.48204047128092,57.650553639793365,100.32040208264952,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,3.5499999730382115,1.9083007700349197,5.436718685842061,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,97.93360543396557,77.06772564931744,119.08134673492161,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,3.5640625872765668,1.7093750543557689,5.460156328843732,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,4.817968724237289,2.9132617101276996,6.993749932365608,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,2.947656287928112,1.3609375193860616,4.820312531014497,64,400,34957,new
+overcooked-v1/cramped_room,onion_agent_0.1,onion_agent_0.1,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,106.23204596119467,83.27887765538908,128.7691991827465,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,22.70468620437896,17.166405647885405,28.621111127028414,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,23.21640496578766,17.449999570408544,29.416443525813516,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,51.257026727020275,42.84911769591127,59.451615822619345,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,41.96874926245073,31.163163495445044,53.74927587276906,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,137.52111779456027,115.38497977024235,159.20954128447772,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,141.08283807121916,117.21090063886513,163.71745091367774,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,146.5203329147771,123.88359203138535,168.4854359042423,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,102.64531584421638,85.52730572293513,119.70008507373568,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_plate_agent_0_1 (0),plate_agent_0.1,True,returned_episode_returns,mean,190.1789536321303,164.70890794599546,213.42823688522913,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,82.10468672571005,67.20693288565381,97.64927559222559,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,155.52034498553257,128.67119703934443,181.48853364279637,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,18.221093869535252,15.38281273268658,21.0500196978508,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,24.634374107874464,19.279686662326277,30.254705774337342,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,130.42736983462237,105.0639453971875,155.7867489072436,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,117.89610859216191,95.10675009646366,140.60952866851875,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,110.93204250372946,88.41508643687705,132.99858769536948,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,20.227342354424763,15.105428601692257,25.446912360776327,64,400,34957,new
+overcooked-v1/cramped_room,plate_agent_0.1,plate_agent_0.1,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,125.69142447732156,104.27478113544203,146.83162398656128,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,25.787498802877963,21.16242094333866,30.596111705192016,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,38.392185044125654,33.57027198795259,43.32736008329084,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,29.101560911745764,23.65120976233448,34.62503697913198,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,216.90161180496216,209.95315268039704,221.4750711619854,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,8.416406135307625,5.834355413292361,11.257831813524534,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,8.714062579674646,6.176562589374953,11.30939458764187,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,10.575000199838541,7.781992408441147,13.412519657399388,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,117.4796909801662,104.91482604639604,129.4727025270462,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,47.302340381313115,38.62085639231955,56.2711285589874,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,returned_episode_returns,mean,205.4602060795878,190.17582787633873,218.47979984283447,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,11.027343450463377,7.826562308715074,14.489061864071118,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,24.342968655051664,21.501562595127325,27.18046829202649,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,7.577343593409751,4.636718694744923,10.825839382884437,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,70.45858855854021,61.25145968439465,79.5132953483917,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,10.915625155961607,8.085156553723209,13.780507990208568,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,9.429687609779648,6.278125213814201,12.645332209329352,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,9.384375004214235,6.521093704958912,12.377382747856606,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,203.6797286272049,193.76948821842672,212.62740989029408,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,23.870311811566353,18.8749805115629,29.226678580557916,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,19.91093719471246,15.6843555864878,24.32511609827633,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,20.266406051814556,16.481249903608113,24.26484282165766,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,57.14687291911105,45.34118982796791,69.55163929466215,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,20.67109388578683,16.453886490734295,25.097675580903886,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,13.771875064878259,10.261679672132596,17.540703099650266,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,12.239062429405749,8.498418105836027,16.376562249963172,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,115.91953057050705,104.6413459405303,127.33986577689647,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,56.13359025865793,47.89290764462203,64.67345429286361,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,50.142966452986,40.80624776827172,60.22269272017292,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,returned_episode_returns,mean,257.15006589889526,253.2836596608162,261.24381831884386,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,30.648436427116394,27.428905931860207,34.0586117811501,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,19.7351562557742,15.850781598989851,23.80238242782652,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,60.525001077738125,45.994414908767794,75.80787322820106,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,21.09531241620425,16.746035134256818,25.650819892770958,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,44.45624718349427,37.11874807197601,52.257847156003116,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,17.80937494058162,13.87103537975345,22.044530870043673,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,104.30390595272183,91.04132477210369,117.66441750926894,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,33.52421637577936,27.546033544279638,39.67581707960343,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,19.01249945530435,13.8515425761012,24.56486203141685,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,35.87109203636646,29.374823470087726,42.5500368353154,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,29.35390518559143,23.406210221757647,35.993221378803696,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,5.166406368021853,3.23593758555653,7.332050985639214,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,4.752343959407881,2.8390626354899724,6.919531498922152,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,2.9132813358446583,1.526562562676554,4.527363433325079,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,139.27969327569008,128.3459197819233,149.87350365668536,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,91.73437300883234,79.43196946470998,104.23287059543654,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,31.709373531513847,24.886698474246078,39.24232226234743,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,10.563281545473728,7.57734393873834,13.743750159902266,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,returned_episode_returns,mean,222.20395221712533,213.2812147737248,228.1539725959301,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,5.362500274728518,3.400000173690205,7.570332419831537,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,113.02110145735787,95.64123278829503,130.21655204244016,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,4.803124948346522,2.5914062644340445,7.337519447092198,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,8.459375020640437,5.878125189887942,11.303906102840847,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,5.721875229792204,3.566386845245143,7.935937750399171,64,400,34957,new
+overcooked-v1/cramped_room,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,171.56643553823233,150.42344329953193,191.77212420403956,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,187.79299461841583,174.85527607500555,200.13702142536638,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,207.45394438505173,191.0682712838054,222.81256618797778,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,200.0008164346218,186.71614563241602,212.3548654653132,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,73.17733947635861,62.51245568547165,84.18204695805908,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,38.67031054501422,33.110096167132724,44.41038823533597,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,35.582810587540735,28.785135346703466,43.16249689166143,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,28.937498975778,24.705468162021134,33.19218588582589,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,66.15312007069588,59.80460464730859,73.10155698880553,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,48.10624595958507,41.338004704331986,55.03286557795945,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,65.66015104670078,56.85774988133926,74.49696646109223,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,60.415620505809784,53.73278941065073,67.273548977077,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,36.84140414651483,32.88355299197138,40.88907954469323,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,returned_episode_returns,mean,266.55944204330444,262.12967643737795,270.6719636678696,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,50.64530903159175,43.58825906295242,57.83048457613186,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,166.80548453330994,157.27655392587184,175.9540428549051,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,6.9125001495704055,4.47339850512799,9.429687641863712,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,88.49062019586563,76.78651792481543,100.78440941274165,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,155.97032776474953,141.19298203215004,170.1509926661849,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,5.08281242614612,2.7570116985836655,7.980488213070201,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,12.542968403140549,8.74531252373563,16.508652083719785,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,6.005468684190419,3.7210741994946153,8.56562486011244,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,12.357030865969136,8.575683623268562,16.45242127784003,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,8.00703111034818,5.464062485266186,10.823437187392846,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,35.028903645754326,27.093611394490292,43.36884401718561,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,33.886716741952114,27.54279156046687,40.26105214197158,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,58.67187238344923,47.95757515203732,70.12657841686014,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,64.71093508024933,54.12265460644121,75.62900262517796,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,10.346874866285361,7.059375025054033,13.97578092271724,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,9.72343751648441,7.004667973936012,12.620351578142433,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,16.782811775105074,12.56324163257523,21.296893481825826,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,9.182031070406083,5.9695116016431715,12.68283164774475,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,returned_episode_returns,mean,220.66176748275757,217.03594658970832,224.2586441218853,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,33.221091606479604,25.045232749357822,42.08597341393615,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,12.44374976301333,8.488281099418236,16.79376916399633,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,23.337499145360198,17.442108945675137,29.5859942437557,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,58.544532007246744,44.93507640113239,72.96410315708927,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,6.855468948604539,4.578125102281047,9.32818382878176,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,18.542967548186425,12.661718456001836,24.87435333796601,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,8.889843681128696,5.946074117714307,12.109394533249722,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,16.320311947260052,12.016386577486992,20.875018486540647,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,21.37656173837604,17.36558524033462,25.583592187617615,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,10.364843832328916,7.5413672699505705,13.294531126444053,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,5.2851563831209205,3.1179689011361917,7.755488476018943,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,29.114842378068715,21.929627953408637,37.08048618980829,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,7.807812385668512,4.858554568389082,11.134394287229222,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,11.042187012266368,6.721074037971267,16.303905162971933,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,18.21171813865658,12.83513633668481,24.13285043458163,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,11.632030953536741,8.424199077446247,15.076601118386312,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,5.955468846543226,3.518730607494945,8.54374986645853,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,11.885937518556602,8.992968791603925,14.809374938144174,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,returned_episode_returns,mean,218.6492625772953,210.7781093239784,224.25397130846977,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,5.602343838720117,3.3351366943694307,8.140644668268212,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,16.12734390090918,12.562461217533565,19.741426135442453,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,24.99609222105937,17.667147404320712,32.96882605185237,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,7.257031281886157,5.0124804839302675,9.57582037005777,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,13.916406169359107,10.272519493949952,17.7781639667417,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,9.292187647719402,6.4085940005024895,12.373437598037707,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,17.641405487433076,12.441386455832982,23.378162999381306,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,14.69140623183921,11.06640657087264,18.421113298711134,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,13.837499583838508,9.962500071289833,17.84999906035955,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,12.419531469640788,9.164043141600269,15.849316651048131,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,66.12655668967636,55.21782707892271,76.87671117034769,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,23.243749279354233,18.491347103919544,28.30861216309713,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,7.8656249432242475,5.356250028306386,10.507050796443943,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,13.21640619134996,9.534375065832865,17.157070222028413,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,44.98671571724117,37.6273227234371,52.554683363251385,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,10.765624888357706,7.06482413601334,14.92111304134305,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,33.08125013997778,23.191287900942555,44.5476754201416,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,25.759373679873534,19.136718003598798,32.7601934877006,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,returned_episode_returns,mean,227.50785899162292,223.02113866209984,231.99536157250404,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,17.957812130451202,12.817187896376709,23.629745257730242,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,50.02500003762543,37.28359278861899,63.77982504384126,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,21.900780513882637,16.64062465624884,27.55079971675295,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,43.8554654615582,34.575779337843414,53.408608248410744,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,27.89218647632515,22.074960134945286,34.51874934808002,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,11.359374480380211,7.489042757159042,15.786952427243502,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,47.26796856528381,35.21945226054959,60.34296946035029,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,60.82578150613699,46.798397817707155,75.54843863641436,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,11.143750374030787,8.55388706780359,13.74457078811101,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,48.5429665511474,40.66628692725208,56.99851189840118,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,12.3351561446907,9.039023437839933,15.95392564623471,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,10.957031042024028,7.501425664045385,14.928163781895996,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,8.987500083690975,6.459355512729963,11.577343909097545,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,27.39531128620729,21.932811696548015,33.074295308068386,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,22.7835927545093,16.47263655056886,29.964080290302807,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,20.606249754317105,16.82882813436445,24.46562418441754,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,118.59923366521252,96.615636372687,140.12742189531855,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,6.621875072480179,4.462500107283995,8.885976691923858,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,returned_episode_returns,mean,210.71332063694717,198.7586123767047,220.2822492599487,64,400,34957,new
+overcooked-v1/cramped_room,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,17.22265559900552,12.739003538223916,22.29220577608794,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,15.133593409555033,11.485156033650856,18.90861256486969,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,19.031249742256477,14.198437497831765,23.95156209625129,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,44.781247116508894,36.853123080889056,52.887516038650936,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,34.881247905083,26.52952991104685,43.84999749208801,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,48.92499955953099,37.32029189976165,61.614942875108675,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_independent_agent_0_4 (0),independent_agent_0.4,False,returned_episode_returns,mean,41.17109090718441,31.170309774296765,52.05706683476746,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,63.39140503591625,48.63279231062334,78.62857405237878,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_onion_agent_0_1 (0),onion_agent_0.1,False,returned_episode_returns,mean,156.55314360186458,140.12647921266034,172.36959302918984,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_plate_agent_0_1 (0),plate_agent_0.1,False,returned_episode_returns,mean,55.92812114395201,45.12942978449283,67.1086280173724,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,30.935934947279748,23.72417760344979,38.421109960738974,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,25.6906252928311,17.841405922530974,35.4322273524216,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,48.502341151295695,38.445291462553726,59.09874724542894,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,29.660936537606176,24.38671843444026,35.1571078934663,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,117.72891612781677,100.80624016491637,134.09171319457235,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,31.24374896939844,24.608437241007053,38.35781031889928,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,76.80234089295845,62.392926610837456,91.2336875652225,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,63.198442549211904,44.41066690777225,82.39625724159413,64,400,34957,new
+overcooked-v1/cramped_room,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,returned_episode_returns,mean,237.0938048362732,232.15858706831932,241.78603478074072,64,400,34957,new

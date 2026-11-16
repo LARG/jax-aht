@@ -1,0 +1,649 @@
+task,row_agent,row_label,col_agent,br_for_label,is_diag,metric_name,aggregate_stat,mean,ci_lower,ci_upper,num_episodes,max_episode_steps,eval_seed,seating
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],True,base_return,mean,366.25,347.5,385.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,149.6875,117.8125,181.875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,185.9375,157.1875,213.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,118.125,93.75,142.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,137.8125,110.0,165.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,139.375,105.625,173.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,219.0625,184.05468750000017,253.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,188.75,167.49218750000017,209.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,146.5625,119.0625,173.75,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,186.5625,152.8125,220.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,129.375,101.25,158.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,285.3125,250.625,317.5,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,208.4375,179.6875,235.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,42.8125,31.25,55.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,97.8125,81.25,114.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,219.375,188.125,249.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,160.0,125.3125,194.375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,298.125,266.875,327.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,150.9375,118.125,183.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],True,base_return,mean,331.875,301.25,361.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,140.3125,113.4375,167.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,133.125,106.875,160.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,87.5,68.4375,107.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,133.125,102.5,165.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,179.0625,154.375,202.5,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,188.125,171.5625,204.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,208.75,184.6875,230.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,128.125,96.25,160.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,144.0625,113.4375,175.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,240.0,202.8125,275.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,226.875,203.75,248.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,29.0625,23.125,35.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,53.4375,44.0625,63.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,142.5,112.1875,173.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,150.3125,116.875,182.82031249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,295.625,266.55468750000017,322.5,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,117.5,88.125,149.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,50.3125,42.1875,58.75,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],True,base_return,mean,260.9375,242.80468750000017,275.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,65.9375,50.3125,82.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,59.0625,50.0,69.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,83.125,68.125,99.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,32.1875,26.25,38.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,105.9375,90.625,121.875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,56.25,47.1875,65.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,89.0625,66.875,112.19531249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,46.25,39.0625,53.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,40.3125,35.3125,45.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,57.1875,44.0625,70.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,112.1875,85.9375,139.375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,221.875,196.875,245.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,190.0,164.0625,213.75,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,30.625,25.625,35.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,144.375,110.0,180.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,35.9375,29.6875,42.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,178.4375,148.125,208.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,102.5,82.1875,123.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],True,base_return,mean,214.6875,199.375,228.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,20.0,15.625,24.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,25.3125,19.0625,31.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,195.9375,161.25,230.0,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,171.875,164.0625,178.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,200.0,185.0,214.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,26.5625,21.25,32.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,36.5625,30.0,43.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,175.3125,137.5,213.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,118.125,95.3125,141.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,28.125,22.1875,34.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,113.75,91.875,136.25,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,33.75,27.8125,40.0,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,90.625,73.125,109.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,214.375,175.625,252.82031249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,96.25,74.0625,119.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,97.8125,75.0,120.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,134.375,109.6875,158.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,30.9375,21.875,40.625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],True,base_return,mean,230.3125,218.125,241.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,84.0625,61.5625,106.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,36.25,27.1875,45.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,140.9375,125.625,155.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,99.375,75.0,123.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,63.125,47.8125,79.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,20.625,15.9375,25.625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,83.75,64.375,103.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,135.3125,108.125,162.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,110.9375,82.5,140.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,21.5625,17.1875,25.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,104.6875,84.375,125.0,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,117.8125,91.875,143.44531249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,263.4375,248.4375,276.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,124.6875,91.875,158.125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,115.0,87.8125,142.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,135.0,103.75,165.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,76.875,57.1875,97.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,99.375,71.5625,128.125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],True,base_return,mean,249.375,241.25,257.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,120.0,93.75,146.25,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,223.75,208.75,238.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,75.625,56.875,95.625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,107.8125,76.25,140.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,150.9375,118.4375,182.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,135.625,104.375,166.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,116.5625,88.4375,145.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,70.9375,55.0,86.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,70.3125,49.0625,92.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,78.75,50.9375,107.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,123.75,90.3125,157.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,266.875,251.25,280.0,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,207.5,175.3125,240.0,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,230.3125,193.75,265.625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,164.375,140.625,187.5,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,161.5625,140.0,183.125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,166.875,149.375,183.75,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,128.4375,109.0625,148.125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_independent_agent_0 (0),independent_agent_0,True,base_return,mean,329.6875,307.5,351.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,168.4375,159.6875,176.875,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,244.375,234.375,254.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,158.4375,140.625,175.625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,217.8125,189.0625,246.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,260.9375,227.8125,292.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,210.625,190.9375,229.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,163.75,144.375,183.125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,164.375,137.8125,191.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,186.5625,167.1875,205.0,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,157.1875,137.8125,176.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_human_proxy (0),human_proxy,False,base_return,mean,217.1875,178.125,255.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,101.25,70.625,133.125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,85.9375,58.125,115.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,77.1875,51.875,104.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,64.375,42.5,87.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,78.125,49.375,109.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,78.75,50.625,108.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,55.0,32.8125,79.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_onion_agent_0 (0),onion_agent_0,True,base_return,mean,214.6875,195.9375,233.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,104.375,76.25,134.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,64.6875,38.4375,93.125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,93.75,63.125,125.625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,93.4375,62.8125,125.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,68.125,41.875,95.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,66.5625,41.5625,93.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,72.5,49.6875,96.875,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,62.8125,38.75,89.375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,57.5,32.8125,85.0,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_human_proxy (0),human_proxy,False,base_return,mean,180.0,145.0,214.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,132.8125,95.9375,171.25781249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,170.0,128.75,211.875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,115.9375,90.625,142.5,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,113.4375,88.125,139.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,102.5,80.3125,125.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,40.9375,36.25,45.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,189.375,141.875,238.125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,132.5,116.5625,147.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_plate_agent_0 (0),plate_agent_0,True,base_return,mean,220.3125,200.625,239.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,121.5625,95.625,148.125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,135.9375,102.8125,170.625,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,168.125,127.1875,211.25,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,138.75,110.0,168.125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,61.25,49.6875,73.75,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,105.3125,81.25,129.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,114.6875,89.375,140.94531249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,100.0,75.625,125.625,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_human_proxy (0),human_proxy,False,base_return,mean,219.6875,179.67968750000017,260.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,150.3125,129.375,171.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,135.9375,114.375,157.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,131.875,107.5,156.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,68.125,55.3125,81.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,114.0625,91.25,137.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,150.625,124.6875,176.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,100.0,85.0,115.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,186.5625,171.55468750000017,200.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,121.5625,98.125,145.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,base_return,mean,249.0625,237.1875,259.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,168.4375,146.25,190.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,149.6875,124.0625,175.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,128.75,107.1875,150.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,147.5,127.8125,166.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,141.25,117.1875,165.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,146.25,123.4375,169.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,143.4375,115.9375,170.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,244.375,228.75,259.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,233.75,211.25,254.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,198.75,185.625,211.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,202.8125,187.8125,216.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,86.875,72.5,101.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,169.375,155.625,182.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,166.875,145.9375,187.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,229.0625,199.36718750000017,258.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,190.0,173.4375,205.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,127.1875,110.3125,144.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,216.875,202.1875,229.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,base_return,mean,320.9375,304.0625,336.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,242.1875,229.6875,254.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,146.875,134.0625,159.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,160.9375,145.3125,175.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,135.3125,115.9375,154.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,230.9375,222.5,238.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,191.5625,174.6875,207.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,295.9375,272.1875,318.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,179.6875,160.625,198.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,210.3125,197.1875,222.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,170.3125,147.1875,192.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,125.0,108.125,142.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,141.875,119.6875,163.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,137.1875,108.125,167.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,206.5625,194.6875,217.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,207.5,191.875,222.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,160.9375,141.875,180.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,173.125,145.9375,199.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,142.1875,116.875,167.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,base_return,mean,328.75,316.5625,341.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,208.4375,193.125,222.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,117.5,97.8125,137.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,204.6875,191.5625,217.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,146.875,123.75,169.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,154.0625,123.4375,184.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,288.4375,272.1875,302.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,335.3125,312.5,356.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,334.6875,315.625,353.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,265.3125,242.5,289.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,152.5,125.9375,179.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,295.0,272.8125,316.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,220.9375,175.0,265.9453124999993,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,342.1875,296.5625,386.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,324.375,284.375,364.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,289.375,265.3125,310.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,266.25,238.75,292.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,355.9375,329.6875,379.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,251.875,216.875,286.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,base_return,mean,373.75,346.25,402.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,167.8125,142.5,192.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,131.875,117.8125,145.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,270.3125,250.9375,289.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,233.75,193.4375,273.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,base_return,mean,414.0625,383.4375,441.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,45.3125,39.6875,51.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,25.3125,20.625,30.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,162.5,142.5,182.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,87.5,64.375,111.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,82.1875,68.75,95.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,63.125,56.25,70.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,24.375,18.125,30.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,135.0,120.3125,150.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,102.8125,79.375,125.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,90.3125,74.0625,106.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,44.6875,38.4375,50.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,19.375,15.0,24.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,37.5,32.5,42.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,base_return,mean,277.8125,264.375,289.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,61.875,51.25,73.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,190.3125,174.0625,205.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,39.6875,34.0625,45.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,base_return,mean,200.625,166.25,234.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,29.0625,23.75,34.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,27.1875,21.875,32.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,105.3125,86.5625,124.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,43.4375,30.9375,56.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,93.75,74.375,114.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,25.3125,20.625,30.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,25.625,19.6875,31.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,134.375,120.625,148.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,112.1875,95.0,129.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,21.875,17.1875,26.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,33.4375,27.8125,39.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,30.9375,26.5625,35.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,35.3125,30.0,40.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,63.4375,46.875,80.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,base_return,mean,267.5,254.375,278.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,62.1875,43.75,82.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,39.0625,32.1875,46.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,base_return,mean,209.6875,170.3125,247.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,42.1875,36.25,48.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,25.3125,20.3125,30.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,150.3125,126.875,173.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,59.6875,41.5625,79.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,32.1875,26.5625,38.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,26.25,20.625,31.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,18.4375,13.125,24.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,160.9375,152.8125,169.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,46.875,35.3125,58.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,126.875,104.375,150.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,55.625,45.625,65.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,24.6875,19.0625,30.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,23.75,19.375,28.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,171.875,151.875,191.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,114.0625,86.875,141.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,base_return,mean,258.4375,250.0,265.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,25.625,20.0,31.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,base_return,mean,162.8125,130.625,194.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,115.0,84.375,146.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,36.25,27.5,46.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,23.75,16.25,33.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,60.0,42.1875,79.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,79.0625,56.25,102.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,85.0,56.25,115.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,35.625,25.0,46.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,184.375,168.4375,199.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,99.375,74.375,124.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,81.5625,55.0,109.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,55.0,39.375,72.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,64.6875,48.429687500000185,81.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,38.125,24.0625,55.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,21.875,16.5625,27.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,21.5625,15.625,28.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,21.25,14.0625,30.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,base_return,mean,271.875,259.6875,281.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,base_return,mean,226.5625,199.375,252.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,base_return,mean,163.75,135.3125,192.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,base_return,mean,126.25,100.625,151.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,base_return,mean,105.9375,92.5,119.375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,base_return,mean,142.8125,123.4375,161.25,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,base_return,mean,165.9375,136.25,195.0,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,base_return,mean,127.5,104.0625,151.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_independent_agent_0 (0),independent_agent_0,False,base_return,mean,152.5,126.5625,179.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_onion_agent_0 (0),onion_agent_0,False,base_return,mean,210.3125,197.5,223.125,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_plate_agent_0 (0),plate_agent_0,False,base_return,mean,143.125,117.5,169.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,base_return,mean,94.6875,76.5625,113.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,base_return,mean,72.1875,57.8125,86.875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,base_return,mean,179.0625,151.875,205.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,base_return,mean,167.5,141.875,192.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,base_return,mean,83.4375,67.5,99.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,base_return,mean,78.4375,63.4375,94.375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,base_return,mean,71.5625,55.0,89.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,base_return,mean,105.625,84.0625,127.5,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,base_return,mean,359.0625,342.1875,373.75,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],True,returned_episode_returns,mean,366.25,347.5,385.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,149.6875,117.8125,181.875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,185.9375,157.1875,213.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,118.125,93.75,142.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,137.8125,110.0,165.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,139.375,105.625,173.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,219.0625,184.05468750000017,253.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,188.75,167.49218750000017,209.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,146.5625,119.0625,173.75,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,186.5625,152.8125,220.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,129.375,101.25,158.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,285.3125,250.625,317.5,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,208.4375,179.6875,235.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,42.8125,31.25,55.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,97.8125,81.25,114.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,219.375,188.125,249.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,160.0,125.3125,194.375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (0),ippo_mlp[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,298.125,266.875,327.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,150.9375,118.125,183.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],True,returned_episode_returns,mean,331.875,301.25,361.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,140.3125,113.4375,167.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,133.125,106.875,160.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,87.5,68.4375,107.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,133.125,102.5,165.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,179.0625,154.375,202.5,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,188.125,171.5625,204.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,208.75,184.6875,230.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,128.125,96.25,160.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,144.0625,113.4375,175.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,240.0,202.8125,275.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,226.875,203.75,248.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,29.0625,23.125,35.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,53.4375,44.0625,63.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,142.5,112.1875,173.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,150.3125,116.875,182.82031249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (1),ippo_mlp[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,295.625,266.55468750000017,322.5,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,117.5,88.125,149.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,50.3125,42.1875,58.75,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],True,returned_episode_returns,mean,260.9375,242.80468750000017,275.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,65.9375,50.3125,82.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,59.0625,50.0,69.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,83.125,68.125,99.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,32.1875,26.25,38.125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,105.9375,90.625,121.875,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,56.25,47.1875,65.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,89.0625,66.875,112.19531249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,46.25,39.0625,53.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,40.3125,35.3125,45.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,57.1875,44.0625,70.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,112.1875,85.9375,139.375,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,221.875,196.875,245.0,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,190.0,164.0625,213.75,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,30.625,25.625,35.625,64,400,34957,new
+overcooked-v1/asymm_advantages,ippo_mlp (2),ippo_mlp[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,144.375,110.0,180.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,35.9375,29.6875,42.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,178.4375,148.125,208.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,102.5,82.1875,123.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],True,returned_episode_returns,mean,214.6875,199.375,228.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,20.0,15.625,24.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,25.3125,19.0625,31.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,195.9375,161.25,230.0,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,171.875,164.0625,178.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,200.0,185.0,214.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,26.5625,21.25,32.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,36.5625,30.0,43.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,175.3125,137.5,213.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,118.125,95.3125,141.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,28.125,22.1875,34.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,113.75,91.875,136.25,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,33.75,27.8125,40.0,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,90.625,73.125,109.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (0),brdiv-conf[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,214.375,175.625,252.82031249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,96.25,74.0625,119.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,97.8125,75.0,120.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,134.375,109.6875,158.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,30.9375,21.875,40.625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],True,returned_episode_returns,mean,230.3125,218.125,241.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,84.0625,61.5625,106.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,36.25,27.1875,45.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,140.9375,125.625,155.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,99.375,75.0,123.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,63.125,47.8125,79.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,20.625,15.9375,25.625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,83.75,64.375,103.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,135.3125,108.125,162.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,110.9375,82.5,140.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,21.5625,17.1875,25.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,104.6875,84.375,125.0,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,117.8125,91.875,143.44531249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (1),brdiv-conf[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,263.4375,248.4375,276.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,124.6875,91.875,158.125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,115.0,87.8125,142.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,135.0,103.75,165.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,76.875,57.1875,97.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,99.375,71.5625,128.125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],True,returned_episode_returns,mean,249.375,241.25,257.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,120.0,93.75,146.25,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,223.75,208.75,238.75,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,75.625,56.875,95.625,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,107.8125,76.25,140.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,150.9375,118.4375,182.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,135.625,104.375,166.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,116.5625,88.4375,145.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,70.9375,55.0,86.875,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,70.3125,49.0625,92.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,78.75,50.9375,107.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,123.75,90.3125,157.5,64,400,34957,new
+overcooked-v1/asymm_advantages,brdiv-conf (2),brdiv-conf[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,266.875,251.25,280.0,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,207.5,175.3125,240.0,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,230.3125,193.75,265.625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,164.375,140.625,187.5,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,161.5625,140.0,183.125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,166.875,149.375,183.75,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,128.4375,109.0625,148.125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_independent_agent_0 (0),independent_agent_0,True,returned_episode_returns,mean,329.6875,307.5,351.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,168.4375,159.6875,176.875,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,244.375,234.375,254.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,158.4375,140.625,175.625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,217.8125,189.0625,246.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,260.9375,227.8125,292.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,210.625,190.9375,229.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,163.75,144.375,183.125,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,164.375,137.8125,191.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,186.5625,167.1875,205.0,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,157.1875,137.8125,176.25,64,400,34957,new
+overcooked-v1/asymm_advantages,independent_agent_0,independent_agent_0,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,217.1875,178.125,255.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,101.25,70.625,133.125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,85.9375,58.125,115.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,77.1875,51.875,104.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,64.375,42.5,87.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,78.125,49.375,109.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,78.75,50.625,108.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,55.0,32.8125,79.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_onion_agent_0 (0),onion_agent_0,True,returned_episode_returns,mean,214.6875,195.9375,233.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,104.375,76.25,134.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,64.6875,38.4375,93.125,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,93.75,63.125,125.625,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,93.4375,62.8125,125.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,68.125,41.875,95.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,66.5625,41.5625,93.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,72.5,49.6875,96.875,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,62.8125,38.75,89.375,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,57.5,32.8125,85.0,64,400,34957,new
+overcooked-v1/asymm_advantages,onion_agent_0,onion_agent_0,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,180.0,145.0,214.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,132.8125,95.9375,171.25781249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,170.0,128.75,211.875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,115.9375,90.625,142.5,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,113.4375,88.125,139.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,102.5,80.3125,125.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,40.9375,36.25,45.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,189.375,141.875,238.125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,132.5,116.5625,147.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_plate_agent_0 (0),plate_agent_0,True,returned_episode_returns,mean,220.3125,200.625,239.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,121.5625,95.625,148.125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,135.9375,102.8125,170.625,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,168.125,127.1875,211.25,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,138.75,110.0,168.125,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,61.25,49.6875,73.75,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,105.3125,81.25,129.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,114.6875,89.375,140.94531249999932,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,100.0,75.625,125.625,64,400,34957,new
+overcooked-v1/asymm_advantages,plate_agent_0,plate_agent_0,br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,219.6875,179.67968750000017,260.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,150.3125,129.375,171.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,135.9375,114.375,157.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,131.875,107.5,156.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,68.125,55.3125,81.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,114.0625,91.25,137.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,150.625,124.6875,176.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,100.0,85.0,115.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,186.5625,171.55468750000017,200.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,121.5625,98.125,145.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],True,returned_episode_returns,mean,249.0625,237.1875,259.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,168.4375,146.25,190.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,149.6875,124.0625,175.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,128.75,107.1875,150.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,147.5,127.8125,166.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,141.25,117.1875,165.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,146.25,123.4375,169.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,143.4375,115.9375,170.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 0)",lbrdiv-conf[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,244.375,228.75,259.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,233.75,211.25,254.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,198.75,185.625,211.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,202.8125,187.8125,216.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,86.875,72.5,101.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,169.375,155.625,182.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,166.875,145.9375,187.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,229.0625,199.36718750000017,258.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,190.0,173.4375,205.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,127.1875,110.3125,144.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,216.875,202.1875,229.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],True,returned_episode_returns,mean,320.9375,304.0625,336.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,242.1875,229.6875,254.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,146.875,134.0625,159.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,160.9375,145.3125,175.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,135.3125,115.9375,154.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,230.9375,222.5,238.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,191.5625,174.6875,207.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 1)",lbrdiv-conf[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,295.9375,272.1875,318.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,179.6875,160.625,198.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,210.3125,197.1875,222.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,170.3125,147.1875,192.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,125.0,108.125,142.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,141.875,119.6875,163.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,137.1875,108.125,167.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,206.5625,194.6875,217.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,207.5,191.875,222.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,160.9375,141.875,180.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,173.125,145.9375,199.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,142.1875,116.875,167.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],True,returned_episode_returns,mean,328.75,316.5625,341.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,208.4375,193.125,222.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,117.5,97.8125,137.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,204.6875,191.5625,217.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,146.875,123.75,169.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,154.0625,123.4375,184.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"lbrdiv-conf (1, 2)",lbrdiv-conf[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,288.4375,272.1875,302.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,335.3125,312.5,356.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,334.6875,315.625,353.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,265.3125,242.5,289.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,152.5,125.9375,179.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,295.0,272.8125,316.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,220.9375,175.0,265.9453124999993,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,342.1875,296.5625,386.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,324.375,284.375,364.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,289.375,265.3125,310.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,266.25,238.75,292.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,355.9375,329.6875,379.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,251.875,216.875,286.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_0 (0),comedi[0],True,returned_episode_returns,mean,373.75,346.25,402.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,167.8125,142.5,192.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,131.875,117.8125,145.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,270.3125,250.9375,289.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,233.75,193.4375,273.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 0)",comedi[0],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,414.0625,383.4375,441.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,45.3125,39.6875,51.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,25.3125,20.625,30.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,162.5,142.5,182.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,87.5,64.375,111.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,82.1875,68.75,95.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,63.125,56.25,70.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,24.375,18.125,30.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,135.0,120.3125,150.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,102.8125,79.375,125.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,90.3125,74.0625,106.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,44.6875,38.4375,50.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,19.375,15.0,24.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,37.5,32.5,42.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_1 (0),comedi[1],True,returned_episode_returns,mean,277.8125,264.375,289.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,61.875,51.25,73.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,190.3125,174.0625,205.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,39.6875,34.0625,45.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 1)",comedi[1],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,200.625,166.25,234.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,29.0625,23.75,34.375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,27.1875,21.875,32.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,105.3125,86.5625,124.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,43.4375,30.9375,56.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,93.75,74.375,114.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,25.3125,20.625,30.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,25.625,19.6875,31.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,134.375,120.625,148.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,112.1875,95.0,129.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,21.875,17.1875,26.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,33.4375,27.8125,39.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,30.9375,26.5625,35.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,35.3125,30.0,40.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,63.4375,46.875,80.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_2 (0),comedi[2],True,returned_episode_returns,mean,267.5,254.375,278.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,62.1875,43.75,82.5,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,39.0625,32.1875,46.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 2)",comedi[2],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,209.6875,170.3125,247.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,42.1875,36.25,48.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,25.3125,20.3125,30.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,150.3125,126.875,173.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,59.6875,41.5625,79.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,32.1875,26.5625,38.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,26.25,20.625,31.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,18.4375,13.125,24.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,160.9375,152.8125,169.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,46.875,35.3125,58.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,126.875,104.375,150.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,55.625,45.625,65.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,24.6875,19.0625,30.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,23.75,19.375,28.75,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,171.875,151.875,191.25,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,114.0625,86.875,141.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_3 (0),comedi[3],True,returned_episode_returns,mean,258.4375,250.0,265.3125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,25.625,20.0,31.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 3)",comedi[3],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,162.8125,130.625,194.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,115.0,84.375,146.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,36.25,27.5,46.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,23.75,16.25,33.125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,60.0,42.1875,79.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,79.0625,56.25,102.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,85.0,56.25,115.625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,35.625,25.0,46.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,184.375,168.4375,199.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,99.375,74.375,124.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,81.5625,55.0,109.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,55.0,39.375,72.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,64.6875,48.429687500000185,81.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,38.125,24.0625,55.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,21.875,16.5625,27.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,21.5625,15.625,28.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,21.25,14.0625,30.0,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_comedi_1_4 (0),comedi[4],True,returned_episode_returns,mean,271.875,259.6875,281.875,64,400,34957,new
+overcooked-v1/asymm_advantages,"comedi (1, 4)",comedi[4],br_for_human_proxy (0),human_proxy,False,returned_episode_returns,mean,226.5625,199.375,252.8125,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_ippo_mlp_0 (0),ippo_mlp[0],False,returned_episode_returns,mean,163.75,135.3125,192.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_ippo_mlp_1 (0),ippo_mlp[1],False,returned_episode_returns,mean,126.25,100.625,151.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_ippo_mlp_2 (0),ippo_mlp[2],False,returned_episode_returns,mean,105.9375,92.5,119.375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_brdiv_conf_0 (0),brdiv-conf[0],False,returned_episode_returns,mean,142.8125,123.4375,161.25,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_brdiv_conf_1 (0),brdiv-conf[1],False,returned_episode_returns,mean,165.9375,136.25,195.0,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_brdiv_conf_2 (0),brdiv-conf[2],False,returned_episode_returns,mean,127.5,104.0625,151.5625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_independent_agent_0 (0),independent_agent_0,False,returned_episode_returns,mean,152.5,126.5625,179.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_onion_agent_0 (0),onion_agent_0,False,returned_episode_returns,mean,210.3125,197.5,223.125,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_plate_agent_0 (0),plate_agent_0,False,returned_episode_returns,mean,143.125,117.5,169.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_lbrdiv_conf_1_0 (0),lbrdiv-conf[0],False,returned_episode_returns,mean,94.6875,76.5625,113.4375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_lbrdiv_conf_1_1 (0),lbrdiv-conf[1],False,returned_episode_returns,mean,72.1875,57.8125,86.875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_lbrdiv_conf_1_2 (0),lbrdiv-conf[2],False,returned_episode_returns,mean,179.0625,151.875,205.9375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_0 (0),comedi[0],False,returned_episode_returns,mean,167.5,141.875,192.1875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_1 (0),comedi[1],False,returned_episode_returns,mean,83.4375,67.5,99.6875,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_2 (0),comedi[2],False,returned_episode_returns,mean,78.4375,63.4375,94.375,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_3 (0),comedi[3],False,returned_episode_returns,mean,71.5625,55.0,89.0625,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_comedi_1_4 (0),comedi[4],False,returned_episode_returns,mean,105.625,84.0625,127.5,64,400,34957,new
+overcooked-v1/asymm_advantages,human_proxy,human_proxy,br_for_human_proxy (0),human_proxy,True,returned_episode_returns,mean,359.0625,342.1875,373.75,64,400,34957,new

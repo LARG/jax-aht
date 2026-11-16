@@ -1,0 +1,7 @@
+teammate,flag,reason,evidence
+ippo_s5_seed42,br_predates_teammate,BR checkpoint saved before the teammate checkpoint the yaml loads,BR saved 2026-04-26; teammate ippo_s5_large/seed42 saved 2026-05-25 (HF _CHECKPOINT_METADATA)
+ippo_s5_seed123,br_predates_teammate,BR checkpoint saved before the teammate checkpoint the yaml loads,BR saved 2026-04-26; teammate ippo_s5_large/seed123 saved 2026-05-25 (HF _CHECKPOINT_METADATA)
+ippo_s5_seed31415,br_predates_teammate,BR checkpoint saved before the teammate checkpoint the yaml loads,BR saved 2026-04-26; teammate ippo_s5_large/seed31415 saved 2026-05-25 (HF _CHECKPOINT_METADATA)
+ippo_s5_op_seed42,br_predates_teammate,BR checkpoint saved before the teammate checkpoint the yaml loads,BR saved 2026-04-26; teammate ippo_s5_op/seed42 saved 2026-05-02 (HF _CHECKPOINT_METADATA)
+ippo_s5_op_seed123,br_predates_teammate,BR checkpoint saved before the teammate checkpoint the yaml loads,BR saved 2026-04-26; teammate ippo_s5_op/seed123 saved 2026-05-03 (HF _CHECKPOINT_METADATA)
+ippo_s5_op_seed31415,weak_br,BR saved after its teammate but scores near zero with every partner tested,BR saved 2026-05-06 after teammate ippo_s5_op/seed31415 (2026-05-03); returns 0.00-0.98 vs ippo_s5/seed42; 123; 31415; 99999 (results/rebuttal/br_references/hanabi_s5_br_small_test.log); XP diagonal 0.17

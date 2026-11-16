@@ -9,6 +9,17 @@ renamed to the new version and a fresh `Unreleased` section is started.
 
 ## [Unreleased]
 
+### Added
+- Trained best responses to the human proxy on LBF 7x7 and the Cramped Room, Asymmetric
+  Advantages, Counter Circuit and Forced Coordination layouts, in `global_heldout_br.yaml`.
+- Heldout cross-play matrices for every task in `evaluation/xp_matrices/`.
+
+### Changed
+- The upper performance bounds in `global_heldout_settings.yaml` are now the best known return
+  with each teammate, taken over the cross-play matrices, the benchmark agents and the previous
+  bounds. Most bounds went up, so normalized heldout returns are lower than with 1.1.0 and the
+  two are not comparable.
+
 ## [1.1.0] - 2026-09-15
 
 Benchmark results from this version are **not comparable to 1.0.0**: the tuned hyperparameters

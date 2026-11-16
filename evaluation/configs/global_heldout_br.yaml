@@ -101,6 +101,17 @@ best_response_set:
       idx_list: [0]
       test_mode: true
 
+    br_for_entitled_agent:
+      path: "eval_teammates/lbf_7x7_nolevels/entitled_agent_serious/2026-05-05_10-30-43/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_greedy_closest_teammate:
+      actor_type: seq_agent
+      ordering_strategy: nearest_agent
+
     br_for_lbrdiv_conf_1_0:
       path: "eval_teammates/lbf_7x7_nolevels/lbrdiv_conf_1_0_serious/2026-03-26_14-39-54/ego_train_run"
       actor_type: s5
@@ -157,16 +168,12 @@ best_response_set:
       idx_list: [0]
       test_mode: true
 
-    br_for_entitled_agent:
-      path: "eval_teammates/lbf_7x7_nolevels/entitled_agent_serious/2026-05-05_10-30-43/ego_train_run"
+    br_for_human_proxy:
+      path: "eval_teammates/lbf_7x7_nolevels/lbf_7x7_nolevels_BC/2026-05-06_13-05-25/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
       test_mode: true
-
-    br_for_greedy_closest_teammate:
-      actor_type: seq_agent
-      ordering_strategy: nearest_agent
 
   lbf/lbf_12x12:
     # Uses the s2c1 BR instead of the custom-trained ippo_mlp BR, which performs worse.
@@ -416,6 +423,13 @@ best_response_set:
       idx_list: [0]
       test_mode: true
 
+    br_for_human_proxy:
+      path: "eval_teammates/overcooked_v1_cramped_room/cramped_room_BC_0/2026-05-05_22-56-07/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
   overcooked-v1/asymm_advantages:
     br_for_ippo_mlp_0:
       path: "eval_teammates/overcooked_v1_asymm_advantages/asymm_advantages_ippo_mlp_0_serious/2026-03-16_12-44-48/ego_train_run"
@@ -531,6 +545,13 @@ best_response_set:
 
     br_for_comedi_1_4:
       path: "eval_teammates/overcooked_v1_asymm_advantages/asymm_advantages_comedi_1_4_serious/2026-03-31_22-45-22/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_human_proxy:
+      path: "eval_teammates/overcooked_v1_asymm_advantages/asymm_advantages_BC_0/2026-05-06_11-23-12/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -665,6 +686,12 @@ best_response_set:
 
     br_for_comedi_1_4:
       path: "eval_teammates/overcooked_v1_counter_circuit/counter_circuit_comedi_1_4_serious/2026-04-01_09-35-44/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+    br_for_human_proxy:
+      path: "eval_teammates/overcooked_v1_counter_circuit/counter_circuit_BC_0/2026-11-13_11-45-13/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
@@ -912,6 +939,13 @@ best_response_set:
 
     br_for_comedi_1_4:
       path: "eval_teammates/overcooked_v1_forced_coord/forced_coord_comedi_1_4_serious/2026-04-01_12-42-01/ego_train_run"
+      actor_type: s5
+      ckpt_key: final_params
+      idx_list: [0]
+      test_mode: true
+
+    br_for_human_proxy:
+      path: "eval_teammates/overcooked_v1_forced_coord/forced_coord_BC_0/2026-05-07_01-39-16/ego_train_run"
       actor_type: s5
       ckpt_key: final_params
       idx_list: [0]
