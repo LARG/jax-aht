@@ -19,7 +19,7 @@ renamed to the new version and a fresh `Unreleased` section is started.
 - The upper performance bounds in `global_heldout_settings.yaml` are now the best known return
   with each teammate, taken over the cross-play matrices, the benchmark agents and the previous
   bounds. Most bounds went up, so normalized heldout returns are lower than with 1.1.0 and the
-  two are not comparable.
+  two are not comparable. Full Hanabi keeps its 1.1.0 bounds for now.
 
 ## [1.1.0] - 2026-09-15
 

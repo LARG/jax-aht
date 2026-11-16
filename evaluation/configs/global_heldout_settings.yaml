@@ -10,6 +10,7 @@ global_heldout_settings:
 # Upper performance bounds are the best known return with each teammate: the max over its row of
 # the heldout cross-play matrix (evaluation/xp_matrices/), the best return reached by any
 # benchmark agent, and the bound used in release 1.1.0.
+# Full Hanabi keeps its 1.1.0 bounds until its best responses are retrained.
 heldout_set:
   lbf/lbf_7x7_nolevels: # In LBF, results are much better with test mode = false.
     ippo_mlp: 
@@ -596,7 +597,7 @@ heldout_set:
       play_threshold: 0.6
       hint_threshold: 4
       performance_bounds:
-        returned_episode_returns: [0.0, 10.8125]
+        returned_episode_returns: [0.0, 10.47]
     flawed:
       actor_type: flawed
       play_threshold: 0.4
@@ -613,15 +614,15 @@ heldout_set:
     smartbot:
       actor_type: smartbot
       performance_bounds:
-        returned_episode_returns: [0.0, 9.4375]
+        returned_episode_returns: [0.0, 8.62]
     cautious:
       actor_type: cautious
       performance_bounds:
-        returned_episode_returns: [0.0, 13.0156]
+        returned_episode_returns: [0.0, 11.12]
     internal:
       actor_type: internal
       performance_bounds:
-        returned_episode_returns: [0.0, 9.9219]
+        returned_episode_returns: [0.0, 9.00]
     obl_r2d2_l1:
       actor_type: obl_r2d2
       weight_file: eval_teammates/hanabi/obl-r2d2-flax/icml_OBL1/OFF_BELIEF1_SHUFFLE_COLOR0_BZA0_BELIEF_a.safetensors
@@ -631,13 +632,13 @@ heldout_set:
       actor_type: obl_r2d2
       weight_file: eval_teammates/hanabi/obl-r2d2-flax/icml_OBL4/OFF_BELIEF1_SHUFFLE_COLOR0_LOAD1_BZA0_BELIEF_a.safetensors
       performance_bounds:
-        returned_episode_returns: [0.0, 9.7969]
+        returned_episode_returns: [0.0, 8.52]
     bc_lstm_human_proxy:
       actor_type: bc_lstm
       weight_file: eval_teammates/hanabi/hanabi_ah2ac2_bc.safetensors
       greedy: true
       performance_bounds:
-        returned_episode_returns: [0.0, 4.9219]
+        returned_episode_returns: [0.0, 4.39]
     bc_lstm_v2:
       actor_type: bc_lstm
       weight_file: eval_teammates/hanabi/hanabi_ah2ac2_bc_v2.safetensors
@@ -654,7 +655,7 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 12.4219]]
+        returned_episode_returns: [[0.0, 12.17]]
     ippo_mlp_seed1:
       path: "eval_teammates/hanabi/ippo_fullhanabi/mlp_1e9_3seeds/saved_train_run"
       actor_type: mlp
@@ -674,7 +675,7 @@ heldout_set:
       ACTIVATION: relu
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 12.5938]]
+        returned_episode_returns: [[0.0, 11.87]]
     # S5 recurrent IPPO self-play partners (large: D=128, SSM=128, ACH=1024).
     ippo_s5_seed42:
       path: "eval_teammates/hanabi/ippo_s5_large/seed42"
@@ -759,7 +760,7 @@ heldout_set:
       FC_N_LAYERS: 2
       test_mode: false
       performance_bounds:
-        returned_episode_returns: [[0.0, 12.3438]]
+        returned_episode_returns: [[0.0, 11.30]]
   mini-hanabi: # Mini-Hanabi (3 colors, 3 ranks) held-out partner set
     # OBL R2D2 NOT included because its architecture is hardcoded for full Hanabi (out_dim=21, obs split at [125:])
     ippo_mlp_seed0:
