@@ -12,7 +12,8 @@ renamed to the new version and a fresh `Unreleased` section is started.
 ### Added
 - Trained best responses to the human proxy on LBF 7x7 and the Cramped Room, Asymmetric
   Advantages, Counter Circuit and Forced Coordination layouts, in `global_heldout_br.yaml`.
-- Heldout cross-play matrices for every task in `evaluation/xp_matrices/`.
+- Heldout cross-play matrices for the LBF, Overcooked-v1 and Mini-Hanabi tasks in
+  `evaluation/xp_matrices/`.
 
 ### Changed
 - The upper performance bounds in `global_heldout_settings.yaml` are now the best known return

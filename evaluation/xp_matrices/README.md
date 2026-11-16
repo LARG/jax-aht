@@ -11,6 +11,3 @@ mean over episodes with a bootstrapped 95% CI. Returns are raw (not normalized),
 metric. The best response plays as `agent_0` and the teammate as `agent_1`, the same seating as
 heldout evaluation (`seating = new`). `evaluation/run.py -cn heldout_xp` seats them the other way
 round, so its numbers can differ slightly from these.
-
-`hanabi_diag_flags.csv` lists Hanabi teammates whose diagonal entry may understate the true best
-response, with the reason for each.
