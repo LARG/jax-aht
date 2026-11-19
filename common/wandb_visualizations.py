@@ -1,4 +1,5 @@
 import os
+
 import wandb
 from omegaconf import OmegaConf
 
@@ -7,6 +8,7 @@ class Logger:
     """
     Class to initialize logger object for writing experiment results to wandb.
     """
+
     def __init__(self, config):
         self.verbose = config["logger"].get("verbose", False)
         self.run = wandb.init(
@@ -18,7 +20,7 @@ class Logger:
             group=config["logger"].get("group", None),
             mode=config["logger"].get("mode", None),
             reinit=True,
-            )
+        )
         self.define_metrics()
 
     def log(self, data, step=None, commit=False):
@@ -32,16 +34,14 @@ class Logger:
     def commit(self):
         self.log({}, commit=True)
 
-    def log_xp_matrix(self, tag, mat, step=None, columns=None, rows=None, commit=True, **kwargs):
+    def log_xp_matrix(
+        self, tag, mat, step=None, columns=None, rows=None, commit=True, **kwargs
+    ):
         if rows is None:
             rows = [str(i) for i in range(mat.shape[0])]
         if columns is None:
             columns = [str(i) for i in range(mat.shape[1])]
-        tab = wandb.Table(
-                columns=columns,
-                data=mat,
-                rows=rows
-                )
+        tab = wandb.Table(columns=columns, data=mat, rows=rows)
         wandb.log({tag: tab, **kwargs}, step=step, commit=commit)
 
     def define_metrics(self):
@@ -52,7 +52,7 @@ class Logger:
         wandb.define_metric("Eval/*", step_metric="train_step")
         wandb.define_metric("Returns/*", step_metric="train_step")
         wandb.define_metric("HeldoutEval/*", step_metric="iter")
-    
+
     def log_artifact(self, name, path, type_name):
         artifact = wandb.Artifact(name, type=type_name)
         # check if path is a directory or a file
@@ -61,9 +61,9 @@ class Logger:
         else:
             artifact.add_file(path)
         self.run.log_artifact(artifact)
-    
+
     def log_video(self, tag, path, commit=True):
         wandb.log({tag: wandb.Video(path)}, commit=commit)
-    
+
     def close(self):
         wandb.finish()
