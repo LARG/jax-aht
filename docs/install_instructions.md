@@ -62,6 +62,23 @@ Re-running the script only downloads files that are missing locally; pass `--for
 python marl/run.py task=lbf/lbf_7x7_nolevels algorithm=ippo/lbf/lbf_7x7_nolevels
 ```
 
+# Logging to Weights & Biases
+
+Training entrypoints log through `common/wandb_visualizations.py`, which calls
+`wandb.init`. 
+
+Scripts automatically log to users personal wandb `entity` (set after `wandb login`). 
+
+
+To log to a shared team instead, set the environment variable:
+```bash
+export WANDB_ENTITY=aht-project
+```
+
+Scripts allow entity or project to be overriden: 
+```bash
+python marl/run.py task=... algorithm=... logger.entity=my-team logger.project=my-project
+```
 
 # Alternative Manual Installation
 

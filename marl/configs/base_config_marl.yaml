@@ -22,7 +22,7 @@ name: ${TASK_NAME}/${algorithm.ALG}/${label}
 # wandb settings
 logger: 
   project: aht-benchmark
-  entity: aht-project
+  entity: null
   tags: 
     - ${algorithm.ALG}
     - ${TASK_NAME}
