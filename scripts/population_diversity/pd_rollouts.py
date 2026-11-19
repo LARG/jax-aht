@@ -1,4 +1,4 @@
-# per-env rollout loops, episode-event counters, and BR loading.
+"""Population-diversity rollouts: rollout loops, LBF episode counters, policy loading."""
 from __future__ import annotations
 
 import logging
@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
+
 import numpy as np
 
 from scripts.population_diversity.pd_events import (
@@ -17,13 +18,11 @@ from scripts.population_diversity.pd_events import (
     hanabi_feature_names,
     HANABI_FEATURE_NAMES,
     LBF_FEATURE_NAMES,
-    OVERCOOKED_SHAPED_INFOS,
-    OVERCOOKED_FEATURE_NAMES,
 )
 
 log = logging.getLogger("compute_pd")
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 def _unwrap_hanabi_state(env_state):
     s = env_state
@@ -440,7 +439,6 @@ class LBFEpisodeCounts:
     n_state_partner_adjacent: int = 0  # Manhattan distance == 1
     n_state_partner_mid: int = 0       # Manhattan distance 2-3
     n_state_partner_far: int = 0       # Manhattan distance > 3
-    # wider vocab additions (D=13 -> D=28) to push above heldout N
     n_wait_for_partner: int = 0
     n_target_conflict: int = 0
     n_solo_attempt_lvl_2: int = 0
@@ -468,11 +466,6 @@ class LBFEpisodeCounts:
     wait_run_cur: int = 0                # length of the run currently in progress
     path_eff_sum: float = 0.0
     path_eff_count: int = 0
-    # --- sabotage vocabulary (LBF force_coop: every fruit needs BOTH agents) ---
-    # "Join opportunity": the partner is adjacent to a fruit it CANNOT load alone, and
-    # the tracked agent is not adjacent to that fruit. The cooperative act is to close
-    # distance to it; declining is the LBF form of sabotage (refusing to approach an
-    # apple a teammate is standing at).
     n_join_opportunity: int = 0          # steps presenting such an opportunity
     n_decline_to_join: int = 0           # ... where the agent did NOT reduce its distance
     n_abandon_partner: int = 0           # ... where it strictly INCREASED its distance
@@ -480,7 +473,6 @@ class LBFEpisodeCounts:
     join_latency_count: int = 0          # number of resolved arrival episodes
     # (row, col) -> step at which the partner first became adjacent while self was not
     pending_join: Dict[Tuple[int, int], int] = field(default_factory=dict)
-    # --- non-feature bookkeeping (episode-level state carried across steps) ---
     visited_self: set = field(default_factory=set)
     visited_partner: set = field(default_factory=set)
     # (row, col) -> {agent_idx: first step index at which that agent was adjacent}
@@ -495,7 +487,6 @@ def lbf_episode_to_vector(counts: LBFEpisodeCounts, return_norm: float = 0.0, le
     """per-episode lbf counts to the theta contribution vector."""
     ep_len = max(1, int(counts.n_steps) or int(counts.episode_length) or 1)
 
-    # relative-position fractions
     rel_north = counts.n_rel_north / ep_len
     rel_south = counts.n_rel_south / ep_len
     rel_east = counts.n_rel_east / ep_len
@@ -519,9 +510,6 @@ def lbf_episode_to_vector(counts: LBFEpisodeCounts, return_norm: float = 0.0, le
     n_loads = counts.n_successful_load_alone + counts.n_successful_load_cooperative
     steps_per_load = ep_len / max(1, n_loads)
 
-    # sabotage rates: conditioned on an actual join opportunity existing, so they are
-    # not diluted by steps where there was nothing cooperative to do. 0.0 when the
-    # opportunity never arose (distinct from "declined every time", which is 1.0).
     decline_to_join_rate = (
         counts.n_decline_to_join / counts.n_join_opportunity
         if counts.n_join_opportunity > 0 else 0.0
@@ -617,6 +605,7 @@ def rollout_two_policy(
     counts_factory,
     feature_update,
     max_steps: int = 200,
+    recorder=None,
 ) -> List[Any]:
     """sequential rollout with two distinct policies, one per agent."""
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
@@ -676,6 +665,8 @@ def rollout_two_policy(
             # on the last step, use the true post-step state, not the auto-reset
             state_post = _true_post_state(env, env_state_pre, env_act, step_rng) if bool(done["__all__"]) else env_state
             feature_update(counts, act_0, act_1, r0, r1, env_state_pre, state_post, info)
+            if recorder is not None:
+                recorder.record_step(env_state_pre, state_post, act_0, act_1, r0, r1)
             episode_return += r0
             done_prev = done
 
@@ -684,6 +675,8 @@ def rollout_two_policy(
 
         counts.final_score = episode_return
         counts.episode_length = step_i + 1
+        if recorder is not None:
+            recorder.end_episode()
         results.append(counts)
 
     return results
@@ -698,6 +691,7 @@ def rollout_simple_self_play(
     feature_update,
     max_steps: int = 200,
     params=None,
+    recorder=None,
 ) -> List[Any]:
     """sequential self-play rollout for envs whose policies don't need aux_obs."""
     init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
@@ -757,6 +751,8 @@ def rollout_simple_self_play(
             # on the last step, use the true post-step state, not the auto-reset
             state_post = _true_post_state(env, env_state_pre, env_act, step_rng) if bool(done["__all__"]) else env_state
             feature_update(counts, act_0, act_1, r0, r1, env_state_pre, state_post, info)
+            if recorder is not None:
+                recorder.record_step(env_state_pre, state_post, act_0, act_1, r0, r1)
             episode_return += r0
             done_prev = done
 
@@ -765,6 +761,8 @@ def rollout_simple_self_play(
 
         counts.final_score = episode_return
         counts.episode_length = step_i + 1
+        if recorder is not None:
+            recorder.end_episode()
         results.append(counts)
 
     return results
@@ -787,7 +785,7 @@ def _lbf_agent_positions(state) -> Tuple[Tuple[int, int], Tuple[int, int]]:
 def _lbf_food_positions(state) -> List[Tuple[int, int, int]]:
     """(row, col, level) for foods still uneaten."""
     s = _lbf_unwrap(state)
-    # chex dataclasses are always truthy, so guard with `is not None` not `or` in case a fork stores an empty/None placeholder
+    # chex dataclasses are always truthy; guard with `is not None`
     food = getattr(s, "food_items", None)
     if food is None:
         food = getattr(s, "food", None)
@@ -824,19 +822,12 @@ def lbf_step_update(
     info: Dict,
     horizon: int = 100,
 ) -> None:
-    """update lbf event counts for the teammate being characterized (agent_1).
-
-    agent_1 is the teammate whose behaviour we are describing; agent_0 is its
-    paired best response (or, in self-play, a copy of the same policy). This
-    intentionally differs from ZSC-Eval, which attributes theta to the BR.
-    """
+    """update lbf event counts for the teammate being characterized (agent_1)."""
     pre_pos = _lbf_agent_positions(state_pre)
     post_pos = _lbf_agent_positions(state_post)
     foods_pre = _lbf_food_positions(state_pre)
     foods_post = _lbf_food_positions(state_post)
 
-    # Tracked teammate is agent_1; its partner (the paired BR) is agent_0.
-    # Local names kept as `br_*` for continuity with the rest of this function.
     br_pre = pre_pos[1]
     br_post = post_pos[1]
     partner_pre = pre_pos[0]
@@ -873,9 +864,6 @@ def lbf_step_update(
     counts.visited_self.add(br_post)
     counts.visited_partner.add(post_pos[0])
 
-    # first-arrival bookkeeping: earliest step at which each agent stood adjacent
-    # to each (still uneaten) fruit. `cur_step` may be -1 if unreadable; fall back
-    # to our own step counter so ordering is still well defined.
     order_idx = cur_step if cur_step >= 0 else counts.n_steps - 1
     for (r, c, _lvl) in foods_pre:
         key = (r, c)
@@ -885,8 +873,6 @@ def lbf_step_update(
         if abs(partner_pre[0] - r) + abs(partner_pre[1] - c) == 1 and 0 not in slot:
             slot[0] = order_idx
 
-    # cooperative loads: same definition as n_successful_load_cooperative below
-    # (tracked agent took LOAD, fruit vanished, both agents adjacent to it).
     if br_action == _LBF_LOAD:
         for (r, c, _lvl) in eaten_ext:
             if abs(br_pre[0] - r) + abs(br_pre[1] - c) != 1:
@@ -935,7 +921,7 @@ def lbf_step_update(
     else:
         counts.n_state_partner_far += 1
 
-    # per-fruit-level load: a fruit eaten this step is a LOAD for the BR only if the BR was adjacent and took LOAD; compare uneaten foods pre vs post
+    # per-fruit-level load: credited to the BR only if adjacent and took LOAD
     pre_food_set = {(r, c, lvl) for (r, c, lvl) in foods_pre}
     post_food_set = {(r, c, lvl) for (r, c, lvl) in foods_post}
     eaten_this_step = pre_food_set - post_food_set
@@ -976,13 +962,6 @@ def lbf_step_update(
     action = br_action
     reward = br_reward
 
-    # --- sabotage detection: declining to join a partner waiting at a fruit ---
-    # Under force_coop every fruit needs BOTH agents, so a partner standing adjacent to
-    # an uneaten fruit is stuck until the tracked agent arrives. Cooperating = reducing
-    # distance to THAT fruit; not doing so is the LBF sabotage signature. We evaluate
-    # this regardless of action type (a refusal can be a noop, a move away, or a
-    # pointless LOAD elsewhere), and we key on the specific fruit the partner is at,
-    # not the nearest fruit -- otherwise walking toward a different fruit masks it.
     join_targets = [
         (r, c) for (r, c, _lvl) in foods_pre
         if abs(partner_pre[0] - r) + abs(partner_pre[1] - c) == 1
@@ -1014,7 +993,7 @@ def lbf_step_update(
             counts.join_latency_sum += max(0, cur_step - counts.pending_join.pop(key))
             counts.join_latency_count += 1
 
-    # BR's starting quadrant this step; infer grid size from the max coord across both agents (avoids needing env_kwargs)
+    # BR's starting quadrant; grid size inferred from the max coord of both agents
     gs_proxy = max(my_pre[0], my_pre[1], partner_pre[0], partner_pre[1], 6) + 1
     mid = gs_proxy / 2.0
     if my_pre[0] < mid and my_pre[1] < mid:
@@ -1031,7 +1010,7 @@ def lbf_step_update(
         # subcategory: noop while fruit visible
         if len(foods_pre) > 0:
             counts.n_noop_when_food_visible += 1
-        # wait_for_partner: BR adjacent to a fruit, partner not adjacent to any fruit, and BR held position
+        # wait_for_partner: BR adjacent to a fruit, partner not, BR held position
         i_adjacent = any(
             abs(my_pre[0] - r) + abs(my_pre[1] - c) == 1 for (r, c, _) in foods_pre
         )
@@ -1043,8 +1022,6 @@ def lbf_step_update(
         return
 
     if action == _LBF_LOAD:
-        # classify the LOAD by fruit-adjacency, not BR-partner adjacency (LBF force_coop keeps both ~2 apart, never adjacent)
-        # coop = BR + partner both adjacent to the eaten fruit; alone = only BR adjacent; failed = ate nothing adjacent
         ate_with_partner = False  # BR ate a fruit and partner was adjacent to it
         ate_alone = False         # BR ate a fruit and partner was not adjacent
         for (r, c, lvl) in eaten_this_step:
@@ -1056,7 +1033,7 @@ def lbf_step_update(
             else:
                 ate_alone = True
 
-        # solo attempts at high-level fruits: BR adjacent to a lvl-2/3 fruit, took LOAD, partner not adjacent (eaten or not)
+        # solo attempt: BR adjacent to a lvl-2/3 fruit, took LOAD, partner not adjacent
         for (r, c, lvl) in foods_pre:
             if abs(my_pre[0] - r) + abs(my_pre[1] - c) != 1:
                 continue  # BR not adjacent to this fruit
@@ -1069,7 +1046,7 @@ def lbf_step_update(
                 counts.n_solo_attempt_lvl_3 += 1
 
         if ate_with_partner or ate_alone:
-            # early/late game (100-step LBF horizon); cur_step < 0 means step index unreadable, skip tempo binning
+            # cur_step < 0 means the step index is unreadable; skip tempo binning
             if 0 <= cur_step < early_thresh:
                 counts.n_early_game_load += 1
             elif cur_step >= late_thresh:
@@ -1082,7 +1059,6 @@ def lbf_step_update(
             counts.n_failed_load += 1
         return
 
-    # movement actions: N/S/E/W
     if action in (_LBF_N, _LBF_S, _LBF_E, _LBF_W):
         # collision: move attempted but position didn't change (likely partner-blocked)
         if my_pre == my_post:
@@ -1097,429 +1073,6 @@ def lbf_step_update(
             counts.n_retreat_from_fruit += 1
 
 
-
-
-# Overcooked action layout (JaxMARL Actions enum: up/down/right/left/stay/interact).
-# NOTE: right precedes left, and stay precedes interact -- do not "fix" this to
-# alphabetical/intuitive order. See jaxmarl/environments/overcooked/overcooked.py.
-_OC_UP, _OC_DOWN, _OC_RIGHT, _OC_LEFT, _OC_STAY, _OC_INTERACT = range(6)
-
-
-_OC_RESOURCE_KINDS = ("pot", "onion_pile", "plate_pile", "goal")
-
-# overcooked object codes (jaxmarl OBJECT_TO_INDEX)
-_OC_EMPTY, _OC_WALL, _OC_ONION, _OC_ONION_PILE = 1, 2, 3, 4
-_OC_PLATE, _OC_PLATE_PILE, _OC_GOAL, _OC_POT, _OC_DISH, _OC_AGENT = 5, 6, 7, 8, 9, 10
-_OC_POT_EMPTY = 23  # pot status when no onions are in the pot
-
-# DIR_TO_VEC, indexed by move action (up/down/right/left == 0/1/2/3).
-_OC_DIR_TO_VEC = ((0, -1), (0, 1), (1, 0), (-1, 0))
-
-# counter-mediated events, split into "put an item down" and "take an item back".
-_OC_PUT_ON_COUNTER = {
-    "put_onion_on_X": _OC_ONION,
-    "put_dish_on_X": _OC_PLATE,
-    "put_soup_on_X": _OC_DISH,
-}
-_OC_PICKUP_FROM_COUNTER = ("pickup_onion_from_X", "pickup_dish_from_X", "pickup_soup_from_X")
-
-
-@dataclass
-class OvercookedEpisodeCounts:
-    """per-episode overcooked shaped_infos event counts."""
-    counts_by_event: Dict[str, int] = field(default_factory=lambda: {ev: 0 for ev in OVERCOOKED_SHAPED_INFOS})
-    # --- derived vocabulary: raw accumulators ---
-    n_steps: int = 0
-    n_handoff_given: int = 0
-    n_handoff_received: int = 0
-    n_self_retrieve: int = 0
-    n_region_NW: int = 0
-    n_region_NE: int = 0
-    n_region_SW: int = 0
-    n_region_SE: int = 0
-    n_interact_into_partner: int = 0
-    n_blocked_partner: int = 0
-    partner_dist_sum: float = 0.0
-    dist_norm: int = 0  # (height + width) of the walkable grid
-    # per-resource-kind: total uses by the tracked agent, and uses of instance #0
-    resource_uses: Dict[str, int] = field(default_factory=lambda: {k: 0 for k in _OC_RESOURCE_KINDS})
-    resource_first: Dict[str, int] = field(default_factory=lambda: {k: 0 for k in _OC_RESOURCE_KINDS})
-    # --- non-feature bookkeeping (episode-level state carried across steps) ---
-    # counter position (x, y) -> (placing_agent_idx, item_code, step_idx)
-    counter_ledger: Dict[Tuple[int, int], Tuple[int, int, int]] = field(default_factory=dict)
-    # counter position -> number of placements by the tracked agent
-    placements_by_pos: Dict[Tuple[int, int], int] = field(default_factory=dict)
-    visited_self: set = field(default_factory=set)
-    visited_partner: set = field(default_factory=set)
-    delivery_steps: List[int] = field(default_factory=list)
-    # canonical (sorted by (y, x)) instance positions per resource kind, cached at step 0
-    resource_pos: Optional[Dict[str, List[Tuple[int, int]]]] = None
-    final_score: float = 0.0
-    episode_length: int = 0
-
-
-def overcooked_episode_to_vector(
-    counts: OvercookedEpisodeCounts, return_norm: float = 0.0, length_norm: float = 0.0
-) -> np.ndarray:
-    """per-episode overcooked counts to the theta contribution vector."""
-    ev = counts.counts_by_event
-    feats = [float(ev.get(name, 0)) for name in OVERCOOKED_SHAPED_INFOS]
-
-    ep_len = max(1, int(counts.n_steps) or int(counts.episode_length) or 1)
-
-    # items the tracked agent left on a counter that were never picked back up
-    dead_drop = sum(1 for placer, _item, _t in counts.counter_ledger.values() if placer == 1)
-
-    # how spread out the tracked agent's counter usage was
-    placement_counts = list(counts.placements_by_pos.values())
-    total_placements = sum(placement_counts)
-    counter_entropy = 0.0
-    if total_placements >= 2 and len(placement_counts) >= 2:
-        entropy = 0.0
-        for n in placement_counts:
-            p = n / total_placements
-            if p > 0.0:
-                entropy -= p * np.log(p)
-        counter_entropy = entropy / np.log(len(placement_counts))
-
-    # resource choice: only meaningful when the layout has >= 2 instances
-    resource_fracs = []
-    for kind in _OC_RESOURCE_KINDS:
-        positions = (counts.resource_pos or {}).get(kind, [])
-        uses = counts.resource_uses.get(kind, 0)
-        if len(positions) >= 2 and uses > 0:
-            resource_fracs.append(counts.resource_first.get(kind, 0) / uses)
-        else:
-            resource_fracs.append(0.0)
-
-    region_fracs = [
-        counts.n_region_NW / ep_len,
-        counts.n_region_NE / ep_len,
-        counts.n_region_SW / ep_len,
-        counts.n_region_SE / ep_len,
-    ]
-
-    union = counts.visited_self | counts.visited_partner
-    territory_overlap = (
-        len(counts.visited_self & counts.visited_partner) / len(union) if union else 0.0
-    )
-
-    n_onion = (
-        ev.get("pickup_onion_from_O", 0)
-        + ev.get("pickup_onion_from_X", 0)
-        + ev.get("put_onion_on_X", 0)
-        + ev.get("PLACEMENT_IN_POT", 0)
-    )
-    n_plate = (
-        ev.get("pickup_dish_from_D", 0)
-        + ev.get("pickup_dish_from_X", 0)
-        + ev.get("put_dish_on_X", 0)
-        + ev.get("SOUP_PICKUP", 0)
-        + ev.get("pickup_soup_from_X", 0)
-        + ev.get("put_soup_on_X", 0)
-        + ev.get("delivery", 0)
-    )
-    # An agent with NO role events has no role at all, so both features must be 0.
-    # Without this carve-out n_role=0 gives onion_role_frac=0 -> role_purity=1.0,
-    # i.e. a totally idle teammate would score as a maximally pure plate specialist.
-    n_role = n_onion + n_plate
-    onion_role_frac = (n_onion / n_role) if n_role > 0 else 0.0
-    role_purity = abs(2.0 * onion_role_frac - 1.0) if n_role > 0 else 0.0
-
-    deliveries_per_100_steps = 100.0 * ev.get("delivery", 0) / ep_len
-    if len(counts.delivery_steps) >= 2:
-        gaps = [
-            counts.delivery_steps[k] - counts.delivery_steps[k - 1]
-            for k in range(1, len(counts.delivery_steps))
-        ]
-        mean_inter_delivery_interval = (sum(gaps) / len(gaps)) / ep_len
-    else:
-        mean_inter_delivery_interval = 0.0
-
-    mean_partner_distance = (counts.partner_dist_sum / ep_len) / max(1, counts.dist_norm)
-
-    feats += [
-        float(counts.n_handoff_given),
-        float(counts.n_handoff_received),
-        float(dead_drop),
-        float(counts.n_self_retrieve),
-        float(counter_entropy),
-        *[float(x) for x in resource_fracs],
-        *[float(x) for x in region_fracs],
-        float(territory_overlap),
-        float(onion_role_frac),
-        float(role_purity),
-        float(deliveries_per_100_steps),
-        float(mean_inter_delivery_interval),
-        float(mean_partner_distance),
-        float(counts.n_interact_into_partner),
-        float(counts.n_blocked_partner),
-    ]
-    assert len(feats) == len(OVERCOOKED_FEATURE_NAMES), (
-        f"overcooked feature vector length {len(feats)} != {len(OVERCOOKED_FEATURE_NAMES)} names"
-    )
-    return np.array(feats, dtype=np.float64)
-
-
-def _oc_scan_resources(mm: np.ndarray, pad: int, H: int, W: int) -> Dict[str, List[Tuple[int, int]]]:
-    """positions (x, y) of each static resource, in canonical (y, x)-sorted order.
-
-    Scanned from maze_map rather than the layout dict so this works regardless of
-    how the env was constructed. Pot/pile/goal tiles are walls, so agents can
-    never stand on them and their maze_map codes are stable across the episode.
-    """
-    code_to_kind = {
-        _OC_POT: "pot",
-        _OC_ONION_PILE: "onion_pile",
-        _OC_PLATE_PILE: "plate_pile",
-        _OC_GOAL: "goal",
-    }
-    out: Dict[str, List[Tuple[int, int]]] = {k: [] for k in _OC_RESOURCE_KINDS}
-    for y in range(H):
-        for x in range(W):
-            py, px = pad + y, pad + x
-            if not (0 <= py < mm.shape[0] and 0 <= px < mm.shape[1]):
-                continue
-            kind = code_to_kind.get(int(mm[py, px, 0]))
-            if kind is not None:
-                out[kind].append((x, y))  # scanned in (y, x) order already
-    return out
-
-
-def _oc_classify_event(inv0: int, inv1: int, obj: int) -> Optional[str]:
-    """map an inventory transition + faced-cell object to a shaped_infos event name."""
-    if inv0 == inv1:
-        return None
-    if inv0 == _OC_EMPTY and inv1 == _OC_ONION:
-        return "pickup_onion_from_O" if obj == _OC_ONION_PILE else "pickup_onion_from_X"
-    if inv0 == _OC_EMPTY and inv1 == _OC_PLATE:
-        return "pickup_dish_from_D" if obj == _OC_PLATE_PILE else "pickup_dish_from_X"
-    if inv0 == _OC_EMPTY and inv1 == _OC_DISH:
-        return "pickup_soup_from_X"
-    if inv0 == _OC_PLATE and inv1 == _OC_DISH:
-        return "SOUP_PICKUP"
-    if inv0 == _OC_ONION and inv1 == _OC_EMPTY:
-        return "PLACEMENT_IN_POT" if obj == _OC_POT else "put_onion_on_X"
-    if inv0 == _OC_PLATE and inv1 == _OC_EMPTY:
-        return "put_dish_on_X"
-    if inv0 == _OC_DISH and inv1 == _OC_EMPTY:
-        return "delivery" if obj == _OC_GOAL else "put_soup_on_X"
-    return None
-
-
-def overcooked_step_update(
-    counts: OvercookedEpisodeCounts,
-    a0: int,
-    a1: int,
-    r0: float,
-    r1: float,
-    state_pre,
-    state_post,
-    info: Dict,
-) -> None:
-    """reconstruct shaped_infos events from overcooked state transitions."""
-    EMPTY, WALL, ONION, ONION_PILE, PLATE, PLATE_PILE, GOAL, POT, DISH = (
-        _OC_EMPTY, _OC_WALL, _OC_ONION, _OC_ONION_PILE, _OC_PLATE,
-        _OC_PLATE_PILE, _OC_GOAL, _OC_POT, _OC_DISH)
-    STAY_A, INTERACT_A = 4, 5
-    POT_EMPTY = _OC_POT_EMPTY
-
-    def _unwrap(s):
-        while hasattr(s, "env_state"):
-            s = s.env_state
-        return s
-
-    sp, sq = _unwrap(state_pre), _unwrap(state_post)
-    try:
-        inv_pre = np.asarray(sp.agent_inv).reshape(-1)
-        inv_post = np.asarray(sq.agent_inv).reshape(-1)
-        pos_pre = np.asarray(sp.agent_pos).reshape(-1, 2)
-        pos_post = np.asarray(sq.agent_pos).reshape(-1, 2)
-        adir = np.asarray(sp.agent_dir).reshape(-1, 2)
-        mm = np.asarray(sp.maze_map)
-        wm = np.asarray(sp.wall_map)
-    except AttributeError:
-        return  # not an overcooked state, nothing to reconstruct
-
-    pad = (mm.shape[0] - wm.shape[0]) // 2
-    ev = counts.counts_by_event
-    H, W = int(wm.shape[0]), int(wm.shape[1])
-
-    # agent_1 is the teammate being characterized; agent_0 is its paired best
-    # response (or a copy of itself in self-play). This intentionally differs
-    # from ZSC-Eval, which attributes theta to the BR instead of the teammate.
-    i = 1
-    action = int(a1)
-    inv0, inv1 = int(inv_pre[i]), int(inv_post[i])
-    fx = int(pos_pre[i][0] + adir[i][0])
-    fy = int(pos_pre[i][1] + adir[i][1])
-    on_grid = (0 <= fx < W) and (0 <= fy < H)
-    py, px = pad + fy, pad + fx
-    obj = int(mm[py, px, 0]) if (0 <= py < mm.shape[0] and 0 <= px < mm.shape[1]) else EMPTY
-    is_table = bool(wm[fy, fx]) if on_grid else False
-    moved = not np.array_equal(pos_pre[i], pos_post[i])
-
-    _overcooked_derived_update(
-        counts, a0, a1, inv_pre, inv_post, pos_pre, pos_post, adir, mm, pad, H, W,
-    )
-
-    if inv0 != inv1:
-        # interact succeeded, classify by inventory delta + faced cell
-        if inv0 == EMPTY and inv1 == ONION:
-            ev["pickup_onion_from_O" if obj == ONION_PILE else "pickup_onion_from_X"] += 1
-        elif inv0 == EMPTY and inv1 == PLATE:
-            ev["pickup_dish_from_D" if obj == PLATE_PILE else "pickup_dish_from_X"] += 1
-            num_notempty_pots = int(((mm[..., 0] == POT) & (mm[..., 2] != POT_EMPTY)).sum())
-            num_plates_held = int((inv_pre == PLATE).sum())
-            no_plates_on_counters = int((mm == PLATE).sum()) == 0
-            if num_plates_held < num_notempty_pots and no_plates_on_counters:
-                ev["USEFUL_DISH_PICKUP"] += 1
-        elif inv0 == EMPTY and inv1 == DISH:
-            ev["pickup_soup_from_X"] += 1
-        elif inv0 == PLATE and inv1 == DISH:
-            ev["SOUP_PICKUP"] += 1
-        elif inv0 == ONION and inv1 == EMPTY:
-            ev["PLACEMENT_IN_POT" if obj == POT else "put_onion_on_X"] += 1
-        elif inv0 == PLATE and inv1 == EMPTY:
-            ev["put_dish_on_X"] += 1
-        elif inv0 == DISH and inv1 == EMPTY:
-            ev["delivery" if obj == GOAL else "put_soup_on_X"] += 1
-    else:
-        # no inventory change, movement / stay / no-op interact
-        if action == STAY_A:
-            ev["STAY"] += 1
-        elif action == INTERACT_A:
-            if is_table and obj not in (WALL, EMPTY):
-                ev["IDLE_INTERACT_X"] += 1
-            else:
-                ev["IDLE_INTERACT_EMPTY"] += 1
-        elif moved:
-            ev["MOVEMENT"] += 1
-        else:
-            ev["IDLE_MOVEMENT"] += 1
-
-
-def _overcooked_derived_update(
-    counts: OvercookedEpisodeCounts,
-    a0: int, a1: int,
-    inv_pre: np.ndarray, inv_post: np.ndarray,
-    pos_pre: np.ndarray, pos_post: np.ndarray,
-    adir: np.ndarray, mm: np.ndarray, pad: int, H: int, W: int,
-) -> None:
-    """derived-vocabulary bookkeeping for overcooked.
-
-    Unlike the shaped_infos reconstruction, this inspects BOTH agents: the
-    counter ledger needs to know who put an item down in order to tell a
-    handoff from a self-retrieve. Only agent_1's behaviour becomes features.
-    """
-    TRACKED, PARTNER = 1, 0
-    INTERACT_A = 5
-    actions = (int(a0), int(a1))
-
-    counts.n_steps += 1
-    step_idx = counts.n_steps - 1
-    counts.dist_norm = H + W
-
-    if counts.resource_pos is None:
-        counts.resource_pos = _oc_scan_resources(mm, pad, H, W)
-
-    # faced cell + object for each agent (interact resolves against the PRE-step
-    # position and direction, matching the env's process_interact)
-    faced: List[Tuple[int, int, int]] = []
-    for j in (0, 1):
-        fx = int(pos_pre[j][0] + adir[j][0])
-        fy = int(pos_pre[j][1] + adir[j][1])
-        py, px = pad + fy, pad + fx
-        if 0 <= py < mm.shape[0] and 0 <= px < mm.shape[1]:
-            obj = int(mm[py, px, 0])
-        else:
-            obj = _OC_EMPTY
-        faced.append((fx, fy, obj))
-
-    events = [
-        _oc_classify_event(int(inv_pre[j]), int(inv_post[j]), faced[j][2]) for j in (0, 1)
-    ]
-
-    # --- counter ledger -------------------------------------------------
-    # Pickups are resolved BEFORE placements so an item can never be picked up
-    # on the same step it was put down.
-    for j in (0, 1):
-        if events[j] not in _OC_PICKUP_FROM_COUNTER:
-            continue
-        entry = counts.counter_ledger.pop((faced[j][0], faced[j][1]), None)
-        if entry is None:
-            continue  # item wasn't placed by either agent this episode
-        placer = entry[0]
-        if j == TRACKED:
-            if placer == PARTNER:
-                counts.n_handoff_received += 1
-            else:
-                counts.n_self_retrieve += 1
-        elif placer == TRACKED:
-            counts.n_handoff_given += 1
-
-    for j in (0, 1):
-        item = _OC_PUT_ON_COUNTER.get(events[j] or "")
-        if item is None:
-            continue
-        pos = (faced[j][0], faced[j][1])
-        counts.counter_ledger[pos] = (j, item, step_idx)
-        if j == TRACKED:
-            counts.placements_by_pos[pos] = counts.placements_by_pos.get(pos, 0) + 1
-
-    # --- resource choice (tracked agent only) ---------------------------
-    event_to_resource = {
-        "PLACEMENT_IN_POT": "pot",
-        "SOUP_PICKUP": "pot",
-        "pickup_onion_from_O": "onion_pile",
-        "pickup_dish_from_D": "plate_pile",
-        "delivery": "goal",
-    }
-    kind = event_to_resource.get(events[TRACKED] or "")
-    if kind is not None:
-        positions = counts.resource_pos.get(kind, [])
-        used = (faced[TRACKED][0], faced[TRACKED][1])
-        if used in positions:
-            counts.resource_uses[kind] += 1
-            if used == positions[0]:
-                counts.resource_first[kind] += 1
-
-    if events[TRACKED] == "delivery":
-        counts.delivery_steps.append(step_idx)
-
-    # --- spatial / territorial ------------------------------------------
-    sx, sy = int(pos_pre[TRACKED][0]), int(pos_pre[TRACKED][1])
-    mid_x, mid_y = W / 2.0, H / 2.0
-    if sy < mid_y and sx < mid_x:
-        counts.n_region_NW += 1
-    elif sy < mid_y:
-        counts.n_region_NE += 1
-    elif sx < mid_x:
-        counts.n_region_SW += 1
-    else:
-        counts.n_region_SE += 1
-
-    counts.visited_self.add((sx, sy))
-    counts.visited_self.add((int(pos_post[TRACKED][0]), int(pos_post[TRACKED][1])))
-    counts.visited_partner.add((int(pos_pre[PARTNER][0]), int(pos_pre[PARTNER][1])))
-    counts.visited_partner.add((int(pos_post[PARTNER][0]), int(pos_post[PARTNER][1])))
-
-    # --- partner-relational ---------------------------------------------
-    counts.partner_dist_sum += abs(sx - int(pos_pre[PARTNER][0])) + abs(
-        sy - int(pos_pre[PARTNER][1])
-    )
-
-    if actions[TRACKED] == INTERACT_A and faced[TRACKED][2] == _OC_AGENT:
-        counts.n_interact_into_partner += 1
-
-    partner_action = actions[PARTNER]
-    if 0 <= partner_action < len(_OC_DIR_TO_VEC) and np.array_equal(
-        pos_pre[PARTNER], pos_post[PARTNER]
-    ):
-        dx, dy = _OC_DIR_TO_VEC[partner_action]
-        target = (int(pos_pre[PARTNER][0]) + dx, int(pos_pre[PARTNER][1]) + dy)
-        if (sx, sy) == target:
-            counts.n_blocked_partner += 1
 
 
 def build_overcooked_agents(layout: dict) -> Dict[str, Any]:
@@ -1556,7 +1109,7 @@ def load_full_heldout_for_pd(
         )
     heldout_block = full_yaml["heldout_set"][heldout_yaml_key]
 
-    # pre-filter entries whose checkpoint paths or weight files don't exist locally; heuristic agents (no path/weight_file) always pass
+    # skip entries whose checkpoint paths don't exist locally
     from common.save_load_utils import REPO_PATH
 
     filtered = {}
@@ -1667,18 +1220,15 @@ def _match_partner_to_br(heldout_name: str, available_dirs: List[str], layout_pr
         ])
     candidates.extend(suffix_variants)
 
-    # 'br_for_<name>' prefix (mini-hanabi convention)
     for c in [base, base_us, heldout_name]:
         candidates.append(f"br_for_{c}")
 
-    # layout-prefixed (overcooked)
     if layout_prefix:
         prefixed: List[str] = []
         for c in list(candidates):
             prefixed.append(f"{layout_prefix}_{c}")
         candidates.extend(prefixed)
 
-    # direct match
     seen = set()
     for c in candidates:
         if c in seen:
@@ -1687,7 +1237,7 @@ def _match_partner_to_br(heldout_name: str, available_dirs: List[str], layout_pr
         if c in available_dirs:
             return c
 
-    # pop-methods whose outer idx doesn't line up with the dir name: match on the inner idx (comedi (-1, 0) -> comedi_1_0_serious)
+    # match on the inner idx only
     if inner_idx is not None:
         import re
         pat = re.compile(rf"^{re.escape(base_us)}_-?\d+_{inner_idx}(_.*)?$")
@@ -1783,3 +1333,101 @@ def _lbf_step_index(state) -> int:
         return int(sc)
     except (TypeError, ValueError):
         return -1
+
+
+
+
+def rollout_two_policy_batched(
+    env,
+    policy_a, params_a,
+    policy_b, params_b,
+    num_episodes: int,
+    seed: int,
+    max_steps: int = 400,
+) -> Dict[str, np.ndarray]:
+    """Run all episodes in parallel; return stacked raw trajectory arrays."""
+    init_done = {k: jnp.zeros((1), dtype=bool) for k in env.agents + ["__all__"]}
+
+    # episode keys, generated by the SAME chain the sequential path uses
+    rng_master = jax.random.PRNGKey(seed)
+    ep_keys = []
+    for _ in range(num_episodes):
+        rng_master, ep_rng = jax.random.split(rng_master)
+        ep_keys.append(ep_rng)
+    ep_keys = jnp.stack(ep_keys)
+
+    # static layout geometry, read once off a throwaway reset
+    _, probe_state = env.reset(jax.random.PRNGKey(0))
+    probe = probe_state
+    while hasattr(probe, "env_state"):
+        probe = probe.env_state
+    mm_shape = np.asarray(probe.maze_map).shape
+    wall_map = np.asarray(probe.wall_map).astype(bool)
+    H, W = int(wall_map.shape[0]), int(wall_map.shape[1])
+    pad = (mm_shape[0] - H) // 2
+
+    def _inner(s):
+        while hasattr(s, "env_state"):
+            s = s.env_state
+        return s
+
+    def run_episode(ep_rng):
+        ep_rng, reset_rng = jax.random.split(ep_rng)
+        obs, env_state = env.reset(reset_rng)
+        hstate_0 = policy_a.init_hstate(1, aux_info={"agent_id": 0})
+        hstate_1 = policy_b.init_hstate(1, aux_info={"agent_id": 1})
+
+        def scan_step(carry, _):
+            ep_rng, obs, env_state, done_prev, hstate_0, hstate_1 = carry
+
+            avail = jax.lax.stop_gradient(env.get_avail_actions(env_state))
+            avail_0 = avail["agent_0"].astype(jnp.float32)
+            avail_1 = avail["agent_1"].astype(jnp.float32)
+
+            ep_rng, a0_rng, a1_rng, step_rng = jax.random.split(ep_rng, 4)
+            act_0, hstate_0 = policy_a.get_action(
+                params=params_a, obs=obs["agent_0"].reshape(1, 1, -1),
+                done=done_prev["agent_0"].reshape(1, 1), avail_actions=avail_0,
+                hstate=hstate_0, rng=a0_rng, aux_obs=None, env_state=env_state,
+                test_mode=False,
+            )
+            act_1, hstate_1 = policy_b.get_action(
+                params=params_b, obs=obs["agent_1"].reshape(1, 1, -1),
+                done=done_prev["agent_1"].reshape(1, 1), avail_actions=avail_1,
+                hstate=hstate_1, rng=a1_rng, aux_obs=None, env_state=env_state,
+                test_mode=False,
+            )
+            act_0 = act_0.squeeze()
+            act_1 = act_1.squeeze()
+
+            env_act = {"agent_0": act_0, "agent_1": act_1}
+            sp = _inner(env_state)
+            obs_n, env_state_n, reward, done, info = env.step(step_rng, env_state, env_act)
+            sq = _inner(env_state_n)
+
+            out = dict(
+                act=jnp.stack([act_0, act_1]).astype(jnp.int8),
+                rew=jnp.stack([reward["agent_0"], reward["agent_1"]]).astype(jnp.float32),
+                inv_pre=sp.agent_inv.reshape(-1).astype(jnp.int16),
+                inv_post=sq.agent_inv.reshape(-1).astype(jnp.int16),
+                pos_pre=sp.agent_pos.reshape(-1, 2).astype(jnp.int16),
+                pos_post=sq.agent_pos.reshape(-1, 2).astype(jnp.int16),
+                dir_pre=sp.agent_dir.reshape(-1, 2).astype(jnp.int16),
+                mmw_pre=jax.lax.dynamic_slice(
+                    sp.maze_map, (pad, pad, 0), (H, W, 3)
+                ).astype(jnp.uint8),
+                mm_full_pre=sp.maze_map.astype(jnp.uint8),
+                done=done["__all__"].reshape(()),
+            )
+            done_next = {k: jnp.asarray(v).reshape(1) for k, v in done.items()}
+            return (ep_rng, obs_n, env_state_n, done_next, hstate_0, hstate_1), out
+
+        carry = (ep_rng, obs, env_state, init_done, hstate_0, hstate_1)
+        _, traj = jax.lax.scan(scan_step, carry, None, length=max_steps)
+        return traj
+
+    traj = jax.jit(jax.vmap(run_episode))(ep_keys)
+    out = {k: np.asarray(v) for k, v in traj.items()}
+    out["wall_map"] = wall_map
+    out["pad"], out["H"], out["W"] = pad, H, W
+    return out
